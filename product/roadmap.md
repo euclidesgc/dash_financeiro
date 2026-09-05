@@ -34,7 +34,11 @@ PR e commit já escritos.
 
 - [ ] `006-sync-pluggy` — As movimentações se atualizam **sob demanda e todo dia**, sem duplicar nenhuma transação, e a tela diz quando foi a última sincronização e se ela falhou. Sync que falha em silêncio é pior que sync nenhum: o painel passa a mostrar dado velho com cara de dado fresco.
 
-- [ ] `007-plano-e-ia` — O plano de curto, médio e longo prazo se calcula por **código determinístico** (renda regular, piso essencial, sobra projetada, escada de dívida, data-alvo da reserva) e a IA explica o próximo passo com o número que o justifica, responde pergunta livre sobre os próprios dados e classifica o que as regras não pegaram. Sem chave ou com erro, a tela mostra o número e diz que a leitura da IA está indisponível — nunca quebra.
+- [ ] `007-objetivo-e-linha-do-tempo` — Existe **um objetivo com data**: 6 meses de reserva (≈ R$ 49.400), com "resultado mensal ≥ 0" e "dívidas caras zeradas" como marcos no caminho. A projeção é simulação mês a mês por código determinístico, apresentada em **três cenários** (conservador · base · otimista) — nunca uma data só, que saltaria de 27 para 41 meses por causa de um mês atípico e perderia a confiança na primeira semana. Cada recálculo grava snapshot, para a linha do tempo ter passado: "em março você projetava 30 meses; hoje projeta 24" é o único sinal de progresso que este produto aceita. O financiamento imobiliário fica fora do objetivo — a 0,72% a.m. ele é a dívida mais barata, e amortizá-lo antes da reserva é o erro que a escada existe para evitar.
+
+- [ ] `008-simulador-e-base-de-fatos` — Um formulário curto — tipo (receita ou despesa), valor, recorrência, prazo, taxa, data de início — responde **"isso me afasta ou me aproxima, e quantos dias"**, com a linha do tempo antes e depois sobrepostas. Cenário pode ser salvo e comparado lado a lado; "vender o Duster e ficar sem carro" contra "vender e comprar um usado de R$ 25 mil" é a decisão em aberto hoje e merece ser vista, não argumentada. O mesmo formulário captura os fatos que só o humano sabe (saldo de quitação, taxa do cartão, custo de transporte) em `plan_facts`, com valor, unidade, origem, data e prazo de validade — estruturado para consulta, e a projeção se move na tela assim que o fato entra.
+
+- [ ] `009-ia-consultora` — A IA **pergunta o que falta**: escolhe o fato ausente ou vencido cuja resposta mais move a projeção e faz **uma** pergunta, dizendo qual número ela muda. Nunca repergunta o que foi respondido, e não insiste — pergunta ignorada some e volta só quando voltar a importar; enquanto isso a tela declara a premissa que está assumindo. Também explica o resultado do simulador, orienta o próximo passo, responde pergunta livre sobre os próprios dados e classifica o resíduo que as regras não pegaram. **A IA nunca calcula**: se ela computasse "isso te afasta 11 dias" erraria, e um número errado na unidade central do produto destrói a confiança em tudo o mais. Sem chave ou com erro, a tela mostra o número determinístico e diz que a leitura da IA está indisponível.
 
 ## Validações de campo pendentes
 
@@ -51,14 +55,17 @@ exatamente ficou sem verificação e como verificar.
   verificar: rodar o sync com as credenciais reais e conferir que `sync_runs` ganha
   linha e a contagem de transações não duplica.
 
-- **`007-plano-e-ia`** — a qualidade da resposta do Gemini só se julga lendo. Como
+- **`009-ia-consultora`** — a qualidade da resposta do Gemini só se julga lendo. Como
   verificar: fazer três perguntas sobre os próprios dados e conferir que os números
-  citados batem com os do motor determinístico.
+  citados batem, dígito a dígito, com os do motor determinístico.
 
 ## Entradas pendentes do humano
 
-Não bloqueiam a construção — o produto as trata como parâmetro editável —, mas
-sem elas o plano de curto prazo fica com uma faixa em vez de um número.
+A partir do item `008` **isto deixa de ser uma lista aqui e vira mecanismo do
+produto**: a IA pergunta, a resposta entra em `plan_facts` estruturada, e a
+projeção se move. Até lá a construção não trava — o motor usa premissa
+declarada na tela —, mas o plano de curto prazo fica com uma faixa em vez de um
+número.
 
 - **Saldo de quitação antecipada do CDC do Duster** (menor que o saldo devedor de
   R$ 39.176,36; está no app do banco).
