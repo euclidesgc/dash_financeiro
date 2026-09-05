@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "harness_version": "0.7.0",
+  "mode": "process-only",
+  "route": "greenfield",
+  "product": "dash_financeiro — painel financeiro pessoal de um usuário, rodando local. Login, dashboard das movimentações bancárias (sincronizadas da Pluggy todo dia ou sob demanda) e IA que ajuda a alcançar o plano de curto, médio e longo prazo. Stack Python 3.12 + FastAPI + Jinja2 + HTMX + SQLite. O objetivo do produto é sair de um déficit de R$ 4.940,72/mês.",
+  "stacks": {},
+  "packs": {},
+  "paths": {},
+  "brownfield": {},
+  "branches": {
+    "producao": "main",
+    "integracao": "develop"
+  },
+  "criteria_tools": {},
+  "command_quirks": [
+    {
+      "wrapper": "rtk",
+      "detecta": "hook global PreToolUse/Bash reescreve o comando e enxuga a saida",
+      "escape": "rtk proxy <comando>",
+      "quando_usar": "sempre que a evidencia de um criterio precisar da saida bruta e integra"
+    }
+  ],
+  "language": {
+    "code": "en",
+    "docs": "pt-BR"
+  },
+  "env_findings": [
+    "proxy de saída rtk ativo por hook global (PreToolUse/Bash); escape para saída crua: `rtk proxy <comando>`",
+    "grafo de código mantido por hook global (.code-review-graph); o harness não instala um segundo mantenedor",
+    "sem pack de stack: Python/FastAPI não é coberto pelo harness (packs: flutter, nestjs, react). Modo processo-apenas, registrado como atalho deliberado"
+  ],
+  "modo_autonomo": true
+}

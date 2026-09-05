@@ -1,0 +1,91 @@
+name: Harness
+
+# Três portões que valem para qualquer stack, instalados pelo init.
+#
+# `bloqueio` — um rótulo `blocked-on-*` deixa de ser bilhete e passa a ser
+# tranca. O protocolo de divergência promete "trava o merge", e rótulo sozinho
+# não impede clique nenhum. `labeled` e `unlabeled` estão na lista de
+# propósito: sem eles, tirar o rótulo só seria reavaliado no próximo push.
+#
+# `atalho` — o item 14 da DoD. O item 11 já obriga a dívida deliberada a virar
+# item de roadmap, mas só no sentido código → fila. Quem abre o arquivo meses
+# depois não lê o PR nem o roadmap, e por isso não descobre que a função tem
+# teto. O marcador fecha o sentido de volta, e sem portão ele degrada para
+# `TODO`: o primeiro sem gatilho não é notado, e no terceiro ninguém mais
+# escreve o gatilho.
+#
+# `portoes` — as asserções de medição são o portão dos portões. Se elas pararem
+# de morder, todo portão que as usa passa a aprovar por não ter medido, que é
+# o defeito que elas existem para matar. Por isso rodam em todo PR.
+#
+# As ações de terceiro vêm fixadas em SHA de 40 caracteres, com a versão no
+# comentário ao lado, e não em tag. Tag é ponteiro móvel: quem comprometer a
+# ação a repointa e passa a rodar dentro do runner — depois de o `checkout` já
+# ter gravado o token no disco. O comentário existe para a revisão humana saber
+# que versão é aquela; ele não é a trava, o SHA é.
+# O PR NASCE RASCUNHO, E O CI LOCAL É QUEM O PROMOVE
+#
+# Nenhum job roda enquanto o PR está em rascunho. A iteração acontece na máquina
+# de quem trabalha, com `scripts/gates/gates_runner.sh`, e o runner remoto só é
+# chamado quando o trabalho está pronto para revisão — uma vez, em vez de uma por
+# push. Medido numa corrida autônoma real: ~6 execuções por PR e 189 num dia,
+# porque cada push redisparava tudo e o run anterior seguia até o fim medindo um
+# commit que ninguém ia mergear.
+#
+# `ready_for_review` no `types` é o que fecha o ciclo, e é a metade que se
+# esquece: sem ele, sair do rascunho não dispara evento nenhum, e o PR fica
+# pronto e sem CI para sempre — trocar "roda demais" por "não roda nunca".
+#
+# `!= true` e não `== false`: em evento de `push` não existe `pull_request`, o
+# campo vem nulo, e nulo não é rascunho.
+#
+# `scripts/gates/rascunho.sh` cobra as duas metades: um job novo sem a guarda
+# reacende o runner a cada push, e o sintoma seria a conta, não um check vermelho.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, labeled, unlabeled, ready_for_review]
+
+# O token do fluxo é declarado aqui, e não herdado. Sem esta seção o job roda
+# com a permissão padrão do repositório — que em repositório antigo ainda é
+# escrita em tudo —, e uma ação de terceiro comprometida escreve com ela. Ler o
+# código é o que estes jobs precisam; o job que precisar de mais declara o que
+# falta nele mesmo, e não aqui em cima para todos.
+permissions:
+  contents: read
+
+jobs:
+  bloqueio:
+    name: Sem bloqueio pendente
+    if: github.event.pull_request.draft != true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: As asserções do bloqueio mordem
+        run: bash scripts/gates/__tests__/bloqueio.test.sh
+      - name: Nenhum rótulo blocked-on-*
+        env:
+          ROTULOS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: bash scripts/gates/bloqueio.sh
+
+  atalho:
+    name: Atalho deliberado tem teto, troca e item
+    if: github.event.pull_request.draft != true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: As asserções do atalho mordem
+        run: bash scripts/gates/__tests__/atalho.test.sh
+      - name: Todo marcador declara as três partes, e o item existe na fila
+        run: bash scripts/gates/atalho.sh
+
+  portoes:
+    name: As asserções de medição mordem
+    if: github.event.pull_request.draft != true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: medir.sh reprova quando não consegue medir
+        run: bash scripts/gates/__tests__/medir.test.sh
+      - name: a tranca de merge trata verificação pendente como não medida
+        run: bash scripts/gates/__tests__/merge-se-liberado.test.sh

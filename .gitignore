@@ -16,3 +16,6 @@ venv/
 .mypy_cache/
 
 .DS_Store
+
+# harness
+.harness/runtime/
