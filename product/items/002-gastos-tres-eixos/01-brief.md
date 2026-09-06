@@ -151,9 +151,9 @@ lançamentos e em dinheiro, nas duas telas.
   linhas ordenadas do maior gasto para o menor, começando por `School`
   −R$ 12.992,18 (20 lançamentos), `Real estate financing` −R$ 12.358,81 (5),
   `Services` −R$ 8.774,12 (48), `Loans and financing` −R$ 7.870,50 (7),
-  `Transfers` −R$ 6.220,71 (21), `Groceries` −R$ 5.017,64 (84), `Eating out`
-  −R$ 4.360,13 (60), `Shopping` −R$ 4.178,70 (84), `Interests charged`
-  −R$ 3.351,16 (14) e `Pharmacy` −R$ 3.041,99 (28). *(ubíquo)*
+  `Transfers` −R$ 6.220,71 (21), `Transfer - Bank Slip` −R$ 5.239,59 (1),
+  `Groceries` −R$ 5.017,64 (84), `Transfer - PIX` −R$ 4.685,15 (58),
+  `Eating out` −R$ 4.360,13 (60) e `Shopping` −R$ 4.178,70 (84). *(ubíquo)*
 - **RF-18** — O sistema deve devolver, no eixo beneficiário e nesse período,
   `debito prestacao hab` −R$ 12.358,81 (5), `pagamento de boleto sociedade de
   assistencia e cultura sagra` −R$ 10.880,05 (7) e `pagamento de boleto safra cfi s a`

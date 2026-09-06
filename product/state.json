@@ -108,19 +108,19 @@
       "created_at": "2026-09-06T02:25:52Z",
       "approvals": {
         "brief": {
-          "at": "2026-09-06T03:03:38Z",
-          "sha": "6c03f17d96316289aeb82044a20926a93fd5b517",
+          "at": "2026-09-06T03:57:10Z",
+          "sha": "756a4c52a0c52cf949375bb940060caf54f5ba66",
           "file": "product/items/002-gastos-tres-eixos/01-brief.md",
           "por": "autonomo"
         },
         "plan": {
-          "at": "2026-09-06T03:03:38Z",
-          "sha": "2578e54412b0030787fa36e73c79d9e190e478ac",
+          "at": "2026-09-06T03:57:10Z",
+          "sha": "3c7dca45e9ac63604e321b5663eab6796b222c99",
           "file": "product/items/002-gastos-tres-eixos/03-plan.md",
           "por": "autonomo"
         }
       },
-      "current_phase": 1,
+      "current_phase": 2,
       "phases": {
         "1": {
           "status": "aprovada",
@@ -135,6 +135,15 @@
             ".": "d48fe33920917a817f1e8ee1ab1a2ceba86f77bc"
           },
           "criteria_sha": "1eb1525753b5c05419095797e6ac6d6e7c6e87ee504df0fff45644c8c597b60f"
+        },
+        "2": {
+          "status": "em_execucao",
+          "reproved_count": 0,
+          "verdict": null,
+          "verdict_file": null,
+          "validated_sha": null,
+          "pr": null,
+          "blocked_on": []
         }
       },
       "divergences": {},

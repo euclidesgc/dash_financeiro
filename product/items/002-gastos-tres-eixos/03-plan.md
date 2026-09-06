@@ -388,9 +388,9 @@ DASH_DB_PATH=/tmp/dash-002-f2.sqlite`.
       l['amount_cents'], l['entries']) for l in linhas[:10]]"` imprime `52` e, em
       seguida, exatamente estas dez linhas nesta ordem: `School -1299218 20`,
       `Real estate financing -1235881 5`, `Services -877412 48`, `Loans and
-      financing -787050 7`, `Transfers -622071 21`, `Groceries -501764 84`,
-      `Eating out -436013 60`, `Shopping -417870 84`, `Interests charged -335116
-      14`, `Pharmacy -304199 28`
+      financing -787050 7`, `Transfers -622071 21`, `Transfer - Bank Slip -523959
+      1`, `Groceries -501764 84`, `Transfer - PIX -468515 58`, `Eating out -436013
+      60`, `Shopping -417870 84`
 - [ ] `comando` — RF-10, RF-18
       `.venv/bin/python -c "from app.db import connect; from app.queries.axes
       import aggregate; linhas = aggregate(connect(), axis='beneficiario',
