@@ -1,11 +1,14 @@
+import os
 from datetime import date
 
 import pytest
 
 from app.commitments import INSTALLMENT, RECURRING
+from app.commitments.engine import main as recompute_command
 from app.commitments.engine import recompute
 from app.commitments.live import installments, released_cash, subscriptions, totals
 from app.commitments.mark import DismissRefusedError, dismiss, resume
+from app.config import reference_date
 from app.taxonomy import classify
 from app.taxonomy.seed import seed_taxonomy
 from tests.conftest import load, narrowed, transaction
@@ -28,6 +31,15 @@ def rows_of(conn):
             "FROM commitments ORDER BY kind, series_key, installment_total, amount_cents"
         )
     ]
+
+
+def kinds_of(conn, series_key):
+    return sorted(
+        row[0]
+        for row in conn.execute(
+            "SELECT kind FROM commitments WHERE series_key = ?", (series_key,)
+        )
+    )
 
 
 @pytest.fixture
@@ -119,12 +131,7 @@ def test_a_key_that_is_recurring_and_live_installment_counts_once(taxonomy_conn,
     classify.classify_all(taxonomy_conn)
     taxonomy_conn.commit()
     recompute(taxonomy_conn, today=REFERENCE)
-    kinds = [
-        row[0]
-        for row in taxonomy_conn.execute(
-            "SELECT kind FROM commitments WHERE series_key = ?", ("loja dupla",)
-        )
-    ]
+    kinds = kinds_of(taxonomy_conn, "loja dupla")
     assert kinds == [INSTALLMENT]
     assert RECURRING not in kinds
 
@@ -136,3 +143,30 @@ def test_the_released_cash_lands_on_the_month_the_series_ends(base):
 def test_the_window_moves_with_the_reference_date(base):
     assert installments(base, today=date(2026, 11, 5)) == []
     assert [row["live"] for row in subscriptions(base, today=date(2026, 11, 5))] == [False, False]
+
+
+def test_the_command_carries_the_environment_date_into_the_recompute(
+    taxonomy_conn, seed, tmp_path, monkeypatch
+):
+    rows = monthly(
+        "both", ["2026-06", "2026-07", "2026-08"], -100.00, "Loja dupla",
+        parcela_atual=None, parcela_total=None,
+    )
+    rows[-1]["parcela_atual"] = 2
+    rows[-1]["parcela_total"] = 24
+    load(taxonomy_conn, rows)
+    seed_taxonomy(taxonomy_conn, narrowed(seed, []))
+    classify.classify_all(taxonomy_conn)
+    taxonomy_conn.commit()
+    monkeypatch.setenv("DASH_ENV_FILE", os.devnull)
+    monkeypatch.setenv("DASH_DB_PATH", str(tmp_path / "dash.sqlite"))
+
+    monkeypatch.setenv("DASH_TODAY", "2027-03-01")
+    assert recompute_command() == 0
+    assert installments(taxonomy_conn, today=reference_date()) == []
+    assert kinds_of(taxonomy_conn, "loja dupla") == sorted([INSTALLMENT, RECURRING])
+
+    monkeypatch.setenv("DASH_TODAY", REFERENCE.isoformat())
+    assert recompute_command() == 0
+    assert len(installments(taxonomy_conn, today=reference_date())) == 1
+    assert kinds_of(taxonomy_conn, "loja dupla") == [INSTALLMENT]

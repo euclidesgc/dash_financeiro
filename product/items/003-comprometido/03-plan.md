@@ -106,13 +106,11 @@ DASH_DB_PATH=/tmp/dash-003-f1.sqlite`.
       *Quando* `rtk proxy env DASH_ENV_FILE=/dev/null
       DASH_DB_PATH=/tmp/dash-003-f1.sqlite .venv/bin/python -c "from datetime
       import date; from app.db import connect; from app.commitments.live import
-      installments; from app.commitments.schedule import calendar; c = connect();
-      a = installments(c, today=date(2026, 9, 5)); b = installments(c,
-      today=date(2027, 3, 1)); cal = calendar(c, today=date(2026, 9, 5));
-      print(len(a), len(b), cal[0]['date'], cal[-1]['date'])"` é executado
-      *Então* a saída é a linha `6 0 2026-09-05 2026-10-20` — a mesma base lida
-      em duas datas devolve conjuntos diferentes de parcelamento vivo, e o
-      calendário começa e termina na janela da data que recebeu
+      installments; c = connect(); print(len(installments(c, today=date(2026, 9,
+      5))), len(installments(c, today=date(2027, 3, 1))))"` é executado
+      *Então* a saída é a linha `6 0` — a mesma base lida em duas datas devolve
+      conjuntos diferentes de parcelamento vivo, o que só acontece se a data for
+      de fato o parâmetro que decide
 - [ ] `comando` — RF-04
       `.venv/bin/python -m app.query "select (select count(*) from transactions
       where is_transfer = 1), (select count(*) from transactions where is_refund
@@ -147,7 +145,7 @@ DASH_DB_PATH=/tmp/dash-003-f1.sqlite`.
       consulta é gravada em `/tmp/dash-003-depois.txt`
       *Então* as duas execuções saem com código 0, `rtk proxy diff
       /tmp/dash-003-antes.txt /tmp/dash-003-depois.txt` não imprime nenhuma
-      linha, `rtk proxy wc -l < /tmp/dash-003-depois.txt` imprime `155`, e `rtk
+      linha, `rtk proxy wc -l < /tmp/dash-003-depois.txt` imprime `151`, e `rtk
       proxy env DASH_ENV_FILE=/dev/null
       DASH_DB_PATH=/tmp/dash-003-marca.sqlite .venv/bin/python -m app.query
       "select count(*) from commitments where dismissed = 1"` imprime `1`

@@ -3,6 +3,7 @@ from datetime import date
 
 from app.commitments import series
 from app.commitments.live import live_months
+from app.config import reference_date
 from app.db import connect
 
 _FIELDS = (
@@ -65,12 +66,13 @@ def recurring_after_precedence(
 
 
 def main() -> int:
+    today = reference_date()
     conn = connect()
     try:
-        written = recompute(conn)
+        written = recompute(conn, today=today)
     finally:
         conn.close()
-    print(f"commitments recomputed: {written}", flush=True)
+    print(f"commitments recomputed: {written} reference={today.isoformat()}", flush=True)
     return 0
 
 

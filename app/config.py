@@ -2,6 +2,7 @@ import os
 import secrets
 from collections.abc import Mapping
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -34,10 +35,23 @@ def _first(env: Mapping[str, str], *names: str) -> str | None:
     return None
 
 
+def _environment(env: Mapping[str, str] | None) -> Mapping[str, str]:
+    if env is not None:
+        return env
+    load_dotenv(os.environ.get("DASH_ENV_FILE", DEFAULT_ENV_FILE), override=False)
+    return os.environ
+
+
+def reference_date(env: Mapping[str, str] | None = None) -> date:
+    # Read by the commands that decide what is still alive. Without it the same
+    # command over an unchanged base answers differently tomorrow, and no run can
+    # be replayed or compared against the frozen reference numbers.
+    value = _first(_environment(env), "DASH_TODAY")
+    return date.fromisoformat(value) if value else date.today()
+
+
 def load_config(env: Mapping[str, str] | None = None) -> Config:
-    if env is None:
-        load_dotenv(os.environ.get("DASH_ENV_FILE", DEFAULT_ENV_FILE), override=False)
-        env = os.environ
+    env = _environment(env)
     return Config(
         login=_first(env, "LOGIN"),
         password=_first(env, "PASSWORD", "PASSORD"),
