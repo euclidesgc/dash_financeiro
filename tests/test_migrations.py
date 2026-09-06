@@ -11,6 +11,8 @@ EXPECTED_TABLES = [
     "categories",
     "category_groups",
     "category_rules",
+    "commitment_dismissals",
+    "commitments",
     "crossings",
     "essentialities",
     "login_attempts",
@@ -21,7 +23,12 @@ EXPECTED_TABLES = [
     "users",
 ]
 
-EXPECTED_MIGRATIONS = ["001_schema.sql", "002_session_epoch.sql", "003_taxonomy.sql"]
+EXPECTED_MIGRATIONS = [
+    "001_schema.sql",
+    "002_session_epoch.sql",
+    "003_taxonomy.sql",
+    "004_commitments.sql",
+]
 
 TABLE_NAMES = (
     "select name from sqlite_master "
@@ -49,7 +56,7 @@ def test_second_run_applies_nothing(conn):
     row = conn.execute(
         "select count(*), min(version), max(version) from schema_migrations"
     ).fetchone()
-    assert tuple(row) == (len(EXPECTED_MIGRATIONS), "001", "003")
+    assert tuple(row) == (len(EXPECTED_MIGRATIONS), "001", "004")
 
 
 def test_the_session_epoch_starts_at_zero(conn):

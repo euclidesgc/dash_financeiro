@@ -1,5 +1,6 @@
 import sys
 
+from app.commitments.engine import main as recompute_command
 from app.config import load_config
 from app.db import connect
 from app.ingest.loader import ingest
@@ -39,7 +40,13 @@ def main() -> int:
     status = seed_command()
     if status != 0:
         return status
-    return classify_command()
+    status = classify_command()
+    if status != 0:
+        return status
+    # The recomputation is idempotent, so running it always costs nothing, and a
+    # base loaded without commitments would leave the screen empty between two
+    # commands.
+    return recompute_command()
 
 
 if __name__ == "__main__":
