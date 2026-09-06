@@ -120,7 +120,7 @@
           "por": "autonomo"
         }
       },
-      "current_phase": 2,
+      "current_phase": 3,
       "phases": {
         "1": {
           "status": "aprovada",
@@ -149,6 +149,27 @@
             ".": "8d26c426ce37fa9d99cef7a11f02b72448419743"
           },
           "criteria_sha": "315016ae97e6b7846ad5eccd35f1d9fa11790aef967cf223535be5222fc3507d"
+        },
+        "3": {
+          "status": "escalada_humana",
+          "reproved_count": 2,
+          "verdict": "REPROVADO",
+          "verdict_file": "product/items/002-gastos-tres-eixos/05-veredictos/fase-3-reprovada-2.md",
+          "validated_sha": null,
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-06T05:15:54Z",
+          "validated_trees": {},
+          "escalation": {
+            "at": "2026-09-06T05:15:54Z",
+            "reproved_count": 2,
+            "diagnostico": null,
+            "opcoes": [
+              "criterio: o critério está errado ou mal escrito",
+              "decomposicao: a fase foi mal quebrada",
+              "abordagem: a implementação escolheu o caminho errado"
+            ]
+          }
         }
       },
       "divergences": {},
