@@ -120,8 +120,23 @@
           "por": "autonomo"
         }
       },
-      "current_phase": null,
-      "phases": {},
+      "current_phase": 1,
+      "phases": {
+        "1": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/002-gastos-tres-eixos/05-veredictos/fase-1.md",
+          "validated_sha": "7e9851f76eb38620c0b4fbd0bab705459f2499ee",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-06T03:44:44Z",
+          "validated_trees": {
+            ".": "d48fe33920917a817f1e8ee1ab1a2ceba86f77bc"
+          },
+          "criteria_sha": "1eb1525753b5c05419095797e6ac6d6e7c6e87ee504df0fff45644c8c597b60f"
+        }
+      },
       "divergences": {},
       "criteria_exception": null
     }
