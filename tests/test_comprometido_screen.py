@@ -64,8 +64,11 @@ def _section(html: str, name: str) -> str:
 
 
 def _rows(html: str, name: str) -> list[str]:
-    body = re.search(r"<tbody>(.*?)</tbody>", _section(html, name), re.S)
-    return [] if body is None else re.findall(r"<tr[^>]*>.*?</tr>", body.group(1), re.S)
+    # Every tbody of the section, not the first: a screen that grows a second
+    # table inside the same section would keep passing a check that only ever
+    # looked at one of them.
+    bodies = re.findall(r"<tbody>(.*?)</tbody>", _section(html, name), re.S)
+    return [row for body in bodies for row in re.findall(r"<tr[^>]*>.*?</tr>", body, re.S)]
 
 
 def _ordering(html: str, name: str, attribute: str) -> list[int]:

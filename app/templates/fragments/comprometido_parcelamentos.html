@@ -36,7 +36,8 @@
       </tbody>
     </table>
   </div>
-  <div id="caixa-liberado" class="released">
+</section>
+<section id="caixa-liberado" class="panel panel-wide released">
     <div class="stack-tight">
       <h3 class="section-title">Caixa liberado</h3>
       <p class="lede">Quanto do gasto mensal volta a ficar livre conforme cada parcelamento acaba.
@@ -63,7 +64,8 @@
     </div>
     <p class="headline-small">Quando o último acabar,
       <span class="cifra positive">{{ released_cents|brl }}</span> por mês voltam ao caixa.</p>
-  </div>
+</section>
+  {# a section de parcelamentos ja fechou acima #}
   {% else %}
   <div class="empty">
     <p class="empty-title">Nenhum parcelamento em aberto.</p>
