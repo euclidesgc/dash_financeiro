@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "active_item": "001-base-e-login",
+  "active_item": "002-gastos-tres-eixos",
   "items": {
     "001-base-e-login": {
       "title": "Base e login: schema, ingestão dos 1.942 lançamentos e acesso protegido",
@@ -96,6 +96,33 @@
           "reconciliada_at": "2026-09-06T02:07:59Z"
         }
       },
+      "criteria_exception": null
+    },
+    "002-gastos-tres-eixos": {
+      "title": "Gastos nos três eixos: grupo, natureza e essencialidade, com regras editáveis",
+      "track": "rapida",
+      "stage": "execute",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-06T02:25:52Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-06T03:03:38Z",
+          "sha": "6c03f17d96316289aeb82044a20926a93fd5b517",
+          "file": "product/items/002-gastos-tres-eixos/01-brief.md",
+          "por": "autonomo"
+        },
+        "plan": {
+          "at": "2026-09-06T03:03:38Z",
+          "sha": "2578e54412b0030787fa36e73c79d9e190e478ac",
+          "file": "product/items/002-gastos-tres-eixos/03-plan.md",
+          "por": "autonomo"
+        }
+      },
+      "current_phase": null,
+      "phases": {},
+      "divergences": {},
       "criteria_exception": null
     }
   }
