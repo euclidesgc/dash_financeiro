@@ -5,8 +5,8 @@ from fastapi import FastAPI
 from app.auth.guard import install_guard
 from app.config import resolve_session_secret
 from app.migrate import run_migrations
-from app.routers import auth, health, pages
-from app.routers.render import TEMPLATES
+from app.routers import auth, health, pages, spending
+from app.routers.render import TEMPLATES, brl, day
 
 STYLESHEETS_FOLDER = Path(__file__).resolve().parent / "static" / "css"
 
@@ -23,9 +23,12 @@ def create_app() -> FastAPI:
     # styling before any session exists.
     TEMPLATES.env.globals["tokens_css"] = _stylesheet("tokens.css")
     TEMPLATES.env.globals["app_css"] = _stylesheet("app.css")
+    TEMPLATES.env.filters["brl"] = brl
+    TEMPLATES.env.filters["dia"] = day
     app.state.session_secret = resolve_session_secret()
     install_guard(app)
     app.include_router(auth.router)
     app.include_router(pages.router)
+    app.include_router(spending.router)
     app.include_router(health.router)
     return app

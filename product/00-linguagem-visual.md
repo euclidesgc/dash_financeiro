@@ -76,6 +76,14 @@ e dinheiro entrando — e um acento de marca nessas cores competiria com o dado.
 número, e todo estado que a cor comunica traz também rótulo ou ícone. O painel se
 lê em tela de celular, sob sol, com pressa — e por daltônico.
 
+**E cor semântica é exceção, não regra.** Numa tela de gastos toda cifra é
+negativa; pintar todas de vermelho produz uma parede vermelha onde o vermelho não
+significa mais nada — é o oposto de sinalizar. `--color-negative` e
+`--color-positive` marcam **o número que pede decisão**: o total que resume a
+tela, o saldo que projeta o vermelho, o valor que muda de sinal. A coluna de
+valores de uma tabela usa `--color-ink`, com o sinal `−` fazendo o trabalho de
+dizer que é saída.
+
 ## Tipografia
 
 Sem fonte de CDN. A tela precisa abrir sem rede, e uma requisição externa na
