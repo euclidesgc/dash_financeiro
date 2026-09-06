@@ -24,8 +24,23 @@
           "por": "autonomo"
         }
       },
-      "current_phase": null,
-      "phases": {},
+      "current_phase": 1,
+      "phases": {
+        "1": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/001-base-e-login/05-veredictos/fase-1.md",
+          "validated_sha": "b0557682e358d05bf5f4ce3c1ca5fcf3b6dc64d3",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-06T00:58:03Z",
+          "validated_trees": {
+            ".": "9af4b94a905ba74e44eaf5c4ecd413db83172c9c"
+          },
+          "criteria_sha": "ab4d95f885158fdf332ab9935fe8e2b350a04e906ac62fb29d12b51b0ce84700"
+        }
+      },
       "divergences": {},
       "criteria_exception": null
     }
