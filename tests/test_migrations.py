@@ -1,0 +1,80 @@
+import sqlite3
+
+import pytest
+
+from app.db import connect
+from app.migrate import SQL_FOLDER
+from app.migrations.runner import apply_migrations
+
+EXPECTED_TABLES = [
+    "accounts",
+    "login_attempts",
+    "schema_migrations",
+    "sync_runs",
+    "transactions",
+    "users",
+]
+
+TABLE_NAMES = (
+    "select name from sqlite_master "
+    "where type='table' and name not like 'sqlite_%' order by name"
+)
+
+
+@pytest.fixture()
+def conn(tmp_path):
+    connection = connect(str(tmp_path / "dash.sqlite"))
+    yield connection
+    connection.close()
+
+
+def test_first_run_creates_the_six_tables(conn):
+    assert apply_migrations(conn, SQL_FOLDER) == ["001_schema.sql"]
+    assert [row[0] for row in conn.execute(TABLE_NAMES)] == EXPECTED_TABLES
+
+
+def test_second_run_applies_nothing(conn):
+    apply_migrations(conn, SQL_FOLDER)
+
+    assert apply_migrations(conn, SQL_FOLDER) == []
+
+    row = conn.execute("select count(*), min(version) from schema_migrations").fetchone()
+    assert tuple(row) == (1, "001")
+
+
+def test_money_columns_are_integer(conn):
+    apply_migrations(conn, SQL_FOLDER)
+
+    row = conn.execute(
+        "select (select type from pragma_table_info('transactions') where name='amount_cents'), "
+        "(select type from pragma_table_info('accounts') where name='balance_cents')"
+    ).fetchone()
+
+    assert tuple(row) == ("INTEGER", "INTEGER")
+
+
+def test_pluggy_id_is_unique(conn):
+    apply_migrations(conn, SQL_FOLDER)
+    conn.execute("insert into accounts (id, balance_cents) values ('acc-1', 0)")
+    conn.execute(
+        "insert into transactions (pluggy_id, account_id, date, amount_cents) "
+        "values ('abc-1', 'acc-1', '2026-09-05', -100)"
+    )
+
+    with pytest.raises(
+        sqlite3.IntegrityError, match="UNIQUE constraint failed: transactions.pluggy_id"
+    ):
+        conn.execute(
+            "insert into transactions (pluggy_id, account_id, date, amount_cents) "
+            "values ('abc-1', 'acc-1', '2026-09-05', -200)"
+        )
+
+
+def test_unknown_account_is_refused(conn):
+    apply_migrations(conn, SQL_FOLDER)
+
+    with pytest.raises(sqlite3.IntegrityError, match="FOREIGN KEY constraint failed"):
+        conn.execute(
+            "insert into transactions (pluggy_id, account_id, date, amount_cents) "
+            "values ('abc-2', 'nao-existe', '2026-09-05', -100)"
+        )

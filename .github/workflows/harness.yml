@@ -89,3 +89,22 @@ jobs:
         run: bash scripts/gates/__tests__/medir.test.sh
       - name: a tranca de merge trata verificação pendente como não medida
         run: bash scripts/gates/__tests__/merge-se-liberado.test.sh
+
+  # A suíte nasce no item 001 e nenhum fluxo a executava. O `uv` entra por
+  # script de instalação porque as ações deste fluxo são fixadas em SHA de 40
+  # caracteres, e acrescentar uma ação de terceiro exigiria uma pinagem que este
+  # item não tem como auditar.
+  testes:
+    name: A suíte de testes passa
+    if: github.event.pull_request.draft != true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Instala o uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Instala o ambiente travado
+        run: uv sync --locked
+      - name: pytest
+        run: uv run pytest -q
