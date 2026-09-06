@@ -5,6 +5,8 @@ from app.db import connect
 from app.ingest.loader import ingest
 from app.ingest.source import load_accounts, load_transactions
 from app.migrate import run_migrations
+from app.taxonomy.classify import main as classify_command
+from app.taxonomy.seed import main as seed_command
 
 
 def main() -> int:
@@ -32,7 +34,12 @@ def main() -> int:
         print(f"ingest failed: {result.message}", file=sys.stderr)
         return 1
     print(f"ingested {result.message}", flush=True)
-    return 0
+    # A load that is not classified leaves every reader between two commands
+    # looking at rows without group, nature or essentiality.
+    status = seed_command()
+    if status != 0:
+        return status
+    return classify_command()
 
 
 if __name__ == "__main__":

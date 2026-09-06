@@ -1,7 +1,8 @@
 import sqlite3
 
-# Transfers between the owner's own accounts and refunds are money that never
-# left; counting them would inflate the panel by R$ 20.272,00 (invariant 25).
+# Money moved between the owner's own accounts, and money given back, never
+# left the house: counting it as spending makes the total report an outflow
+# that never happened (invariant 25).
 _TOTAL_SPENDING = (
     "SELECT coalesce(sum(amount_cents), 0) FROM transactions "
     "WHERE amount_cents < 0 AND is_transfer = 0 AND is_refund = 0 AND refunded_by IS NULL"
