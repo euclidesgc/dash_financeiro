@@ -120,7 +120,7 @@
           "por": "humano"
         }
       },
-      "current_phase": 3,
+      "current_phase": 4,
       "phases": {
         "1": {
           "status": "aprovada",
@@ -173,6 +173,20 @@
             ]
           },
           "criteria_sha": "ddd42e01c92688550e76c3d7d280ca77cbed5a1d9b7289f8d31c9b3ad40879d7"
+        },
+        "4": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/002-gastos-tres-eixos/05-veredictos/fase-4.md",
+          "validated_sha": "473d98ea89d8ef25de028cbb412150a12db57cd7",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-06T18:41:10Z",
+          "validated_trees": {
+            ".": "6ca4b5f8fdf8489669c21bc7d5361adc6bdf8ff5"
+          },
+          "criteria_sha": "8a116741adb87d36e61fcfa1343402b316383c292371a8417fe5bb481fc506fd"
         }
       },
       "divergences": {},
