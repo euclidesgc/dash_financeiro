@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Painel financeiro{% endblock %}
+{% block content %}
+<h1>Painel financeiro</h1>
+<p>Sessão aberta como {{ login }}.</p>
+<form method="post" action="/logout">
+  <button type="submit">Sair</button>
+</form>
+{% endblock %}

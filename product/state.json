@@ -24,7 +24,7 @@
           "por": "autonomo"
         }
       },
-      "current_phase": 2,
+      "current_phase": 3,
       "phases": {
         "1": {
           "status": "aprovada",
@@ -53,6 +53,20 @@
             ".": "642ce087b20cd219337992cf36cbbe2852d45f73"
           },
           "criteria_sha": "bfbbfe98705c76e190274857557aa741f4fa9847d140368be679a0b44fc809cc"
+        },
+        "3": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/001-base-e-login/05-veredictos/fase-3.md",
+          "validated_sha": "a709d9b282f0338e4122a98038e189e86c2eea7b",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-06T01:53:46Z",
+          "validated_trees": {
+            ".": "1083e4961d6077e04b441b21095a84700d3751a5"
+          },
+          "criteria_sha": "ee4c6f277ac211c823e54fe3874c4abf6513dfa03b1ff8209c5212c47b84894a"
         }
       },
       "divergences": {},

@@ -28,7 +28,10 @@ def query(db_path, statement):
 
 
 def test_select_prints_one_line_per_row(db_path):
-    result = query(db_path, "select count(*), min(version) from schema_migrations")
+    result = query(
+        db_path,
+        "select count(*), min(version) from schema_migrations where version = '001'",
+    )
 
     assert result.returncode == 0
     assert result.stdout == "1 001\n"

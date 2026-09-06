@@ -1,13 +1,17 @@
 import os
+import secrets
 from collections.abc import Mapping
 from dataclasses import dataclass
+from pathlib import Path
 
 from dotenv import load_dotenv
 
 DEFAULT_DB_PATH = "data/dash.sqlite"
 DEFAULT_ENV_FILE = ".env"
+DEFAULT_KEY_PATH = "data/session.key"
 DEFAULT_TRANSACTIONS_PATH = "data/processed/transacoes.json"
 DEFAULT_ACCOUNTS_GLOB = "data/raw/accounts_*.json"
+SESSION_SECRET_BYTES = 32
 
 
 @dataclass(frozen=True)
@@ -17,6 +21,7 @@ class Config:
     gemini_api_key: str | None
     db_path: str
     session_secret: str | None
+    key_path: str
     transactions_path: str
     accounts_glob: str
 
@@ -39,6 +44,31 @@ def load_config(env: Mapping[str, str] | None = None) -> Config:
         gemini_api_key=_first(env, "GEMINI_API_KEY", "GEMIMI_API_KEY"),
         db_path=_first(env, "DASH_DB_PATH") or DEFAULT_DB_PATH,
         session_secret=_first(env, "SESSION_SECRET"),
+        key_path=_first(env, "DASH_KEY_PATH") or DEFAULT_KEY_PATH,
         transactions_path=_first(env, "DASH_TRANSACTIONS_PATH") or DEFAULT_TRANSACTIONS_PATH,
         accounts_glob=_first(env, "DASH_ACCOUNTS_GLOB") or DEFAULT_ACCOUNTS_GLOB,
     )
+
+
+def resolve_session_secret(config: Config | None = None) -> str:
+    settings = config or load_config()
+    if settings.session_secret:
+        return settings.session_secret
+    path = Path(settings.key_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        handle = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError:
+        stored = path.read_text(encoding="utf-8").strip()
+        # An empty key file signs every cookie with an empty secret, which anyone
+        # can forge: two processes racing, an interrupted write or a restored
+        # backup all reach here, and none of them may boot the app.
+        if not stored:
+            raise RuntimeError(f"empty session key file: {path}") from None
+        return stored
+    secret = secrets.token_hex(SESSION_SECRET_BYTES)
+    with os.fdopen(handle, "w", encoding="utf-8") as file:
+        file.write(secret)
+    # The creation mode passes through the umask, so the mode is stated again.
+    os.chmod(path, 0o600)
+    return secret
