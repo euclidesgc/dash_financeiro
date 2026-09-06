@@ -1,17 +1,53 @@
 Você está em **dash_financeiro — painel financeiro pessoal de um usuário, rodando local. Login, dashboard das movimentações bancárias (sincronizadas da Pluggy todo dia ou sob demanda) e IA que ajuda a alcançar o plano de curto, médio e longo prazo. Stack Python 3.12 + FastAPI + Jinja2 + HTMX + SQLite. O objetivo do produto é sair de um déficit de R$ 4.940,72/mês.**, sessão nova e sem histórico. Este texto é a sua
 única entrada. Leia-o inteiro antes de agir.
 
-## O estado desta corrida — escrito em 05/09/2026, 21h
+## O estado desta corrida — reescrito em 06/09/2026, 02h
 
-O dono aprovou o roadmap e autorizou a corrida. Ele dorme; ninguém responde
-pergunta até de manhã.
+A primeira noite autônoma rodou e **parou por escalada**, como manda a regra. O
+que existe agora:
 
-**A corrida começa do zero de processo**: `product/state.json` tem
-`active_item: null` e `product/items/` ainda não existe. A primeira ação é abrir
-o `001-base-e-login`. Não há fase pela metade para retomar.
+| | |
+|---|---|
+| `001-base-e-login` | **concluído**. Quatro fases aprovadas por validador cego, integradas em `develop`. |
+| `002-gastos-tres-eixos` | **em execução**, fases 1 e 2 aprovadas e integradas; **fase 3 escalada** depois de duas reprovações seguidas. |
+| `003` a `009` | não iniciados. |
+| `010-lint-e-formatador-python` | dívida técnica nova no roadmap: não há portão de lint para Python, e três validadores registraram a ausência. |
 
-**O que já está no disco e não se reconstrói.** `data/` é real, grande e **fora
-do controle de versão** — e assim continua:
+**A primeira coisa que esta sessão faz é decidir a escalada da fase 3.** O motor
+recusa avançar enquanto ela estiver aberta, e está certo: duas reprovações no
+mesmo lugar significam que algo a montante está errado. O diagnóstico completo,
+com a evidência de cada uma, está em
+`product/items/002-gastos-tres-eixos/decisoes-autonomas.md`, seção **"Escalada"**.
+Em resumo, são duas coisas independentes:
+
+1. **Defeito real, causa raiz isolada:** o `<canvas>` do gráfico segura a
+   largura do container de grid e nunca encolhe, então a tela ganha rolagem
+   horizontal quando a **janela é redimensionada** para 375 ou 768 px (carregar
+   já estreito passa). O validador confirmou o mecanismo injetando estilo no
+   navegador: `.panels, .panel, .chart { min-width: 0 }` mais
+   `.chart-canvas { max-width: 100% }` → `375 vs 375 | canvas=325`. É correção
+   de três linhas de CSS mais o teste que a trava.
+2. **Critério errado:** o `RF-33` exige que os totais dos **dois** cruzamentos
+   mudem ao trocar o período, e o `RF-48` exige um banco em que um deles vale
+   `R$ 0,00` em todo período. Nenhuma implementação passa. Reescrever a cláusula
+   (o total do cruzamento **atribuído** muda, e a soma das candidatas do
+   cruzamento vazio também — medido: `−R$ 29.279,70` → `−R$ 23.928,48`) exige
+   `exception-open` no plano, `plan-writer`, e reaprovação.
+
+Feito isso, revalide a fase 3 com um **validador novo**, integre, e siga:
+fase 4 do `002` (tela de Regras), depois `003`, `004`, `005`, `007`, `008`, e
+por último `006` e `009`, que dependem de terceiro.
+
+**O que a fase 4 do `002` precisa saber antes de começar:** um validador mediu
+que regra de expressão é compilada **sem** `re.IGNORECASE` e casada contra a
+descrição normalizada — minúscula, sem acento e **sem dígito**. Uma regra
+gravada como `Uber`, `99app` ou `saúde` é aceita e casa zero lançamentos, em
+silêncio. A tela de Regras é o lugar de resolver isso: ela já recebe de
+`create_rule` quantos lançamentos a regra alcançou, e precisa dizer isso na hora.
+
+## O que já está no disco e não se reconstrói
+
+`data/` é real, grande e **fora do controle de versão** — e assim continua:
 
 | Caminho | O que é |
 |---|---|
@@ -20,68 +56,32 @@ do controle de versão** — e assim continua:
 | `data/manual/` | contratos de financiamento |
 | `data/relatorio_origem.md` | o relatório que originou os números congelados |
 
+E agora existe código do produto, com 222 testes verdes:
+
+- `app/config.py`, `app/db.py`, `app/migrate.py`, `app/query.py` — base, com três
+  migrações aplicadas.
+- `app/ingest/**` — a carga: `python -m app.ingest` lê a fonte, grava em centavos
+  inteiros com o sinal normalizado e **já roda o seed da taxonomia e a
+  classificação no mesmo processo**.
+- `app/auth/**` — Argon2id, cookie assinado de 12 h, guarda em **toda** rota
+  registrada, rate-limit de 5 tentativas / 15 min persistido, logout que
+  sobrevive ao reinício.
+- `app/taxonomy/**` — os dez grupos, as três naturezas, as três essencialidades,
+  os dois cruzamentos e 80 regras, tudo semeado de `app/taxonomy/seed.json`.
+- `app/queries/**` — agregação pelos cinco eixos, cruzamentos, série de treze
+  meses, drill-down, e a constante única do filtro de gasto.
+- `app/templates/**`, `app/static/css/**` — a tela de login e a de Gastos.
+
 **Código Python já exercitado contra a API real da Pluggy** — reaproveite, não
 reescreva: `ingestao/pluggy_extract.py`, `ingestao/pluggy_consolidate.py`,
-`financas/financiamento_sac.py`, `financas/cdc_veiculo.py`. São 860 linhas que já
-rodaram; refazê-las é gastar a noite reconstruindo o que funciona.
-
-**A ordem da noite, e o porquê dela.** `001` → `002` → `003` → `004` é um bloco
-autossuficiente: lê o que já está no disco e **não depende de credencial de
-terceiro nenhuma**. Ele termina na tela que impede de entrar no cheque especial a
-3,52% a.m., que é onde este produto ganha o real marginal. Só então `005`, `007`
-e `008`. `006` e `009` ficam por último porque dependem de terceiro.
-
-**Trilha por item, decidida pelo dono:** rápida (brief → plano com critérios
-tipados → validador cego → entrega) em `001`–`005`, `007` e `008`; **completa**,
-com spec escrita, em `006` e `009`. A régua não é tamanho, é modo de falha: item
-interno erra alto e a prova é local e barata; sync e IA erram **em silêncio** —
-dado velho com cara de fresco, número citado errado —, e é ali que a spec paga o
-próprio custo.
-
-**Nada trava por falta de credencial.** `006` se constrói contra fixture gravada
-e `009` contra resposta gravada do Gemini; a chamada real vira linha em
-"Validações de campo pendentes" do roadmap. Parar a corrida para esperar um
-humano acordar é exatamente o desperdício que o modo autônomo existe para evitar.
-
-**As três pendências humanas não bloqueiam** — saldo de quitação do CDC do
-Duster, custo de transporte sem o carro, taxa dos cartões. Até o `008` o motor usa
-**premissa declarada na tela**; a partir do `008` elas viram mecanismo do produto.
-
-**Os números de referência estão congelados em `docs/plano.md`, medidos em
-05/09/2026.** Nenhum critério compara contra relatório regenerável: em um mês ele
-passaria por construção, medindo nada.
-
-**`product/00-linguagem-visual.md` ainda não existe.** Quem o escreve é o `001`,
-antes da primeira tela — e a partir daí ele é canônico, como manda a seção sobre
-interface mais abaixo.
-
-## Credencial inicial, e duas armadilhas medidas nesta máquina
-
-O `.env` (modo 600, gitignorado) traz o login que semeia o usuário do painel:
-`LOGIN` e **`PASSORD`** — o typo é do dono, preservado de propósito, assim como
-**`GEMIMI_API_KEY`**. **Aceite as duas grafias de cada um**
-(`PASSORD`/`PASSWORD`, `GEMIMI_API_KEY`/`GEMINI_API_KEY`) em vez de exigir que o
-arquivo seja corrigido.
-
-O seed do `001` lê do ambiente, grava **hash Argon2** e é idempotente. A senha
-nunca vai para o banco em claro, nem para log, nem para HTML.
-
-**Armadilha 1 — o hook de permissão nega qualquer comando que leia `.env`.**
-Medido: `grep -oE '^[A-Z_]+=' .env` foi **negado**. Não contorne e não insista. O
-código que você escreve lê por `os.environ`; o `.env.example` documenta os nomes.
-Critério que precise provar que a variável existe prova **pelo comportamento** —
-o app sobe, o login funciona —, nunca lendo o arquivo.
-
-**Armadilha 2 — `rtk` reescreve a saída de comando por hook global.** Quando a
-evidência de um critério precisar da saída bruta e íntegra, use
-`rtk proxy <comando>`.
+`financas/financiamento_sac.py`, `financas/cdc_veiculo.py`.
 
 ## Fonte de verdade, nesta ordem
 
-`product/roadmap.md` (a fila, ordenada por dependência), `CLAUDE.md` (a
-norma), `product/00-linguagem-visual.md` quando o item mexe em interface — ver a
-seção sobre isso — e os documentos aprovados do item ativo em
-`product/items/<id>/`.
+`product/roadmap.md` (a fila, ordenada por dependência), `CLAUDE.md` (a norma),
+**`product/00-linguagem-visual.md`** — que agora existe e é canônico: toda tela
+sai dele, e nenhuma escolhe cor, tipografia, espaçamento, raio ou movimento fora
+dele — e os documentos aprovados do item ativo em `product/items/<id>/`.
 
 ## O processo
 
@@ -92,97 +92,108 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/state/state.py" read
 node scripts/loop/decide-next-action.mjs
 ```
 
-O motor preparou o canal que leva `CLAUDE_PLUGIN_ROOT` ao shell. Se ainda assim
-o caminho vier vazio — sessão aberta à mão, sem o motor —, ele está em
-`.harness/runtime/plugin-root.json`; leia de lá e use o caminho absoluto, em vez
-de procurar o script.
+Se `CLAUDE_PLUGIN_ROOT` vier vazio, ele está em
+`.harness/runtime/plugin-root.json`. A segunda linha diz o que **esta** sessão
+faz, e é a única coisa que ela faz. Conduza pelo `/harness:start`, carregando a
+skill `harness-orchestrator`. Não pule estágio.
 
-A segunda linha diz o que **esta** sessão faz — um estágio, uma fase, um
-reparo de critério, o fechamento de um item, ou a abertura do próximo — e é a
-única coisa que ela faz. Conduza pelo `/harness:start`, carregando a skill
-`harness-orchestrator`. Não pule estágio; `state.py` recusa salto e a recusa é
-o portão funcionando.
+## Credencial, e três armadilhas medidas nesta máquina
+
+O `.env` (modo 600, gitignorado) traz `LOGIN` e **`PASSORD`** — o typo é do
+dono, preservado de propósito, assim como **`GEMIMI_API_KEY`**. O código já
+aceita as duas grafias de cada um.
+
+**Armadilha 1 — o hook de permissão nega qualquer comando que leia `.env`.** Não
+contorne. Todo comando que carrega configuração precisa de `DASH_ENV_FILE=/dev/null`
+mais as variáveis declaradas na própria linha; sem isso o processo tenta ler o
+`.env` do dono e o comando é negado. Bancos e chaves sempre em `/tmp`
+(`DASH_DB_PATH=/tmp/…`, `DASH_KEY_PATH=/tmp/…`), nunca contra `data/`.
+
+**Armadilha 2 — `rtk` reescreve a saída de comando por hook global.** Quando a
+evidência de um critério precisar da saída bruta, use `rtk proxy <comando>`. No
+zsh, `grep --include=*.html` precisa das aspas: `"--include=*.html"`.
+
+**Armadilha 3 — o rate-limit do login fecha a porta durante a validação.** Cinco
+senhas erradas do mesmo IP em quinze minutos e a sexta responde 429, mesmo com a
+senha certa. Faça **um** login e reuse o cookie. Para reabrir:
+`.venv/bin/python -c "import sqlite3; c=sqlite3.connect('<banco>'); c.execute('delete from login_attempts'); c.commit()"`.
+
+**Não há MCP de navegador para os agents.** Há um Chromium em
+`~/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome` e um Playwright no
+cache do npx; dois validadores já os usaram para medir viewport, foco, tema
+escuro e movimento reduzido. A thread principal tem o MCP do Playwright.
 
 ## Autonomia — não há humano acordado
 
-O dono autorizou esta corrida. **Não pergunte nada a ninguém.** Onde o fluxo
-pediria decisão ou aprovação humana:
+O dono autorizou esta corrida. **Não pergunte nada a ninguém.**
 
 1. **Decida** você, com os documentos aprovados e o `CLAUDE.md` como régua.
-   Prefira sempre a convenção mais comum e mais reversível.
+   Prefira a convenção mais comum e mais reversível.
 2. **Aprove** com `state.py approve --stage <e> --file <caminho> --por autonomo`.
-   Sempre com `--file` — sem ele a aprovação não amarra a um conteúdo — e
-   sempre com `--por autonomo`: é o que separa, de manhã, o que gente decidiu
-   do que a máquina decidiu sozinha.
-3. **Registre** em `product/items/<id>/decisoes-autonomas.md`, a partir de
-   `$HARNESS_PLUGIN_ROOT/skills/autonomous-run/templates/decisoes-autonomas.md`:
-   uma linha por decisão, com a alternativa descartada e o porquê, e uma linha
-   por aprovação autônoma. É o que o dono lê de manhã. Atualize a cada decisão,
+3. **Registre** em `product/items/<id>/decisoes-autonomas.md`, a cada decisão,
    não no fim.
 4. **Divergência `normal`**: ratifique na opção recomendada com
-   `diverge-set --status APROVADA --por autonomo`, reconcilie e siga. O PR
-   nasce e permanece `blocked-on-D-nnn` até um humano ratificar — é assim que
-   deve ser. **Divergência `contrato`**: registre e **pare**; a decisão é do
-   dono, porque a premissa errada se espalha para quem consome o contrato.
-5. **Duas reprovações seguidas** escalam sozinhas. Não tente a terceira:
-   escreva os três diagnósticos possíveis em `decisoes-autonomas.md` e pare.
+   `diverge-set --status APROVADA --por autonomo`, reconcilie e siga; o trabalho
+   nasce e permanece `blocked-on-D-nnn` até um humano ratificar. **Divergência
+   `contrato`**: registre e **pare**.
+   *Uma lição da primeira noite:* divergência é para quando existem **opções com
+   impactos diferentes**. Erro material com uma única correção possível — um
+   documento que se contradiz sozinho, uma lista que omite o que outro requisito
+   manda incluir — é reconciliação direta, registrada em `decisoes-autonomas.md`.
+   Abrir divergência para isso promove o item para a trilha completa e não
+   entrega decisão nenhuma ao dono.
+5. **Duas reprovações seguidas escalam sozinhas.** Não tente a terceira: escreva
+   os três diagnósticos possíveis em `decisoes-autonomas.md` e pare. Foi o que
+   aconteceu com a fase 3 do `002`, e a regra funcionou.
 
 ## Quando o item mexe em interface
 
-Uma sessão nasce limpa e não viu o que a anterior desenhou. Sem uma fonte
-escrita, a segunda tela escolhe outra paleta que a terceira contradiz, e de
-manhã existem três produtos dentro do mesmo repositório. Por isso:
+**`product/00-linguagem-visual.md` é canônico.** Toda sessão que escreve
+interface o lê antes de abrir editor. Mudar o que está lá é reconciliação de
+documento canônico — no presente, sem cicatriz.
 
-**`product/00-linguagem-visual.md` é canônico, como o PRD de produto.** Toda
-sessão que escreve interface o lê antes de abrir editor, e nenhuma escolhe cor,
-tipografia, espaçamento, raio ou movimento fora dele. Ele nasce no item que
-monta o sistema de design; a partir daí, mudar o que está lá é reconciliação de
-documento canônico — no presente, sem cicatriz — e não uma segunda opinião ao
-lado.
+O conceito, para não ser redecidido: **um instrumento de leitura, não um app de
+banco**. A unidade do produto é tempo — dias até o objetivo —, e a forma é a de
+um instrumento graduado. A cifra é a protagonista, e por isso a face
+monoespaçada é a principal. A escala graduada é o único ornamento, e aparece só
+onde existe distância a percorrer. O painel sustenta por baixo: sem confete, sem
+streak, e sem alarme decorativo.
 
-**Antes de decidir direção visual, carregue a skill `frontend-design`.** Ela
-existe para o problema que é exatamente o desta corrida: escolha de madrugada,
-sem ninguém para reagir, tende ao gabarito. Três looks denunciam design gerado
-por máquina, e a skill os nomeia — creme com serifa de alto contraste e acento
-terracota; quase-preto com um acento verde-ácido; jornal com fios de cabelo e
-raio zero. Se a paleta chegou num deles, ela não foi escolhida.
+**Antes de decidir direção visual, carregue a skill `frontend-design`.**
 
 **A régua, que não se negocia:**
 
 | O quê | Como se prova |
 |---|---|
-| Contraste AA nos dois temas | varredura de acessibilidade sem violação crítica nem séria |
+| Contraste AA nos dois temas | a tabela de pares do documento canônico, medida por `tests/test_contrast.py` |
 | Foco visível em tudo que recebe foco | percorrer a tela inteira só com `Tab` |
-| Responsivo do telefone ao monitor largo | 375, 768 e 1440 sem rolagem horizontal do corpo |
+| Responsivo do telefone ao monitor largo | 375, 768 e 1440 sem rolagem horizontal do corpo — **carregando na largura e também redimensionando a janela**, que são medidas diferentes e uma passa enquanto a outra falha |
 | `prefers-reduced-motion` respeitado | a animação some, o estado final permanece |
 | Nenhum valor mágico | a cor e o espaço vêm do token, e o portão mede |
 | Estado vazio e de erro acionáveis | dizem o que aconteceu e qual é o próximo ato |
 
-**Você não dá interface por pronta sem ter olhado para ela.** Critério
-`comportamental` de tela roda no navegador de verdade: suba o app, navegue,
-**tire a captura**, e olhe. Uma tela que passa no teste e está feia passou no
-teste errado — a captura é o que separa "os elementos existem" de "a página
-está boa". Guarde em `product/items/<id>/06-capturas/`, nomeadas pelo estado que
-mostram: são a evidência do critério e o que o dono vê de manhã sem subir nada.
+**Você não dá interface por pronta sem ter olhado para ela.** Suba o app,
+navegue, **tire a captura**, e olhe. Uma tela que passa no teste e está feia
+passou no teste errado. Guarde em `product/items/<id>/06-capturas/`, nomeadas
+**exatamente como o critério as nomeia** — três capturas com nome diferente do
+exigido reprovaram uma fase nesta corrida.
 
 ## Entrega — este repositório NÃO tem remote
 
-Medido em 05/09/2026: `git remote -v` sai vazio, e existem apenas `main` e
-`develop`. **Enquanto for assim, isto substitui a seção seguinte:**
+Medido em 06/09/2026: `git remote -v` sai vazio, e existem `main` e `develop`.
+**Enquanto for assim, isto substitui a seção seguinte:**
 
-- Uma fase continua sendo a unidade de entrega, mas **não vira PR**. Trabalhe em
-  `fase/<item>-<n>` e integre em `develop` com `git merge --no-ff` **depois** do
-  veredicto APROVADO do validador cego e do `bash scripts/gates/gates_runner.sh`
-  verde.
-- **O corpo do PR não deixa de existir — ele vira arquivo.** Escreva-o em
-  `product/items/<id>/05-entregas/fase-<n>.md`, com as mesmas seções da skill
-  `pr-authoring` e a evidência de cada critério. É o que o dono lê de manhã, e sem
-  ele a fase não fecha.
+- Uma fase é a unidade de entrega, mas **não vira PR**. Trabalhe em
+  `<nnn-slug>/fase-<n>-<slug>` e integre em `develop` com `git merge --no-ff`
+  **depois** do veredicto APROVADO do validador cego e do
+  `bash scripts/gates/gates_runner.sh` verde. Fase reprovada **não** se integra.
+- **O corpo do PR vira arquivo**, em `product/items/<id>/05-entregas/fase-<n>.md`,
+  com as sete seções da skill `pr-authoring` e a evidência de cada critério. É o
+  que o dono lê de manhã.
 - `scripts/merge-se-liberado.sh`, `gh stack` e o fluxo `harness.yml` **não medem
-  nada sem remote** — não os chame e não conte com eles. O portão desta corrida é
-  o validador cego mais o `gates_runner.sh` local.
-- **Nunca `main`.** A integração é `develop`; subir para produção segue sendo
-  decisão do dono.
+  nada sem remote** — não os chame. O portão desta corrida é o validador cego
+  mais o `gates_runner.sh` local.
+- **Nunca `main`.** A integração é `develop`.
 
 Se um remote passar a existir, a seção abaixo volta a valer inteira.
 
@@ -195,30 +206,18 @@ vira item de roadmap **antes** de a fase fechar.
 A posição é informação, e ela ordena **dentro do bloco a que o item pertence**.
 Pendência de processo — portão, fluxo de CI, veredicto, varredura — vai para o
 bloco de dívida técnica, ordenada ali; ela não é dependência de item de produto
-nenhum. Promovê-la ao topo é a régua local certa e o agregado errado: numa noite,
-seis pendências de CI nascidas de fases diferentes, cada uma inserida
-corretamente por uma sessão que não via as outras, reconstituíram a fila de
-infraestrutura inteira na frente do produto priorizado. Ninguém errou uma vez —
-o erro foi acertar seis vezes.
+nenhum.
 
 **Merge: só pelo `scripts/merge-se-liberado.sh`, e só o PR do fundo da pilha.**
-Nunca por `gh pr merge`, nunca pelo botão. O script é a tranca — mede rótulo de
-bloqueio, verificação vermelha, verificação **pendente** e a situação de cada PR
-abaixo, com teto de tempo em toda chamada de rede, e recusa o que não conseguiu
-medir.
-
-Ele mergeia na branch de **integração**, nunca na de produção. É o que torna o
-merge autônomo aceitável: o que entra ali passou pelo validador cego, pelos
-portões e pelo CI, e ainda espera a decisão do dono para subir. E uma pilha que
-só cresce vira, de manhã, trinta PRs que ninguém revisa, cada um partindo de uma
-base mais distante do que já foi aprovado — que é a forma de a corrida terminar
-sem nada aproveitável.
+Nunca por `gh pr merge`, nunca pelo botão. Ele mergeia na branch de
+**integração**, nunca na de produção.
 
 O que **não** se faz, em nenhuma hipótese: tirar rótulo de bloqueio para
 destravar, mergear PR do meio da pilha, e mergear na branch de produção.
 
 ## Antes de encerrar
 
-Rode `state.py check` e a skill `session-retrospective`: a proposta em
-`.harness/proposals/` é o que o harness aprende com esta noite. Deixe a árvore
-limpa e commitada; o motor trata árvore suja como rodada que morreu.
+Rode `state.py check` e a skill `session-retrospective`. As três propostas da
+primeira noite estão em `.harness/proposals/` — leia antes de escrever a quarta,
+para não repetir o que já está proposto. Deixe a árvore limpa e commitada; o
+motor trata árvore suja como rodada que morreu.

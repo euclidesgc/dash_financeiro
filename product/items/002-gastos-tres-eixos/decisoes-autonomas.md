@@ -34,10 +34,67 @@ Cada linha aqui é um `state.py approve --por autonomo` ou um
 | plan | `03-plan.md` | Quatro fases — taxonomia e motor · agregação pelos cinco eixos · tela de Gastos · tela de Regras —, 55 critérios tipados, `criteria-lint` sem aviso e os oito achados do `criteria-auditor` corrigidos antes da aprovação | 2026-09-06 |
 | brief | `01-brief.md` | 47 requisitos `RF-01`–`RF-47`: taxonomia em tabela, motor de classificação, agregação pelos cinco eixos, cruzamentos e evolução, tela de Gastos, tela de Regras e a régua de interface | 2026-09-06 |
 
+## Escalada: a fase 3 reprovou duas vezes seguidas, e a corrida parou
+
+Dois validadores cegos independentes, cada um subindo o próprio Chromium,
+reprovaram a fase 3. A regra do harness — e o prompt desta corrida — mandam
+parar na segunda e não tentar a terceira: duas reprovações no mesmo lugar não
+são falta de esforço, são sinal de que algo a montante está errado. **O trabalho
+da fase 3 está commitado na branch `002-gastos-tres-eixos/fase-3-tela-gastos` e
+não foi integrado em `develop`.**
+
+O que cada rodada reprovou:
+
+| Rodada | Critério | O que falhou |
+|---|---|---|
+| 1ª | `RF-32` | Trocar o eixo levava a rolagem de `scrollY=400` para `2833` — a página saltava 2433 px na cara de quem trocou. **Corrigido** entre as rodadas, e a 2ª rodada confirmou: `400` antes e depois. |
+| 1ª | `RF-45` estrutural | Três das seis capturas tinham nome diferente do exigido. **Corrigido**; a 2ª rodada confirmou as seis. |
+| 2ª | `RF-45` comportamental | Rolagem horizontal em 375 px e 768 px **quando a janela é redimensionada**. Carregar a página já estreita passa; estreitar uma janela larga não. |
+| 2ª | `RF-33` | Exige que "os totais dos **dois** cruzamentos mudem de valor" ao trocar o período — impossível enquanto `RF-48` exigir um banco sem nenhuma regra `supérfluo`, porque aí um dos totais é `R$ 0,00` em todo período. |
+
+### Os três diagnósticos, com a evidência de cada um
+
+**1. Critério errado — vale para `RF-33`, com certeza alta.**
+Os dois validadores chegaram nele por caminhos independentes e o descreveram do
+mesmo jeito: a cláusula dos cruzamentos é insatisfazível **por construção** sob o
+fixture que `RF-48` exige. Confirmado no banco: `select essentiality, count(*)
+from category_rules` devolve `[('essencial', 20), ('importante', 60)]`. Nenhuma
+implementação passa. Destino: `plan-writer`, sob `exception-open`, reescrevendo a
+cláusula para exigir mudança no total do cruzamento **atribuído** e na soma das
+candidatas do cruzamento vazio — que é o que de fato muda, e foi medido mudando
+(`−R$ 29.279,70` → `−R$ 23.928,48`).
+
+**2. Abordagem errada — vale para `RF-45`, com certeza alta e causa raiz isolada.**
+O canvas do Chart.js nunca encolhe quando a janela estreita: seis segundos
+depois de ir de 1440 para 375 px ele continua com 1022 px, e o corpo herda 1064
+px de rolagem. Sem JavaScript — logo sem gráfico — o mesmo redimensionamento
+fecha limpo. `.chart` só declara `height`, e `.panels`/`.panel` são itens de grid
+com `min-width: auto`: a largura intrínseca do canvas vira piso, o Chart.js só
+reduz o canvas quando o container reduz, e o container não reduz porque o canvas
+o segura. O validador confirmou o mecanismo injetando estilo no navegador, sem
+tocar no repositório: `.panels, .panel, .chart { min-width: 0 }` mais
+`.chart-canvas { max-width: 100% }` → `375 vs 375 | canvas=325`. Destino:
+implementer, com essa direção; é uma correção de três linhas de CSS mais o teste
+que a trava.
+
+**3. Decomposição errada — improvável, mas registrado porque é o terceiro
+caminho.** A fase junta a tela e um gráfico que vem de CDN, e foi o gráfico que
+trouxe o defeito de layout. Separar "tela" de "gráfico" em duas fases teria
+isolado isso mais cedo. Não recomendo replanejar: o defeito é local, a causa está
+identificada, e quebrar a fase agora custa mais do que corrigir.
+
+### A recomendação
+
+Fazer as duas correções — a de `RF-33` no plano e a de `RF-45` no CSS — e
+revalidar com um validador novo. **Não fiz nenhuma das duas**: a regra manda
+parar na segunda reprovação, e ter o diagnóstico na mão é exatamente a situação
+em que insistir parece razoável. Quem decide seguir é o dono.
+
 ## O que ficou para o humano
 
 O que a corrida **não** decidiu de propósito.
 
+- **Decidir a escalada da fase 3** (acima): as duas correções recomendadas, ou outro caminho.
 - **Revisar a classificação inicial das 77 categorias** na tela de regras. O seed
   é conservador de propósito e quase certamente marca como `importante` coisas
   que o dono considera supérfluas — que é exatamente onde mora a lista de corte.
