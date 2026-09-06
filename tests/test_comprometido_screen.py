@@ -56,6 +56,14 @@ DISCLAIMER = (
     '"Não uso mais" registra a decisão neste painel e não cancela nada no fornecedor.'
 )
 FORECAST = "a média observada das cobranças, não o valor contratado"
+PREDICTION = (
+    "A data de cada vencimento é previsão a partir do histórico, não data contratual."
+)
+WINDOW_START = "05/09/2026"
+WINDOW_END = "20/10/2026"
+STALE_SERIES = 1
+STOPPED_KEY = "assinatura parada"
+EMPTY_CALENDAR = "Nenhum vencimento previsto até"
 
 
 def _section(html: str, name: str) -> str:
@@ -244,6 +252,41 @@ def test_an_instalment_refuses_the_mark_and_the_total_stays_to_the_cent(client):
     assert REFUSAL_MESSAGE in refused.text
     assert _totals(refused.text) == before
     assert _count("SELECT count(*) FROM commitment_dismissals") == 0
+
+
+def test_the_calendar_names_its_window_and_calls_the_date_a_forecast(client):
+    block = _section(_screen(client).text, "calendario")
+
+    assert WINDOW_START in block
+    assert WINDOW_END in block
+    assert PREDICTION in block
+
+
+def test_every_day_of_the_calendar_totals_the_entries_it_lists(client):
+    block = _section(_screen(client).text, "calendario")
+    days = re.findall(r'data-dia="([^"]+)" data-total="(-?\d+)">(.*?)</ul>', block, re.S)
+
+    assert days
+    assert [when for when, _, _ in days] == sorted({when for when, _, _ in days})
+    for when, total, inner in days:
+        cents = re.findall(r'data-centavos="(-?\d+)"', inner)
+        assert int(total) == sum(int(value) for value in cents)
+        assert WINDOW_START.split("/")[::-1] <= when.split("-")
+
+
+def test_the_calendar_counts_the_series_it_left_out_and_lists_none_of_them(client):
+    block = _section(_screen(client).text, "calendario")
+
+    assert f"{STALE_SERIES} sem cobrança recente" in block
+    assert STOPPED_KEY not in re.findall(r'data-serie="([^"]+)"', block)
+
+
+def test_an_empty_calendar_says_what_happened_and_where_to_go_next(empty_client):
+    block = _section(empty_client.get(SCREEN, params={"data": ASKED}).text, "calendario")
+
+    assert 'data-dia="' not in block
+    assert EMPTY_CALENDAR in block
+    assert '<a href="/gastos">' in block
 
 
 def test_a_date_the_screen_cannot_read_falls_back_instead_of_breaking(client):

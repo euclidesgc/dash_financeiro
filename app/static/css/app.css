@@ -461,6 +461,72 @@ a.button {
   font-weight: 600;
 }
 
+/* The window is a distance to walk, so it carries the graduated scale of the
+   instrument; the days below it are the marks on that ruler. */
+.calendar {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-4);
+}
+
+.calendar-day {
+  display: grid;
+  grid-template-columns: minmax(0, calc(var(--measure) / 3)) minmax(0, 1fr);
+  gap: var(--space-2) var(--space-6);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-rule);
+}
+
+.calendar-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  align-content: start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.calendar-date {
+  margin: 0;
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-base);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.calendar-sum {
+  margin: 0;
+  font-size: var(--text-base);
+}
+
+.calendar-entries {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+}
+
+.calendar-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  column-gap: var(--space-4);
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--color-rule);
+  font-size: var(--text-sm);
+}
+
+.calendar-entries li:last-child {
+  border-bottom: 0;
+}
+
+.calendar-name {
+  overflow-wrap: anywhere;
+}
+
 .detail {
   display: grid;
 }
@@ -475,6 +541,15 @@ a.button {
 
 .detail-open .table-scroll {
   justify-self: stretch;
+}
+
+/* A day and its entries side by side need two readable columns, and below the
+   tablet width there is only room for one: stacked, the date keeps its own line
+   and the body never inherits the sideways scroll. */
+@media (max-width: 48rem) {
+  .calendar-day {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 34rem) {
