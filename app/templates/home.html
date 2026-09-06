@@ -1,9 +1,14 @@
 {% extends "base.html" %}
 {% block title %}Painel financeiro{% endblock %}
 {% block content %}
-<h1>Painel financeiro</h1>
-<p>Sessão aberta como {{ login }}.</p>
-<form method="post" action="/logout">
-  <button type="submit">Sair</button>
-</form>
+<main class="screen">
+  <div class="panel">
+    <div class="scale" aria-hidden="true"></div>
+    <h1 class="screen-title">Painel financeiro</h1>
+    <p class="lede">Sessão aberta como {{ login }}.</p>
+    <form method="post" action="/logout">
+      <button class="button button-quiet" type="submit">Sair</button>
+    </form>
+  </div>
+</main>
 {% endblock %}
