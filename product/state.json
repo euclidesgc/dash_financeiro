@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "active_item": "002-gastos-tres-eixos",
+  "active_item": "003-comprometido",
   "items": {
     "001-base-e-login": {
       "title": "Base e login: schema, ingestão dos 1.942 lançamentos e acesso protegido",
@@ -187,6 +187,43 @@
             ".": "6ca4b5f8fdf8489669c21bc7d5361adc6bdf8ff5"
           },
           "criteria_sha": "8a116741adb87d36e61fcfa1343402b316383c292371a8417fe5bb481fc506fd"
+        }
+      },
+      "divergences": {},
+      "criteria_exception": null
+    },
+    "003-comprometido": {
+      "title": "Comprometido: assinaturas, parcelamentos e o calendário de vencimentos",
+      "track": "rapida",
+      "stage": "execute",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-06T19:04:50Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-06T19:32:27Z",
+          "sha": "573e13e5cd126930905e5cb2ca6595c4f994391f",
+          "file": "product/items/003-comprometido/01-brief.md",
+          "por": "autonomo"
+        },
+        "plan": {
+          "at": "2026-09-06T19:32:27Z",
+          "sha": "5506ea06a2a57ac6ffc28778cdae9e572debbda5",
+          "file": "product/items/003-comprometido/03-plan.md",
+          "por": "autonomo"
+        }
+      },
+      "current_phase": 1,
+      "phases": {
+        "1": {
+          "status": "em_execucao",
+          "reproved_count": 0,
+          "verdict": null,
+          "verdict_file": null,
+          "validated_sha": null,
+          "pr": null,
+          "blocked_on": []
         }
       },
       "divergences": {},
