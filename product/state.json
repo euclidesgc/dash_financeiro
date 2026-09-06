@@ -255,13 +255,18 @@
           "criteria_sha": "d4fd0b681fc8c4beb4b3c5cda90b7c332db226c65b7fa78789e88f60a427acad"
         },
         "3": {
-          "status": "em_execucao",
+          "status": "aprovada",
           "reproved_count": 0,
-          "verdict": null,
-          "verdict_file": null,
-          "validated_sha": null,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/003-comprometido/05-veredictos/fase-3.md",
+          "validated_sha": "6ce605686c8c38cb07e96187092972d0ea02a549",
           "pr": null,
-          "blocked_on": []
+          "blocked_on": [],
+          "verdict_at": "2026-09-06T23:54:59Z",
+          "validated_trees": {
+            ".": "d2c026a4dd63c15ff9a48de04756e6fe4626b939"
+          },
+          "criteria_sha": "a3e27c7f0ff5054184582a5e79e428cf8acf505361b5f7c9f7d669e879b18e7d"
         }
       },
       "divergences": {},
