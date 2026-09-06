@@ -29,6 +29,12 @@ BODY_ROW = re.compile(r"<tbody>(.*?)</tbody>", re.S)
 CONTROLS = re.compile(r'<form[^>]*id="controles"(.*?)</form>', re.S)
 SUBMIT = re.compile(r"<button[^>]*type=\"submit\"[^>]*>(.*?)</button>", re.S)
 ANCHORING = re.compile(r"\.screen\s*\{[^}]*overflow-anchor:\s*none", re.S)
+SHRINKABLE = (
+    re.compile(r"\.panels\s*\{[^}]*min-width:\s*0", re.S),
+    re.compile(r"\.panel\s*\{[^}]*min-width:\s*0", re.S),
+    re.compile(r"\.chart\s*\{[^}]*min-width:\s*0", re.S),
+    re.compile(r"\.chart-canvas\s*\{[^}]*max-width:\s*100%", re.S),
+)
 
 CATEGORY = "categoria"
 FLOOR_AMOUNT = -120000
@@ -277,6 +283,17 @@ def test_the_screen_never_re_anchors_the_scroll_after_a_swap(client):
     page = client.get(SCREEN)
 
     assert ANCHORING.search(page.text) is not None
+
+
+def test_nothing_between_the_body_and_the_chart_refuses_to_shrink(client):
+    # The chart canvas keeps the width it was drawn at, and a grid item floors
+    # at the intrinsic width of its content: without these four declarations the
+    # panel never narrows and the body inherits a horizontal scroll that only
+    # appears when the window is resized, never when the page loads narrow.
+    page = client.get(SCREEN)
+
+    for rule in SHRINKABLE:
+        assert rule.search(page.text) is not None
 
 
 def test_the_account_of_the_row_reaches_the_open_list(client, vocabulary):

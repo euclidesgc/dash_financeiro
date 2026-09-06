@@ -577,9 +577,17 @@ minutos fecham a porta.
       *Quando* o campo de data final passa de `2026-08-31` para `2026-07-31` e o
       período é aplicado
       *Então* o seletor de eixo continua em `beneficiario`, a última linha da
-      tabela da evolução passa a ser o mês `2026-07`, os totais exibidos nos
-      dois cruzamentos mudam de valor em relação aos exibidos antes da troca, e
-      o total da tabela de agregação deixa de ser `−R$ 103.772,33`
+      tabela da evolução passa a ser o mês `2026-07`, o total da tabela de
+      agregação deixa de ser `−R$ 103.772,33`, o total do cruzamento
+      `fixa × essencial` deixa de ser `−R$ 41.879,60`, e a soma das candidatas
+      exibida no bloco `variável × supérfluo` deixa de ser `−R$ 29.279,70`
+
+      > O cruzamento `variável × supérfluo` tem total `R$ 0,00` em todo período
+      > enquanto nenhuma regra carregar esse termo, que é o estado que `RF-48`
+      > exige. Exigir que **os dois** totais mudem tornava o critério
+      > insatisfazível por construção, e foi assim que ele reprovou duas fases
+      > seguidas. O que muda no bloco vazio é a soma das candidatas, e é ela que
+      > se mede.
 - [ ] `comportamental` — RF-34, RF-35
       *Dado* o servidor rodando contra `/tmp/dash-002-f3.sqlite` e um cookie
       `dash_session` válido

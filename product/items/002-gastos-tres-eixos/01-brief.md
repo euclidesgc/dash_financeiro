@@ -214,7 +214,11 @@ lançamentos e em dinheiro, nas duas telas.
   posição de rolagem. *(dirigido a evento)*
 - **RF-33** — Quando o período é trocado na tela, o sistema deve recalcular a
   tabela de agregação, os dois cruzamentos e a série de 13 meses, preservando o
-  eixo selecionado. *(dirigido a evento)*
+  eixo selecionado. O que se observa mudando é o total da agregação, o total do
+  cruzamento cujo termo **alguma regra carrega**, e a soma das candidatas do
+  cruzamento cujo termo nenhuma regra carrega — este último tem total `R$ 0,00`
+  em qualquer período enquanto `RF-48` valer, e um recálculo correto não muda
+  zero. *(dirigido a evento)*
 - **RF-34** — O sistema deve exibir na tela de Gastos o resíduo do período —
   quantos lançamentos e quanto dinheiro caíram em `Outros` por falta de regra —
   com um caminho direto para a tela de Regras. *(ubíquo)*
