@@ -195,7 +195,7 @@
     "003-comprometido": {
       "title": "Comprometido: assinaturas, parcelamentos e o calendário de vencimentos",
       "track": "rapida",
-      "stage": "execute",
+      "stage": "done",
       "stacks": [
         "python"
       ],
