@@ -214,7 +214,7 @@
           "por": "autonomo"
         }
       },
-      "current_phase": 1,
+      "current_phase": 2,
       "phases": {
         "1": {
           "status": "aprovada",
@@ -239,6 +239,20 @@
             ]
           },
           "criteria_sha": "48989a48b32ded27f25d1b9fd1704d7f0a95805a8b51a440f3632eac3acdfbe8"
+        },
+        "2": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/003-comprometido/05-veredictos/fase-2.md",
+          "validated_sha": "5522c914ff244af7f53a81e84a1a5733a2ca8f98",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-06T20:40:50Z",
+          "validated_trees": {
+            ".": "25540778bba2654339e03c8ce4e297822cd77577"
+          },
+          "criteria_sha": "d4fd0b681fc8c4beb4b3c5cda90b7c332db226c65b7fa78789e88f60a427acad"
         }
       },
       "divergences": {},

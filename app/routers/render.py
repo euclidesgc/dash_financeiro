@@ -26,3 +26,10 @@ def day(value: object) -> str:
         return date.fromisoformat(str(value)).strftime("%d/%m/%Y")
     except ValueError:
         return str(value)
+
+
+def month(value: object) -> str:
+    try:
+        return date.fromisoformat(f"{value}-01").strftime("%m/%Y")
+    except ValueError:
+        return str(value)

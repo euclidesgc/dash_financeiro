@@ -402,6 +402,27 @@ a.button {
   gap: var(--space-6);
 }
 
+.figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.figures > * {
+  flex: 1 1 calc(var(--measure) / 2);
+  min-width: 0;
+}
+
+/* The released cash is a consequence of the instalment list above it, not a
+   block of its own: the rule ties the two together instead of separating them
+   into two panels that would read as two unrelated answers. */
+.released {
+  display: grid;
+  gap: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-field-border);
+}
+
 .crossing {
   flex: 1 1 calc(var(--measure) * 0.6);
   min-width: 0;
