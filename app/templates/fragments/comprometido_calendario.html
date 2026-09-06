@@ -1,0 +1,44 @@
+<section id="calendario" class="panel panel-wide">
+  <div class="stack-tight">
+    <h2 class="section-title">Calendário de vencimentos</h2>
+    <p class="lede">Os próximos {{ window_days }} dias, de <span class="calendar-date">{{ window_start|dia }}</span>
+      a <span class="calendar-date">{{ window_end|dia }}</span>, com o que sai em cada dia.</p>
+    <p class="lede">A data de cada vencimento é previsão a partir do histórico, não data contratual.</p>
+    {% if stale %}
+    <p class="lede">Das assinaturas detectadas, {{ stale }} sem cobrança recente
+      {%- if stale == 1 %} ficou{% else %} ficaram{% endif %} de fora: uma série que parou de ser
+      cobrada não tem próximo vencimento a prever.</p>
+    {% endif %}
+  </div>
+  <div class="scale" aria-hidden="true"></div>
+  {% if calendar %}
+  <ol class="calendar">
+    {% for day in calendar %}
+    <li class="calendar-day" data-dia="{{ day['date'] }}" data-total="{{ day['total_cents'] }}">
+      <div class="calendar-head">
+        <h3 class="calendar-date">{{ day['date']|dia }}</h3>
+        <p class="calendar-sum cifra">{{ day['total_cents']|brl }}</p>
+      </div>
+      <ul class="calendar-entries">
+        {% for entry in day['entries'] %}
+        <li class="calendar-entry" data-serie="{{ entry['series_key'] }}"
+            data-centavos="{{ entry['amount_cents'] }}">
+          <span class="calendar-name">{{ labels.get(entry['series_key']) or entry['series_key'] }}
+            <span class="cell-key">{% if entry['predicted'] %}previsto pelo histórico{% else %}já lançado na conta{% endif %}</span></span>
+          <span class="cifra">{{ entry['amount_cents']|brl }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}
+  <div class="empty">
+    <p class="empty-title">Nenhum vencimento previsto até {{ window_end|dia }}.</p>
+    <p class="lede">O calendário projeta o dia de cobrança das séries vivas: assinatura cobrada
+      neste mês ou no anterior e parcelamento com parcela em aberto. Enquanto nenhuma existir, não
+      há data a esperar — abra a tela de <a href="/gastos">Gastos</a> para ver por onde o dinheiro
+      saiu e volte aqui depois da próxima carga.</p>
+  </div>
+  {% endif %}
+</section>

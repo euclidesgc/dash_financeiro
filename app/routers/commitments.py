@@ -7,6 +7,7 @@ from fastapi import APIRouter, Form
 from starlette.requests import Request
 from starlette.responses import Response
 
+from app.commitments.calendar import WINDOW_DAYS, calendar, window
 from app.commitments.live import installments, released_cash, subscriptions, totals
 from app.commitments.mark import DismissRefusedError, dismiss, resume
 from app.db import connect
@@ -98,12 +99,21 @@ def _answer(
 def _context(conn: sqlite3.Connection, today: date) -> dict[str, Any]:
     recurring = subscriptions(conn, today=today)
     live = installments(conn, today=today)
+    first, last = window(today)
     context: dict[str, Any] = {
         "reference": today.isoformat(),
         "subscriptions": [row for row in recurring if not row["dismissed"]],
         "dismissed": [row for row in recurring if row["dismissed"]],
         "installments": live,
         "released": released_cash(conn, today=today),
+        "calendar": calendar(conn, today=today),
+        "window_start": first.isoformat(),
+        "window_end": last.isoformat(),
+        "window_days": WINDOW_DAYS,
+        # A short calendar reads as a quiet month, so the screen counts the
+        # series it left out for lack of a recent charge instead of shrinking
+        # in silence (RF-22).
+        "stale": len([row for row in recurring if not row["live"]]),
         # The reading name of a series is the description the source sent; the key
         # underneath it is what the form posts back, and the two are shown by the
         # same macro the other screens use.
