@@ -804,13 +804,16 @@ app`. A sessão se obtém com **um único** `POST /login` com a senha correta.
       http://127.0.0.1:8000/regras -d
       "match_kind=description&match_value=uber&group_id=<id de
       Transporte>&nature=variável&essentiality=importante"` é executado
-      *Então* a resposta traz a string `lançamentos reclassificados`, `rtk proxy
-      env DASH_ENV_FILE=/dev/null DASH_DB_PATH=/tmp/dash-002-f4.sqlite
-      .venv/bin/python -m app.query "select count(*) from category_rules where
-      match_kind='description' and match_value='uber'"` imprime `1`, e o valor do
-      grupo `Transporte` em
-      `http://127.0.0.1:8000/gastos?eixo=grupo&inicio=2026-03-01&fim=2026-08-31`
-      passa a ser diferente do lido antes da gravação
+      *Então* a resposta traz a string `26 lançamentos reclassificados`, e `rtk
+      proxy env DASH_ENV_FILE=/dev/null DASH_DB_PATH=/tmp/dash-002-f4.sqlite
+      .venv/bin/python -m app.query "select count(*) from transactions t join
+      category_rules r on r.id = t.rule_id where r.match_kind='description' and
+      r.match_value='uber'"` imprime `26`
+
+      > O critério media antes o total do grupo `Transporte` mudando, e ele não
+      > muda: os lançamentos de `uber` já estavam nesse grupo pela regra de
+      > categoria que a expressão passa a vencer. O que a gravação move é o
+      > **alcance** da regra nova, e é ele que se mede.
 - [ ] `comportamental` — RF-40
       *Dado* o servidor rodando contra `/tmp/dash-002-f4.sqlite`, um cookie
       `dash_session` válido, e o `id` da regra com `match_kind = 'category'` e
@@ -829,7 +832,7 @@ app`. A sessão se obtém com **um único** `POST /login` com a senha correta.
       `dash_session` válido
       *Quando* `rtk proxy curl -i -s -b "dash_session=<cookie>" -X POST
       http://127.0.0.1:8000/regras -d
-      "match_kind=category&match_value=Zzz&group_id=9999&nature=fixo&essentiality=dispensável"`
+      "match_kind=category&match_value=Zzz&group_id=<id de Outros>&nature=fixo&essentiality=dispensável"`
       é executado
       *Então* a resposta é `400`, o HTML traz a mensagem
       `natureza inválida: fixo`, e `rtk proxy env DASH_ENV_FILE=/dev/null
