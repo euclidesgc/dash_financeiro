@@ -23,6 +23,10 @@ body {
   outline-offset: var(--focus-offset);
 }
 
+/* Swapping a fragment in the middle of the screen changes the height of what
+   sits above the rest: scroll anchoring would hold the content below it still
+   and push the page down by exactly what the fragment gained. Whoever changed
+   the axis stays where they were reading. */
 .screen {
   min-height: 100vh;
   padding: var(--space-8) var(--space-4);
@@ -30,6 +34,7 @@ body {
   justify-items: center;
   align-content: start;
   gap: var(--space-8);
+  overflow-anchor: none;
 }
 
 .screen-centered {

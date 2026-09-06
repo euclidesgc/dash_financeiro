@@ -37,7 +37,10 @@
         <label class="field-label" for="campo-fim">Fim</label>
         <input class="field-input" id="campo-fim" name="fim" type="date" value="{{ end }}">
       </div>
-      <button class="button" type="submit">Aplicar período</button>
+      {# The button names the axis too because it is the only way to apply one
+         when the CDN is out of reach: the select changes the screen by itself
+         through hx-trigger, and by this submit when htmx never arrived. #}
+      <button class="button" type="submit">Aplicar eixo e período</button>
     </form>
   </header>
   {% include "fragments/gastos_tabela.html" %}

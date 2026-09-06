@@ -26,6 +26,9 @@ FIGURE = re.compile(r"^−?R\$ [\d.]+,\d{2}$")
 CIFRA = re.compile(r'class="[^"]*\bcifra\b[^"]*"[^>]*>([^<]*)<')
 HIGHLIGHT = re.compile(r'class="([^"]*\bcifra\b[^"]*\bnegative\b[^"]*)"')
 BODY_ROW = re.compile(r"<tbody>(.*?)</tbody>", re.S)
+CONTROLS = re.compile(r'<form[^>]*id="controles"(.*?)</form>', re.S)
+SUBMIT = re.compile(r"<button[^>]*type=\"submit\"[^>]*>(.*?)</button>", re.S)
+ANCHORING = re.compile(r"\.screen\s*\{[^}]*overflow-anchor:\s*none", re.S)
 
 CATEGORY = "categoria"
 FLOOR_AMOUNT = -120000
@@ -245,6 +248,35 @@ def test_the_login_screen_still_needs_no_network(client):
 
     assert "<script" not in page.text
     assert "https://" not in page.text
+
+
+def test_the_axis_travels_by_the_same_form_the_period_travels_by(client):
+    page = client.get(SCREEN)
+    controls = CONTROLS.search(page.text)
+
+    assert controls is not None
+    assert 'method="get"' in controls.group(1)
+    assert f'action="{SCREEN}"' in controls.group(1)
+    assert 'name="eixo"' in controls.group(1)
+    submit = SUBMIT.search(controls.group(1))
+    assert submit is not None
+    assert "eixo" in submit.group(1).lower()
+
+
+def test_the_whole_screen_answers_the_axis_the_form_sends(client, window):
+    start, end = window
+    page = client.get(SCREEN, params={"eixo": CATEGORY, "inicio": start, "fim": end})
+    table = page.text[page.text.index('id="tabela"') : page.text.index('id="painel"')]
+
+    assert page.status_code == 200
+    assert f'<option value="{CATEGORY}" selected>' in page.text
+    assert _rows_of(table) != []
+
+
+def test_the_screen_never_re_anchors_the_scroll_after_a_swap(client):
+    page = client.get(SCREEN)
+
+    assert ANCHORING.search(page.text) is not None
 
 
 def test_the_account_of_the_row_reaches_the_open_list(client, vocabulary):
