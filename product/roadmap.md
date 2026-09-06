@@ -41,6 +41,19 @@ PR e commit já escritos.
 
 - [ ] `009-ia-consultora` — A IA **pergunta o que falta**: escolhe o fato ausente ou vencido cuja resposta mais move a projeção e faz **uma** pergunta, dizendo qual número ela muda. Nunca repergunta o que foi respondido, e não insiste — pergunta ignorada some e volta só quando voltar a importar; enquanto isso a tela declara a premissa que está assumindo. Também explica o resultado do simulador, orienta o próximo passo, responde pergunta livre sobre os próprios dados e classifica o resíduo que as regras não pegaram. **A IA nunca calcula**: se ela computasse "isso te afasta 11 dias" erraria, e um número errado na unidade central do produto destrói a confiança em tudo o mais. Sem chave ou com erro, a tela mostra o número determinístico e diz que a leitura da IA está indisponível.
 
+## Dívida técnica
+
+Bloco separado de propósito. Pendência de processo — portão, fluxo de CI,
+veredicto, varredura — não é dependência de item de produto nenhum, e promovê-la
+ao topo da fila é a régua local certa e o agregado errado.
+
+- [ ] `010-lint-e-formatador-python` — Existe portão de lint e formatação para o
+  código Python, rodando no `gates_runner.sh` e no fluxo de CI. Três validadores
+  seguidos registraram a ausência: hoje `ruff` não está no ambiente e nenhum
+  portão mede estilo, import morto ou variável não usada. É consequência
+  declarada de o projeto rodar em modo processo-apenas, sem pack de stack — e
+  por isso a compensação precisa ser explícita, não presumida.
+
 ## Validações de campo pendentes
 
 O que só o hardware, o aparelho real ou o navegador real provam. Não vira tipo
