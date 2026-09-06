@@ -1,0 +1,7 @@
+{# The raw key earns a second line only when it differs from the label: a
+   category the source already sends in Portuguese would print twice. #}
+{% macro cell_name(key, labels) -%}
+{%- set label = labels.get(key) -%}
+<span class="cell-label">{{ label or key or "sem valor" }}</span>
+{%- if label and label != key %}<span class="cell-key">{{ key }}</span>{% endif -%}
+{%- endmacro %}

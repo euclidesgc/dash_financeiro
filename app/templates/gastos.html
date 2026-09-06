@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Gastos{% endblock %}
+{% block head_scripts %}
+{# The chart build is the UMD one on purpose: what the CDN publishes as
+   chart.min.js is the ESM bundle, and a plain script tag refuses it. #}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/2.0.4/htmx.min.js"
+        integrity="sha512-2kIcAizYXhIn8TzUvqzEDZNuDZ+aW7yE/+f1HJHXFjQcGNfv1kqzJSTBRBSlOgp6B/KZsz1K0a3ZTqP9dnxioQ=="
+        crossorigin="anonymous" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"
+        integrity="sha512-WoViKhKD4qI2WruSZqv9+kvM4WfFhUMQCLN4QlDTt5aU56fLQy2gYoxWIqlEnXqJy/+Ac5q/hk1oWfqnMDhwMA=="
+        crossorigin="anonymous" defer></script>
+{% endblock %}
+{% block content %}
+<main class="screen">
+  <header class="panel panel-wide">
+    <div class="scale" aria-hidden="true"></div>
+    <h1 class="screen-title">Gastos</h1>
+    <p class="lede">Onde o dinheiro saiu, recortado por eixo e por período.
+      Transferência entre contas próprias e estorno ficam de fora da conta.</p>
+    <form id="controles" class="controls" method="get" action="{{ screen }}"
+          hx-get="{{ panel_url }}" hx-target="#painel" hx-swap="outerHTML">
+      <div class="field">
+        <label class="field-label" for="campo-eixo">Eixo</label>
+        <select class="field-input" id="campo-eixo" name="eixo"
+                hx-get="{{ table_url }}" hx-trigger="change" hx-include="#controles"
+                hx-target="#tabela" hx-swap="outerHTML">
+          {% for name in axes %}
+          <option value="{{ name }}"{% if name == axis %} selected{% endif %}>{{ name|capitalize }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label" for="campo-inicio">Início</label>
+        <input class="field-input" id="campo-inicio" name="inicio" type="date" value="{{ start }}">
+      </div>
+      <div class="field">
+        <label class="field-label" for="campo-fim">Fim</label>
+        <input class="field-input" id="campo-fim" name="fim" type="date" value="{{ end }}">
+      </div>
+      {# The button names the axis too because it is the only way to apply one
+         when the CDN is out of reach: the select changes the screen by itself
+         through hx-trigger, and by this submit when htmx never arrived. #}
+      <button class="button" type="submit">Aplicar eixo e período</button>
+    </form>
+  </header>
+  {% include "fragments/gastos_tabela.html" %}
+  {% include "fragments/gastos_painel.html" %}
+</main>
+<script>
+  (function () {
+    var CENTS = 100;
+    function paint() {
+      var box = document.getElementById("grafico");
+      var table = document.getElementById("serie");
+      if (!box || !table || typeof Chart === "undefined") { return; }
+      var canvas = box.querySelector("canvas");
+      var drawn = Chart.getChart(canvas);
+      if (drawn) { drawn.destroy(); }
+      var points = Array.prototype.slice.call(table.querySelectorAll("tbody tr"));
+      var style = getComputedStyle(document.documentElement);
+      var muted = style.getPropertyValue("--color-ink-muted").trim();
+      var still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      // The box is revealed only once the library is here — an empty rectangle
+      // is worse than no rectangle when the network fails — and it is revealed
+      // before the chart is built, because a chart measured inside a hidden box
+      // is born zero by zero and never repaints.
+      box.hidden = false;
+      new Chart(canvas, {
+        type: "bar",
+        data: {
+          labels: points.map(function (point) { return point.dataset.mes; }),
+          datasets: [{
+            label: "Gasto do mês",
+            data: points.map(function (point) {
+              return Math.abs(Number(point.dataset.centavos)) / CENTS;
+            }),
+            backgroundColor: style.getPropertyValue("--color-accent").trim(),
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: still ? false : undefined,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: muted }, grid: { display: false } },
+            y: {
+              ticks: {
+                color: muted,
+                callback: function (value) { return "R$ " + value.toLocaleString("pt-BR"); }
+              },
+              grid: { color: style.getPropertyValue("--color-rule").trim() }
+            }
+          }
+        }
+      });
+    }
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", paint);
+    } else {
+      paint();
+    }
+    document.addEventListener("htmx:afterSwap", paint);
+  })();
+</script>
+{% endblock %}

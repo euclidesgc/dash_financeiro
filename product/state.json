@@ -108,16 +108,16 @@
       "created_at": "2026-09-06T02:25:52Z",
       "approvals": {
         "brief": {
-          "at": "2026-09-06T04:04:26Z",
-          "sha": "2ccd89708a47fd602482c5cd15aa522a1ae5acd1",
+          "at": "2026-09-06T17:12:53Z",
+          "sha": "489bd5a1a4d507e94388cd729d1040f85bc65c82",
           "file": "product/items/002-gastos-tres-eixos/01-brief.md",
-          "por": "autonomo"
+          "por": "humano"
         },
         "plan": {
-          "at": "2026-09-06T04:04:26Z",
-          "sha": "d0c1011098b29dcd3bb08d65e46e00df254b20ba",
+          "at": "2026-09-06T17:12:53Z",
+          "sha": "6b7b51f6c3518ce7cbb506ed5a0fb3c2b7d043fa",
           "file": "product/items/002-gastos-tres-eixos/03-plan.md",
-          "por": "autonomo"
+          "por": "humano"
         }
       },
       "current_phase": 3,
@@ -151,15 +151,17 @@
           "criteria_sha": "315016ae97e6b7846ad5eccd35f1d9fa11790aef967cf223535be5222fc3507d"
         },
         "3": {
-          "status": "escalada_humana",
-          "reproved_count": 2,
-          "verdict": "REPROVADO",
-          "verdict_file": "product/items/002-gastos-tres-eixos/05-veredictos/fase-3-reprovada-2.md",
-          "validated_sha": null,
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/002-gastos-tres-eixos/05-veredictos/fase-3.md",
+          "validated_sha": "d9db1236da67791db660470a34406b83cd55474d",
           "pr": null,
           "blocked_on": [],
-          "verdict_at": "2026-09-06T05:15:54Z",
-          "validated_trees": {},
+          "verdict_at": "2026-09-06T17:27:48Z",
+          "validated_trees": {
+            ".": "2b518ef82e64894cd2b401d2f4ce4dc508742e73"
+          },
           "escalation": {
             "at": "2026-09-06T05:15:54Z",
             "reproved_count": 2,
@@ -169,7 +171,8 @@
               "decomposicao: a fase foi mal quebrada",
               "abordagem: a implementação escolheu o caminho errado"
             ]
-          }
+          },
+          "criteria_sha": "ddd42e01c92688550e76c3d7d280ca77cbed5a1d9b7289f8d31c9b3ad40879d7"
         }
       },
       "divergences": {},
