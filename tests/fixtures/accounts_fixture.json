@@ -1,0 +1,14 @@
+{
+  "results": [
+    {
+      "id": "acc-fixture-1",
+      "type": "BANK",
+      "subtype": "CHECKING_ACCOUNT",
+      "name": "Conta de teste",
+      "marketingName": "Banco de teste",
+      "balance": 12.34,
+      "currencyCode": "BRL",
+      "updatedAt": "2026-09-05T21:36:27.516Z"
+    }
+  ]
+}

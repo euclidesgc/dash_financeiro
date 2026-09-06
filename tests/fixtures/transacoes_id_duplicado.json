@@ -1,0 +1,53 @@
+[
+  {
+    "id": "fix-duplicada",
+    "data": "2025-08-01",
+    "conta_id": "acc-fixture-1",
+    "descricao": "PRIMEIRA OCORRENCIA",
+    "valor": -10.5,
+    "tipo": "DEBIT",
+    "categoria_pluggy": "Shopping",
+    "categoria": "Shopping",
+    "parcela_atual": null,
+    "parcela_total": null,
+    "eh_transferencia": false,
+    "motivo_transferencia": "",
+    "eh_saque": false,
+    "eh_estorno": false,
+    "estornada_por": ""
+  },
+  {
+    "id": "fix-unica",
+    "data": "2025-08-02",
+    "conta_id": "acc-fixture-1",
+    "descricao": "LANCAMENTO UNICO",
+    "valor": -20.0,
+    "tipo": "DEBIT",
+    "categoria_pluggy": "Shopping",
+    "categoria": "Shopping",
+    "parcela_atual": null,
+    "parcela_total": null,
+    "eh_transferencia": false,
+    "motivo_transferencia": "",
+    "eh_saque": false,
+    "eh_estorno": false,
+    "estornada_por": ""
+  },
+  {
+    "id": "fix-duplicada",
+    "data": "2025-08-03",
+    "conta_id": "acc-fixture-1",
+    "descricao": "SEGUNDA OCORRENCIA DO MESMO ID",
+    "valor": -30.25,
+    "tipo": "DEBIT",
+    "categoria_pluggy": "Shopping",
+    "categoria": "Shopping",
+    "parcela_atual": null,
+    "parcela_total": null,
+    "eh_transferencia": false,
+    "motivo_transferencia": "",
+    "eh_saque": false,
+    "eh_estorno": false,
+    "estornada_por": ""
+  }
+]
