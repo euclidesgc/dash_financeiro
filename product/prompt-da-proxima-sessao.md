@@ -1,49 +1,35 @@
 Você está em **dash_financeiro — painel financeiro pessoal de um usuário, rodando local. Login, dashboard das movimentações bancárias (sincronizadas da Pluggy todo dia ou sob demanda) e IA que ajuda a alcançar o plano de curto, médio e longo prazo. Stack Python 3.12 + FastAPI + Jinja2 + HTMX + SQLite. O objetivo do produto é sair de um déficit de R$ 4.940,72/mês.**, sessão nova e sem histórico. Este texto é a sua
 única entrada. Leia-o inteiro antes de agir.
 
-## O estado desta corrida — reescrito em 06/09/2026, 02h
-
-A primeira noite autônoma rodou e **parou por escalada**, como manda a regra. O
-que existe agora:
+## O estado desta corrida — reescrito em 06/09/2026
 
 | | |
 |---|---|
 | `001-base-e-login` | **concluído**. Quatro fases aprovadas por validador cego, integradas em `develop`. |
-| `002-gastos-tres-eixos` | **em execução**, fases 1 e 2 aprovadas e integradas; **fase 3 escalada** depois de duas reprovações seguidas. |
-| `003` a `009` | não iniciados. |
-| `010-lint-e-formatador-python` | dívida técnica nova no roadmap: não há portão de lint para Python, e três validadores registraram a ausência. |
+| `002-gastos-tres-eixos` | **concluído**. Quatro fases aprovadas e integradas. A fase 3 reprovou duas vezes, escalou, e o dono decidiu: critério `RF-33` reescrito e o canvas que segurava a largura corrigido. A fase 4 reprovou uma vez, por capturas com nome errado. |
+| `003` a `009` | não iniciados. `003` é o próximo da fila. |
+| `010-lint-e-formatador-python` | dívida técnica: não há portão de lint para Python, e quatro validadores registraram a ausência. |
 
-**A primeira coisa que esta sessão faz é decidir a escalada da fase 3.** O motor
-recusa avançar enquanto ela estiver aberta, e está certo: duas reprovações no
-mesmo lugar significam que algo a montante está errado. O diagnóstico completo,
-com a evidência de cada uma, está em
-`product/items/002-gastos-tres-eixos/decisoes-autonomas.md`, seção **"Escalada"**.
-Em resumo, são duas coisas independentes:
+O produto hoje: login protegido, os 1.942 lançamentos classificados nos três
+eixos, a tela de **Gastos** (cinco eixos, período livre, evolução de treze
+meses, drill-down, os dois cruzamentos, resíduo visível) e a tela de **Regras**,
+onde a classificação se edita sem deploy e a base reclassifica na hora.
 
-1. **Defeito real, causa raiz isolada:** o `<canvas>` do gráfico segura a
-   largura do container de grid e nunca encolhe, então a tela ganha rolagem
-   horizontal quando a **janela é redimensionada** para 375 ou 768 px (carregar
-   já estreito passa). O validador confirmou o mecanismo injetando estilo no
-   navegador: `.panels, .panel, .chart { min-width: 0 }` mais
-   `.chart-canvas { max-width: 100% }` → `375 vs 375 | canvas=325`. É correção
-   de três linhas de CSS mais o teste que a trava.
-2. **Critério errado:** o `RF-33` exige que os totais dos **dois** cruzamentos
-   mudem ao trocar o período, e o `RF-48` exige um banco em que um deles vale
-   `R$ 0,00` em todo período. Nenhuma implementação passa. Reescrever a cláusula
-   (o total do cruzamento **atribuído** muda, e a soma das candidatas do
-   cruzamento vazio também — medido: `−R$ 29.279,70` → `−R$ 23.928,48`) exige
-   `exception-open` no plano, `plan-writer`, e reaprovação.
+**Duas coisas esperam o dono, e nenhuma trava a fila:**
 
-Feito isso, revalide a fase 3 com um **validador novo**, integre, e siga:
-fase 4 do `002` (tela de Regras), depois `003`, `004`, `005`, `007`, `008`, e
-por último `006` e `009`, que dependem de terceiro.
+1. **Ratificar `D-001`** com `state.py diverge-set --item 001-base-e-login --id
+   D-001 --status APROVADA --por humano`. É a única linha de `esperando_humano`.
+2. **Revisar a classificação das 77 categorias** na tela de Regras. O seed é
+   conservador de propósito — **nenhuma regra nasce `supérfluo`** —, porque o que
+   é supérfluo na casa dele não é decisão de quem escreve o código. Por isso a
+   lista de corte nasce vazia, e a tela mostra as cinco candidatas de
+   `variável × importante` em vez de um painel em branco.
 
-**O que a fase 4 do `002` precisa saber antes de começar:** um validador mediu
-que regra de expressão é compilada **sem** `re.IGNORECASE` e casada contra a
-descrição normalizada — minúscula, sem acento e **sem dígito**. Uma regra
-gravada como `Uber`, `99app` ou `saúde` é aceita e casa zero lançamentos, em
-silêncio. A tela de Regras é o lugar de resolver isso: ela já recebe de
-`create_rule` quantos lançamentos a regra alcançou, e precisa dizer isso na hora.
+Dois apontamentos de validador que merecem decisão dele, registrados nas
+entregas: a **interatividade depende de CDN** (htmx e Chart.js; sem rede a tela
+degrada para navegação inteira, não quebra), e a **régua visual se moveu junto
+com a tela que ela mede** — o parágrafo sobre cor semântica entrou no mesmo
+commit da tela de Gastos.
 
 ## O que já está no disco e não se reconstrói
 

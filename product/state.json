@@ -101,7 +101,7 @@
     "002-gastos-tres-eixos": {
       "title": "Gastos nos três eixos: grupo, natureza e essencialidade, com regras editáveis",
       "track": "rapida",
-      "stage": "execute",
+      "stage": "done",
       "stacks": [
         "python"
       ],
@@ -114,10 +114,10 @@
           "por": "humano"
         },
         "plan": {
-          "at": "2026-09-06T17:12:53Z",
-          "sha": "6b7b51f6c3518ce7cbb506ed5a0fb3c2b7d043fa",
+          "at": "2026-09-06T18:45:49Z",
+          "sha": "ba88436e5e54d3a521bda4fa2b80fd11105d9f7f",
           "file": "product/items/002-gastos-tres-eixos/03-plan.md",
-          "por": "humano"
+          "por": "autonomo"
         }
       },
       "current_phase": 4,
