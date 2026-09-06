@@ -1,6 +1,81 @@
 Você está em **dash_financeiro — painel financeiro pessoal de um usuário, rodando local. Login, dashboard das movimentações bancárias (sincronizadas da Pluggy todo dia ou sob demanda) e IA que ajuda a alcançar o plano de curto, médio e longo prazo. Stack Python 3.12 + FastAPI + Jinja2 + HTMX + SQLite. O objetivo do produto é sair de um déficit de R$ 4.940,72/mês.**, sessão nova e sem histórico. Este texto é a sua
 única entrada. Leia-o inteiro antes de agir.
 
+## O estado desta corrida — escrito em 05/09/2026, 21h
+
+O dono aprovou o roadmap e autorizou a corrida. Ele dorme; ninguém responde
+pergunta até de manhã.
+
+**A corrida começa do zero de processo**: `product/state.json` tem
+`active_item: null` e `product/items/` ainda não existe. A primeira ação é abrir
+o `001-base-e-login`. Não há fase pela metade para retomar.
+
+**O que já está no disco e não se reconstrói.** `data/` é real, grande e **fora
+do controle de versão** — e assim continua:
+
+| Caminho | O que é |
+|---|---|
+| `data/processed/transacoes.{csv,json}` | os 1.942 lançamentos de seis meses, já extraídos da Pluggy |
+| `data/processed/recorrentes.json` · `parcelamentos.json` | insumo direto do item `003` |
+| `data/manual/` | contratos de financiamento |
+| `data/relatorio_origem.md` | o relatório que originou os números congelados |
+
+**Código Python já exercitado contra a API real da Pluggy** — reaproveite, não
+reescreva: `ingestao/pluggy_extract.py`, `ingestao/pluggy_consolidate.py`,
+`financas/financiamento_sac.py`, `financas/cdc_veiculo.py`. São 860 linhas que já
+rodaram; refazê-las é gastar a noite reconstruindo o que funciona.
+
+**A ordem da noite, e o porquê dela.** `001` → `002` → `003` → `004` é um bloco
+autossuficiente: lê o que já está no disco e **não depende de credencial de
+terceiro nenhuma**. Ele termina na tela que impede de entrar no cheque especial a
+3,52% a.m., que é onde este produto ganha o real marginal. Só então `005`, `007`
+e `008`. `006` e `009` ficam por último porque dependem de terceiro.
+
+**Trilha por item, decidida pelo dono:** rápida (brief → plano com critérios
+tipados → validador cego → entrega) em `001`–`005`, `007` e `008`; **completa**,
+com spec escrita, em `006` e `009`. A régua não é tamanho, é modo de falha: item
+interno erra alto e a prova é local e barata; sync e IA erram **em silêncio** —
+dado velho com cara de fresco, número citado errado —, e é ali que a spec paga o
+próprio custo.
+
+**Nada trava por falta de credencial.** `006` se constrói contra fixture gravada
+e `009` contra resposta gravada do Gemini; a chamada real vira linha em
+"Validações de campo pendentes" do roadmap. Parar a corrida para esperar um
+humano acordar é exatamente o desperdício que o modo autônomo existe para evitar.
+
+**As três pendências humanas não bloqueiam** — saldo de quitação do CDC do
+Duster, custo de transporte sem o carro, taxa dos cartões. Até o `008` o motor usa
+**premissa declarada na tela**; a partir do `008` elas viram mecanismo do produto.
+
+**Os números de referência estão congelados em `docs/plano.md`, medidos em
+05/09/2026.** Nenhum critério compara contra relatório regenerável: em um mês ele
+passaria por construção, medindo nada.
+
+**`product/00-linguagem-visual.md` ainda não existe.** Quem o escreve é o `001`,
+antes da primeira tela — e a partir daí ele é canônico, como manda a seção sobre
+interface mais abaixo.
+
+## Credencial inicial, e duas armadilhas medidas nesta máquina
+
+O `.env` (modo 600, gitignorado) traz o login que semeia o usuário do painel:
+`LOGIN` e **`PASSORD`** — o typo é do dono, preservado de propósito, assim como
+**`GEMIMI_API_KEY`**. **Aceite as duas grafias de cada um**
+(`PASSORD`/`PASSWORD`, `GEMIMI_API_KEY`/`GEMINI_API_KEY`) em vez de exigir que o
+arquivo seja corrigido.
+
+O seed do `001` lê do ambiente, grava **hash Argon2** e é idempotente. A senha
+nunca vai para o banco em claro, nem para log, nem para HTML.
+
+**Armadilha 1 — o hook de permissão nega qualquer comando que leia `.env`.**
+Medido: `grep -oE '^[A-Z_]+=' .env` foi **negado**. Não contorne e não insista. O
+código que você escreve lê por `os.environ`; o `.env.example` documenta os nomes.
+Critério que precise provar que a variável existe prova **pelo comportamento** —
+o app sobe, o login funciona —, nunca lendo o arquivo.
+
+**Armadilha 2 — `rtk` reescreve a saída de comando por hook global.** Quando a
+evidência de um critério precisar da saída bruta e íntegra, use
+`rtk proxy <comando>`.
+
 ## Fonte de verdade, nesta ordem
 
 `product/roadmap.md` (a fila, ordenada por dependência), `CLAUDE.md` (a
@@ -89,6 +164,27 @@ raio zero. Se a paleta chegou num deles, ela não foi escolhida.
 teste errado — a captura é o que separa "os elementos existem" de "a página
 está boa". Guarde em `product/items/<id>/06-capturas/`, nomeadas pelo estado que
 mostram: são a evidência do critério e o que o dono vê de manhã sem subir nada.
+
+## Entrega — este repositório NÃO tem remote
+
+Medido em 05/09/2026: `git remote -v` sai vazio, e existem apenas `main` e
+`develop`. **Enquanto for assim, isto substitui a seção seguinte:**
+
+- Uma fase continua sendo a unidade de entrega, mas **não vira PR**. Trabalhe em
+  `fase/<item>-<n>` e integre em `develop` com `git merge --no-ff` **depois** do
+  veredicto APROVADO do validador cego e do `bash scripts/gates/gates_runner.sh`
+  verde.
+- **O corpo do PR não deixa de existir — ele vira arquivo.** Escreva-o em
+  `product/items/<id>/05-entregas/fase-<n>.md`, com as mesmas seções da skill
+  `pr-authoring` e a evidência de cada critério. É o que o dono lê de manhã, e sem
+  ele a fase não fecha.
+- `scripts/merge-se-liberado.sh`, `gh stack` e o fluxo `harness.yml` **não medem
+  nada sem remote** — não os chame e não conte com eles. O portão desta corrida é
+  o validador cego mais o `gates_runner.sh` local.
+- **Nunca `main`.** A integração é `develop`; subir para produção segue sendo
+  decisão do dono.
+
+Se um remote passar a existir, a seção abaixo volta a valer inteira.
 
 ## Entrega
 
