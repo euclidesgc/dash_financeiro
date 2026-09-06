@@ -4,7 +4,7 @@
   "items": {
     "001-base-e-login": {
       "title": "Base e login: schema, ingestão dos 1.942 lançamentos e acesso protegido",
-      "track": "rapida",
+      "track": "completa",
       "stage": "execute",
       "stacks": [
         "python"
@@ -12,19 +12,19 @@
       "created_at": "2026-09-06T00:14:49Z",
       "approvals": {
         "brief": {
-          "at": "2026-09-06T00:45:05Z",
-          "sha": "77f7fe247a560202dc77f664a0b1130de27e63cc",
+          "at": "2026-09-06T02:07:59Z",
+          "sha": "bddfb722c0dda9a67902275487ac8989a892e7be",
           "file": "product/items/001-base-e-login/01-brief.md",
           "por": "autonomo"
         },
         "plan": {
-          "at": "2026-09-06T00:45:05Z",
-          "sha": "cdb6505116bc986137aae57cb3c472e95ff207dd",
+          "at": "2026-09-06T02:07:59Z",
+          "sha": "d070ec9547ceac70c924881afca0c6850fe0e920",
           "file": "product/items/001-base-e-login/03-plan.md",
           "por": "autonomo"
         }
       },
-      "current_phase": 3,
+      "current_phase": 4,
       "phases": {
         "1": {
           "status": "aprovada",
@@ -67,9 +67,35 @@
             ".": "1083e4961d6077e04b441b21095a84700d3751a5"
           },
           "criteria_sha": "ee4c6f277ac211c823e54fe3874c4abf6513dfa03b1ff8209c5212c47b84894a"
+        },
+        "4": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/001-base-e-login/05-veredictos/fase-4.md",
+          "validated_sha": "e9a3756824518665f5003da5f76c1d49eb9aa056",
+          "pr": null,
+          "blocked_on": [
+            "D-001"
+          ],
+          "verdict_at": "2026-09-06T02:22:32Z",
+          "validated_trees": {
+            ".": "b53f23246ab54eec3bb13101d390cbb8fffc9ded"
+          },
+          "criteria_sha": "f421f2306fe010a7a70ee114707ba9b1068d9c4d0a81770a995308c9695ed346"
         }
       },
-      "divergences": {},
+      "divergences": {
+        "D-001": {
+          "status": "RECONCILIADA",
+          "kind": "normal",
+          "phase": 4,
+          "detected_at": "2026-09-06T02:07:22Z",
+          "aprovada_at": "2026-09-06T02:07:27Z",
+          "ratificada_por": "autonomo",
+          "reconciliada_at": "2026-09-06T02:07:59Z"
+        }
+      },
       "criteria_exception": null
     }
   }

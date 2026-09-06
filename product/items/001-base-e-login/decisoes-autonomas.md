@@ -26,6 +26,9 @@ limpo é o commit `322478c`, anterior a qualquer trabalho autônomo.
 | D13 | fase 3 | Logout durável por `users.session_epoch` (migração `002`), com o cookie carregando a época | Lista de cookies revogados em memória do processo, como o implementer entregou | Um logout que se desfaz no reinício é pior que nenhum: quem o usou acredita ter saído. Uma coluna e um `ALTER TABLE` custam menos que a tabela de sessões, e o `RF-39` deixa de valer só enquanto o processo vive. Não abri divergência: nenhum documento aprovado afirma que a sessão é sem estado — foi a decisão `D5` que subestimou o `RF-39`, e o conserto cabe na fase. |
 | D14 | fase 3 | Corrigir os seis achados da auditoria de segurança dentro da própria fase | Registrar como pendência de roadmap e fechar a fase com eles | O achado alto anulava o rate-limit inteiro por um cabeçalho `X-Forwarded-For` — medido, com 40 tentativas sem bloqueio. Entregar a porta com a tranca contornável e prometer consertar depois é entregar a fase errada. |
 | D15 | fase 3 | Cookie de sessão **sem** `Secure`, com a decisão amarrada por escrito ao bind e ao `proxy_headers` | Acrescentar `Secure` já | Em HTTP no loopback, `Secure` impede o cookie de existir e a tela de login para de funcionar. O risco só nasce quando o painel sair do `127.0.0.1`, e as três linhas mudam juntas — está escrito na entrega da fase 3. |
+| D16 | fase 4 | Manter o `01-brief.md` como documento único, mesmo com o item promovido para a trilha completa | Desdobrar em `01-prd.md` e `02-spec.md`, como a skill `divergence-protocol` prevê | A promoção veio de `D-001`, uma divergência sobre a redação de um requisito, não sobre o produto. Partir 45 requisitos em dois arquivos no meio da execução não muda nenhuma decisão, e o dono ainda não leu nenhum dos dois. Reversível: o `doc-reconciler` desdobra quando ele quiser. |
+| D17 | fase 4 | Direção visual: **instrumento de leitura graduado**, papel frio esverdeado, tinta violeta de carimbo, face monoespaçada como principal | Os três gabaritos que a skill `frontend-design` nomeia — creme com serifa e terracota; quase-preto com verde-ácido; jornal com fios e raio zero | A unidade do produto é tempo, e a forma que corresponde a isso é a escala graduada. O violeta fica fora do eixo vermelho–verde de propósito: neste painel essas duas cores já significam dinheiro saindo e entrando, e um acento de marca ali competiria com o dado. |
+| D18 | fase 4 | Título da tela: **Painel financeiro** | Usar `dash_financeiro`, o nome do repositório | Nome de repositório na interface é vocabulário de quem construiu, não de quem usa. É uma string num template e o dono troca quando quiser. |
 | D12 | plan | `RF-42`–`RF-45` acrescentados ao brief: foco visível, contraste AA, movimento reduzido e tema escuro | Deixar os cinco critérios de interface sem requisito que os origine | O `criteria-auditor` os apontou como critérios órfãos. Comportamento cobrado por critério e não escrito como requisito é escopo que ninguém aprovou; a régua da corrida já os exigia, faltava o requisito. |
 
 ## Aprovações registradas em modo autônomo
@@ -36,10 +39,13 @@ Cada linha aqui é um `state.py approve --por autonomo` ou um
 | Estágio | Documento | O que foi aprovado | Quando |
 |---|---|---|---|
 | brief | `01-brief.md` | 45 requisitos `RF-01`–`RF-45`: base do projeto, ingestão com sinal normalizado, senha e seed, sessão e autorização, rate-limit, linguagem visual, tela de login, encerramento de sessão, segredo de assinatura e comportamento da interface | 2026-09-06 00:45 UTC |
+| fase 4 | `04-divergencias/D-001.md` | `D-001` ratificada como APROVADA e reconciliada: `RF-41` passa a medir "não existe rota servindo arquivo" em vez de exigir `404` — o `404` obrigaria o servidor a contar ao anônimo quais caminhos existem | 2026-09-06 02:07 UTC |
 | plan | `03-plan.md` | Quatro fases — base e schema · ingestão · senha, sessão e rate-limit · linguagem visual e tela —, 58 critérios tipados, `criteria-lint` sem erro e `criteria-auditor` sem requisito órfão | 2026-09-06 00:45 UTC |
 
 ## O que ficou para o humano
 
 O que a corrida **não** decidiu de propósito.
 
-- Nada até aqui.
+- **Ratificar `D-001`** com `state.py diverge-set --item 001-base-e-login --id D-001 --status APROVADA --por humano`. Enquanto isso não acontece, a fase 4 permanece marcada `blocked-on-D-001` — é a espera funcionando, não defeito, e o item fecha com ela pendente.
+- **Decidir se o `01-brief.md` vira `01-prd.md` + `02-spec.md`** (ver `D16`). O item está na trilha completa desde a aprovação de `D-001`.
+- **Trocar o título "Painel financeiro"** por outro, se preferir (ver `D18`).

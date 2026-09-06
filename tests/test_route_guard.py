@@ -50,7 +50,8 @@ def test_the_login_form_is_the_open_door(client):
     form = client.get("/login")
 
     assert form.status_code == 200
-    assert '<form method="post" action="/login">' in form.text
+    for attribute in ('method="post"', 'action="/login"', 'name="login"', 'name="senha"'):
+        assert attribute in form.text
 
     # The rejection message proves the handler answered: had the guard caught
     # this route, the answer would be a redirect instead.

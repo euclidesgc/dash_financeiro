@@ -1,0 +1,79 @@
+:root {
+  --color-bg: #ecefe9;
+  --color-surface: #f7f9f5;
+  --color-ink: #1b2118;
+  --color-ink-muted: #4a5347;
+  --color-rule: #c6ccc0;
+  --color-field-border: #767f74;
+  --color-accent: #5b2c8d;
+  --color-accent-ink: #f7f9f5;
+  --color-negative: #9e2b25;
+  --color-positive: #2e6b3e;
+
+  --font-data:
+    ui-monospace, "SF Mono", "DejaVu Sans Mono", "Liberation Mono",
+    "Roboto Mono", Consolas, monospace;
+  --font-text:
+    system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans",
+    "Liberation Sans", Arial, sans-serif;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.625rem;
+  --text-2xl: 2.125rem;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --measure: 34rem;
+
+  --radius-sm: 2px;
+  --radius-md: 4px;
+
+  --focus-width: 2px;
+  --focus-offset: 2px;
+  --focus-color: var(--color-accent);
+
+  --motion-fast: 120ms;
+  --motion-ease: cubic-bezier(0.2, 0, 0, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #151a18;
+    --color-surface: #1e2421;
+    --color-ink: #e6eae2;
+    --color-ink-muted: #a3aca0;
+    --color-rule: #333b36;
+    --color-field-border: #727b74;
+    --color-accent: #c4a6e8;
+    --color-accent-ink: #151a18;
+    --color-negative: #f0918a;
+    --color-positive: #86c79a;
+  }
+}
+
+.amount {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
+  }
+}

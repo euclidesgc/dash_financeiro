@@ -19,3 +19,6 @@ venv/
 
 # harness
 .harness/runtime/
+
+# playwright mcp
+.playwright-mcp/
