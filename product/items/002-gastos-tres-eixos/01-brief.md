@@ -151,9 +151,9 @@ lançamentos e em dinheiro, nas duas telas.
   linhas ordenadas do maior gasto para o menor, começando por `School`
   −R$ 12.992,18 (20 lançamentos), `Real estate financing` −R$ 12.358,81 (5),
   `Services` −R$ 8.774,12 (48), `Loans and financing` −R$ 7.870,50 (7),
-  `Transfers` −R$ 6.220,71 (21), `Groceries` −R$ 5.017,64 (84), `Eating out`
-  −R$ 4.360,13 (60), `Shopping` −R$ 4.178,70 (84), `Interests charged`
-  −R$ 3.351,16 (14) e `Pharmacy` −R$ 3.041,99 (28). *(ubíquo)*
+  `Transfers` −R$ 6.220,71 (21), `Transfer - Bank Slip` −R$ 5.239,59 (1),
+  `Groceries` −R$ 5.017,64 (84), `Transfer - PIX` −R$ 4.685,15 (58),
+  `Eating out` −R$ 4.360,13 (60) e `Shopping` −R$ 4.178,70 (84). *(ubíquo)*
 - **RF-18** — O sistema deve devolver, no eixo beneficiário e nesse período,
   `debito prestacao hab` −R$ 12.358,81 (5), `pagamento de boleto sociedade de
   assistencia e cultura sagra` −R$ 10.880,05 (7) e `pagamento de boleto safra cfi s a`
@@ -232,6 +232,14 @@ lançamentos e em dinheiro, nas duas telas.
   13 pontos da série em forma legível de tabela, com mês e valor, sem espaço
   vazio: o gráfico vem de CDN e a tela não depende de rede para ser lida.
   *(comportamento indesejado)*
+- **RF-48** — Enquanto nenhuma regra tem essencialidade `supérfluo`, o bloco da
+  lista de corte deve dizer que nada foi marcado como supérfluo ainda, apontar a
+  tela de Regras como próximo ato e listar as cinco maiores categorias de
+  `variável × importante` do período como candidatas — no período de 01/03/2026
+  a 31/08/2026, `Services` −R$ 8.774,12, `Transfers` −R$ 6.220,71,
+  `Transfer - Bank Slip` −R$ 5.239,59, `Transfer - PIX` −R$ 4.685,15 e
+  `Eating out` −R$ 4.360,13. Um bloco vazio, ou um total zero sem explicação, é
+  o que faz a tela mais importante do item nascer muda. *(dirigido a estado)*
 
 ### Tela de Regras
 

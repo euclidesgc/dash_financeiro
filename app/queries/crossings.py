@@ -2,16 +2,13 @@ import sqlite3
 from dataclasses import dataclass
 from datetime import date
 
-# Money moved between the owner's own accounts, and money given back, never
-# left the house; counting either as spending inflates the crossing the panel
-# offers for cutting (invariant 25).
-_SPENDING = "amount_cents < 0 AND is_transfer = 0 AND is_refund = 0 AND refunded_by IS NULL"
+from app.queries.spending import SPENDING
 
 _DEFINITION = "SELECT label, nature, essentiality FROM crossings WHERE slug = ?"
 
 _ROWS = (
     "SELECT category AS key, sum(amount_cents) AS amount_cents, count(*) AS entries "
-    f"FROM transactions WHERE {_SPENDING} AND nature = ? AND essentiality = ? "
+    f"FROM transactions WHERE {SPENDING} AND nature = ? AND essentiality = ? "
     "AND date >= ? AND date <= ? "
     "GROUP BY category ORDER BY amount_cents, key"
 )
