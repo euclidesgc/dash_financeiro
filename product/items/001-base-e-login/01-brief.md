@@ -220,10 +220,12 @@ numerada, ingestão, autenticação e a primeira superfície.
   estado)*
 
 - **RF-41** — O sistema deve entregar a folha de estilo dentro do HTML servido
-  pela própria rota, sem montar diretório estático público: `GET
-  /static/css/tokens.css` responde 404, e a tela de login renderizada traz os
-  tokens no documento. `app/static/css/tokens.css` continua sendo o arquivo-fonte
-  único dos tokens, lido em tempo de renderização. *(ubíquo)*
+  pela própria rota, sem montar diretório estático público: nenhuma rota
+  registrada serve arquivo, `GET /static/css/tokens.css` recebe a mesma resposta
+  que qualquer caminho sem sessão — `302` para `/login` —, e a tela de login
+  renderizada traz os tokens no documento. `app/static/css/tokens.css` continua
+  sendo o arquivo-fonte único dos tokens, lido em tempo de renderização.
+  *(ubíquo)* — ver `04-divergencias/D-001.md`
 
 ## Métrica de sucesso
 

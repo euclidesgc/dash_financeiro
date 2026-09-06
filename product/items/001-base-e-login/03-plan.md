@@ -695,7 +695,11 @@ horizontal em 375, 768 e 1440 px.
       *Quando* `GET /`, `GET /health`, `POST /logout` e
       `GET /static/css/tokens.css` são chamados sem nenhum cookie
       *Então* as respostas são, na ordem, `302` com `Location: /login`, `401`,
-      `302` com `Location: /login` e `404`
+      `302` com `Location: /login` e `302` com `Location: /login`
+- [ ] `estrutural` — RF-41
+      A tabela de rotas de `app.main.create_app()` não contém nenhuma rota cujo
+      caminho comece por `/static`, e `app/main.py` não chama
+      `app.mount` nem importa `StaticFiles`
 - [ ] `comportamental` — RF-41
       *Dado* o servidor rodando com a tela de login vestida
       *Quando* `rtk proxy curl -s http://127.0.0.1:8000/login` é executado
@@ -764,11 +768,11 @@ horizontal em 375, 768 e 1440 px.
 
 ## Resposta ao aviso do `criteria-lint`
 
-O lint deixa dois avisos, ambos com a mesma causa e a mesma resposta: "o
-critério afirma um número e nada o mede", no `estrutural` de `RF-03` (fase 1) e
-no `estrutural` de `RF-24` (integração). O número que a regra enxerga é o do
+O lint deixa três avisos, todos com a mesma causa e a mesma resposta: "o
+critério afirma um número e nada o mede", nos `estrutural` de `RF-03` (fase 1),
+`RF-24` (integração) e `RF-41` (integração). O número que a regra enxerga é o do
 próprio identificador do requisito — ela procura dígito na prosa e não o
-encontra dentro de crase. Os dois ficam como estão: cada um nomeia arquivo,
+encontra dentro de crase. Os três ficam como estão: cada um nomeia arquivo,
 símbolo e atributo, que é tudo que um critério `estrutural` precisa carregar.
 
 ## Execução sugerida
