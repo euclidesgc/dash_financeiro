@@ -54,6 +54,9 @@ Convenções que atravessam o plano e que os comandos dos critérios assumem:
   `date <= hoje` mudaria a contagem de séries por causa das linhas com data
   futura que a base já traz (fatura de cartão parcelada adiante), e o número de
   RF-12 é medido com elas dentro.
+- **Vivo é `installments_left > 0` E a última ocorrência no mês da data de
+  referência ou no anterior.** O predicado de mês sozinho pega 12 séries, das
+  quais 6 já terminaram de pagar; os critérios abaixo carregam os dois lados.
 - `commitments` guarda **toda** série detectada — as recorrentes e as parceladas,
   vivas ou não. Vivo é condição de leitura: mês da última ocorrência igual ao mês
   da data de referência ou ao anterior.
@@ -92,9 +95,10 @@ DASH_DB_PATH=/tmp/dash-003-f1.sqlite`.
       `app/migrations/sql/002_session_epoch.sql:0` e
       `app/migrations/sql/003_taxonomy.sql:0`
 - [ ] `comando` — RF-02, RF-26, RF-37
-      `rtk proxy grep -REin "recorrentes\.json|parcelamentos\.json|anthropic|mycon|totalpass|1242782|12427|37482|109963|224569|246720|14106|12727"
-      app "--include=*.py" "--include=*.sql" "--include=*.html" "--include=*.json"`
-      não imprime nenhuma linha
+      `rtk proxy grep -REin "recorrentes\.json|parcelamentos\.json|anthropic|mycon|totalpass|Serviços e assinaturas|Digital services|Dívidas e juros|1242782|12427|37482|109963|224569|246720|14106|12727"
+      app "--include=*.py" "--include=*.sql" "--include=*.html"` não imprime
+      nenhuma linha — o vocabulário e os nomes de assinatura vivem em JSON de
+      dados, nunca em código
 - [ ] `comportamental` — RF-03
       *Dado* o banco `/tmp/dash-003-f1.sqlite` carregado por `rm -f
       /tmp/dash-003-f1.sqlite && rtk proxy env DASH_ENV_FILE=/dev/null
@@ -102,10 +106,11 @@ DASH_DB_PATH=/tmp/dash-003-f1.sqlite`.
       *Quando* `rtk proxy env DASH_ENV_FILE=/dev/null
       DASH_DB_PATH=/tmp/dash-003-f1.sqlite .venv/bin/python -c "from datetime
       import date; from app.db import connect; from app.commitments.live import
-      installments; c = connect(); print(len(installments(c)) ==
-      len(installments(c, today=date.today())), len(installments(c,
-      today=date(2026, 9, 5))))"` é executado
-      *Então* a saída é `True 6`
+      installments; c = connect(); print(len(installments(c, today=date(2026, 9,
+      5))), len(installments(c, today=date(2027, 3, 1))))"` é executado
+      *Então* a saída é a linha `6 0` — a mesma base lida em duas datas devolve
+      conjuntos diferentes de parcelamento vivo, o que só acontece se a data for
+      de fato o parâmetro que decide
 - [ ] `comando` — RF-04
       `.venv/bin/python -m app.query "select (select count(*) from transactions
       where is_transfer = 1), (select count(*) from transactions where is_refund
@@ -140,7 +145,7 @@ DASH_DB_PATH=/tmp/dash-003-f1.sqlite`.
       consulta é gravada em `/tmp/dash-003-depois.txt`
       *Então* as duas execuções saem com código 0, `rtk proxy diff
       /tmp/dash-003-antes.txt /tmp/dash-003-depois.txt` não imprime nenhuma
-      linha, `rtk proxy wc -l < /tmp/dash-003-depois.txt` imprime `155`, e `rtk
+      linha, `rtk proxy wc -l < /tmp/dash-003-depois.txt` imprime `151`, e `rtk
       proxy env DASH_ENV_FILE=/dev/null
       DASH_DB_PATH=/tmp/dash-003-marca.sqlite .venv/bin/python -m app.query
       "select count(*) from commitments where dismissed = 1"` imprime `1`
@@ -171,20 +176,28 @@ DASH_DB_PATH=/tmp/dash-003-f1.sqlite`.
       commitments c where c.kind = 'recurring' and exists (select 1 from
       transactions t join category_groups g on g.id = t.group_id where t.payee =
       c.series_key and g.name = 'Serviços e assinaturas')), (select count(*) from
-      commitments where dismissed = 1)"` imprime `1 0`
+      commitments where dismissed = 1), (select sum(amount_cents) from
+      commitments c where c.kind = 'recurring' and exists (select 1 from
+      transactions t where t.payee = c.series_key and t.category in ('Digital
+      services', 'Services', 'Telecommunications', 'Internet', 'Wellness and
+      fitness', 'Online Courses')))"` imprime `1 0 -224569`
 - [ ] `comando` — RF-12, RF-13, RF-16, RF-17
       `.venv/bin/python -m app.query "select (select count(*) from commitments
       where kind = 'installment'), (select count(*) from commitments where kind =
-      'installment' and substr(last_seen_date, 1, 7) in ('2026-09', '2026-08')),
-      (select sum(amount_cents) from commitments where kind = 'installment' and
-      substr(last_seen_date, 1, 7) in ('2026-09', '2026-08')), (select count(*)
-      from commitments where kind = 'installment' and series_key like 'ipva%' and
-      substr(last_seen_date, 1, 7) in ('2026-09', '2026-08')), (select
+      'installment' and substr(last_seen_date, 1, 7) in ('2026-09', '2026-08') and
+      installments_left > 0), (select sum(amount_cents) from commitments where
+      kind = 'installment' and substr(last_seen_date, 1, 7) in ('2026-09',
+      '2026-08') and installments_left > 0), (select count(*) from commitments
+      where kind = 'installment' and series_key like 'ipva%' and
+      substr(last_seen_date, 1, 7) in ('2026-09', '2026-08') and
+      installments_left > 0), (select
       installments_left from commitments where kind = 'installment' and
       series_key like 'ipva%'), (select count(*) from commitments r where r.kind
       = 'recurring' and exists (select 1 from commitments i where i.kind =
       'installment' and i.series_key = r.series_key and substr(i.last_seen_date,
-      1, 7) in ('2026-09', '2026-08')))"` imprime `100 6 -37482 0 2 0`
+      1, 7) in ('2026-09', '2026-08') and i.installments_left > 0))"` imprime
+      `96 6 -37482 0 2 0`, com todas as subconsultas de série viva exigindo
+      também `installments_left > 0`
 - [ ] `comando` — RF-14, RF-15
       `.venv/bin/python -m app.query "select (select installments_left from
       commitments where kind = 'installment' and amount_cents = -12727 and
@@ -644,10 +657,13 @@ app`. O cookie `dash_session` vem de um único `POST /login` com
       `dash_session` obtido de um único `rtk proxy curl -i -s -X POST
       http://127.0.0.1:8000/login -d "login=teste&senha=senha-teste-9k2"`
       *Quando* `http://127.0.0.1:8000/comprometido?data=2026-09-05` é buscada, as
-      três dispensas de `anthropic claude subsan franciscousa`, `pagamento de
-      boleto mycon` e `totalpasssao paulobra` são enviadas a
-      `http://127.0.0.1:8000/comprometido/dispensar`, e a tela é buscada de novo
-      com a mesma data
+      três dispensas são enviadas, uma por vez, por `rtk proxy curl -s -o
+      /dev/null -X POST -b "dash_session=<cookie>"
+      http://127.0.0.1:8000/comprometido/dispensar --data-urlencode
+      "serie=<chave>" --data-urlencode "data=2026-09-05"`, com `<chave>` valendo
+      `anthropic claude subsan franciscousa`, depois `pagamento de boleto mycon`
+      e depois `totalpasssao paulobra`, e a tela é buscada de novo com a mesma
+      data
       *Então* a primeira leitura traz `−R$ 12.802,64` e `R$ 0,00`, a segunda traz
       `−R$ 11.703,01` e `R$ 1.099,63`, e nas duas o bloco `#calendario` traz as
       strings `05/09/2026` e `20/10/2026`, sem que a ingestão tenha rodado de

@@ -202,14 +202,14 @@
       "created_at": "2026-09-06T19:04:50Z",
       "approvals": {
         "brief": {
-          "at": "2026-09-06T19:32:27Z",
-          "sha": "573e13e5cd126930905e5cb2ca6595c4f994391f",
+          "at": "2026-09-06T19:48:43Z",
+          "sha": "6566ca0be2f0a1a7ff2e866e1856a8b0853563d9",
           "file": "product/items/003-comprometido/01-brief.md",
           "por": "autonomo"
         },
         "plan": {
-          "at": "2026-09-06T19:32:27Z",
-          "sha": "5506ea06a2a57ac6ffc28778cdae9e572debbda5",
+          "at": "2026-09-06T19:54:09Z",
+          "sha": "18891686789f2842e08292383a888ec068ae3b8e",
           "file": "product/items/003-comprometido/03-plan.md",
           "por": "autonomo"
         }
@@ -217,13 +217,28 @@
       "current_phase": 1,
       "phases": {
         "1": {
-          "status": "em_execucao",
+          "status": "aprovada",
           "reproved_count": 0,
-          "verdict": null,
-          "verdict_file": null,
-          "validated_sha": null,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/003-comprometido/05-veredictos/fase-1.md",
+          "validated_sha": "9d0f3bf354490dbae0e33b0d71a96f080448eda6",
           "pr": null,
-          "blocked_on": []
+          "blocked_on": [],
+          "verdict_at": "2026-09-06T20:05:13Z",
+          "validated_trees": {
+            ".": "79b609b247bfd8fd2ab861f7f52335767e7cf261"
+          },
+          "escalation": {
+            "at": "2026-09-06T19:54:09Z",
+            "reproved_count": 2,
+            "diagnostico": null,
+            "opcoes": [
+              "criterio: o critério está errado ou mal escrito",
+              "decomposicao: a fase foi mal quebrada",
+              "abordagem: a implementação escolheu o caminho errado"
+            ]
+          },
+          "criteria_sha": "48989a48b32ded27f25d1b9fd1704d7f0a95805a8b51a440f3632eac3acdfbe8"
         }
       },
       "divergences": {},

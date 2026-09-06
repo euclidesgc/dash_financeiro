@@ -17,11 +17,16 @@ começar**. Sem esse número, cortar assinatura vira palpite e o dia 10 chega co
 uma cobrança que ninguém esperava.
 
 A base sabe a resposta e não a diz. Ela tem 55 séries que se repetem há três ou
-mais meses e 100 séries parceladas — e a conta ingênua sobre essas 100 diz que
+mais meses e 96 séries parceladas — e a conta ingênua sobre essas 100 diz que
 32 ainda têm parcela a vencer, quando só 6 têm. `IPVA parcela 1 de 3`, visto
 pela última vez em 26/01/2026, "deve" duas parcelas que não vão sair de conta
 nenhuma. Um comprometido inflado por 26 séries mortas é pior que não ter a tela:
 ele faz o dono cortar onde não precisava e desistir de um plano que estava certo.
+
+  Medido: o `parcelamentos.json` conta 100, e quatro delas não têm nenhum
+  lançamento de gasto — três são parcelamento de fatura, marcado `is_transfer`,
+  e uma é compra estornada. O filtro de gasto do item `002`, que a invariante 25
+  manda aplicar, as exclui, e por isso o motor detecta **96**.
 
 E o dia também não é conhecido. `debito prestacao hab` caiu nos dias 6, 16, 17,
 18, 19, 28 e 31 ao longo de nove meses: quem espera pelo dia 6 fica no vermelho
@@ -135,7 +140,7 @@ Por baixo dos três está o motor de compromissos, que deriva tudo das transaç�
 
 - **RF-12** — O sistema deve detectar série parcelada a partir de
   `installment_current` e `installment_total` e do padrão `n/N` na descrição,
-  produzindo sobre a base de 05/09/2026 as 100 séries que
+  produzindo sobre a base de 05/09/2026 as 96 séries parceladas que
   `data/processed/parcelamentos.json` registra. *(ubíquo)*
 - **RF-13** — O sistema deve tratar como compromisso vivo apenas a série
   parcelada cuja última parcela vista caiu no mês da data de referência ou no mês
@@ -159,7 +164,7 @@ Por baixo dos três está o motor de compromissos, que deriva tudo das transaç�
   sistema deve contá-la uma vez só, como parcelamento, e nenhuma chave de série
   aparece nas duas listas. *(comportamento indesejado)*
   A precedência vale contra o parcelamento **vivo** — o que a janela de vida
-  deixou em pé —, não contra as 100 séries detectadas. Medido: das 55 recorrentes,
+  deixou em pé —, não contra as 96 séries parceladas detectadas. Medido: das 55 recorrentes,
   ao menos 20 também produzem série parcelada entre as 100, mas nenhuma entre os 6
   vivos. Aplicá-la contra as 100 derrubaria `RF-09` sem que um único real deixasse
   de sair da conta; o que a regra existe para impedir é contar duas vezes o
@@ -269,7 +274,7 @@ Por baixo dos três está o motor de compromissos, que deriva tudo das transaç�
 | Métrica | Onde se observa | Alvo |
 |---|---|---|
 | O comprometido do mês passa a ter um número derivado do banco | consulta a `data/dash.sqlite`, data de referência 05/09/2026 | 55 assinaturas somando R$ 12.427,82/mês e 6 parcelamentos somando R$ 374,82/mês |
-| Parcelamento morto não infla o total | consulta a `data/dash.sqlite`, data de referência 05/09/2026 | das 100 séries parceladas detectadas, 6 entram no comprometido; `IPVA parcela 1 de 3` não entra |
+| Parcelamento morto não infla o total | consulta a `data/dash.sqlite`, data de referência 05/09/2026 | das 96 séries parceladas detectadas, 6 entram no comprometido; `IPVA parcela 1 de 3` não entra |
 | A economia projetada da alavanca de curto prazo ganha fonte | tela de Comprometido, com as três assinaturas marcadas | R$ 1.099,63/mês, o mesmo número que `docs/plano.md` usa no horizonte de 0–3 meses |
 
 ## Restrições herdadas
