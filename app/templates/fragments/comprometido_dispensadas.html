@@ -1,0 +1,40 @@
+{% from "fragments/celula.html" import cell_name -%}
+<section id="dispensadas" class="panel panel-wide">
+  <div class="stack-tight">
+    <h2 class="section-title">Não uso mais</h2>
+    <p class="lede">{{ dismissed|length }} assinatura{% if dismissed|length != 1 %}s{% endif %}
+      fora do total comprometido, somando
+      <span class="cifra">{{ projected_savings_cents|brl }}</span> por mês.</p>
+  </div>
+  <p class="notice">"Não uso mais" registra a decisão neste painel e não cancela nada no fornecedor.
+    O dinheiro só para de sair da conta depois que você pedir o cancelamento à empresa.</p>
+  <div class="table-scroll">
+    <table class="data-table">
+      <caption class="sr-only">Assinaturas dispensadas, do maior valor médio para o menor.</caption>
+      <thead>
+        <tr>
+          <th scope="col">Assinatura</th>
+          <th scope="col" class="col-num">Valor médio</th>
+          <th scope="col">Última cobrança</th>
+          <th scope="col">Ação</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in dismissed %}
+        <tr data-media="{{ row['amount_cents'] }}">
+          <th scope="row" class="cell-name">{{ cell_name(row['series_key'], labels) }}</th>
+          <td class="col-num"><span class="cifra">{{ row['amount_cents']|brl }}</span></td>
+          <td class="col-date">{{ row['last_seen_date']|dia }}</td>
+          <td>
+            <form method="post" action="{{ resume_url }}">
+              <input type="hidden" name="serie" value="{{ row['series_key'] }}">
+              <input type="hidden" name="data" value="{{ reference }}">
+              <button class="button button-quiet button-small" type="submit">Ainda uso</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>

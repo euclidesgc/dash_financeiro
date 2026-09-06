@@ -1,0 +1,75 @@
+{% from "fragments/celula.html" import cell_name -%}
+<section id="parcelamentos" class="panel panel-wide">
+  <div class="stack-tight">
+    <h2 class="section-title">Parcelamentos</h2>
+    {% if installments %}
+    <p class="lede">{{ installments|length }} parcelamento{% if installments|length != 1 %}s{% endif %}
+      em aberto, do que falta mais pagar para o que falta menos. Parcelamento contratado não para
+      com um clique: cada um sai da conta até a última parcela.</p>
+    {% endif %}
+  </div>
+  {% if installments %}
+  <div class="table-scroll">
+    <table class="data-table">
+      <caption class="sr-only">Parcelamentos em aberto, do maior saldo restante para o menor.</caption>
+      <thead>
+        <tr>
+          <th scope="col">Parcelamento</th>
+          <th scope="col" class="col-num">Parcela</th>
+          <th scope="col" class="col-num">Restam</th>
+          <th scope="col" class="col-num">Falta pagar</th>
+          <th scope="col">Termina em</th>
+          <th scope="col" class="col-num">Devolve por mês</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in installments %}
+        <tr data-restante="{{ row['amount_cents'] * row['installments_left'] }}">
+          <th scope="row" class="cell-name">{{ cell_name(row['series_key'], labels) }}</th>
+          <td class="col-num"><span class="cifra">{{ row['amount_cents']|brl }}</span></td>
+          <td class="col-num">{{ row['installments_left'] }}</td>
+          <td class="col-num"><span class="cifra">{{ (row['amount_cents'] * row['installments_left'])|brl }}</span></td>
+          <td class="col-month">{{ row['ends_month']|mes }}</td>
+          <td class="col-num"><span class="cifra">{{ (-row['amount_cents'])|brl }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div id="caixa-liberado" class="released">
+    <div class="stack-tight">
+      <h3 class="section-title">Caixa liberado</h3>
+      <p class="lede">Quanto do gasto mensal volta a ficar livre conforme cada parcelamento acaba.
+        O mês de término é previsão pela contagem de parcelas, não data contratual.</p>
+    </div>
+    <div class="table-scroll">
+      <table class="data-table data-table-compact">
+        <caption class="sr-only">Caixa mensal liberado, por mês de término.</caption>
+        <thead>
+          <tr>
+            <th scope="col">Mês</th>
+            <th scope="col" class="col-num">Volta ao caixa</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for step in released %}
+          <tr>
+            <th scope="row" class="col-month">{{ step['month']|mes }}</th>
+            <td class="col-num"><span class="cifra">{{ step['amount_cents']|brl }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="headline-small">Quando o último acabar,
+      <span class="cifra positive">{{ released_cents|brl }}</span> por mês voltam ao caixa.</p>
+  </div>
+  {% else %}
+  <div class="empty">
+    <p class="empty-title">Nenhum parcelamento em aberto.</p>
+    <p class="lede">Entra aqui a compra parcelada cuja última parcela caiu neste mês ou no
+      anterior, com o que falta pagar e o mês em que termina. Enquanto não houver nenhuma, nada
+      está preso ao caixa dos próximos meses.</p>
+  </div>
+  {% endif %}
+</section>

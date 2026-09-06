@@ -1,0 +1,55 @@
+{% from "fragments/celula.html" import cell_name -%}
+<section id="assinaturas" class="panel panel-wide">
+  <div class="stack-tight">
+    <h2 class="section-title">Assinaturas</h2>
+    {% if subscriptions %}
+    <p class="lede">{{ subscriptions|length }} série{% if subscriptions|length != 1 %}s{% endif %}
+      recorrente{% if subscriptions|length != 1 %}s{% endif %}, do maior valor médio para o menor.
+      O valor é a média observada das cobranças, não o valor contratado.</p>
+    <p class="lede">"Não uso mais" registra a decisão neste painel e não cancela nada no fornecedor.
+      A linha sai do total comprometido aqui; o dinheiro só para de sair da conta depois que a
+      empresa cancelar a assinatura.</p>
+    {% endif %}
+  </div>
+  {% if subscriptions %}
+  <div class="table-scroll">
+    <table class="data-table">
+      <caption class="sr-only">Assinaturas detectadas, do maior valor médio para o menor.</caption>
+      <thead>
+        <tr>
+          <th scope="col">Assinatura</th>
+          <th scope="col" class="col-num">Valor médio</th>
+          <th scope="col" class="col-num">Meses seguidos</th>
+          <th scope="col">Última cobrança</th>
+          <th scope="col">Ação</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in subscriptions %}
+        <tr data-media="{{ row['amount_cents'] }}">
+          <th scope="row" class="cell-name">{{ cell_name(row['series_key'], labels) }}</th>
+          <td class="col-num"><span class="cifra">{{ row['amount_cents']|brl }}</span></td>
+          <td class="col-num">{{ row['months_consecutive'] }}</td>
+          <td class="col-date">{{ row['last_seen_date']|dia }}
+            {%- if not row['live'] %}<span class="cell-key">Sem cobrança recente</span>{% endif %}</td>
+          <td>
+            <form method="post" action="{{ dismiss_url }}">
+              <input type="hidden" name="serie" value="{{ row['series_key'] }}">
+              <input type="hidden" name="data" value="{{ reference }}">
+              <button class="button button-quiet button-small" type="submit">Não uso mais</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">
+    <p class="empty-title">{% if installments %}Nenhuma assinatura detectada.{% else %}Nenhum compromisso detectado.{% endif %}</p>
+    <p class="lede">Uma série vira compromisso depois de três meses seguidos de cobrança de valor
+      parecido. Enquanto nenhuma aparece, o que existe é o gasto lançamento a lançamento: abra a
+      tela de <a href="/gastos">Gastos</a> para ver por onde o dinheiro saiu.</p>
+  </div>
+  {% endif %}
+</section>
