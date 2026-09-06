@@ -1,4 +1,8 @@
-from app.config import DEFAULT_DB_PATH, load_config
+import re
+
+import pytest
+
+from app.config import DEFAULT_DB_PATH, load_config, resolve_session_secret
 
 
 def test_typo_spellings_are_accepted():
@@ -49,3 +53,30 @@ def test_process_environment_beats_the_env_file(monkeypatch):
     config = load_config()
 
     assert (config.login, config.password, config.gemini_api_key) == ("teste", "abc123", "k-1")
+
+
+def test_a_generated_key_file_is_read_back(tmp_path):
+    config = load_config({"DASH_KEY_PATH": str(tmp_path / "session.key")})
+
+    first = resolve_session_secret(config)
+
+    assert first
+    assert resolve_session_secret(config) == first
+
+
+def test_an_empty_key_file_stops_the_boot(tmp_path):
+    key = tmp_path / "session.key"
+    key.write_text("", encoding="utf-8")
+    config = load_config({"DASH_KEY_PATH": str(key)})
+
+    with pytest.raises(RuntimeError, match=re.escape(str(key))):
+        resolve_session_secret(config)
+
+
+def test_a_blank_key_file_stops_the_boot(tmp_path):
+    key = tmp_path / "session.key"
+    key.write_text("   \n", encoding="utf-8")
+    config = load_config({"DASH_KEY_PATH": str(key)})
+
+    with pytest.raises(RuntimeError, match=re.escape(str(key))):
+        resolve_session_secret(config)

@@ -29,7 +29,7 @@ def conn(tmp_path):
 
 
 def test_first_run_creates_the_six_tables(conn):
-    assert apply_migrations(conn, SQL_FOLDER) == ["001_schema.sql"]
+    assert apply_migrations(conn, SQL_FOLDER) == ["001_schema.sql", "002_session_epoch.sql"]
     assert [row[0] for row in conn.execute(TABLE_NAMES)] == EXPECTED_TABLES
 
 
@@ -38,8 +38,21 @@ def test_second_run_applies_nothing(conn):
 
     assert apply_migrations(conn, SQL_FOLDER) == []
 
-    row = conn.execute("select count(*), min(version) from schema_migrations").fetchone()
-    assert tuple(row) == (1, "001")
+    row = conn.execute(
+        "select count(*), min(version), max(version) from schema_migrations"
+    ).fetchone()
+    assert tuple(row) == (2, "001", "002")
+
+
+def test_the_session_epoch_starts_at_zero(conn):
+    apply_migrations(conn, SQL_FOLDER)
+
+    row = conn.execute(
+        "select type, \"notnull\", dflt_value from pragma_table_info('users') "
+        "where name = 'session_epoch'"
+    ).fetchone()
+
+    assert tuple(row) == ("INTEGER", 1, "0")
 
 
 def test_money_columns_are_integer(conn):
