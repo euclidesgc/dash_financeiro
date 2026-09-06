@@ -1,0 +1,27 @@
+[project]
+name = "dash-financeiro"
+version = "0.1.0"
+description = "Painel financeiro pessoal local"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "jinja2",
+    "itsdangerous",
+    "argon2-cffi",
+    "python-multipart",
+    "python-dotenv",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "httpx",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
