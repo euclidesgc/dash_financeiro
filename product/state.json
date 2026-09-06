@@ -5,7 +5,7 @@
     "001-base-e-login": {
       "title": "Base e login: schema, ingestão dos 1.942 lançamentos e acesso protegido",
       "track": "completa",
-      "stage": "execute",
+      "stage": "done",
       "stacks": [
         "python"
       ],
