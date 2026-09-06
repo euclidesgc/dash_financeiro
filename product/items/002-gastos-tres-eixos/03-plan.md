@@ -611,6 +611,20 @@ minutos fecham a porta.
       na tabela de agregação, e traz uma mensagem contendo as palavras
       `Nenhum gasto` e `período`, com um `<button>` ou um `<a>` que devolve ao
       período de seis meses
+- [ ] `comportamental` — RF-48
+      *Dado* o servidor rodando contra `/tmp/dash-002-f3.sqlite`, carregado por
+      `rm -f /tmp/dash-002-f3.sqlite && rtk proxy env DASH_ENV_FILE=/dev/null
+      DASH_DB_PATH=/tmp/dash-002-f3.sqlite .venv/bin/python -m app.ingest`, em
+      que nenhuma regra tem essencialidade `supérfluo`, e um cookie
+      `dash_session` válido
+      *Quando* `rtk proxy curl -s -b "dash_session=<cookie>"
+      "http://127.0.0.1:8000/gastos?eixo=grupo&inicio=2026-03-01&fim=2026-08-31"`
+      é executado
+      *Então* o HTML traz, no bloco da lista de corte, um texto que contém
+      `Regras` como destino do próximo ato e as cinco linhas candidatas
+      `Services`, `Transfers`, `Transfer - Bank Slip`, `Transfer - PIX` e
+      `Eating out`, com as cifras `−R$ 8.774,12`, `−R$ 6.220,71`,
+      `−R$ 5.239,59`, `−R$ 4.685,15` e `−R$ 4.360,13`
 - [ ] `comportamental` — RF-38
       *Dado*
       `http://127.0.0.1:8000/gastos?eixo=grupo&inicio=2026-03-01&fim=2026-08-31`
