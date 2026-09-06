@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% from "fragments/celula.html" import cell_name -%}
+{% block title %}Regras{% endblock %}
+{% block content %}
+<main class="screen">
+  <header class="panel panel-wide">
+    <div class="scale" aria-hidden="true"></div>
+    <h1 class="screen-title">Regras</h1>
+    <p class="lede">Cada regra casa uma categoria ou uma descrição e diz onde o lançamento entra
+      nos três eixos. Gravar, editar e remover reclassificam a base na hora, e a tela diz quantos
+      lançamentos mudaram.</p>
+  </header>
+  <section id="regra-nova" class="panel panel-wide">
+    {% if done is not none or reach == 0 or notice %}
+    <div class="notices">
+      {% if done is not none %}
+      <p class="notice notice-done" role="status">{{ done }} lançamento{% if done != 1 %}s{% endif %} reclassificado{% if done != 1 %}s{% endif %}.</p>
+      {% endif %}
+      {% if reach == 0 %}
+      <p class="notice" role="alert">A regra foi gravada e não alcançou nenhum lançamento. A descrição
+        é casada em caixa baixa, sem acento e sem dígito: confira se o texto da regra está nessa
+        forma.</p>
+      {% endif %}
+      {% if notice %}
+      <p class="notice" id="erro-regra" role="alert">{{ notice }}</p>
+      {% endif %}
+    </div>
+    {% endif %}
+    <h2 class="section-title">{% if form['rule_id'] %}Editar a regra{% else %}Nova regra{% endif %}</h2>
+    <form class="form" method="post"
+          action="{% if form['rule_id'] %}{{ screen }}/{{ form['rule_id'] }}{{ edit_suffix }}{% else %}{{ screen }}{% endif %}">
+      <div class="controls">
+        <div class="field">
+          <label class="field-label" for="campo-match-kind">Tipo</label>
+          <select class="field-input" id="campo-match-kind" name="match_kind">
+            {% for value, name in kinds %}
+            <option value="{{ value }}"{% if value == form['match_kind'] %} selected{% endif %}>{{ name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label" for="campo-match-value">Casamento</label>
+          <input class="field-input" id="campo-match-value" name="match_value" type="text"
+                 value="{{ form['match_value'] }}" autocapitalize="none" spellcheck="false"
+                 {% if notice %}aria-describedby="erro-regra" aria-invalid="true"{% endif %}>
+        </div>
+        <div class="field">
+          <label class="field-label" for="campo-group">Grupo</label>
+          <select class="field-input" id="campo-group" name="group_id">
+            {% for group in groups %}
+            <option value="{{ group['id'] }}"{% if group['id']|string == form['group_id'] %} selected{% endif %}>{{ group['name'] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label" for="campo-nature">Natureza</label>
+          <select class="field-input" id="campo-nature" name="nature">
+            {% for value in natures %}
+            <option value="{{ value }}"{% if value == form['nature'] %} selected{% endif %}>{{ value }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label" for="campo-essentiality">Essencialidade</label>
+          <select class="field-input" id="campo-essentiality" name="essentiality">
+            {% for value in terms %}
+            <option value="{{ value }}"{% if value == form['essentiality'] %} selected{% endif %}>{{ value }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <p class="lede">A regra de descrição é casada contra a descrição já normalizada: caixa baixa,
+        sem acento e sem dígito.
+        {%- if samples %} Nesta base ela tem esta forma —
+        {% for sample in samples %}<span class="sample">{{ sample }}</span>{% if not loop.last %}, {% endif %}{% endfor %}.
+        {%- endif %} Escrever com maiúscula, acento ou número grava uma regra que não casa nada.</p>
+      <div class="rule-actions">
+        <button class="button" type="submit">Gravar regra</button>
+        {% if form['rule_id'] %}
+        <a class="button button-quiet" href="{{ screen }}">Cancelar a edição</a>
+        {% endif %}
+      </div>
+    </form>
+  </section>
+  <section id="sem-regra" class="panel panel-wide">
+    <div class="stack-tight">
+      <h2 class="section-title">Sem regra</h2>
+      <p class="headline-small"><span class="cifra">{{ residue['amount_cents']|brl }}</span>
+        em {{ residue['entries'] }} lançamento{% if residue['entries'] != 1 %}s{% endif %}.</p>
+      <p class="lede">É o gasto que nenhuma regra alcança, do maior para o menor. Cada saída aparece
+        nas duas leituras que viram regra — pela categoria e pelo beneficiário. Abrir uma linha leva
+        o casamento para o formulário acima.</p>
+    </div>
+    {% if candidates %}
+    <div class="table-scroll">
+      <table class="data-table" id="candidatas">
+        <caption class="sr-only">O que nenhuma regra alcança, do maior gasto para o menor.</caption>
+        <thead>
+          <tr>
+            <th scope="col">Casamento</th>
+            <th scope="col" class="col-num">Gasto</th>
+            <th scope="col" class="col-num">Lançamentos</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in candidates %}
+          <tr>
+            <th scope="row" class="cell-name">
+              <span class="cell-key">{{ kind_names[row['kind']] }}</span>
+              <a class="row-open"
+                 href="{{ screen }}?tipo={{ row['kind']|urlencode }}&amp;valor={{ row['value']|urlencode }}#regra-nova">
+                {{ cell_name(row['value'], labels) }}
+              </a>
+            </th>
+            <td class="col-num"><span class="cifra">{{ row['amount_cents']|brl }}</span></td>
+            <td class="col-num">{{ row['entries'] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty">
+      <p class="empty-title">Toda saída está alcançada por alguma regra.</p>
+      <p class="lede">Quando um lançamento novo chegar com uma categoria que nenhuma regra cobre, ele
+        aparece aqui com o valor que carrega, e é por ele que a próxima regra começa.</p>
+    </div>
+    {% endif %}
+  </section>
+  {% include "fragments/regras_lista.html" %}
+</main>
+{% endblock %}

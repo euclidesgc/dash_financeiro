@@ -1,0 +1,56 @@
+{% from "fragments/celula.html" import cell_name -%}
+<section id="regras" class="panel panel-wide">
+  <div class="stack-tight">
+    <h2 class="section-title">Regras gravadas</h2>
+    <p class="lede">{{ rules|length }} regra{% if rules|length != 1 %}s{% endif %}, da que carrega mais
+      gasto para a que carrega menos. Alcance é quantos lançamentos a regra está segurando agora.</p>
+  </div>
+  {% if rules %}
+  <div class="table-scroll">
+    <table class="data-table">
+      <caption class="sr-only">Regras gravadas, do maior gasto alcançado para o menor.</caption>
+      <thead>
+        <tr>
+          <th scope="col">Casamento</th>
+          <th scope="col">Grupo</th>
+          <th scope="col">Natureza</th>
+          <th scope="col">Essencialidade</th>
+          <th scope="col" class="col-num">Alcance</th>
+          <th scope="col" class="col-num">Gasto</th>
+          <th scope="col">Ação</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rule in rules %}
+        <tr>
+          <th scope="row" class="cell-name">
+            <span class="cell-key">{{ kind_names[rule['match_kind']] }}</span>
+            {{ cell_name(rule['match_value'], labels) }}
+          </th>
+          <td>{{ rule['group_name'] }}</td>
+          <td>{{ rule['nature'] }}</td>
+          <td>{{ rule['essentiality'] }}</td>
+          <td class="col-num">{{ rule['entries'] }}</td>
+          <td class="col-num"><span class="cifra">{{ rule['amount_cents']|brl }}</span></td>
+          <td>
+            <div class="rule-actions">
+              <a class="button button-quiet button-small"
+                 href="{{ screen }}?editar={{ rule['id'] }}#regra-nova">Editar</a>
+              <form method="post" action="{{ screen }}/{{ rule['id'] }}{{ remove_suffix }}">
+                <button class="button button-quiet button-small" type="submit">Remover</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">
+    <p class="empty-title">Nenhuma regra gravada.</p>
+    <p class="lede">Sem regra, todo lançamento cai no grupo de resto e a tela de
+      <a href="/gastos">Gastos</a> não separa nada. Escreva a primeira no formulário acima.</p>
+  </div>
+  {% endif %}
+</section>

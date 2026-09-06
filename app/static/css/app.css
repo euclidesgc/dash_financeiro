@@ -145,6 +145,18 @@ body {
   border-radius: var(--radius-sm);
 }
 
+/* The confirmation and the refusal share the shape of a notice and differ only
+   at the edge: the accent says the write happened, the negative edge says it
+   did not, and each one carries its own sentence besides. */
+.notice-done {
+  border-left-color: var(--color-accent);
+}
+
+.notices {
+  display: grid;
+  gap: var(--space-2);
+}
+
 .button {
   justify-self: start;
   padding: var(--space-3) var(--space-6);
@@ -176,6 +188,24 @@ body {
 
 .button-quiet:hover {
   border-color: var(--color-accent);
+}
+
+.button-small {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.rule-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* A normalized description is data, not prose: it reads in the data face so
+   the shape a rule has to match is visible before anyone types one. */
+.sample {
+  font-family: var(--font-data);
+  overflow-wrap: anywhere;
 }
 
 .eyebrow {
