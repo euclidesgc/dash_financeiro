@@ -8,12 +8,20 @@ from app.migrations.runner import apply_migrations
 
 EXPECTED_TABLES = [
     "accounts",
+    "categories",
+    "category_groups",
+    "category_rules",
+    "crossings",
+    "essentialities",
     "login_attempts",
+    "natures",
     "schema_migrations",
     "sync_runs",
     "transactions",
     "users",
 ]
+
+EXPECTED_MIGRATIONS = ["001_schema.sql", "002_session_epoch.sql", "003_taxonomy.sql"]
 
 TABLE_NAMES = (
     "select name from sqlite_master "
@@ -28,8 +36,8 @@ def conn(tmp_path):
     connection.close()
 
 
-def test_first_run_creates_the_six_tables(conn):
-    assert apply_migrations(conn, SQL_FOLDER) == ["001_schema.sql", "002_session_epoch.sql"]
+def test_first_run_creates_every_declared_table(conn):
+    assert apply_migrations(conn, SQL_FOLDER) == EXPECTED_MIGRATIONS
     assert [row[0] for row in conn.execute(TABLE_NAMES)] == EXPECTED_TABLES
 
 
@@ -41,7 +49,7 @@ def test_second_run_applies_nothing(conn):
     row = conn.execute(
         "select count(*), min(version), max(version) from schema_migrations"
     ).fetchone()
-    assert tuple(row) == (2, "001", "002")
+    assert tuple(row) == (len(EXPECTED_MIGRATIONS), "001", "003")
 
 
 def test_the_session_epoch_starts_at_zero(conn):
