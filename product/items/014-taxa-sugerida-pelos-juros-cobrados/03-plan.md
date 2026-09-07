@@ -22,7 +22,7 @@ DASH_KEY_PATH=/tmp/dash-014.key DASH_TODAY=2026-09-05 .venv/bin/python -m app`.
       o mapa, mostra **duas** contas: uma chamada `itau`, com `median_bp` igual a
       `671`, `lowest_bp` igual a `458`, `highest_bp` igual a `984` e `months`
       igual a `7`; e uma chamada `CAIXA`, com `median_bp` igual a `800` e
-      `months` igual a `4`
+      `months` igual a `3`
 - [ ] `comando` — RF-13, RF-14
       `rtk proxy env DASH_ENV_FILE=/dev/null .venv/bin/python -m pytest -q
       tests/test_observed_rates.py` sai com código 0, e o arquivo contém um teste
@@ -31,7 +31,10 @@ DASH_KEY_PATH=/tmp/dash-014.key DASH_TODAY=2026-09-05 .venv/bin/python -m app`.
       6** — o dia em que a conta real posta, e o que um corte fixo em cinco dias
       não alcançava; outro que afirma que conta que posta no fim do mês **não**
       cobra em atraso; outro que afirma que o **mês em curso** não entra; e outro
-      que afirma que a mediana de uma contagem par é **arredondada**
+      que afirma que a mediana de uma contagem par é **arredondada**; outro que
+      afirma que o mês mais antigo, truncado pela reconstrução, é medido contra os
+      dias do **calendário** e não contra os dias reconstruídos; e outro que
+      afirma que um mês cujo juro **líquido é positivo** não conta como cobrança
 - [ ] `comando` — RF-15
       `rtk proxy env DASH_ENV_FILE=/dev/null DASH_DB_PATH=/tmp/dash-014.sqlite
       .venv/bin/python -c` com um trecho que conta as tags do bloco
@@ -43,7 +46,7 @@ DASH_KEY_PATH=/tmp/dash-014.key DASH_TODAY=2026-09-05 .venv/bin/python -m app`.
       http://127.0.0.1:8000/dividas` é executado
       *Então* a resposta é `200`; o bloco `id="sem-taxa"` traz **exatamente
       dois** elementos com `data-sugerida`, com os valores `671` e `800` e os
-      `data-faixa` `458-984` e `313-816`; o campo de taxa da linha do `itau` vem
+      `data-faixa` `458-984` e `799-816`; o campo de taxa da linha do `itau` vem
       com `value="6,71"`; e **nenhuma** linha de cartão traz `data-sugerida`
 - [ ] `comportamental` — RF-11
       *Dado* o servidor rodando e um cookie válido
@@ -71,7 +74,7 @@ DASH_KEY_PATH=/tmp/dash-014.key DASH_TODAY=2026-09-05 .venv/bin/python -m app`.
 - [ ] `comando` — portão de lint
       `rtk proxy bash scripts/lint.sh` sai com código 0
 - [ ] `comando` — RF-12
-      `rtk proxy grep -REn --exclude-dir=__pycache__ "\b(671|800|458|984|313|816)\b"
+      `rtk proxy grep -REn --exclude-dir=__pycache__ "\b(671|800|458|984|799|816)\b"
       app/debts app/routers/debts.py app/templates/dividas.html` não imprime
       nenhuma linha
 - [ ] `estrutural` — RF-10

@@ -1,4 +1,5 @@
 import sqlite3
+from calendar import monthrange
 from datetime import date, timedelta
 
 from app.accounts import BANK
@@ -90,14 +91,14 @@ def _monthly_rates(
         charged = _charged_for(conn, account_id, month, arrears)
         if not charged:
             continue
-        in_month = [value for when, value in days.items() if when[:7] == month]
-        negative = [value for value in in_month if value < 0]
-        # A month with only a handful of days in the red divides a whole month of
-        # interest by a full average and reads far too low. It is the same
-        # distortion the month in progress caused, at the other end of the series
-        # — and the oldest month is partial by construction, because the walk
-        # stops at the first movement.
-        if len(negative) < len(in_month) * MIN_NEGATIVE_SHARE:
+        negative = [value for when, value in days.items() if when[:7] == month and value < 0]
+        # Measured against the days of the calendar month, not against the days
+        # the reconstruction happens to hold. The oldest month is truncated by
+        # construction — the walk stops at the first movement — so comparing it
+        # to its own truncated self lets it through: 14 of 26 reconstructed days
+        # passes, 14 of 31 real days does not. That is the same partial-month
+        # distortion the month in progress caused, surviving at the other end.
+        if len(negative) < _days_in(month) * MIN_NEGATIVE_SHARE:
             continue
         average = sum(negative) / len(negative)
         if abs(average) < MIN_BALANCE_CENTS:
@@ -113,13 +114,21 @@ def posts_in_arrears(conn: sqlite3.Connection, account_id: str) -> bool:
     return bool(days) and _median(days) <= EARLY_DAYS
 
 
+def _days_in(month: str) -> int:
+    return monthrange(int(month[:4]), int(month[5:7]))[1]
+
+
 def _charged_for(conn: sqlite3.Connection, account_id: str, month: str, arrears: bool) -> int:
     # The bank charges in arrears: the interest posted early in a month is the
     # price of the month before. Matching the posting to the month it was posted
     # in, instead of the month it remunerates, turned a contracted rate that
     # barely moves into a range three times wider than the real one.
     wanted = _next(month) if arrears else month
-    return conn.execute(_CHARGED, (account_id, wanted)).fetchone()["total"]
+    charged = conn.execute(_CHARGED, (account_id, wanted)).fetchone()["total"]
+    # Only money that left. A month whose interest line nets positive — a refund
+    # larger than the charge — is not a month the bank charged for, and taking
+    # its absolute value would read a credit as a rate.
+    return charged if charged < 0 else 0
 
 
 def _next(month: str) -> str:

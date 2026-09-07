@@ -16,7 +16,7 @@
 - **RF-07** — A sugestão é a **mediana** dos meses, e a tela mostra também o
   **menor e o maior** — a faixa do `itau` vai de 4,58% a 9,84%.
 - **RF-08** — Na base de 05/09/2026 a sugestão do `itau` é **6,71% ao mês** sobre
-  7 meses, com faixa de 4,58% a 9,84%, e a da `CAIXA` é **8,00%** sobre 4 meses.
+  7 meses, com faixa de 4,58% a 9,84%, e a da `CAIXA` é **8,00%** sobre 3 meses, com faixa de 7,99% a 8,16% — dezessete pontos-base, que é como uma taxa contratada se parece.
 - **RF-09** — **Cartão não recebe sugestão.** O saldo de um cartão é fatura, e
   fatura paga inteira não cobra juro; os encargos pequenos que aparecem não são
   rotativo sobre o saldo, e derivar deles daria um número falso.
@@ -30,10 +30,16 @@
   lançamentos dela: um corte fixo em dias alcançava a conta que posta no dia 1º e
   **não** a que posta no dia 6, jogando fora 31% do juro dessa segunda — a maior
   cobrança da série, atribuída a um mês que a conta passou inteiro no azul.
-- **RF-16** — Mês com menos da **metade** dos dias no vermelho é descartado: um
-  juro de mês inteiro dividido por uma média cheia lê baixo demais. É a mesma
-  distorção do mês em curso, na outra ponta — e o mês mais antigo é parcial por
-  construção, porque a reconstrução para no primeiro lançamento.
+- **RF-16** — Mês com menos da **metade** dos dias no vermelho é descartado, e a
+  conta é feita contra os dias do **calendário**, não contra os dias que a
+  reconstrução tem. O mês mais antigo é truncado por construção — a caminhada
+  para no primeiro lançamento —, então compará-lo consigo mesmo o deixa passar:
+  14 de 26 dias reconstruídos passa, 14 de 31 dias reais não. Era esse mês que
+  formava o piso de 3,13% na faixa da `CAIXA`, cujos outros meses variam 17
+  pontos-base entre si.
+- **RF-17** — Mês cujo juro **líquido é positivo** não conta como cobrança. A
+  base tem cinco lançamentos `CREDITO JUROS` positivos; tomar o valor absoluto
+  leria um estorno como taxa.
 - **RF-14** — O **mês em curso** não entra: cinco dias de saldo sob um mês
   inteiro de juros lê como uma taxa três vezes a real, e era ele quem produzia o
   extremo superior da faixa mostrada.

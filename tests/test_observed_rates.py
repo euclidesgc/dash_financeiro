@@ -151,3 +151,37 @@ def test_the_month_in_progress_is_left_out(taxonomy_conn):
 
     assert "2026-09" not in months
     assert months
+
+
+def test_a_truncated_oldest_month_is_measured_against_the_calendar(taxonomy_conn):
+    from app.debts.observed import _monthly_rates, daily_balances
+
+    # The walk starts here, so June holds 26 reconstructed days, not 30.
+    rows = [transaction("c", "2026-06-05", -3000.0, descricao="Compra")]
+    rows += [
+        transaction(f"p-{day}", f"2026-06-{day}", 3000.0, descricao="Deposito")
+        for day in ("20",)
+    ]
+    rows += [transaction("j", "2026-07-02", -100.0, descricao="COBRANCA DE JUROS")]
+    for when in ("2026-07", "2026-08"):
+        rows += month("b", when, -3000.0, interest=-100.0)
+    conn = account(load(taxonomy_conn, rows), -300000)
+    days = daily_balances(conn, ACCOUNT["id"], -300000, REFERENCE)
+    months = [when for when, _ in _monthly_rates(conn, ACCOUNT["id"], days, REFERENCE)]
+
+    # 15 negative days of 30 in the calendar is under half, even though it is
+    # over half of the 26 days the reconstruction holds.
+    assert "2026-06" not in months
+
+
+def test_a_month_whose_interest_nets_positive_is_not_a_month_the_bank_charged(taxonomy_conn):
+    from app.debts.observed import _charged_for
+
+    rows = [
+        transaction("c", "2026-06-01", -1000.0, descricao="Compra"),
+        transaction("j", "2026-06-28", -200.0, descricao="Saída JUROS LIMITE DA CONTA"),
+        transaction("e", "2026-06-29", 500.0, descricao="CREDITO JUROS"),
+    ]
+    conn = account(load(taxonomy_conn, rows), -100000)
+
+    assert _charged_for(conn, ACCOUNT["id"], "2026-06", arrears=False) == 0
