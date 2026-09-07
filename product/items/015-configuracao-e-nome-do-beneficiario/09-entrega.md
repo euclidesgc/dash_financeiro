@@ -1,7 +1,7 @@
 # Entrega — 015-configuracao-e-nome-do-beneficiario
 
 Três fases implementadas, validadas às cegas e commitadas. A integração é
-`develop`, e o merge está **travado** até o dono ratificar `D-002`.
+`develop`, e nada trava o merge.
 
 ## A pilha, uma fase por branch
 
