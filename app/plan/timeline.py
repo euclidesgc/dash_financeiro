@@ -66,8 +66,21 @@ def expensive_debts(conn: sqlite3.Connection) -> list[dict]:
     ]
 
 
-def simulate(conn: sqlite3.Connection, scenario: str, *, today: date) -> dict:
-    steady = monthly_result_cents(conn, scenario, today=today)
+def simulate(
+    conn: sqlite3.Connection,
+    scenario: str,
+    *,
+    today: date,
+    extra_monthly_cents: int = 0,
+    extra_months: int | None = None,
+    extra_once_cents: int = 0,
+) -> dict:
+    # The extra is what the simulator of item 008 injects: the same engine
+    # answers "where am I going" and "what would this change", so the two can
+    # never disagree. A term makes the effect stop after that many months, and a
+    # one-off lands in the first month — both are fields of the form, and a field
+    # that changes nothing is a field that lies.
+    steady = monthly_result_cents(conn, scenario, today=today) + extra_monthly_cents
     freed = released_by_month(conn, today=today) if scenario == OPTIMISTIC else []
     # Only the cash that is still ahead is taken out of the starting point: an
     # instalment ending in the month of the reading has already freed its money,
@@ -91,16 +104,22 @@ def simulate(conn: sqlite3.Connection, scenario: str, *, today: date) -> dict:
     result = base_result
     for month in range(1, HORIZON_MONTHS + 1):
         result += sum(amount for when, amount in freed if when == month)
+        if extra_months is not None and month > extra_months:
+            result -= extra_monthly_cents
+            extra_monthly_cents = 0
+        injected = extra_once_cents if month == 1 else 0
+        extra_once_cents = 0 if month == 1 else extra_once_cents
         if milestones["resultado"] is None and result >= 0:
             milestones["resultado"] = month
-        if result <= 0:
-            # A month in the red pays nothing down. Waiting only makes sense
-            # while a lever is still scheduled to arrive; with none left, the
-            # trend points the other way and any date would be invented.
+        if result + injected <= 0:
+            # A month in the red pays nothing down. The one-off is counted here
+            # too: discarding it before this check made a million reais of
+            # declared income change nothing on a base whose monthly result is
+            # negative — which is this base (RF-18).
             if any(when > month for when, _ in freed):
                 continue
             break
-        spare = result
+        spare = result + injected
         for index, balance in enumerate(owed):
             if balance <= 0:
                 continue

@@ -18,8 +18,10 @@ EXPECTED_TABLES = [
     "essentialities",
     "login_attempts",
     "natures",
+    "plan_facts",
     "plan_parameters",
     "plan_snapshots",
+    "scenarios",
     "schema_migrations",
     "sync_runs",
     "transactions",
@@ -34,6 +36,7 @@ EXPECTED_MIGRATIONS = [
     "005_debts.sql",
     "006_sync_semantics.sql",
     "007_plan.sql",
+    "008_facts.sql",
 ]
 
 TABLE_NAMES = (
@@ -62,7 +65,7 @@ def test_second_run_applies_nothing(conn):
     row = conn.execute(
         "select count(*), min(version), max(version) from schema_migrations"
     ).fetchone()
-    assert tuple(row) == (len(EXPECTED_MIGRATIONS), "001", "007")
+    assert tuple(row) == (len(EXPECTED_MIGRATIONS), "001", "008")
 
 
 def test_the_session_epoch_starts_at_zero(conn):
