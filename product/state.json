@@ -583,7 +583,7 @@
     "012-sync-pos-carga-atomica": {
       "title": "Sucesso mentiroso: a pos-carga roda dentro do mesmo tratamento de erro",
       "track": "rapida",
-      "stage": "execute",
+      "stage": "done",
       "stacks": [
         "python"
       ],
