@@ -87,7 +87,7 @@ ao topo da fila é a régua local certa e o agregado errado.
   136 arquivos produzem e decide entre corrigir de uma vez ou tolerar uma
   baseline decrescente — a medição vem antes da escolha, não depois.
 
-- [ ] `016-data-de-referencia-no-caminho-de-recusa` — `_reference` de
+- [-] `016-data-de-referencia-no-caminho-de-recusa` — `_reference` de
   `app/routers/whatif.py` e de `app/routers/advisor.py` cai em `date.today()`
   quando a data pedida é inválida ou está fora da faixa, em vez de
   `app.config.reference_date()`, que é quem lê `DASH_TODAY`. Efeito medido pelo
