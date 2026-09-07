@@ -13,6 +13,7 @@ from app.routers import (
     health,
     plan,
     rules,
+    settings,
     spending,
     summary,
     whatif,
@@ -60,6 +61,7 @@ def create_app() -> FastAPI:
     app.include_router(debts.router)
     app.include_router(plan.router)
     app.include_router(whatif.router)
+    app.include_router(settings.router)
     app.include_router(advisor.router)
     app.include_router(health.router)
     return app

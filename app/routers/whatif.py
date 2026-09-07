@@ -20,7 +20,8 @@ from app.plan.whatif import (
 from app.queries.period import InvalidPeriodError, day
 from app.routers.plan import EARLIEST, LATEST
 from app.settings import store
-from app.settings.catalog import CATALOG
+from app.settings.catalog import FACT as FACT_KIND
+from app.settings.catalog import of_kind
 from app.settings.typed import InvalidValueError
 
 from .render import TEMPLATES
@@ -114,7 +115,7 @@ def _context(conn: sqlite3.Connection, today: date) -> dict[str, Any]:
         "kinds": KINDS,
         "scenarios": saved(conn),
         "facts": facts(conn, today=today),
-        "catalog": [item for item in CATALOG if item["stored"]],
+        "catalog": [item for item in of_kind(FACT_KIND) if item["stored"]],
         "fact_action": FACT,
         "action": SCREEN,
     }

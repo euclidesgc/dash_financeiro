@@ -6,7 +6,8 @@ from app.commitments.live import totals as commitment_totals
 from app.projection.monthly import complete_months, median
 from app.queries.crossings import crossing
 from app.queries.spending import SPENDING
-from app.settings.catalog import RESERVE_MONTHS
+from app.settings.catalog import RESERVE, RESERVE_MONTHS
+from app.settings.store import value
 
 FLOOR_SLUG = "piso"
 CUT_SLUG = "corte"
@@ -44,8 +45,15 @@ def floor_label(conn: sqlite3.Connection) -> str:
     return found["label"] if found else "o piso de sobrevivência"
 
 
+def reserve_months(conn: sqlite3.Connection) -> int:
+    # The constant is the premise the panel declares while the owner has not
+    # decided, never the answer (RF-09).
+    chosen = value(conn, RESERVE)
+    return RESERVE_MONTHS if chosen is None else chosen
+
+
 def reserve_target_cents(conn: sqlite3.Connection, *, today: date) -> int:
-    return survival_floor_cents(conn, today=today) * RESERVE_MONTHS
+    return survival_floor_cents(conn, today=today) * reserve_months(conn)
 
 
 def monthly_results(conn: sqlite3.Connection, *, today: date) -> list[int]:

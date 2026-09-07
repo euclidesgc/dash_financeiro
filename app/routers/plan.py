@@ -8,10 +8,9 @@ from starlette.responses import Response
 
 from app.db import connect
 from app.debts.ladder import without_rate
-from app.plan.objective import floor_label, levers, survival_floor_cents
+from app.plan.objective import floor_label, levers, reserve_months, survival_floor_cents
 from app.plan.timeline import BASE, every_scenario, history, record
 from app.queries.period import InvalidPeriodError, day
-from app.settings.catalog import RESERVE_MONTHS
 
 from .render import TEMPLATES
 
@@ -73,7 +72,7 @@ def _context(conn: sqlite3.Connection, runs: list[dict], today: date) -> dict[st
         "base": next(run for run in runs if run["scenario"] == BASE),
         "floor_cents": survival_floor_cents(conn, today=today),
         "floor_label": floor_label(conn),
-        "reserve_months": RESERVE_MONTHS,
+        "reserve_months": reserve_months(conn),
         "levers": gained,
         "history": history(conn),
         "reachable": any(run["months_to_objective"] is not None for run in runs),

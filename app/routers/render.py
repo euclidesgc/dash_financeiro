@@ -71,7 +71,10 @@ def unit_typed(value: object, unit: str) -> str:
     if value is None:
         return ""
     if unit == CENTS:
-        return number(value)
+        # The grouped form, the same one the figure above the field shows: a
+        # field that reads 35000,00 under a figure that reads R$ 35.000,00 makes
+        # the owner check whether the panel understood the number.
+        return brl(value).removeprefix(f"{MINUS}").removeprefix("R$ ")
     if unit == BASIS_POINTS:
         return rate(value).replace("%", "")
     return str(int(value))
