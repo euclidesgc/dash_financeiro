@@ -22,10 +22,11 @@ SCREEN = "/configuracao"
 PAYEE = f"{SCREEN}/beneficiario"
 CNPJ = f"{SCREEN}/cnpj"
 
-# How many payees the screen offers to name, measured with the project's
-# spending predicate over all of history: these cover more than half the money,
-# and the largest of them is one the Pluggy does not name. The count itself
-# lives in tests/test_frozen_numbers.py, never here.
+# How many payees the screen offers to name. A product decision, not a
+# measurement of this base: these cover more than half the money, and naming
+# them one by one is an evening of work rather than a project. What was measured
+# — how many payees exist and how much they cover — lives in
+# tests/test_frozen_numbers.py, never in this file.
 PAYEES = 30
 
 SAVED = "Salvo."
