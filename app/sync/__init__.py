@@ -61,9 +61,28 @@ def synchronise(conn: sqlite3.Connection, *, today: date | None = None) -> SyncO
         accounts=accounts,
         source=config.transactions_path,
     )
-    if result.status == "ok":
+    if result.status != "ok":
+        return _outcome(result)
+    try:
         _after(conn, today or reference_date())
+    except Exception as failure:
+        # The ok row is already committed by the load. If the reclassification,
+        # the commitment recomputation or the ladder rebuild blows up here, that
+        # row goes on claiming success with the derived tables frozen — a lying
+        # success, which is the opposite of what item 006 delivered (RF-21).
+        return _demote(conn, failure)
     return _outcome(result)
+
+
+def _demote(conn: sqlite3.Connection, failure: Exception) -> SyncOutcome:
+    message = f"pós-carga falhou: {type(failure).__name__}"
+    conn.execute(
+        "UPDATE sync_runs SET status = 'failed', message = ? "
+        "WHERE id = (SELECT MAX(id) FROM sync_runs)",
+        (message,),
+    )
+    conn.commit()
+    return SyncOutcome(status="failed", message=message, transactions=0, accounts=0)
 
 
 def _record_failure(conn: sqlite3.Connection, source: str, failure: Exception) -> SyncOutcome:
@@ -127,6 +146,7 @@ _REJECTED = re.compile(r"rejected=(\d+)")
 _PRESENT = re.compile(r"accepted=(\d+) present=(\d+)")
 _WRITE = re.compile(r"erro de escrita: (\w+)")
 _SOURCE = re.compile(r"fonte ilegível: (\w+)")
+_AFTER = re.compile(r"pós-carga falhou: (\w+)")
 
 
 def readable(message: str | None) -> str:
@@ -145,6 +165,13 @@ def readable(message: str | None) -> str:
     write = _WRITE.search(message)
     if write:
         return f"a escrita no banco foi recusada ({write.group(1)}); nada foi gravado."
+    after = _AFTER.search(message)
+    if after:
+        return (
+            f"os lançamentos entraram, mas a classificação e os compromissos não foram "
+            f"recalculados ({after.group(1)}). As telas mostram o estado anterior; "
+            "sincronize de novo."
+        )
     unreadable = _SOURCE.search(message)
     if unreadable:
         return (

@@ -175,3 +175,20 @@ def test_a_source_that_cannot_be_read_records_a_failed_run(taxonomy_conn, monkey
     assert outcome.status == "failed"
     assert len(runs(taxonomy_conn)) == before + 1
     assert "não pôde ser lido" in readable(_message(taxonomy_conn))
+
+
+def test_a_failure_after_the_load_demotes_the_run_instead_of_claiming_success(
+    taxonomy_conn, monkeypatch
+):
+    import app.sync as sync
+
+    def explode(conn, today):
+        raise RuntimeError("a reclassificação quebrou")
+
+    monkeypatch.setattr(sync, "_after", explode)
+    outcome = synchronise(taxonomy_conn, today=REFERENCE)
+
+    assert outcome.status == "failed"
+    assert runs(taxonomy_conn)[-1][2] == "failed"
+    assert "pós-carga falhou" in _message(taxonomy_conn)
+    assert "não foram recalculados" in readable(_message(taxonomy_conn))

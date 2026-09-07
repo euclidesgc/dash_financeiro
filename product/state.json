@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "active_item": "009-ia-consultora",
+  "active_item": "012-sync-pos-carga-atomica",
   "items": {
     "001-base-e-login": {
       "title": "Base e login: schema, ingestão dos 1.942 lançamentos e acesso protegido",
@@ -575,6 +575,43 @@
             ".": "a0471532d53d1d33ee87ce2e5771f1d16b49d31a"
           },
           "criteria_sha": "70568ec06b203dc76ea686dd310b1e7ca9dab412b27843fadba304f5ccc7b77e"
+        }
+      },
+      "divergences": {},
+      "criteria_exception": null
+    },
+    "012-sync-pos-carga-atomica": {
+      "title": "Sucesso mentiroso: a pos-carga roda dentro do mesmo tratamento de erro",
+      "track": "rapida",
+      "stage": "execute",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-07T12:18:23Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-07T12:19:40Z",
+          "sha": "632f38ec699bb408e590373983537adff73115b2",
+          "file": "product/items/012-sync-pos-carga-atomica/01-brief.md",
+          "por": "autonomo"
+        },
+        "plan": {
+          "at": "2026-09-07T12:19:40Z",
+          "sha": "d386b0d2ae1fe941a21528959afe64d902743bd2",
+          "file": "product/items/012-sync-pos-carga-atomica/03-plan.md",
+          "por": "autonomo"
+        }
+      },
+      "current_phase": 1,
+      "phases": {
+        "1": {
+          "status": "em_execucao",
+          "reproved_count": 0,
+          "verdict": null,
+          "verdict_file": null,
+          "validated_sha": null,
+          "pr": null,
+          "blocked_on": []
         }
       },
       "divergences": {},
