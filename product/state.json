@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "active_item": "003-comprometido",
+  "active_item": "011-serie-duplicada-e-tolerancia-do-vencimento",
   "items": {
     "001-base-e-login": {
       "title": "Base e login: schema, ingestão dos 1.942 lançamentos e acesso protegido",
@@ -269,6 +269,31 @@
           "criteria_sha": "a3e27c7f0ff5054184582a5e79e428cf8acf505361b5f7c9f7d669e879b18e7d"
         }
       },
+      "divergences": {},
+      "criteria_exception": null
+    },
+    "011-serie-duplicada-e-tolerancia-do-vencimento": {
+      "title": "Integridade das séries: nenhum compromisso contado duas vezes, nenhuma parcela partida por centavo",
+      "track": "rapida",
+      "stage": "brief",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-07T00:04:09Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-07T00:09:18Z",
+          "sha": "485b25f5f41476881f7d8029f67c85e14a8a3b28",
+          "file": "product/items/011-serie-duplicada-e-tolerancia-do-vencimento/01-brief.md",
+          "por": "autonomo"
+        },
+        "plan": {
+          "at": null,
+          "sha": null
+        }
+      },
+      "current_phase": null,
+      "phases": {},
       "divergences": {},
       "criteria_exception": null
     }
