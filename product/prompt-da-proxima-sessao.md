@@ -14,10 +14,11 @@ do lint. Todos passaram por validador cego, todos integrados em `develop` com
 | `001` a `009` | **concluídos**. Login, gastos nos três eixos, comprometido, resumo com projeção de 45 dias, escada de dívida com simulador, sincronização com idade cobrada, objetivo com três cenários, simulador de decisão em dias, e consultor de IA. |
 | `010-lint-e-formatador-python` | **concluído**. `ruff` está no ambiente travado, configurado estreito, e roda por `scripts/lint.sh` e no CI. |
 | `011-serie-duplicada-e-tolerancia-do-vencimento` | **concluído**. Quatro defeitos do motor de compromissos; o total caiu de −R$ 12.802,64 para −R$ 8.026,79. |
-| `012-sync-pos-carga-atomica` | **aberto**. Achado do validador do `006`. |
-| `013-objetivo-cenario-vazio-e-ponto-espurio` | **aberto**. Dois achados do validador do `007`. |
+| `012-sync-pos-carga-atomica` | **concluído**. A pós-carga não deixa mais `sync_runs` afirmando sucesso com as tabelas derivadas paradas. |
+| `013-objetivo-cenario-vazio-e-ponto-espurio` | **concluído**. A tela nomeia a lista vazia, e data recusada não grava ponto. |
+| `014-taxa-sugerida-pelos-juros-cobrados` | **concluído**. O painel sugere a taxa do cheque especial a partir dos juros que o banco já cobrou: `itau` **6,71%** (faixa 4,58–9,84, 7 meses) e `CAIXA` **8,00%** (7,99–8,16, 3 meses). Cartão não recebe sugestão. |
 
-**413 testes, lint limpo, gates limpos, 319 arquivos considerados.**
+**433 testes, lint limpo, gates limpos, 342 arquivos considerados. O roadmap está vazio.**
 
 ## O produto, em uma tela por vez
 
@@ -44,9 +45,12 @@ do lint. Todos passaram por validador cego, todos integrados em `develop` com
 1. **Ratificar `D-001`** — a divergência do `001` sobre a folha de estilo
    responder 302 em vez de 404. É a única linha de `esperando_humano`:
    `state.py diverge-set --item 001-base-e-login --id D-001 --status APROVADA --por humano`
-2. **Informar a taxa dos cartões** em `/dividas`. Enquanto ela não existir, seis
-   dívidas somando R$ 27.934,80 ficam fora da escada e o marco de dívidas do
-   objetivo é calculado sem elas.
+2. **Confirmar as taxas em `/dividas`.** Os dois cheques especiais chegam com
+   sugestão medida — `itau` 6,71%, `CAIXA` 8,00% —, e basta salvar para elas
+   entrarem na escada. **A taxa dos quatro cartões o painel não consegue
+   derivar**: o saldo de um cartão é fatura, e fatura paga inteira não cobra juro
+   nenhum. Enquanto não vierem da fatura, R$ 16.744,62 ficam fora da escada e o
+   marco de dívidas do objetivo é calculado sem eles.
 3. **Marcar as assinaturas que não usa mais** e **revisar as 77 categorias** nas
    telas de Comprometido e Regras. Os dois cenários do objetivo que dependem
    disso rendem hoje exatamente zero.
@@ -77,6 +81,11 @@ fase do `004` custaram quarenta minutos e acharam defeitos cada vez menores.
 **E o plano vem antes do código.** Nos itens `007` e `008` isso foi invertido pela
 pressa, e está registrado nas decisões autônomas dos dois como desvio.
 
+**Nunca troque de branch enquanto um validador estiver rodando.** Aconteceu no
+`012`: o `git diff` do despacho passou a devolver vazio e a árvore esteve em
+outra branch enquanto ele media. Ele contornou exportando o ref e conferindo por
+hash, mas um validador menos cuidadoso teria medido a árvore errada.
+
 ## Armadilhas medidas nesta máquina
 
 1. **O hook de permissão nega qualquer comando que leia `.env`.** Todo comando
@@ -93,8 +102,11 @@ pressa, e está registrado nas decisões autônomas dos dois como desvio.
    confira que não sobrou órfão segurando a porta 8000.
 8. **Chromium** em `~/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome`,
    via `node` com o Playwright do cache do npx.
-9. **O script de captura derivado por `sed` já escreveu no diretório errado três
-   vezes.** Confira o `const OUT` antes de rodar.
+9. **O script de captura derivado por `sed` já escreveu no diretório errado
+   quatro vezes.** Confira o `const OUT` antes de rodar.
+10. **`gates_runner.sh` enumera por `git ls-files`.** Numa árvore sem `.git` ele
+    imprime `0 arquivo(s) considerados` e sai com `EXIT=0` — passe falso.
+    Confira o número.
 
 ## Entrega — este repositório NÃO tem remote
 
