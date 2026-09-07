@@ -15,9 +15,9 @@ validador cego da fase 3 mediu dois defeitos; a investigação deste item achou 
 terceiro — que é a causa de boa parte do primeiro — e o quarto, que sozinho vale
 R$ 4.266,18/mês.
 
-O número de cabeçalho da tela muda de **−R$ 12.802,64** para **−R$ 9.553,00**.
-Isso não é ajuste fino: é a diferença entre 74% e 55% do mês já vendido antes de
-ele começar.
+O número de cabeçalho da tela muda de **−R$ 12.802,64** para **−R$ 8.026,79**.
+Isso não é ajuste fino: de um gasto mensal médio de R$ 17.295, é a diferença
+entre ler 74% do mês já vendido antes de ele começar e ler 46%.
 
 Nada aqui é tela nova, coluna nova ou dependência nova. É o motor passando a
 dizer a verdade.
@@ -48,7 +48,7 @@ dizer a verdade.
   caso legítimo da base — `htm neg cursos tre`, total 12, com parcelas de
   R$ 27,07 e R$ 49,60, desvio de 45,4%, que são duas compras distintas na mesma
   loja.
-- **RF-07** — A base de 05/09/2026 tem 66 pares `(beneficiário, total de
+- **RF-07** — A base de 05/09/2026 tem **66** pares `(beneficiário, total de
   parcelas)`, e a tolerância os resolve em **74** séries de parcelamento, contra
   as 96 de hoje. As oito separações que sobram são compras distintas na mesma
   loja, com valores de parcela que diferem entre 4,2% e 75,8%.
@@ -81,7 +81,9 @@ dizer a verdade.
   calendário. O defeito que este item corrige é a previsão que some, não a que
   fica.
 - **RF-15** — `jim com` continua aparecendo uma vez só em setembro:
-  `08/09/2026 · já lançado na conta · −R$ 136,43`, sem previsão no dia 6.
+  `08/09/2026 · já lançado na conta · −R$ 136,43`, sem previsão no dia 6. Uma
+  parcela já lançada com data futura entra no calendário mesmo quando a série não
+  deve mais nada: o dinheiro sai da conta de qualquer jeito.
 
 ### Vivo é o que ainda vai sair da conta
 
@@ -89,16 +91,16 @@ dizer a verdade.
   cobrança não é anterior ao primeiro dia do mês anterior ao de referência. Ela
   deixa de ser um conjunto de dois rótulos de mês.
 - **RF-23** — Cobrança com data **futura** conta como viva. Fatura de cartão
-  chega com parcela lançada meses adiante, e são **10** as séries que a regra
-  antiga marcava como paradas por isso — `otica bardasson e`, cobrada em
-  10/02/2027, entre elas.
+  chega com parcela lançada meses adiante, e são **15** as séries de parcelamento
+  nessa situação, que a regra antiga marcava como paradas.
 - **RF-24** — O total comprometido soma apenas séries **vivas**. Assinatura que
   parou de ser cobrada continua listada na tela, marcada, e fora do total: são
-  25 séries somando **R$ 2.739,97/mês** que hoje inflam o número de cabeçalho.
+  **25** séries somando **R$ 2.739,97/mês** que hoje inflam o número de
+  cabeçalho.
 - **RF-25** — Com os quatro defeitos corrigidos, a base de 05/09/2026 devolve
-  **−R$ 9.553,00** de comprometido, **R$ 233,76/mês** de caixa liberado pelos
-  parcelamentos, **26** assinaturas vivas, **5** parcelamentos vivos e **125**
-  linhas gravadas em `commitments`.
+  **−R$ 8.026,79** de comprometido, **R$ 233,76/mês** de caixa liberado pelos
+  parcelamentos, **16** assinaturas vivas, **5** parcelamentos vivos e **115**
+  linhas gravadas em `commitments` — 74 de parcelamento e 41 recorrentes.
 
 ### O que não pode quebrar
 
@@ -116,8 +118,14 @@ dizer a verdade.
 
 ### Reconciliação de documento
 
-- **RF-21** — Os documentos do `003` que afirmam `−R$ 12.802,64`, `R$ 374,82`,
-  `6 parcelamentos vivos` ou `96 séries` passam a afirmar os números corrigidos,
-  reescritos no presente, com âncora de uma linha para este item.
-  `docs/plano.md` não muda: ele não afirma nada sobre séries de compromisso, que
-  são construção deste projeto e não do relatório de origem.
+- **RF-21** — `00-discovery.md` e `01-brief.md` do `003` afirmam o produto no
+  presente, e passam a trazer os números corrigidos, com âncora de uma linha para
+  este item.
+- **RF-26** — `03-plan.md` do `003` **não** é reescrito. Os seus critérios são o
+  registro do que cada fase foi medida contra, e os veredictos citam a saída
+  daqueles comandos: reescrevê-los tornaria os veredictos inverificáveis. Ele
+  ganha uma nota única no topo, dizendo que os números que os seus critérios
+  cobram eram os corretos quando foram medidos e que este item os mudou.
+- **RF-27** — `docs/plano.md` não muda, byte a byte: ele não afirma nada sobre
+  séries de compromisso, que são construção deste projeto e não do relatório de
+  origem.

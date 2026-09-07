@@ -31,9 +31,11 @@ que posso cancelar com um clique.
 
 ### R1 — Recorrente é o que se repete, e a tela diz há quanto tempo
 
-- **E1.1** — A base traz **55 recorrentes**, somando **R$ 12.427,82/mês** de
-  valor médio. A maior é `DEBITO PRESTACAO HAB`, com média de **R$ 2.467,20** em
-  9 meses observados, 4 deles consecutivos, última cobrança em 08/2026.
+- **E1.1** — A base traz **41 séries recorrentes**, das quais **16 estão vivas**
+  — cobradas no mês corrente ou no anterior, ou com cobrança já datada adiante —,
+  somando **R$ 7.793,03/mês** de valor médio. A maior é `DEBITO PRESTACAO HAB`,
+  com média de **R$ 2.467,20** em 9 meses observados, 4 deles consecutivos,
+  última cobrança em 08/2026.
 - **E1.2** — Cada linha mostra valor médio, quantos meses seguidos apareceu e a
   data da última cobrança. Sem os meses seguidos, uma cobrança que parou há meio
   ano parece um compromisso vivo.
@@ -52,10 +54,10 @@ que posso cancelar com um clique.
 
 ### R3 — Parcelamento morto não é compromisso
 
-- **E3.1** — A base tem **100** parcelamentos detectados. Contando ingenuamente
-  `total − maior parcela vista`, **32** teriam parcelas a vencer. Com a janela de
-  vida — a última parcela vista precisa ter caído no mês corrente ou no anterior
-  —, sobram **6**, somando **R$ 374,82/mês** de caixa preso.
+- **E3.1** — A base tem **66 compras parceladas** distintas, que a tolerância de
+  valor resolve em **74 séries**. Contando ingenuamente `total − maior parcela
+  vista`, **8** teriam parcelas a vencer. Com a janela de vida, sobram **5**,
+  somando **R$ 233,76/mês** de caixa preso.
 - **E3.2** — `IPVA parcela 1 de 3`, visto pela última vez em 26/01/2026, tem
   `restantes = 2` pela conta ingênua e **não** aparece como compromisso: as duas
   parcelas ou já foram pagas sob outra descrição, ou a série morreu. Um
@@ -67,8 +69,9 @@ que posso cancelar com um clique.
 ### R4 — Parcelamento tem fim, e o fim é dinheiro de volta
 
 - **E4.1** — Cada parcelamento vivo mostra a data prevista de término e quanto
-  de caixa mensal ele devolve ao acabar. Os seis vivos somados devolvem
-  **R$ 374,82/mês** — R$ 141,06 já em 10/2026, quando `Assai 232 Macae` termina.
+  de caixa mensal ele devolve ao acabar. Os cinco vivos somados devolvem
+  **R$ 233,76/mês**, escalonados em três marcos: R$ 68,72 em 12/2026, R$ 37,77
+  em 12/2027 e R$ 127,27 em 06/2028.
 - **E4.2** — A tela ordena por quanto falta pagar, não por valor de parcela: o
   que decide é o total ainda comprometido.
 
@@ -90,6 +93,12 @@ que posso cancelar com um clique.
 - **E6.2** — Um lançamento que é ao mesmo tempo recorrente e parcelado entra uma
   vez só no total, como parcelamento, porque parcelamento tem fim e recorrência
   não.
+
+> Os números desta seção são os do item `011`, que corrigiu quatro defeitos do
+> motor de compromissos: a série que acabava e ressuscitava como assinatura, a
+> compra partida em duas por um centavo de arredondamento, a previsão apagada
+> pelo mês inteiro e o total que somava assinatura parada. O comprometido da base
+> de 05/09/2026 é **−R$ 8.026,79**.
 
 ## Perguntas em aberto
 

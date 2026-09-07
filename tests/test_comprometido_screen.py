@@ -228,8 +228,8 @@ def test_the_mark_moves_the_money_in_the_answer_of_the_same_request(client):
     marked = _dismiss(client, BIG_KEY)
 
     assert marked.status_code == 200
-    assert before == ("−R$ 630,00", "R$ 0,00")
-    assert _totals(marked.text) == ("−R$ 330,00", "R$ 300,00")
+    assert before == ("−R$ 580,00", "R$ 0,00")
+    assert _totals(marked.text) == ("−R$ 280,00", "R$ 300,00")
     assert len(_rows(marked.text, "dispensadas")) == 1
     assert DISCLAIMER in _section(marked.text, "dispensadas")
 
@@ -239,7 +239,7 @@ def test_unmarking_gives_the_subscription_back_to_the_total(client):
     resumed = _dismiss(client, BIG_KEY, RESUME)
 
     assert resumed.status_code == 200
-    assert _totals(resumed.text) == ("−R$ 630,00", "R$ 0,00")
+    assert _totals(resumed.text) == ("−R$ 580,00", "R$ 0,00")
     assert 'id="dispensadas"' not in resumed.text
     assert len(_rows(resumed.text, "assinaturas")) == SUBSCRIPTIONS
 

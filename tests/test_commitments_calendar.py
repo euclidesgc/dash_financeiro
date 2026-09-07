@@ -193,3 +193,69 @@ def test_an_instalment_is_predicted_only_while_it_still_owes(base):
 
 def test_a_base_without_a_commitment_answers_with_an_empty_calendar(taxonomy_conn):
     assert calendar(taxonomy_conn, today=REFERENCE) == []
+
+
+FAR = "Assinatura com cobranca avulsa"
+FAR_KEY = "assinatura com cobranca avulsa"
+FAR_AMOUNT = -70.0
+STRAY_DAY = "2026-09-05"
+
+TURN = "Assinatura do dia vinte e nove"
+TURN_KEY = "assinatura do dia vinte e nove"
+TURN_AMOUNT = -40.0
+
+
+@pytest.fixture
+def stray(taxonomy_conn, seed):
+    return _prepared(
+        taxonomy_conn,
+        seed,
+        [
+            *_monthly(
+                "far",
+                ["2026-06-25", "2026-07-25", "2026-08-25"],
+                FAR_AMOUNT,
+                FAR,
+            ),
+            transaction("far-stray", STRAY_DAY, FAR_AMOUNT, descricao=FAR),
+        ],
+    )
+
+
+@pytest.fixture
+def turning(taxonomy_conn, seed):
+    return _prepared(
+        taxonomy_conn,
+        seed,
+        [
+            *_monthly(
+                "turn",
+                ["2026-06-29", "2026-07-29", "2026-08-29"],
+                TURN_AMOUNT,
+                TURN,
+            ),
+            transaction("turn-2026-10", "2026-10-01", TURN_AMOUNT, descricao=TURN),
+        ],
+    )
+
+
+def _entries(days, key):
+    return [
+        (day["date"], entry["predicted"])
+        for day in days
+        for entry in day["entries"]
+        if entry["series_key"] == key
+    ]
+
+
+def test_a_charge_far_from_the_due_day_does_not_swallow_the_prediction(stray):
+    found = _entries(calendar(stray, today=REFERENCE), FAR_KEY)
+
+    assert (STRAY_DAY, False) in found
+    assert ("2026-09-25", True) in found
+
+
+def test_a_charge_on_the_first_realises_the_prediction_of_the_twenty_ninth(turning):
+    found = _entries(calendar(turning, today=REFERENCE), TURN_KEY)
+
+    assert found == [("2026-10-01", False)]

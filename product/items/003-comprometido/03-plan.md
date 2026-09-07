@@ -3,6 +3,14 @@
 **Item:** `003-comprometido` · **Trilha:** rápida · **Brief:** `01-brief.md`
 (aprovado em 2026-09-06)
 
+
+> **Este plano não é reescrito.** Os números que os seus critérios cobram —
+> `−R$ 12.802,64`, `R$ 374,82`, 96 séries, 6 parcelamentos vivos — eram os
+> corretos quando cada fase foi medida, e os veredictos em `05-veredictos/`
+> citam a saída daqueles comandos. Reescrevê-los tornaria os veredictos
+> inverificáveis. O item `011` corrigiu quatro defeitos do motor e mudou esses
+> números; o presente do produto está em `00-discovery.md` e `01-brief.md`.
+
 ## Objetivo
 
 Ao fim das três fases o dono abre uma tela e vê quanto do mês seguinte já está
