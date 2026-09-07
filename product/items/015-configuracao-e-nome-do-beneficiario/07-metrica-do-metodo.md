@@ -117,6 +117,12 @@ A mediana dos itens de uma fase é 136.381, e o item mais caro da corrida até
 aqui — o `003`, com três fases — custou 1.297.263. O `015` custou **quase o
 dobro do mais caro**, e a implementação sozinha já passou dele.
 
+A contagem é do transcript no momento em que esta tabela foi escrita. Escrever e
+commitar este documento e o registro de entrega custou mais 15.120 tokens, que a
+tabela não tem como conter sem se perseguir: o fechamento da sessão principal é
+**1.239.555**, e o total com os quatro validadores, **1.483.321**. A conclusão
+não muda em nenhuma das duas contagens.
+
 ## O veredicto do método, medido
 
 O método **acertou na qualidade e errou no custo**, e não por pouco.
