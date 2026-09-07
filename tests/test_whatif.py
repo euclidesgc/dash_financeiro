@@ -5,7 +5,6 @@ import pytest
 from app.plan.whatif import (
     EXPENSE,
     INCOME,
-    InvalidScenarioError,
     Move,
     facts,
     impact,
@@ -14,6 +13,7 @@ from app.plan.whatif import (
     saved,
     signed_monthly,
 )
+from app.settings.typed import InvalidValueError
 from tests.test_plan import REFERENCE, prepare, rent, salary
 
 
@@ -64,26 +64,26 @@ def test_the_simulator_uses_the_same_engine_as_the_objective(taxonomy_conn):
 
 
 def test_a_value_that_is_not_a_number_is_refused_by_field_name():
-    with pytest.raises(InvalidScenarioError) as refusal:
+    with pytest.raises(InvalidValueError) as refusal:
         parse_move(INCOME, "abc", "", "")
 
     assert "Valor mensal inválido" in str(refusal.value)
 
 
 def test_an_unknown_kind_is_refused():
-    with pytest.raises(InvalidScenarioError) as refusal:
+    with pytest.raises(InvalidValueError) as refusal:
         parse_move("outra-coisa", "10,00", "", "")
 
     assert "outra-coisa" in str(refusal.value)
 
 
 def test_a_term_that_is_not_whole_is_refused():
-    with pytest.raises(InvalidScenarioError):
+    with pytest.raises(InvalidValueError):
         parse_move(INCOME, "10,00", "", "meio ano")
 
 
 def test_a_scenario_without_a_name_is_refused(taxonomy_conn):
-    with pytest.raises(InvalidScenarioError):
+    with pytest.raises(InvalidValueError):
         save(taxonomy_conn, "  ", move(INCOME, 1000))
 
 
@@ -98,7 +98,7 @@ def test_a_saved_scenario_comes_back_and_the_same_name_is_replaced(taxonomy_conn
 
 def test_a_fact_past_its_date_is_marked_stale(taxonomy_conn):
     taxonomy_conn.execute(
-        "INSERT INTO plan_facts (name, label, value_cents, unit, source, captured_at, valid_until) "
+        "INSERT INTO plan_facts (name, label, value, unit, source, captured_at, valid_until) "
         "VALUES ('q', 'Quitação', 100, 'centavos', 'humano', '2026-01-01', '2026-08-01'), "
         "('t', 'Transporte', 200, 'centavos', 'humano', '2026-01-01', NULL)"
     )
@@ -109,7 +109,7 @@ def test_a_fact_past_its_date_is_marked_stale(taxonomy_conn):
 
 
 def test_a_value_with_a_dot_as_decimal_is_refused_and_not_read_as_thousands():
-    with pytest.raises(InvalidScenarioError) as refusal:
+    with pytest.raises(InvalidValueError) as refusal:
         parse_move(INCOME, "5000.00", "", "")
 
     assert "1.234,56" in str(refusal.value)
@@ -120,12 +120,12 @@ def test_the_brazilian_forms_are_read_and_only_those():
     assert parse_move(INCOME, "5000,00", "", "").monthly_cents == 500000
     assert parse_move(INCOME, "5000", "", "").monthly_cents == 500000
     for bad in ("inf", "nan", "Infinity", "1e3", "1_000", "5,001"):
-        with pytest.raises(InvalidScenarioError):
+        with pytest.raises(InvalidValueError):
             parse_move(INCOME, bad, "", "")
 
 
 def test_a_value_that_rounds_to_zero_is_refused():
-    with pytest.raises(InvalidScenarioError):
+    with pytest.raises(InvalidValueError):
         parse_move(INCOME, "0,00", "", "")
 
 
@@ -135,7 +135,7 @@ def test_a_validity_that_is_not_a_date_is_refused():
     assert parse_validity("") is None
     assert parse_validity("2026-08-01") == "2026-08-01"
     for bad in ("banana", "9999-99-99", "01/08/2026"):
-        with pytest.raises(InvalidScenarioError):
+        with pytest.raises(InvalidValueError):
             parse_validity(bad)
 
 
@@ -157,7 +157,7 @@ def test_a_term_stops_the_effect_and_a_one_off_lands_once(taxonomy_conn):
 
 def test_a_value_of_absurd_magnitude_is_refused_and_not_a_crash():
     for digits in (13, 40, 310):
-        with pytest.raises(InvalidScenarioError) as refusal:
+        with pytest.raises(InvalidValueError) as refusal:
             parse_move(INCOME, "9" * digits, "", "")
         assert "algarismos" in str(refusal.value)
 

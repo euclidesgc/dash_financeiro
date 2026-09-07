@@ -14,7 +14,8 @@
     <div class="figures">
       <div class="stack-tight">
         <p class="eyebrow">Total comprometido</p>
-        <p class="headline cifra{% if committed_cents < 0 %} negative{% endif %}">{{ committed_cents|brl }}</p>
+        <p class="headline cifra{% if committed_cents < 0 %} negative{% endif %}"
+           data-comprometido="{{ committed_cents }}">{{ committed_cents|brl }}</p>
         <p class="lede">Por mês, somando as assinaturas e os parcelamentos em aberto.</p>
       </div>
       <div class="stack-tight">

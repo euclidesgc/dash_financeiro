@@ -2,8 +2,8 @@ import sqlite3
 from datetime import date
 
 from app.queries.spending import SPENDING
-
-MONTHS = 6
+from app.settings.catalog import MEDIAN, MEDIAN_MONTHS
+from app.settings.store import value
 
 _MONTHS_SEEN = (
     "SELECT DISTINCT substr(date, 1, 7) AS month FROM transactions "
@@ -31,12 +31,26 @@ def monthly(conn: sqlite3.Connection, *, today: date | None = None) -> dict:
     }
 
 
-def complete_months(conn: sqlite3.Connection, *, today: date | None = None) -> list[str]:
+def median_months(conn: sqlite3.Connection) -> int:
+    # The constant is the premise the panel declares while the owner has not
+    # decided, never the answer (RF-09).
+    chosen = value(conn, MEDIAN)
+    return MEDIAN_MONTHS if chosen is None else chosen
+
+
+def _seen(conn: sqlite3.Connection, today: date | None) -> list[str]:
     # The month of the reference date is still running, so counting it would
     # compare a fraction of a month against whole ones.
     current = (today or date.today()).strftime("%Y-%m")
-    seen = [row["month"] for row in conn.execute(_MONTHS_SEEN, (current,))]
-    return seen[-MONTHS:]
+    return [row["month"] for row in conn.execute(_MONTHS_SEEN, (current,))]
+
+
+def available_months(conn: sqlite3.Connection, *, today: date | None = None) -> int:
+    return len(_seen(conn, today))
+
+
+def complete_months(conn: sqlite3.Connection, *, today: date | None = None) -> list[str]:
+    return _seen(conn, today)[-median_months(conn):]
 
 
 def median(values: list[int]) -> int:

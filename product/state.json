@@ -721,15 +721,23 @@
           "por": "humano"
         },
         "plan": {
-          "at": "2026-09-07T15:50:29Z",
-          "sha": "3887860d69fd8c91a5bb61ff66a6ad93b7b46e70",
+          "at": "2026-09-07T18:06:48Z",
+          "sha": "f01b62b71d5fae5ef5f9c5f2252d4322061db377",
           "file": "product/items/015-configuracao-e-nome-do-beneficiario/03-plan.md",
           "por": "humano"
         }
       },
       "current_phase": null,
       "phases": {},
-      "divergences": {},
+      "divergences": {
+        "D-002": {
+          "status": "RECONCILIADA",
+          "kind": "normal",
+          "phase": 2,
+          "detected_at": "2026-09-07T18:06:42Z",
+          "reconciliada_at": "2026-09-07T18:06:48Z"
+        }
+      },
       "criteria_exception": null
     }
   }

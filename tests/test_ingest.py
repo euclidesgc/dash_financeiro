@@ -101,6 +101,10 @@ def test_amount_keeps_the_sign_the_consolidator_already_normalised(conn, account
         "eh_saque": False,
         "eh_estorno": False,
         "estornada_por": "",
+        "nome_fantasia": "",
+        "razao_social": "",
+        "cnpj": "",
+        "recebedor": "",
     }
     ingest(conn, transactions=[payment], accounts=accounts, source="fixture")
     row = conn.execute(
@@ -124,6 +128,10 @@ def test_refund_carries_the_identifier_of_the_debit_it_cancels(conn, accounts):
         "eh_saque": False,
         "eh_estorno": True,
         "estornada_por": "8b073fe4",
+        "nome_fantasia": "",
+        "razao_social": "",
+        "cnpj": "",
+        "recebedor": "",
     }
     debit = dict(refund, id="8b073fe4", valor=-2462.56, eh_estorno=False, estornada_por="")
     ingest(conn, transactions=[refund, debit], accounts=accounts, source="fixture")

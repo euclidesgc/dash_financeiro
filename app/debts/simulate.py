@@ -1,13 +1,7 @@
-import sqlite3
 from typing import Any
 
 from app.debts.ladder import RATE_SCALE
-
-BASIS_POINTS = 100
-
-
-class InvalidAmountError(ValueError):
-    pass
+from app.settings.typed import InvalidValueError
 
 
 class UnknownRateError(ValueError):
@@ -16,7 +10,7 @@ class UnknownRateError(ValueError):
 
 def simulate(debt: dict, extra_cents: int) -> dict[str, Any]:
     if extra_cents <= 0:
-        raise InvalidAmountError("O aporte precisa ser maior que zero.")
+        raise InvalidValueError("O aporte precisa ser maior que zero.")
     if not debt["monthly_rate_bp"]:
         # Answering R$ 0,00 here is not abstaining: it is the stronger claim that
         # the money saves nothing. The screen already says two sections above
@@ -80,22 +74,3 @@ def _answer(
         "leftover_cents": leftover,
         "settles": leftover > 0 or applied >= abs(debt["balance_cents"]),
     }
-
-
-def parse_amount(typed: str, field: str = "Aporte") -> int:
-    # The field is named by the caller because the same reader serves the extra
-    # payment and the two parameters of the car decision, and a refusal that
-    # names the wrong field points the owner at something they did not touch.
-    cleaned = (typed or "").strip().replace("R$", "").replace(".", "").replace(",", ".")
-    try:
-        value = float(cleaned)
-    except ValueError:
-        raise InvalidAmountError(f"{field} inválido: “{typed}”.") from None
-    if value <= 0:
-        raise InvalidAmountError(f"{field} precisa ser maior que zero.")
-    return round(value * BASIS_POINTS)
-
-
-def parameter(conn: sqlite3.Connection, name: str) -> int | None:
-    row = conn.execute("SELECT value_cents FROM plan_parameters WHERE name = ?", (name,)).fetchone()
-    return row["value_cents"] if row else None

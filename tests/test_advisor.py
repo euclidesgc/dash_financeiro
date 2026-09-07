@@ -4,8 +4,10 @@ import httpx
 import pytest
 
 from app.advisor.context import as_text, snapshot
-from app.advisor.gaps import SETTLEMENT, dismiss, next_question, pending
+from app.advisor.gaps import dismiss, next_question, pending, wanted
 from app.advisor.gemini import INSTRUCTION, AdvisorUnavailableError, ask
+from app.settings import catalog
+from app.settings.catalog import CENTS, FACT, SETTLEMENT
 from tests.test_plan import REFERENCE, prepare, rent, salary
 
 
@@ -16,7 +18,7 @@ def base(conn):
 def fact(conn, name, valid_until=None):
     conn.execute(
         "INSERT OR REPLACE INTO plan_facts "
-        "(name, label, value_cents, unit, source, captured_at, valid_until) "
+        "(name, label, value, unit, source, captured_at, valid_until) "
         "VALUES (?, ?, 100, 'centavos', 'humano', '2026-01-01', ?)",
         (name, name, valid_until),
     )
@@ -164,14 +166,37 @@ def test_a_question_that_is_not_in_the_catalogue_is_refused(taxonomy_conn):
 
 
 def test_postponing_everything_is_not_the_same_as_answering_everything(taxonomy_conn):
-    from app.advisor.gaps import WANTED, postponed
+    from app.advisor.gaps import postponed
 
     conn = base(taxonomy_conn)
-    for wanted in WANTED:
-        dismiss(conn, wanted["name"])
+    for question in wanted():
+        dismiss(conn, question["name"])
 
     assert next_question(conn, today=REFERENCE) is None
-    assert postponed(conn) == len(WANTED)
+    assert postponed(conn) == len(wanted())
+
+
+def test_a_question_added_to_the_catalogue_reaches_the_advisor(taxonomy_conn, monkeypatch):
+    extra = {
+        "name": "custo-mudanca",
+        "label": "Custo da mudança",
+        "question": "quanto custaria mudar de casa",
+        "help": "",
+        "unit": CENTS,
+        "kind": FACT,
+        "screen": "/configuracao",
+        "moves": "o caixa do mês em que a mudança acontecer",
+        "default": None,
+        "stored": True,
+    }
+    monkeypatch.setattr(catalog, "CATALOG", (*catalog.CATALOG, extra))
+    conn = base(taxonomy_conn)
+
+    asked = {item["name"]: item for item in pending(conn, today=REFERENCE)}
+
+    assert "custo-mudanca" in asked
+    assert asked["custo-mudanca"]["label"] == extra["question"]
+    assert asked["custo-mudanca"]["where"] == extra["screen"]
 
 
 def test_the_refusal_of_the_provider_is_said_in_portuguese(monkeypatch):

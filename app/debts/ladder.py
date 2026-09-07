@@ -6,6 +6,7 @@ from pathlib import Path
 
 from app.accounts import BANK, CREDIT
 from app.db import connect
+from app.settings.typed import parse_rate
 
 OVERDRAFT = "overdraft"
 CARD = "card"
@@ -15,7 +16,6 @@ VEHICLE = "vehicle"
 RATE_SCALE = 10000
 BASIS_POINTS = 100
 MONTHS_IN_YEAR = 12
-MAX_RATE_BP = 100 * BASIS_POINTS
 
 MANUAL_DIR = "DASH_MANUAL_DIR"
 DEFAULT_MANUAL = "data/manual"
@@ -31,10 +31,6 @@ _INSERT = (
     "(kind, name, balance_cents, monthly_rate_bp, term_months, payment_cents, source, account_id) "
     "VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
 )
-
-
-class InvalidRateError(ValueError):
-    pass
 
 
 def manual_dir() -> Path:
@@ -202,21 +198,6 @@ def set_rate(conn: sqlite3.Connection, debt_id: int, typed: str) -> None:
     if not changed:
         raise DebtNotFoundError("Dívida não encontrada.")
     conn.commit()
-
-
-def parse_rate(typed: str) -> int | None:
-    cleaned = (typed or "").strip().replace("%", "").replace(",", ".")
-    if not cleaned:
-        return None
-    try:
-        value = float(cleaned)
-    except ValueError:
-        raise InvalidRateError(f"Taxa inválida: “{typed}”.") from None
-    if value < 0 or value * BASIS_POINTS > MAX_RATE_BP:
-        raise InvalidRateError(
-            f"Taxa fora da faixa: “{typed}”. Use de 0 a 100% ao mês."
-        )
-    return round(value * BASIS_POINTS)
 
 
 def monthly_interest_cents(row: dict) -> int:

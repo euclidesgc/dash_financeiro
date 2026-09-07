@@ -25,6 +25,15 @@ FROZEN = (
     "246720",
     "14106",
     "12727",
+    # Item 015: o alcance do nome que a Pluggy já manda, e a lista de
+    # beneficiários que a tela de configuração oferece para batizar.
+    "338",
+    "169",
+    "148",
+    "720",
+    "137",
+    "110",
+    "53",
 )
 
 # Small counts are only swept inside the files of item 003: 100 and 32 already

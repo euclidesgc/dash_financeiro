@@ -136,6 +136,16 @@ def main():
             "instituicao": instituicao_da_conta(conta),
             "descricao": (t.get("description") or "").strip(),
             "descricao_raw": (t.get("descriptionRaw") or "").strip(),
+            # merchant chega como None, não ausente, em 1556 dos 1942
+            # lançamentos: t.get("merchant", {}) levantaria AttributeError em
+            # 80% da base. String vazia é ausência, não valor — businessName vem
+            # vazia em 48 lançamentos que têm nome fantasia.
+            "nome_fantasia": ((t.get("merchant") or {}).get("name") or "").strip(),
+            "razao_social": ((t.get("merchant") or {}).get("businessName") or "").strip(),
+            "cnpj": ((t.get("merchant") or {}).get("cnpj") or "").strip(),
+            "recebedor": (
+                ((t.get("paymentData") or {}).get("receiver") or {}).get("name") or ""
+            ).strip(),
             "valor": valor,
             "valor_bruto_api": bruto,
             "tipo": tipo,
@@ -156,7 +166,8 @@ def main():
     campos = ["id", "data", "conta", "conta_tipo", "instituicao", "descricao", "valor", "tipo",
               "categoria_pluggy", "categoria", "categoria_inferida", "parcela_atual",
               "parcela_total", "parcela_fonte", "eh_transferencia", "motivo_transferencia",
-              "eh_saque", "eh_estorno", "estornada_por", "valor_bruto_api"]
+              "eh_saque", "eh_estorno", "estornada_por", "valor_bruto_api",
+              "nome_fantasia", "razao_social", "cnpj", "recebedor"]
     with open(os.path.join(PROC, "transacoes.csv"), "w", newline="") as arquivo:
         escritor = csv.DictWriter(arquivo, fieldnames=campos, extrasaction="ignore")
         escritor.writeheader()

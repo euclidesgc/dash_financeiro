@@ -1,6 +1,7 @@
 import sqlite3
 from copy import deepcopy
 
+import httpx
 import pytest
 
 from app.db import connect
@@ -31,6 +32,10 @@ def transaction(pluggy_id: str, date: str, valor: float, **overrides) -> dict:
         "eh_saque": False,
         "eh_estorno": False,
         "estornada_por": "",
+        "nome_fantasia": "",
+        "razao_social": "",
+        "cnpj": "",
+        "recebedor": "",
     }
     row.update(overrides)
     return row
@@ -56,6 +61,20 @@ def rule(match_kind: str, match_value: str, group: str, nature: str, essentialit
         "nature": nature,
         "essentiality": essentiality,
     }
+
+
+@pytest.fixture(autouse=True)
+def no_network(monkeypatch):
+    # Two modules of app/ leave for the internet, and each test that exercises
+    # one used to install its own monkeypatch. A test that forgets goes to the
+    # real network, and then the suite passes or fails by what a third party
+    # answered. Only the module-level helpers are replaced: the TestClient
+    # drives httpx through a client instance of its own, which is not egress.
+    def refused(*args, **kwargs):
+        raise AssertionError("o teste tentou sair para a rede")
+
+    monkeypatch.setattr(httpx, "get", refused)
+    monkeypatch.setattr(httpx, "post", refused)
 
 
 @pytest.fixture

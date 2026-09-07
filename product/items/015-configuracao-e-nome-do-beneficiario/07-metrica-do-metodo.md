@@ -70,15 +70,96 @@ de 410 mil — o método empata; abaixo disso, ganha.
 | # | Métrica | Alvo | Resultado |
 |---|---|---|---|
 | 1 | Problemas achados na revisão pré-código | quanto mais, melhor | **36 distintos**, 3 deles defeitos vivos |
-| 2 | Rodadas até `APROVADO`, por fase | ≤ 1,55 | a preencher |
-| 3 | Veredicto da primeira rodada de cada fase | `APROVADO` nas três | a preencher |
-| 4 | Achados do validador que critério nenhum cobria | menos que a média | a preencher |
-| 5 | Números de critério reescritos depois de implementar | **zero** | a preencher |
-| 6 | Ambiguidades resolvidas por padrão × perguntas ao dono | **zero perguntas** | 7 resolvidas, 0 perguntas |
+| 2 | Rodadas até `APROVADO`, por fase | ≤ 1,55 | **1,33** — 4 rodadas em 3 fases · **bate** |
+| 3 | Veredicto da primeira rodada de cada fase | `APROVADO` nas três | **2 de 3** · `APROVADO`, `CRITERIO_INVALIDO`, `APROVADO` · **não bate** |
+| 4 | Achados do validador que critério nenhum cobria | < 4,6 por fase | **2,67 por fase** — 8 no total, nenhum reprovando · **bate** |
+| 5 | Números de critério reescritos depois de implementar | **zero** | **zero** · um critério foi reescrito, sem número, e virou `D-002` |
+| 6 | Ambiguidades resolvidas por padrão × perguntas ao dono | **zero perguntas** | 14 resolvidas, 0 perguntas |
+| 7 | Tokens da implementação | < 410.000 | **1.468.201** · **não bate**, por 3,6× |
 
-A métrica 6 já fechou no planejamento: as sete dúvidas estão na tabela
-*Decisões resolvidas por padrão* do `03-plan.md`, cada uma com o padrão do
-projeto que a decidiu, e nenhuma virou pergunta.
+## O que cada número quer dizer
+
+**Métrica 2 — 1,33 rodada por fase.** Fases 1 e 3 fecharam na primeira; a fase 2
+precisou de duas. A base era 1,55, com 6 de 11 fases reprovadas na primeira
+rodada. O método reduziu o retrabalho de validação.
+
+**Métrica 3 — duas de três.** A fase 2 voltou `CRITERIO_INVALIDO`, e o alvo era
+`APROVADO` nas três. Vale ler o motivo: **nenhum critério verificável falhou** e
+nenhum portão caiu. O bloqueio foi um critério que nomeava `POST
+/configuracao/cnpj`, rota que só a fase 3 cria, e que passava por construção —
+a guarda de sessão é middleware e devolve `302` para qualquer caminho, existente
+ou não. Isto é, a falha foi **do plano**, e apareceu no único lugar onde a
+revisão pré-código não olhou: a fronteira entre duas fases. Registrada em
+`04-divergencias/D-002.md`.
+
+**Métrica 4 — 2,67 achados por fase, nenhum reprovando.** Dois deles seriam
+defeitos vivos se tivessem passado: o consultor ainda carregava a própria cópia
+do catálogo, e a medição de largura rodava com a barra de rolagem escondida, com
+folga exatamente zero. Cada um virou correção com prova executada.
+
+**Métrica 5 — zero número reescrito.** Todo número que um critério afirma foi
+medido antes, e todos se confirmaram contra a base: `53`, `338`, `169`, `404`,
+`148`, `720`, `137`, `55,53%`, `72,83%`, `36,1%`. Um critério foi reescrito, mas
+por erro de fronteira de fase, não de número.
+
+**Métrica 7 — 1.468.201 tokens, contra um alvo de 410.000.** É o resultado mais
+importante deste documento, e ele é contrário ao método:
+
+| Parte | Tokens |
+|---|---|
+| Sessão de implementação (`input` + `cache_creation` + `output`) | 1.224.435 |
+| Quatro rodadas de validação cega, à parte | 243.766 |
+| **Total da implementação** | **1.468.201** |
+| Planejamento, medido antes | 983.739 |
+| **Item `015` inteiro** | **2.451.940** |
+
+A mediana dos itens de uma fase é 136.381, e o item mais caro da corrida até
+aqui — o `003`, com três fases — custou 1.297.263. O `015` custou **quase o
+dobro do mais caro**, e a implementação sozinha já passou dele.
+
+A contagem é do transcript no momento em que esta tabela foi escrita. Escrever e
+commitar este documento e o registro de entrega custou mais 15.120 tokens, que a
+tabela não tem como conter sem se perseguir: o fechamento da sessão principal é
+**1.239.555**, e o total com os quatro validadores, **1.483.321**. A conclusão
+não muda em nenhuma das duas contagens.
+
+## O veredicto do método, medido
+
+O método **acertou na qualidade e errou no custo**, e não por pouco.
+
+Do lado que ele prometia: 36 problemas achados enquanto o custo de mudar era
+reescrever um parágrafo; 1,33 rodada de validação por fase contra 1,55; nenhum
+número de critério escrito de cabeça; nenhuma pergunta ao dono. As três fases
+foram aprovadas, e as duas que fecharam na primeira rodada fecharam com o
+validador dizendo que os critérios discriminavam de verdade.
+
+Do lado que ele custou: **3,6 vezes o alvo**. E o alvo não era ambicioso — era
+três medianas.
+
+O gasto não veio do plano ser detalhado. Veio de três coisas medíveis:
+
+1. **A fase de tela.** Ajustar interface é um laço de escrever, servir,
+   capturar, olhar a imagem e corrigir. Cada volta custa uma captura lida como
+   imagem, e foram muitas: campo estreito demais, `input` escondido derrubando a
+   medição de fonte, tabela espremida a 375 px, e o servidor que lê o CSS uma vez
+   no boot e não recarregava a folha — quatro voltas que nenhum plano teria
+   evitado.
+2. **A prova executada.** Todo critério comportamental foi rodado contra um
+   servidor de verdade, com base preparada, e várias vezes: uma para eu conferir,
+   outra pelo validador. É o que torna o veredicto confiável, e é caro.
+3. **Os quatro validadores cegos**, 243.766 tokens, que existem justamente para
+   não confiar em quem implementou.
+
+O que **não** custou: decidir. Nenhuma ambiguidade virou pergunta, nenhuma
+escolha foi refeita depois de implementada, e nenhuma fase precisou ser
+reescrita por ter entendido o requisito errado.
+
+A conclusão honesta é que o planejamento em acúmulo **não se paga em tokens** —
+paga-se em rodadas de validação e em defeito que não chega ao código. Se o custo
+é o critério de adoção, o método reprova. Se o critério é quanto defeito escapa
+para a base do dono, ele aprova: os três defeitos vivos que a revisão pré-código
+encontrou estavam em produção havia semanas, e nenhum deles seria achado por
+este item se ele tivesse sido só implementado.
 
 ## O que o método já pagou, antes de custar código
 
@@ -128,7 +209,13 @@ de base, 6 das 11 fases souberam do problema pela validação cega — isto é,
 portões. Aqui, 36 problemas apareceram enquanto o custo de mudar era reescrever
 um parágrafo.
 
-As métricas 2 a 5 só fecham depois de implementar. A 6 fechou: **quatorze
-ambiguidades, quatorze resolvidas por padrão do projeto, zero perguntas ao dono**
-— a tabela *Decisões resolvidas por padrão* do `03-plan.md` traz cada uma com o
-padrão que a decidiu.
+As métricas 2 a 5 e a 7 fecharam com a implementação, e estão acima. A 6 fechou
+no planejamento: **quatorze ambiguidades, quatorze resolvidas por padrão do
+projeto, zero perguntas ao dono** — a tabela *Decisões resolvidas por padrão* do
+`03-plan.md` traz cada uma com o padrão que a decidiu.
+
+O transcript da implementação está em
+`~/.claude/projects/-home-euclidesgc-development-dash-financeiro--claude-worktrees-adoring-zhukovsky-8c7069/`,
+com o sufixo do worktree — não no diretório sem sufixo que o handoff apontava.
+Os subagentes não aparecem nele: o gasto de cada um vem do relatório da própria
+tarefa.

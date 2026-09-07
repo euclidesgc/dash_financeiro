@@ -13,11 +13,21 @@ from app.routers import (
     health,
     plan,
     rules,
+    settings,
     spending,
     summary,
     whatif,
 )
-from app.routers.render import TEMPLATES, brl, day, month, number, rate
+from app.routers.render import (
+    TEMPLATES,
+    brl,
+    day,
+    month,
+    number,
+    rate,
+    unit_typed,
+    unit_value,
+)
 
 STYLESHEETS_FOLDER = Path(__file__).resolve().parent / "static" / "css"
 
@@ -39,6 +49,8 @@ def create_app() -> FastAPI:
     TEMPLATES.env.filters["mes"] = month
     TEMPLATES.env.filters["taxa"] = rate
     TEMPLATES.env.filters["numero"] = number
+    TEMPLATES.env.filters["unidade"] = unit_value
+    TEMPLATES.env.filters["digitado"] = unit_typed
     app.state.session_secret = resolve_session_secret()
     install_guard(app)
     app.include_router(auth.router)
@@ -49,6 +61,7 @@ def create_app() -> FastAPI:
     app.include_router(debts.router)
     app.include_router(plan.router)
     app.include_router(whatif.router)
+    app.include_router(settings.router)
     app.include_router(advisor.router)
     app.include_router(health.router)
     return app

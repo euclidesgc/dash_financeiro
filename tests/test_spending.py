@@ -27,6 +27,10 @@ def transaction(pluggy_id, date, valor, **overrides):
         "eh_saque": False,
         "eh_estorno": False,
         "estornada_por": "",
+        "nome_fantasia": "",
+        "razao_social": "",
+        "cnpj": "",
+        "recebedor": "",
     }
     row.update(overrides)
     return row

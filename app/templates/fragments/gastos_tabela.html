@@ -45,7 +45,10 @@
   </div>
   {% endif %}
   <div id="detalhe" class="detail" aria-live="polite">
-    {% with key=detail['key'], rows=detail['rows'], total_cents=detail['total_cents'] %}
+    {# The drill-down heading names the key the list was opened by, never a
+       resolved name: its own map travels with it. #}
+    {% with key=detail['key'], rows=detail['rows'], total_cents=detail['total_cents'],
+            labels=detail['labels'] %}
     {% include "fragments/gastos_detalhe.html" %}
     {% endwith %}
   </div>

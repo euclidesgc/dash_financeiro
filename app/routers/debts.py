@@ -11,20 +11,16 @@ from app.db import connect
 from app.debts.ladder import (
     VEHICLE,
     DebtNotFoundError,
-    InvalidRateError,
     ladder,
     monthly_interest_cents,
     set_rate,
     without_rate,
 )
 from app.debts.observed import observed_rates
-from app.debts.simulate import (
-    InvalidAmountError,
-    UnknownRateError,
-    parameter,
-    parse_amount,
-    simulate,
-)
+from app.debts.simulate import UnknownRateError, simulate
+from app.settings import store
+from app.settings.catalog import SETTLEMENT, TRANSPORT
+from app.settings.typed import InvalidValueError, parse_money
 
 from .render import TEMPLATES
 
@@ -43,13 +39,6 @@ KIND_LABELS = {
     "card": "cartão de crédito",
     "vehicle": "financiamento de veículo",
     "mortgage": "financiamento imobiliário",
-}
-
-SETTLEMENT = "quitacao"
-TRANSPORT = "transporte"
-PARAMETERS = {
-    SETTLEMENT: "Saldo de quitação",
-    TRANSPORT: "Custo de transporte",
 }
 
 NOT_FOUND = "Dívida não encontrada."
@@ -74,7 +63,7 @@ def rate(
     try:
         try:
             set_rate(conn, _identifier(degrau), taxa)
-        except (InvalidRateError, DebtNotFoundError) as refusal:
+        except (InvalidValueError, DebtNotFoundError) as refusal:
             return _answer(request, conn, notice=str(refusal), status_code=400)
         return _answer(request, conn)
     finally:
@@ -93,8 +82,10 @@ def simulation(
         if debt is None:
             return _answer(request, conn, notice=NOT_FOUND, status_code=400)
         try:
-            return _answer(request, conn, simulation=simulate(debt, parse_amount(aporte)))
-        except (InvalidAmountError, UnknownRateError) as refusal:
+            return _answer(
+                request, conn, simulation=simulate(debt, parse_money(aporte, "Aporte"))
+            )
+        except (InvalidValueError, UnknownRateError) as refusal:
             return _answer(request, conn, notice=str(refusal), status_code=400)
     finally:
         conn.close()
@@ -108,20 +99,10 @@ def store_parameter(
 ) -> Response:
     conn = connect()
     try:
-        if nome not in PARAMETERS:
-            return _answer(
-                request, conn, notice=f"Parâmetro desconhecido: “{nome}”.", status_code=400
-            )
         try:
-            cents = parse_amount(valor, PARAMETERS[nome])
-        except InvalidAmountError as refusal:
+            store.write(conn, nome, valor)
+        except InvalidValueError as refusal:
             return _answer(request, conn, notice=str(refusal), status_code=400)
-        conn.execute(
-            "INSERT OR REPLACE INTO plan_parameters (name, value_cents, updated_at) "
-            "VALUES (?, ?, datetime('now'))",
-            (nome, cents),
-        )
-        conn.commit()
         return _answer(request, conn)
     finally:
         conn.close()
@@ -165,7 +146,7 @@ def _context(conn: sqlite3.Connection, today: date | None = None) -> dict[str, A
     # confirms is honest where a fact would not be (invariante 26).
     observed = observed_rates(conn, today=today or reference_date())
     vehicle = next((row for row in steps + missing if row["kind"] == VEHICLE), None)
-    settlement = parameter(conn, SETTLEMENT)
+    settlement = store.value(conn, SETTLEMENT)
     return {
         "rate_action": RATE,
         "simulate_action": SIMULATE,
@@ -177,7 +158,7 @@ def _context(conn: sqlite3.Connection, today: date | None = None) -> dict[str, A
         "observed": observed,
         "vehicle": vehicle,
         "settlement_cents": settlement,
-        "transport_cents": parameter(conn, TRANSPORT),
+        "transport_cents": store.value(conn, TRANSPORT),
         # The difference between what the schedule is worth and what the bank
         # actually charges to end it. It is a discount only when it is positive:
         # banks often quote settlement above the strict present value, and

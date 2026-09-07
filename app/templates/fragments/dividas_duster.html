@@ -7,7 +7,7 @@
   <p class="lede">Duas coisas o painel não tem como saber, e elas mudam a conta. Preencha quando
     souber; até lá a tela não finge que sabe.</p>
   <form method="post" action="{{ parameter_action }}" class="stack">
-    <input type="hidden" name="nome" value="quitacao">
+    <input type="hidden" name="nome" value="quitacao-cdc">
     <label class="eyebrow" for="quitacao">Saldo de quitação antecipada, informado pelo banco</label>
     <input class="field" id="quitacao" name="valor" inputmode="decimal" placeholder="0,00"
            value="{% if settlement_cents %}{{ settlement_cents|numero }}{% endif %}">
@@ -29,7 +29,7 @@
   </div>
   {% endif %}
   <form method="post" action="{{ parameter_action }}" class="stack">
-    <input type="hidden" name="nome" value="transporte">
+    <input type="hidden" name="nome" value="transporte-sem-carro">
     <label class="eyebrow" for="transporte">Custo mensal de transporte sem o carro</label>
     <input class="field" id="transporte" name="valor" inputmode="decimal" placeholder="0,00"
            value="{% if transport_cents %}{{ transport_cents|numero }}{% endif %}">
