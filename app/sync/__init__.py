@@ -1,7 +1,7 @@
 import re
 import sqlite3
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 
 from app.commitments.engine import recompute
 from app.config import PLUGGY_CREDENTIALS, load_config, reference_date
@@ -46,15 +46,36 @@ def synchronise(conn: sqlite3.Connection, *, today: date | None = None) -> SyncO
                 + " e ".join(missing)
                 + " no ambiente. Enquanto não houver, o painel lê o arquivo já consolidado."
             )
+    try:
+        transactions = load_transactions(config.transactions_path)
+        accounts = load_accounts(config.accounts_glob)
+    except (OSError, ValueError) as failure:
+        # The source file not being there is the most likely accident of the day,
+        # and it used to raise before any row reached sync_runs: the sync failed,
+        # left no trace, and the screen went on announcing the last success
+        # (RF-20).
+        return _record_failure(conn, config.transactions_path, failure)
     result = ingest(
         conn,
-        transactions=load_transactions(config.transactions_path),
-        accounts=load_accounts(config.accounts_glob),
+        transactions=transactions,
+        accounts=accounts,
         source=config.transactions_path,
     )
     if result.status == "ok":
         _after(conn, today or reference_date())
     return _outcome(result)
+
+
+def _record_failure(conn: sqlite3.Connection, source: str, failure: Exception) -> SyncOutcome:
+    now = datetime.now(UTC).isoformat()
+    message = f"fonte ilegível: {type(failure).__name__}"
+    conn.execute(
+        "INSERT INTO sync_runs (started_at, finished_at, source, status, message) "
+        "VALUES (?, ?, ?, 'failed', ?)",
+        (now, now, source, message),
+    )
+    conn.commit()
+    return SyncOutcome(status="failed", message=message, transactions=0, accounts=0)
 
 
 def _after(conn: sqlite3.Connection, today: date) -> None:
@@ -105,6 +126,7 @@ def days_since(run: dict | None, today: date) -> int | None:
 _REJECTED = re.compile(r"rejected=(\d+)")
 _PRESENT = re.compile(r"accepted=(\d+) present=(\d+)")
 _WRITE = re.compile(r"erro de escrita: (\w+)")
+_SOURCE = re.compile(r"fonte ilegível: (\w+)")
 
 
 def readable(message: str | None) -> str:
@@ -123,6 +145,12 @@ def readable(message: str | None) -> str:
     write = _WRITE.search(message)
     if write:
         return f"a escrita no banco foi recusada ({write.group(1)}); nada foi gravado."
+    unreadable = _SOURCE.search(message)
+    if unreadable:
+        return (
+            f"o arquivo de origem não pôde ser lido ({unreadable.group(1)}). "
+            "Rode o consolidador antes de sincronizar."
+        )
     return message
 
 

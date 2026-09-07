@@ -422,14 +422,14 @@
       "created_at": "2026-09-07T02:41:30Z",
       "approvals": {
         "brief": {
-          "at": "2026-09-07T02:42:39Z",
-          "sha": "10433532f9dca4b46ea986b9d566e08903de7de0",
+          "at": "2026-09-07T02:59:38Z",
+          "sha": "5a7df6ffe24e9d23568c9ea5af00f4f522021834",
           "file": "product/items/006-sync-pluggy/01-brief.md",
           "por": "autonomo"
         },
         "plan": {
-          "at": "2026-09-07T02:42:39Z",
-          "sha": "645f752b45beed8c598a70ddee0dfa2a03db7de1",
+          "at": "2026-09-07T02:59:38Z",
+          "sha": "5d5610829f70c141108b51e6c380d9366258942b",
           "file": "product/items/006-sync-pluggy/03-plan.md",
           "por": "autonomo"
         }

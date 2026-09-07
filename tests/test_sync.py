@@ -153,10 +153,25 @@ def test_a_run_stamped_in_utc_is_read_in_the_local_zone():
     assert finished_on(stamped).astimezone(minus_three).date() == date(2026, 9, 6)
 
 
-def test_the_age_is_counted_over_the_local_date(monkeypatch):
+def test_the_age_is_counted_over_the_local_date(monkeypatch, request):
     stamped = {"finished_at": "2026-09-07T02:00:00+00:00"}
     monkeypatch.setenv("TZ", "America/Sao_Paulo")
     time.tzset()
+    # The env var is restored by monkeypatch, but the process zone is not until
+    # tzset is called again: without this the zone leaks into every test that
+    # runs after this one in the same worker.
+    request.addfinalizer(time.tzset)
 
     assert days_since(stamped, date(2026, 9, 6)) == 0
     assert days_since(stamped, date(2026, 9, 8)) == 2
+
+
+def test_a_source_that_cannot_be_read_records_a_failed_run(taxonomy_conn, monkeypatch):
+    monkeypatch.setenv("DASH_TRANSACTIONS_PATH", "/tmp/nao-existe-006.json")
+    before = len(runs(taxonomy_conn))
+
+    outcome = synchronise(taxonomy_conn, today=REFERENCE)
+
+    assert outcome.status == "failed"
+    assert len(runs(taxonomy_conn)) == before + 1
+    assert "não pôde ser lido" in readable(_message(taxonomy_conn))

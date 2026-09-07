@@ -60,7 +60,7 @@ def synchronise_now(request: Request) -> Response:
 
 def _said(outcome) -> str:
     if outcome.status != "ok":
-        return f"A sincronização falhou: {outcome.message}"
+        return f"A sincronização falhou: {readable(outcome.message)}"
     if not outcome.transactions:
         return "Sincronizado. Nenhum lançamento novo."
     return f"Sincronizado. {outcome.transactions} lançamento(s) novo(s)."
