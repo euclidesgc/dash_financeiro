@@ -541,7 +541,7 @@
     "009-ia-consultora": {
       "title": "A IA pergunta o que falta, explica o numero, e nunca calcula",
       "track": "rapida",
-      "stage": "execute",
+      "stage": "done",
       "stacks": [
         "python"
       ],
@@ -563,13 +563,18 @@
       "current_phase": 1,
       "phases": {
         "1": {
-          "status": "em_execucao",
+          "status": "aprovada",
           "reproved_count": 0,
-          "verdict": null,
-          "verdict_file": null,
-          "validated_sha": null,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/009-ia-consultora/05-veredictos/fase-1.md",
+          "validated_sha": "d478c15ba239a358bd03ffeab4e9fb9e7f2bb1ba",
           "pr": null,
-          "blocked_on": []
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T04:46:58Z",
+          "validated_trees": {
+            ".": "a0471532d53d1d33ee87ce2e5771f1d16b49d31a"
+          },
+          "criteria_sha": "70568ec06b203dc76ea686dd310b1e7ca9dab412b27843fadba304f5ccc7b77e"
         }
       },
       "divergences": {},

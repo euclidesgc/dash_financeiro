@@ -45,7 +45,7 @@ PR e commit já escritos.
 
 - [x] `008-simulador-e-base-de-fatos` — Um formulário curto — tipo (receita ou despesa), valor, recorrência, prazo, taxa, data de início — responde **"isso me afasta ou me aproxima, e quantos dias"**, com a linha do tempo antes e depois sobrepostas. Cenário pode ser salvo e comparado lado a lado; "vender o Duster e ficar sem carro" contra "vender e comprar um usado de R$ 25 mil" é a decisão em aberto hoje e merece ser vista, não argumentada. O mesmo formulário captura os fatos que só o humano sabe (saldo de quitação, taxa do cartão, custo de transporte) em `plan_facts`, com valor, unidade, origem, data e prazo de validade — estruturado para consulta, e a projeção se move na tela assim que o fato entra.
 
-- [ ] `009-ia-consultora` — A IA **pergunta o que falta**: escolhe o fato ausente ou vencido cuja resposta mais move a projeção e faz **uma** pergunta, dizendo qual número ela muda. Nunca repergunta o que foi respondido, e não insiste — pergunta ignorada some e volta só quando voltar a importar; enquanto isso a tela declara a premissa que está assumindo. Também explica o resultado do simulador, orienta o próximo passo, responde pergunta livre sobre os próprios dados e classifica o resíduo que as regras não pegaram. **A IA nunca calcula**: se ela computasse "isso te afasta 11 dias" erraria, e um número errado na unidade central do produto destrói a confiança em tudo o mais. Sem chave ou com erro, a tela mostra o número determinístico e diz que a leitura da IA está indisponível.
+- [x] `009-ia-consultora` — A IA **pergunta o que falta**: escolhe o fato ausente ou vencido cuja resposta mais move a projeção e faz **uma** pergunta, dizendo qual número ela muda. Nunca repergunta o que foi respondido, e não insiste — pergunta ignorada some e volta só quando voltar a importar; enquanto isso a tela declara a premissa que está assumindo. Também explica o resultado do simulador, orienta o próximo passo, responde pergunta livre sobre os próprios dados e classifica o resíduo que as regras não pegaram. **A IA nunca calcula**: se ela computasse "isso te afasta 11 dias" erraria, e um número errado na unidade central do produto destrói a confiança em tudo o mais. Sem chave ou com erro, a tela mostra o número determinístico e diz que a leitura da IA está indisponível.
 
 ## Dívida técnica
 
@@ -81,9 +81,9 @@ exatamente ficou sem verificação e como verificar.
   taxa dos cartões só a fatura. Como verificar: preencher os dois campos na tela e conferir que
   a escada se reordena e que o ágio ou desconto aparece com o sinal certo.
 
-- **`009-ia-consultora`** — a qualidade da resposta do Gemini só se julga lendo. Como
-  verificar: fazer três perguntas sobre os próprios dados e conferir que os números
-  citados batem, dígito a dígito, com os do motor determinístico.
+- **`009-ia-consultora`** — a qualidade da resposta do Gemini só se julga lendo, e exige
+  chave válida. Como verificar: fazer três perguntas sobre os próprios dados e conferir que
+  **todo número citado aparece na tabela "O que ela lê"** da própria tela, dígito a dígito.
 
 ## Entradas pendentes do humano
 
