@@ -56,6 +56,10 @@
         mês para que exista uma data — e é esse o número a atacar, não o alvo da reserva. Veja
         onde cortar em <a href="/gastos">Gastos</a> e o que já está vendido em
         <a href="/comprometido">Comprometido</a>.</p>
+      {% elif base['monthly_result_cents'] == 0 %}
+      <p class="lede">O resultado mensal fecha exatamente em zero: nada sobra para acumular, e
+        reserva não se forma de sobra nenhuma. Qualquer valor positivo por mês cria uma data —
+        veja onde cortar em <a href="/gastos">Gastos</a>.</p>
       {% else %}
       <p class="lede">O resultado mensal já é positivo, mas a sobra não vence os juros da escada
         dentro do horizonte projetado: o que entra por mês é menor que o que a dívida cresce.

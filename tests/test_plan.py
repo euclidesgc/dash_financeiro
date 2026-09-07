@@ -127,3 +127,20 @@ def test_a_month_that_goes_entirely_to_the_debt_does_not_feed_the_reserve(taxono
 
     assert found["milestones"]["dividas"] == 1
     assert found["milestones"]["reserva"] != 1
+
+
+def test_the_freed_cash_arrives_when_the_instalment_ends_and_can_create_a_date(taxonomy_conn):
+    conn = prepare(taxonomy_conn, salary(5000.0) + rent(-5100.0))
+    conn.execute("DELETE FROM debts")
+    conn.execute(
+        "INSERT INTO commitments (kind, series_key, description, amount_cents, "
+        "last_seen_date, installment_total, installments_left, ends_month, due_day) "
+        "VALUES ('installment', 'loja', 'Loja', -50000, '2026-09-01', 6, 2, '2026-12', 10)"
+    )
+    conn.commit()
+    conservative = simulate(conn, CONSERVATIVE, today=REFERENCE)
+    optimistic = simulate(conn, OPTIMISTIC, today=REFERENCE)
+
+    assert conservative["monthly_result_cents"] < optimistic["monthly_result_cents"]
+    assert conservative["months_to_objective"] is None
+    assert optimistic["milestones"]["resultado"] == 3

@@ -46,6 +46,12 @@ def monthly_result_cents(conn: sqlite3.Connection, scenario: str, *, today: date
     result = baseline_cents(conn, today=today)
     if scenario in (BASE, OPTIMISTIC):
         result += gained["dismissed"] + gained["cut"]
+    if scenario == OPTIMISTIC:
+        # The headline is the steady state the scenario promises — every lever
+        # pulled and every instalment finished. The simulation below phases the
+        # freed cash in at the month each instalment actually ends, which is what
+        # the label says (RF-16).
+        result += gained["released"]
     return result
 
 
@@ -61,8 +67,9 @@ def expensive_debts(conn: sqlite3.Connection) -> list[dict]:
 
 
 def simulate(conn: sqlite3.Connection, scenario: str, *, today: date) -> dict:
-    base_result = monthly_result_cents(conn, scenario, today=today)
+    steady = monthly_result_cents(conn, scenario, today=today)
     freed = released_by_month(conn, today=today) if scenario == OPTIMISTIC else []
+    base_result = steady - sum(amount for _, amount in freed)
     target = reserve_target_cents(conn, today=today)
     steps = expensive_debts(conn)
     owed = [abs(row["balance_cents"]) for row in steps]
@@ -79,10 +86,14 @@ def simulate(conn: sqlite3.Connection, scenario: str, *, today: date) -> dict:
     result = base_result
     for month in range(1, HORIZON_MONTHS + 1):
         result += sum(amount for when, amount in freed if when == month)
+        if milestones["resultado"] is None and result >= 0:
+            milestones["resultado"] = month
         if result <= 0:
-            # A month that ends in the red cannot pay anything down, and the debt
-            # grows at its own rate: saying "in N months" here would be inventing
-            # a date out of a trend that points the other way.
+            # A month in the red pays nothing down. Waiting only makes sense
+            # while a lever is still scheduled to arrive; with none left, the
+            # trend points the other way and any date would be invented.
+            if any(when > month for when, _ in freed):
+                continue
             break
         spare = result
         for index, balance in enumerate(owed):
@@ -111,11 +122,11 @@ def simulate(conn: sqlite3.Connection, scenario: str, *, today: date) -> dict:
         "expensive_cents": -sum(abs(row["balance_cents"]) for row in expensive_debts(conn)),
         "milestones": milestones,
         "months_to_objective": milestones["reserva"],
-        "monthly_result_cents": base_result,
+        "monthly_result_cents": steady,
         # Without a date, the only useful number left is how far the monthly
         # result is from zero: that is the distance between "never" and "a date
         # exists", and it is the one thing the owner can act on.
-        "missing_cents": -result if result < 0 else 0,
+        "missing_cents": -steady if steady < 0 else 0,
     }
 
 
