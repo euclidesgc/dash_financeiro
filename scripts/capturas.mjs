@@ -1,15 +1,17 @@
 // Captura de tela das telas do painel, parametrizada por item, tela e larguras.
 //
-// POR QUE ESTE SCRIPT É VERSIONADO
-// Ele era recriado à mão a cada item, e quatro vezes a captura foi escrita num
-// diretório que não existia: o comando saía com código zero e o arquivo não
-// aparecia. A causa raiz não era o comando — era o script não morar no
-// repositório (norma 20).
+// POR QUE O HARNESS ENTREGA ESTE SCRIPT
+// Ele era recriado à mão a cada item, e num projeto real quatro capturas foram
+// escritas num diretório que não existia: o comando saía com código zero e o
+// arquivo não aparecia. A causa raiz não era o comando — era o script não morar
+// no repositório. Instrumento que o critério estrutural cobra, o harness
+// entrega.
 //
 // POR QUE ELE NÃO USA PLAYWRIGHT
-// O projeto não tem package.json e não pode ganhar dependência não declarada
-// (norma 15). O Chromium já está na máquina e o Node 24 traz WebSocket embutido,
-// então o script fala o protocolo do navegador direto.
+// Ele precisa rodar em projeto que não tem package.json e não pode ganhar
+// dependência não declarada. O Chromium do Playwright já costuma estar na
+// máquina, e o Node 24 traz WebSocket embutido, então o script fala o protocolo
+// do navegador direto. `DASH_CHROME` aponta outro binário quando preciso.
 //
 // Uso:
 //   node scripts/capturas.mjs --item 015-... --url http://127.0.0.1:8015/configuracao \

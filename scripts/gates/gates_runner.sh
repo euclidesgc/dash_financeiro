@@ -79,6 +79,12 @@ def fnmatch_any(path, patterns):
 
 def tracked_files():
     out = subprocess.run(["git", "ls-files"], cwd=root, capture_output=True, text=True)
+    # Fora de um repositório o comando sai diferente de zero e a lista vem
+    # vazia. O universo vazio percorria todo gate sem achar nada e imprimia
+    # "0 arquivo(s) considerados" com código 0: o portão não mediu e disse que
+    # estava limpo. Portão que não conseguiu medir reprova, nunca aprova.
+    if out.returncode != 0:
+        return None
     return [line for line in out.stdout.splitlines() if line]
 
 
@@ -119,10 +125,32 @@ def changed_files():
     return [line for line in out.stdout.splitlines() if line]
 
 
+def exige_medicao(arquivos, motivo):
+    if arquivos is None:
+        print(
+            f"✗ gates: não foi possível medir — {motivo}. "
+            "Portão que não conseguiu medir reprova, nunca aprova.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    return arquivos
+
+
 use_diff = mode == "diff" or (mode == "auto" and is_brownfield)
-universe = changed_files() if use_diff else tracked_files()
+universe = changed_files() if use_diff else exige_medicao(
+    tracked_files(), "`git ls-files` falhou: isto não é um repositório git"
+)
 if mode in ("count", "baseline"):
-    universe = tracked_files()
+    universe = exige_medicao(
+        tracked_files(), "`git ls-files` falhou: isto não é um repositório git"
+    )
+if not use_diff and not universe:
+    print(
+        "✗ gates: não foi possível medir — o repositório não tem arquivo rastreado. "
+        "Portão que não conseguiu medir reprova, nunca aprova.",
+        file=sys.stderr,
+    )
+    sys.exit(1)
 
 resultados = {}
 falhou = False
@@ -201,7 +229,8 @@ if falhou:
     print("")
     print(f"✗ gates: violação(ões) acima ({escopo}).")
     print("  Corrija, ou justifique na própria linha com o escape do gate")
-    print("  (`// gateN-ok: <motivo>`) — escape sem motivo real é achado de revisão.")
+    print("  (`gateN-ok: <motivo>` no comentário da linguagem) — escape sem motivo")
+    print("  real é achado de revisão.")
     sys.exit(1)
 
 if linhas_saida:
