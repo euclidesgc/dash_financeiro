@@ -750,7 +750,7 @@
     "016-data-de-referencia-no-caminho-de-recusa": {
       "title": "A data de referencia sobrevive a recusa: rota que rejeita a data pedida volta para a referencia do processo, nao para hoje",
       "track": "rapida",
-      "stage": "execute",
+      "stage": "done",
       "stacks": [
         "python"
       ],
