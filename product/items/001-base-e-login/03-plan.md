@@ -85,13 +85,13 @@ a tabela de controle.
       `pluggy_id = 'abc-1'`
       *Então* o SQLite levanta `sqlite3.IntegrityError` com mensagem contendo
       `UNIQUE constraint failed: transactions.pluggy_id`
-- [ ] `comportamental` — RF-21
+- [ ] `comportamental` — RF-21 · ver `04-divergencias/D-003.md`
       *Dado* o ambiente sem `PASSWORD` e sem `GEMINI_API_KEY`
       *Quando* `rtk proxy env -u PASSWORD -u GEMINI_API_KEY
       DASH_ENV_FILE=/dev/null LOGIN=teste PASSORD=abc123 GEMIMI_API_KEY=k-1
       .venv/bin/python -c "from app.config import load_config; c = load_config();
       print(c.login, c.password, c.gemini_api_key)"` é executado
-      *Então* a saída é a linha `teste abc123 k-1`
+      *Então* a saída é a linha `teste None None`: a grafia com typo não é lida
 - [ ] `comportamental` — RF-21
       *Dado* o ambiente sem `PASSORD` e sem `GEMIMI_API_KEY`
       *Quando* `rtk proxy env -u PASSORD -u GEMIMI_API_KEY
@@ -116,12 +116,11 @@ a tabela de controle.
 - [ ] 1.2 Criar `app/config.py`.
       Método: `load_config(env: Mapping[str, str] | None = None) -> Config`, com
       `Config` guardando `login`, `password`, `gemini_api_key`, `db_path`,
-      `session_secret`, `transactions_path`, `accounts_glob`. Precedência:
-      `PASSWORD` antes de `PASSORD` e `GEMINI_API_KEY` antes de
-      `GEMIMI_API_KEY`; `load_dotenv(os.environ.get("DASH_ENV_FILE", ".env"),
-      override=False)`.
-      Justificativa: RF-21 — o `.env` do dono traz a grafia com typo e não vai
-      ser corrigido; `override=False` faz a variável passada na linha de comando
+      `session_secret`, `transactions_path`, `accounts_glob`. Uma grafia por
+      variável, `PASSWORD` e `GEMINI_API_KEY`, sem alias;
+      `load_dotenv(os.environ.get("DASH_ENV_FILE", ".env"), override=False)`.
+      Justificativa: RF-21 — o `.env` do dono usa a grafia correta
+      (`04-divergencias/D-003.md`); `override=False` faz a variável passada na linha de comando
       vencer o arquivo, que é o que torna todo critério deste plano determinístico
       sem nunca ler o `.env`. `DASH_ENV_FILE` existe para o critério poder
       apontar para `/dev/null` e medir só o que ele mesmo declarou.
@@ -200,8 +199,8 @@ a tabela de controle.
       ação de terceiro porque as ações deste fluxo são fixadas em SHA de 40
       caracteres, e acrescentar uma exige uma pinagem que este item não tem como
       auditar.
-- [ ] 1.12 Criar `.env.example` com os nomes `LOGIN`, `PASSORD`,
-      `GEMIMI_API_KEY`, `SESSION_SECRET`, `DASH_DB_PATH` e nenhum valor.
+- [ ] 1.12 Criar `.env.example` com os nomes `LOGIN`, `PASSWORD`,
+      `GEMINI_API_KEY`, `SESSION_SECRET`, `DASH_DB_PATH` e nenhum valor.
       Justificativa: RF-21 e RF-23 dependem dos nomes exatos, e o `.gitignore` já
       libera `!.env.example` — é o único lugar onde o nome de um segredo pode
       aparecer no repositório (norma 14).
@@ -405,7 +404,7 @@ processo reiniciar.
       DASH_DB_PATH=/tmp/dash-f3b.sqlite LOGIN=teste .venv/bin/python -m
       app.auth.seed` é executado
       *Então* o código de saída é diferente de 0, a saída de erro contém a linha
-      `missing environment variable: PASSORD or PASSWORD`, e `rtk proxy env
+      `missing environment variable: PASSWORD`, e `rtk proxy env
       DASH_DB_PATH=/tmp/dash-f3b.sqlite .venv/bin/python -m app.query "select
       count(*) from users"` imprime `0`
 - [ ] `comportamental` — RF-23
@@ -534,7 +533,7 @@ processo reiniciar.
       None`, com `INSERT ... ON CONFLICT(login) DO UPDATE`, e CLI
       `python -m app.auth.seed` que sai com código 1 imprimindo
       `missing environment variable: LOGIN` ou
-      `missing environment variable: PASSORD or PASSWORD` quando falta a variável.
+      `missing environment variable: PASSWORD` quando falta a variável.
       Justificativa: RF-20 e RF-23 — redefinir senha neste produto é editar o
       `.env` e rodar o seed, então rodar duas vezes não pode criar um segundo
       usuário; e a mensagem nomeia a variável sem imprimir valor, que é o que

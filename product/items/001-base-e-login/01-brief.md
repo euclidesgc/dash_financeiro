@@ -132,9 +132,9 @@ numerada, ingestão, autenticação e a primeira superfície.
 - **RF-20** — Quando o seed roda, o sistema deve deixar exatamente uma linha em
   `users`; rodar o seed duas vezes seguidas mantém `count(*) = 1`. *(dirigido a
   evento)*
-- **RF-21** — O sistema deve ler o login de `LOGIN`, a senha de `PASSORD` ou
-  `PASSWORD`, e a chave do Gemini de `GEMIMI_API_KEY` ou `GEMINI_API_KEY`, sem
-  exigir correção do arquivo `.env` do dono. *(ubíquo)*
+- **RF-21** — O sistema deve ler o login de `LOGIN`, a senha de `PASSWORD` e a
+  chave do Gemini de `GEMINI_API_KEY`, e subir com o arquivo `.env` que o dono
+  realmente tem. *(ubíquo)* — ver `04-divergencias/D-003.md`
 - **RF-22** — O sistema deve manter o texto da senha do ambiente fora de toda
   coluna de `users`, de toda linha de log da subida e do HTML da página de login.
   *(ubíquo)*

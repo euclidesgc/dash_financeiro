@@ -12,16 +12,16 @@
       "created_at": "2026-09-06T00:14:49Z",
       "approvals": {
         "brief": {
-          "at": "2026-09-06T02:07:59Z",
-          "sha": "bddfb722c0dda9a67902275487ac8989a892e7be",
+          "at": "2026-09-07T18:32:25Z",
+          "sha": "54293ef2c19dcaef470eed0a922043259d638d63",
           "file": "product/items/001-base-e-login/01-brief.md",
-          "por": "autonomo"
+          "por": "humano"
         },
         "plan": {
-          "at": "2026-09-06T02:07:59Z",
-          "sha": "d070ec9547ceac70c924881afca0c6850fe0e920",
+          "at": "2026-09-07T18:32:25Z",
+          "sha": "0e81b2d205ef6fc0e06ef2f81295f8dae7eb86f1",
           "file": "product/items/001-base-e-login/03-plan.md",
-          "por": "autonomo"
+          "por": "humano"
         }
       },
       "current_phase": 4,
@@ -31,16 +31,14 @@
           "reproved_count": 0,
           "verdict": "APROVADO",
           "verdict_file": "product/items/001-base-e-login/05-veredictos/fase-1.md",
-          "validated_sha": "b0557682e358d05bf5f4ce3c1ca5fcf3b6dc64d3",
+          "validated_sha": "844a5af4c166c72c99c7d71895a57c5beafc0e8f",
           "pr": null,
-          "blocked_on": [
-            "D-003"
-          ],
-          "verdict_at": "2026-09-06T00:58:03Z",
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T18:32:19Z",
           "validated_trees": {
-            ".": "9af4b94a905ba74e44eaf5c4ecd413db83172c9c"
+            ".": "b2560dbf5b2a6c1b4a69e57da1597caf802f9b6c"
           },
-          "criteria_sha": "ab4d95f885158fdf332ab9935fe8e2b350a04e906ac62fb29d12b51b0ce84700"
+          "criteria_sha": "8c358d96ac89576c3ea2bbc9644b8050be96acaa9b0fdd8d4556894d0c60464f"
         },
         "2": {
           "status": "aprovada",
@@ -61,14 +59,14 @@
           "reproved_count": 0,
           "verdict": "APROVADO",
           "verdict_file": "product/items/001-base-e-login/05-veredictos/fase-3.md",
-          "validated_sha": "a709d9b282f0338e4122a98038e189e86c2eea7b",
+          "validated_sha": "844a5af4c166c72c99c7d71895a57c5beafc0e8f",
           "pr": null,
           "blocked_on": [],
-          "verdict_at": "2026-09-06T01:53:46Z",
+          "verdict_at": "2026-09-07T18:32:11Z",
           "validated_trees": {
-            ".": "1083e4961d6077e04b441b21095a84700d3751a5"
+            ".": "b2560dbf5b2a6c1b4a69e57da1597caf802f9b6c"
           },
-          "criteria_sha": "ee4c6f277ac211c823e54fe3874c4abf6513dfa03b1ff8209c5212c47b84894a"
+          "criteria_sha": "bc9db9517c4d4dac8d629ef39dbc0698ccc86f4d6e3d3f067c800347df988b77"
         },
         "4": {
           "status": "aprovada",
@@ -97,10 +95,11 @@
           "ratificacao_humana_at": "2026-09-07T14:19:07Z"
         },
         "D-003": {
-          "status": "PENDENTE",
+          "status": "RECONCILIADA",
           "kind": "normal",
           "phase": 1,
-          "detected_at": "2026-09-07T16:45:01Z"
+          "detected_at": "2026-09-07T16:45:01Z",
+          "reconciliada_at": "2026-09-07T18:31:51Z"
         }
       },
       "criteria_exception": null
