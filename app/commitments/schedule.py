@@ -24,11 +24,6 @@ def end_month(last_month: str, remaining: int) -> str:
     return f"{index // MONTHS_IN_YEAR:04d}-{index % MONTHS_IN_YEAR + 1:02d}"
 
 
-def months_before(month: str, count: int) -> list[str]:
-    index = _index(month)
-    return [_month(index - step) for step in range(count, -1, -1)]
-
-
 def consecutive_run(months: list[str]) -> int:
     longest = run = 1
     for earlier, later in zip(months, months[1:]):
@@ -39,7 +34,3 @@ def consecutive_run(months: list[str]) -> int:
 
 def _index(month: str) -> int:
     return int(month[:4]) * MONTHS_IN_YEAR + int(month[5:7]) - 1
-
-
-def _month(index: int) -> str:
-    return f"{index // MONTHS_IN_YEAR:04d}-{index % MONTHS_IN_YEAR + 1:02d}"

@@ -8,6 +8,13 @@
 > completa e o `doc-reconciler` desdobra este arquivo em `01-prd.md` e
 > `02-spec.md`.
 
+
+> Os números deste brief são os do item `011`, que corrigiu quatro defeitos do
+> motor de compromissos: a série que acabava e ressuscitava como assinatura, a
+> compra partida em duas por um centavo de arredondamento, a previsão apagada
+> pelo mês inteiro e o total que somava assinatura parada. O comprometido da base
+> de 05/09/2026 é **−R$ 8.026,79**.
+
 ## Problema
 
 O dono deste painel tem um déficit de R$ 4.940,72/mês e um comprometimento fixo
@@ -16,8 +23,8 @@ gastou; nenhum responde **quanto do mês seguinte já está vendido antes de o m
 começar**. Sem esse número, cortar assinatura vira palpite e o dia 10 chega com
 uma cobrança que ninguém esperava.
 
-A base sabe a resposta e não a diz. Ela tem 55 séries que se repetem há três ou
-mais meses e 96 séries parceladas — e a conta ingênua sobre essas 100 diz que
+A base sabe a resposta e não a diz. Ela tem 41 séries que se repetem há três ou
+mais meses e 74 séries parceladas, vindas de 66 compras — e a conta ingênua diz que
 32 ainda têm parcela a vencer, quando só 6 têm. `IPVA parcela 1 de 3`, visto
 pela última vez em 26/01/2026, "deve" duas parcelas que não vão sair de conta
 nenhuma. Um comprometido inflado por 26 séries mortas é pior que não ter a tela:
@@ -46,8 +53,8 @@ de origem trata assim somam R$ 1.099,63/mês, enquanto as categorias de serviço
 somam R$ 2.245,69/mês.
 
 Os **parcelamentos vivos**, com parcelas restantes, mês de término e quanto de
-caixa mensal cada um devolve ao acabar — R$ 374,82/mês no total, dos quais
-R$ 141,06 já em 10/2026.
+caixa mensal cada um devolve ao acabar — R$ 233,76/mês no total, dos quais
+R$ 68,72 já em 12/2026.
 
 O **calendário dos próximos 45 dias**, com o dia previsto de cada vencimento e a
 soma do que sai em cada dia, declarando em texto que a data é previsão a partir
@@ -122,7 +129,7 @@ Por baixo dos três está o motor de compromissos, que deriva tudo das transaç�
 
 - **RF-09** — O sistema deve classificar como recorrente a série observada em
   três ou mais meses distintos, produzindo sobre a base de 05/09/2026 as 55
-  séries que `data/processed/recorrentes.json` registra, somando R$ 12.427,82/mês
+  séries que `data/processed/recorrentes.json` registra, somando R$ 7.793,03/mês
   de valor médio. *(ubíquo)*
   A detecção que produz esse número aplica três cortes, e os três são parte do
   requisito: ao menos três meses distintos, ao menos três meses **consecutivos**,
@@ -140,11 +147,11 @@ Por baixo dos três está o motor de compromissos, que deriva tudo das transaç�
 
 - **RF-12** — O sistema deve detectar série parcelada a partir de
   `installment_current` e `installment_total` e do padrão `n/N` na descrição,
-  produzindo sobre a base de 05/09/2026 as 96 séries parceladas que
+  produzindo sobre a base de 05/09/2026 as 74 séries parceladas que
   `data/processed/parcelamentos.json` registra. *(ubíquo)*
 - **RF-13** — O sistema deve tratar como compromisso vivo apenas a série
   parcelada cuja última parcela vista caiu no mês da data de referência ou no mês
-  anterior, de modo que das 100 detectadas restem 6, somando R$ 374,82/mês.
+  anterior ou datada adiante, de modo que das 74 restem 5, somando R$ 233,76/mês.
   *(ubíquo)*
 - **RF-14** — O sistema deve calcular as parcelas restantes como o total de
   parcelas menos a última parcela vista, e o mês de término como o mês da última
@@ -153,8 +160,8 @@ Por baixo dos três está o motor de compromissos, que deriva tudo das transaç�
   previsto em 06/2028. *(ubíquo)*
 - **RF-15** — O sistema deve registrar, para cada parcelamento vivo, o mês em que
   o caixa mensal volta a ficar livre e quanto volta: `Assai 232 Macae`, parcela 1
-  de 3 de R$ 141,06 vista em 04/08/2026, termina em 10/2026 e devolve
-  R$ 141,06/mês. *(ubíquo)*
+  de 24 de R$ 127,27 vista em 11/08/2026, termina em 06/2028 e devolve
+  R$ 127,27/mês. *(ubíquo)*
 - **RF-16** — Se a última parcela vista de uma série caiu antes do mês anterior à
   data de referência, então o sistema deve deixá-la fora do comprometido mesmo
   com parcelas restantes pela conta ingênua: `IPVA parcela 1 de 3`, visto em
@@ -164,9 +171,9 @@ Por baixo dos três está o motor de compromissos, que deriva tudo das transaç�
   sistema deve contá-la uma vez só, como parcelamento, e nenhuma chave de série
   aparece nas duas listas. *(comportamento indesejado)*
   A precedência vale contra o parcelamento **vivo** — o que a janela de vida
-  deixou em pé —, não contra as 96 séries parceladas detectadas. Medido: das 55 recorrentes,
-  ao menos 20 também produzem série parcelada entre as 100, mas nenhuma entre os 6
-  vivos. Aplicá-la contra as 100 derrubaria `RF-09` sem que um único real deixasse
+  deixou em pé —, não contra as 74 séries parceladas detectadas. Medido: a precedência
+  vale para toda chave cobrada como parcelamento dentro da janela, tenha ou não parcela
+  a vencer. Aplicá-la contra as séries mortas derrubaria `RF-09` sem que um único real deixasse
   de sair da conta; o que a regra existe para impedir é contar duas vezes o
   dinheiro que **vai** sair.
 
@@ -187,7 +194,7 @@ Por baixo dos três está o motor de compromissos, que deriva tudo das transaç�
   vencimento previsto e a soma do que sai em cada dia. *(ubíquo)*
 - **RF-22** — O sistema deve incluir no calendário apenas séries vivas: recorrente
   com última cobrança no mês da data de referência ou no anterior, e parcelamento
-  que passou pela janela de RF-13; a tela diz quantas das 55 recorrentes ficaram
+  que passou pela janela de RF-13; a tela diz quantas das 41 recorrentes ficaram
   de fora e por quê. *(ubíquo)*
 - **RF-23** — Se uma ocorrência da série já está lançada em `transactions` com
   data dentro dos 45 dias, então o sistema deve usar o lançamento existente e não
@@ -234,8 +241,8 @@ Por baixo dos três está o motor de compromissos, que deriva tudo das transaç�
   restantes, mês de término e caixa mensal devolvido — a ordenação é pelo total
   ainda comprometido, não pelo valor da parcela. *(ubíquo)*
 - **RF-33** — O sistema deve exibir o cronograma de caixa liberado, com quanto
-  volta em cada mês conforme as séries terminam: R$ 141,06 em 10/2026 e
-  R$ 374,82/mês quando os seis parcelamentos vivos acabarem. *(ubíquo)*
+  volta em cada mês conforme as séries terminam: R$ 68,72 em 12/2026 e
+  R$ 233,76/mês quando os cinco parcelamentos vivos acabarem. *(ubíquo)*
 - **RF-34** — O sistema deve declarar em texto, no bloco do calendário, que a data
   de cada vencimento é previsão a partir do histórico e não data contratual.
   *(ubíquo)*
@@ -248,7 +255,7 @@ Por baixo dos três está o motor de compromissos, que deriva tudo das transaç�
   ou um calendário sem linhas. *(comportamento indesejado)*
 - **RF-37** — O sistema deve derivar do banco, em tempo de consulta, todo total e
   toda contagem que a tela mostra: nenhum arquivo de `app/` traz 55, 100, 6,
-  R$ 12.427,82, R$ 374,82, R$ 2.245,69, R$ 1.099,63, R$ 2.467,20 ou R$ 141,06
+  R$ 7.793,03, R$ 233,76, R$ 2.245,69, R$ 1.099,63, R$ 2.467,20 ou R$ 127,27
   como literal. Esses números vivem nos testes, que medem o banco carregado a
   partir da fonte de 05/09/2026. *(ubíquo)*
 
@@ -273,8 +280,8 @@ Por baixo dos três está o motor de compromissos, que deriva tudo das transaç�
 
 | Métrica | Onde se observa | Alvo |
 |---|---|---|
-| O comprometido do mês passa a ter um número derivado do banco | consulta a `data/dash.sqlite`, data de referência 05/09/2026 | 55 assinaturas somando R$ 12.427,82/mês e 6 parcelamentos somando R$ 374,82/mês |
-| Parcelamento morto não infla o total | consulta a `data/dash.sqlite`, data de referência 05/09/2026 | das 96 séries parceladas detectadas, 6 entram no comprometido; `IPVA parcela 1 de 3` não entra |
+| O comprometido do mês passa a ter um número derivado do banco | consulta a `data/dash.sqlite`, data de referência 05/09/2026 | 16 assinaturas vivas somando R$ 7.793,03/mês e 5 parcelamentos somando R$ 233,76/mês |
+| Parcelamento morto não infla o total | consulta a `data/dash.sqlite`, data de referência 05/09/2026 | das 74 séries parceladas detectadas, 5 entram no comprometido; `IPVA parcela 1 de 3` não entra |
 | A economia projetada da alavanca de curto prazo ganha fonte | tela de Comprometido, com as três assinaturas marcadas | R$ 1.099,63/mês, o mesmo número que `docs/plano.md` usa no horizonte de 0–3 meses |
 
 ## Restrições herdadas
@@ -319,18 +326,18 @@ RF-12).
 
 ## Interseção entre recorrência e parcelamento — medida
 
-A interseção é **vazia**: nenhum dos 6 parcelamentos vivos aparece entre as 55
+A interseção é **vazia**: nenhum dos 5 parcelamentos vivos aparece entre as 41
 séries recorrentes, medido comparando a descrição normalizada de cada
-parcelamento vivo com a chave de cada recorrente. Logo `RF-09` (R$ 12.427,82/mês
-em 55 séries) e `RF-13` (R$ 374,82/mês em 6 parcelamentos) somam sem dupla
+parcelamento vivo com a chave de cada recorrente. Logo `RF-09` (R$ 7.793,03/mês
+em 16 séries vivas) e `RF-13` (R$ 233,76/mês em 5 parcelamentos) somam sem dupla
 contagem nesta base, e a regra de precedência de `D3` continua valendo por
 construção, para a base que crescer.
 
 ## Riscos
 
-- **Os 55 recorrentes e os 6 parcelamentos foram medidos em passadas separadas.**
+- **Os recorrentes e os parcelamentos foram medidos em passadas separadas.**
   Se alguma chave de série aparecer nas duas listas, RF-17 manda contá-la como
-  parcelamento e o total de recorrentes cai abaixo de R$ 12.427,82. Resposta: a
+  parcelamento e o total de recorrentes cai abaixo de R$ 7.793,03. Resposta: a
   verificação mede a interseção antes de comparar os dois totais; se ela não for
   vazia, o número de RF-09 é reconciliado por divergência, não ajustado em
   silêncio.

@@ -4,13 +4,14 @@ from datetime import date, timedelta
 from typing import Any
 
 from app.commitments import INSTALLMENT
-from app.commitments.live import installments, subscriptions
+from app.commitments.live import charged, installments, subscriptions
 from app.commitments.schedule import on_month
 from app.commitments.series import installment_of
 from app.queries.period import shift
 from app.queries.spending import SPENDING
 
 WINDOW_DAYS = 45
+DUE_TOLERANCE_DAYS = 10
 
 Entry = dict[str, Any]
 Day = dict[str, Any]
@@ -30,9 +31,10 @@ def window(today: date | None = None) -> tuple[date, date]:
 def calendar(conn: sqlite3.Connection, *, today: date | None = None) -> list[Day]:
     first, last = window(today)
     series = _live_series(conn, first)
-    entries = _recorded_entries(conn, first, last, series)
-    booked = {(entry["identity"], entry["date"][:7]) for entry in entries}
-    entries += _predicted_entries(series, first, last, booked)
+    recorded = _recorded_entries(conn, first, last, charged(conn, today=first))
+    entries = recorded + _remaining_predictions(
+        _predicted_entries(series, first, last), recorded
+    )
     days: dict[str, list[Entry]] = defaultdict(list)
     for entry in entries:
         days[entry["date"]].append(entry)
@@ -49,7 +51,7 @@ def calendar(conn: sqlite3.Connection, *, today: date | None = None) -> list[Day
 def _live_series(conn: sqlite3.Connection, today: date) -> list[dict]:
     # A series that stopped being charged has no next due date to predict, and a
     # dismissed one is money the owner already took out of the total: both stay
-    # off the calendar, and the screen says how many (RF-22).
+    # off the prediction, and the screen says how many (RF-22 do 003).
     recurring = [
         row
         for row in subscriptions(conn, today=today)
@@ -81,19 +83,12 @@ def _recorded_entries(
     return entries
 
 
-def _predicted_entries(
-    series: list[dict], first: date, last: date, booked: set[tuple]
-) -> list[Entry]:
-    # A charge already recorded takes the whole month of its series, not just the
-    # day it fell on: the median rarely lands on the exact day, and a prediction
-    # a few days off the real line would show the same money leaving twice in the
-    # same month (RF-23).
+def _predicted_entries(series: list[dict], first: date, last: date) -> list[Entry]:
     entries = []
     for row in series:
         identity = _series_identity(row)
         for month in _months(first, last):
-            label = month.strftime("%Y-%m")
-            if (identity, label) in booked or not _charges(row, label):
+            if not _charges(row, month.strftime("%Y-%m")):
                 continue
             due = on_month(row["due_day"], month)
             if first <= due <= last:
@@ -108,6 +103,30 @@ def _predicted_entries(
                     }
                 )
     return entries
+
+
+def _remaining_predictions(
+    predictions: list[Entry], recorded: list[Entry]
+) -> list[Entry]:
+    # A recorded charge replaces the prediction it realises, and that is the
+    # nearest one of its own series — measured between whole dates, so a series
+    # due on the 29th and charged on the 1st of the next month is two days away
+    # and not twenty-eight (RF-13). Keyed by month instead, a stray charge on the
+    # 5th would hide the due date on the 25th; matched by exact day, the median
+    # being a day or two off would show the same money leaving twice (RF-10).
+    left = list(predictions)
+    for entry in recorded:
+        when = date.fromisoformat(entry["date"])
+        nearest, distance = None, None
+        for candidate in left:
+            if candidate["identity"] != entry["identity"]:
+                continue
+            apart = abs((date.fromisoformat(candidate["date"]) - when).days)
+            if apart <= DUE_TOLERANCE_DAYS and (distance is None or apart < distance):
+                nearest, distance = candidate, apart
+        if nearest is not None:
+            left.remove(nearest)
+    return left
 
 
 def _charges(row: dict, month: str) -> bool:

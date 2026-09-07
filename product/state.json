@@ -275,7 +275,7 @@
     "011-serie-duplicada-e-tolerancia-do-vencimento": {
       "title": "Integridade das séries: nenhum compromisso contado duas vezes, nenhuma parcela partida por centavo",
       "track": "rapida",
-      "stage": "brief",
+      "stage": "execute",
       "stacks": [
         "python"
       ],
@@ -288,12 +288,24 @@
           "por": "autonomo"
         },
         "plan": {
-          "at": null,
-          "sha": null
+          "at": "2026-09-07T00:40:25Z",
+          "sha": "509a53b167b7a012ff54f0b36ab9bdcdee3edd1d",
+          "file": "product/items/011-serie-duplicada-e-tolerancia-do-vencimento/03-plan.md",
+          "por": "autonomo"
         }
       },
-      "current_phase": null,
-      "phases": {},
+      "current_phase": 1,
+      "phases": {
+        "1": {
+          "status": "em_execucao",
+          "reproved_count": 0,
+          "verdict": null,
+          "verdict_file": null,
+          "validated_sha": null,
+          "pr": null,
+          "blocked_on": []
+        }
+      },
       "divergences": {},
       "criteria_exception": null
     }

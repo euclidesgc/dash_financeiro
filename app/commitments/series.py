@@ -10,6 +10,7 @@ MIN_MONTHS = 3
 MIN_CONSECUTIVE_MONTHS = 3
 MAX_RELATIVE_DEVIATION = 0.35
 MAX_INSTALLMENTS = 48
+SAME_PURCHASE_DEVIATION = 0.02
 
 _MARKER = re.compile(r"(?<!\d)(\d{1,2})\s*(?:/|\s+de\s+)\s*(\d{1,2})(?!\d)")
 
@@ -64,35 +65,60 @@ def installment_series(conn: sqlite3.Connection) -> list[dict]:
         current, total = installment_of(row)
         if not total:
             continue
-        # The same store shows up with several open purchases at once, so the
-        # instalment count and the instalment value are part of the series key.
-        groups[(row["payee"], total, abs(row["amount_cents"]))].append((row, current))
+        groups[(row["payee"], total)].append((row, current))
     detected = []
-    for (key, total, amount), items in groups.items():
-        occurrences = [row for row, _ in items]
-        seen = sorted({current for _, current in items if current})
-        last_installment = max(seen) if seen else None
-        left = total - last_installment if last_installment is not None else None
-        last = occurrences[-1]
-        months = _months(occurrences)
-        detected.append(
-            {
-                "kind": INSTALLMENT,
-                "series_key": key,
-                "description": last["description"] or key,
-                "account": last["account"],
-                "amount_cents": -amount,
-                "months_observed": len(months),
-                "months_consecutive": consecutive_run(sorted(months)),
-                "last_seen_date": last["date"],
-                "due_day": median_day(_days(occurrences)),
-                "last_installment": last_installment,
-                "installment_total": total,
-                "installments_left": left,
-                "ends_month": end_month(last["date"][:7], left) if left is not None else None,
-            }
-        )
+    for (key, total), items in groups.items():
+        for purchase in _purchases(items):
+            detected.append(_installment(key, total, purchase))
     return detected
+
+
+def _purchases(
+    items: list[tuple[sqlite3.Row, int | None]],
+) -> list[list[tuple[sqlite3.Row, int | None]]]:
+    # The same store has several open purchases at once, so the instalment value
+    # separates them — but the first instalment of a purchase almost always
+    # differs from the rest by rounding, and an exact value splits one purchase
+    # into two series, the older half still owing instalments already paid
+    # (RF-05, RF-06).
+    clusters: list[tuple[int, list[tuple[sqlite3.Row, int | None]]]] = []
+    for row, current in sorted(items, key=lambda item: abs(item[0]["amount_cents"])):
+        amount = abs(row["amount_cents"])
+        for anchor, members in clusters:
+            if abs(amount - anchor) / max(amount, anchor) <= SAME_PURCHASE_DEVIATION:
+                members.append((row, current))
+                break
+        else:
+            clusters.append((amount, [(row, current)]))
+    return [sorted(members, key=lambda item: item[0]["date"]) for _, members in clusters]
+
+
+def _installment(
+    key: str, total: int, items: list[tuple[sqlite3.Row, int | None]]
+) -> dict:
+    occurrences = [row for row, _ in items]
+    seen = sorted({current for _, current in items if current})
+    last_installment = max(seen) if seen else None
+    left = total - last_installment if last_installment is not None else None
+    last = occurrences[-1]
+    months = _months(occurrences)
+    return {
+        "kind": INSTALLMENT,
+        "series_key": key,
+        "description": last["description"] or key,
+        "account": last["account"],
+        # The last occurrence, not the first: it is the one that predicts what
+        # still leaves the account (RF-09).
+        "amount_cents": -abs(last["amount_cents"]),
+        "months_observed": len(months),
+        "months_consecutive": consecutive_run(sorted(months)),
+        "last_seen_date": last["date"],
+        "due_day": median_day(_days(occurrences)),
+        "last_installment": last_installment,
+        "installment_total": total,
+        "installments_left": left,
+        "ends_month": end_month(last["date"][:7], left) if left is not None else None,
+    }
 
 
 def installment_of(row: sqlite3.Row) -> tuple[int | None, int | None]:

@@ -137,3 +137,45 @@ def test_a_single_charge_without_a_marker_is_no_series_at_all(taxonomy_conn, see
     conn = prepare(taxonomy_conn, seed, [transaction("s-1", "2026-08-11", -30.00)])
     assert recurring_series(conn) == []
     assert installment_series(conn) == []
+
+
+def instalments(prefix, months, values, *, total, description, day="08"):
+    return [
+        transaction(
+            f"{prefix}-{month}",
+            f"{month}-{day}",
+            value,
+            descricao=f"{description} {step}/{total}",
+        )
+        for step, (month, value) in enumerate(zip(months, values), start=1)
+    ]
+
+
+SIX = ["2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09"]
+
+
+def test_a_cent_of_rounding_does_not_split_one_purchase_in_two(taxonomy_conn, seed):
+    values = [-136.47] + [-136.43] * 5
+    conn = prepare(
+        taxonomy_conn, seed, instalments("a", SIX, values, total=6, description="Loja")
+    )
+    detected = installment_series(conn)
+
+    assert len(detected) == 1
+    assert detected[0]["installment_total"] == 6
+    assert detected[0]["last_installment"] == 6
+    assert detected[0]["installments_left"] == 0
+    assert detected[0]["amount_cents"] == -13643
+
+
+def test_two_purchases_of_the_same_size_stay_apart_when_the_value_is_not_the_same(
+    taxonomy_conn, seed
+):
+    months = [f"2026-{month:02d}" for month in range(1, 13)]
+    cheap = instalments("c", months, [-27.07] * 12, total=12, description="Curso")
+    dear = instalments("d", months, [-49.60] * 12, total=12, description="Curso")
+    conn = prepare(taxonomy_conn, seed, cheap + dear)
+    detected = installment_series(conn)
+
+    assert len(detected) == 2
+    assert sorted(row["amount_cents"] for row in detected) == [-4960, -2707]

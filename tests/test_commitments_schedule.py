@@ -4,7 +4,6 @@ from app.commitments.schedule import (
     consecutive_run,
     end_month,
     median_day,
-    months_before,
     on_month,
 )
 
@@ -44,14 +43,6 @@ def test_the_end_month_of_the_last_remaining_installments():
 
 def test_a_series_with_nothing_left_ends_in_the_month_it_was_last_seen():
     assert end_month("2026-09", 0) == "2026-09"
-
-
-def test_the_window_carries_the_month_and_the_one_before_it():
-    assert months_before("2026-09", 1) == ["2026-08", "2026-09"]
-
-
-def test_the_window_crosses_the_turn_of_the_year():
-    assert months_before("2026-01", 1) == ["2025-12", "2026-01"]
 
 
 def test_the_longest_run_ignores_the_gap():

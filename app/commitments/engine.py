@@ -2,7 +2,7 @@ import sqlite3
 from datetime import date
 
 from app.commitments import series
-from app.commitments.live import live_months
+from app.commitments.live import live_floor
 from app.config import reference_date
 from app.db import connect
 
@@ -29,7 +29,7 @@ _INSERT = (
 
 
 def recompute(conn: sqlite3.Connection, *, today: date | None = None) -> int:
-    window = live_months(today)
+    floor = live_floor(today)
     try:
         # Wiping and rewriting is what makes idempotence a property of
         # construction instead of a promise of upsert; a half recomputed base
@@ -37,7 +37,7 @@ def recompute(conn: sqlite3.Connection, *, today: date | None = None) -> int:
         conn.execute("DELETE FROM commitments")
         installments = series.installment_series(conn)
         recurring = series.recurring_series(conn)
-        rows = recurring_after_precedence(recurring, installments, window) + installments
+        rows = recurring_after_precedence(recurring, installments, floor) + installments
         conn.executemany(_INSERT, [tuple(row[field] for field in _FIELDS) for row in rows])
         conn.execute(
             "UPDATE commitments SET dismissed = 1 WHERE series_key IN "
@@ -51,18 +51,17 @@ def recompute(conn: sqlite3.Connection, *, today: date | None = None) -> int:
 
 
 def recurring_after_precedence(
-    recurring: list[dict], installments: list[dict], window: list[str]
+    recurring: list[dict], installments: list[dict], floor: str
 ) -> list[dict]:
     # An instalment ends and a subscription does not, so a key that is both
-    # counts once, as the instalment. The precedence runs against the live
-    # instalment because that is the only one inside the total, and it is there
-    # that counting twice costs money (D3, RF-17).
-    live = {
-        row["series_key"]
-        for row in installments
-        if (row["installments_left"] or 0) > 0 and row["last_seen_date"][:7] in window
+    # counts once, as the instalment. The precedence looks only at the window,
+    # never at what is still owed: in the month the last instalment falls the
+    # series stops owing, the precedence would let go, and the recurring line —
+    # built from those very charges — would resurrect a finished debt (RF-01).
+    charged = {
+        row["series_key"] for row in installments if row["last_seen_date"] >= floor
     }
-    return [row for row in recurring if row["series_key"] not in live]
+    return [row for row in recurring if row["series_key"] not in charged]
 
 
 def main() -> int:

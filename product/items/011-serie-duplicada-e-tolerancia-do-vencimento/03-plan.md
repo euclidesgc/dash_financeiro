@@ -26,19 +26,24 @@ DASH_KEY_PATH=/tmp/dash-011-f1.key .venv/bin/python -m app`. O cookie
       `rtk proxy env DASH_ENV_FILE=/dev/null DASH_DB_PATH=/tmp/dash-011-f1.sqlite
       .venv/bin/python -m app.query "select kind, count(*) from commitments group
       by kind order by kind"` imprime exatamente duas linhas, `installment` com
-      **74** e `recurring` com **51**, somando 125; e
-      `... .venv/bin/python -m app.query "select count(*) from commitments where
-      kind = 'recurring' and series_key in ('cp amigao macae', 'jim com',
-      'mercadolivre merca', 'mercadolivre prod')"` imprime **0**
+      **74** e `recurring` com **41**;
+      `... "select count(*) from commitments"` imprime **115**;
+      `... "select count(*) from (select series_key, installment_total from
+      commitments where kind = 'installment' group by series_key,
+      installment_total)"` imprime **66**, provando que as 74 séries saem de 66
+      pares `(beneficiário, total)` e que 8 deles se separam por valor; e
+      `... "select count(*) from commitments where kind = 'recurring' and
+      series_key in ('cp amigao macae', 'jim com', 'mercadolivre merca',
+      'mercadolivre prod')"` imprime **0**
 - [ ] `comportamental` — RF-03, RF-24, RF-25
       *Dado* o servidor rodando contra `/tmp/dash-011-f1.sqlite` e um cookie
       `dash_session` válido
       *Quando* `rtk proxy curl -s -b "dash_session=<cookie>"
       "http://127.0.0.1:8000/comprometido?data=2026-09-05"` é executado
-      *Então* a resposta é `200`, o HTML traz a string `−R$ 9.553,00` como total
+      *Então* a resposta é `200`, o HTML traz a string `−R$ 8.026,79` como total
       comprometido e `R$ 0,00` como economia projetada, **não** traz a string
-      `−R$ 12.802,64`, e o bloco `id="parcelamentos"` traz `R$ 233,76` como caixa
-      liberado
+      `−R$ 12.802,64`, e o bloco `id="caixa-liberado"` traz `R$ 233,76` como o
+      que volta ao caixa quando o último parcelamento acabar
 - [ ] `comando` — RF-01, RF-04
       `rtk proxy env DASH_ENV_FILE=/dev/null .venv/bin/python -m pytest -q
       tests/test_commitments_precedence.py` sai com código 0, e o arquivo contém
@@ -63,14 +68,22 @@ DASH_KEY_PATH=/tmp/dash-011-f1.key .venv/bin/python -m app`. O cookie
       dias do dia previsto **não** apaga a previsão daquele mês (as duas entradas
       aparecem) e um teste que afirma que uma série com dia previsto 29 e
       lançamento no dia 1º do mês seguinte aparece **uma** vez só
-- [ ] `comando` — RF-22, RF-23
-      `rtk proxy env DASH_ENV_FILE=/dev/null DASH_DB_PATH=/tmp/dash-011-f1.sqlite
-      .venv/bin/python -m app.query "select count(*) from commitments where kind
-      = 'recurring' and last_seen_date >= '2026-08-01'"` imprime **26**, e
-      `... "select count(*) from commitments where kind = 'recurring' and
-      last_seen_date > '2026-09-30'"` imprime um número **maior que 0**, provando
-      que série com cobrança datada no futuro existe na base e é contada como
-      viva
+- [ ] `comando` — RF-22, RF-23, RF-24, RF-25
+      Com `Q` valendo `rtk proxy env DASH_ENV_FILE=/dev/null
+      DASH_DB_PATH=/tmp/dash-011-f1.sqlite .venv/bin/python -m app.query`:
+      `Q "select count(*) from commitments where kind = 'recurring' and
+      last_seen_date >= '2026-08-01'"` imprime **16**;
+      `Q "select count(*) from commitments where kind = 'installment' and
+      installments_left > 0 and last_seen_date >= '2026-08-01'"` imprime **5**;
+      `Q "select count(*), sum(amount_cents) from commitments where kind =
+      'recurring' and last_seen_date < '2026-08-01'"` imprime **25** e
+      **−273997**, que são as assinaturas paradas e o dinheiro que elas deixam de
+      inflar no total; e
+      `Q "select kind, count(*) from commitments where last_seen_date >
+      '2026-09-30' group by kind"` imprime uma linha só, `installment` com
+      **15**, provando que existe série com cobrança datada no futuro e que ela é
+      contada como viva — e que nenhuma delas sobrou como recorrente, porque
+      todas eram a mesma dívida contada duas vezes
 - [ ] `comportamental` — RF-15
       *Dado* o servidor rodando contra `/tmp/dash-011-f1.sqlite` e um cookie
       válido
@@ -79,7 +92,8 @@ DASH_KEY_PATH=/tmp/dash-011-f1.key .venv/bin/python -m app`. O cookie
       *Então* existe exatamente um elemento com `data-serie="jim com"` no bloco,
       ele está dentro do dia `data-dia="2026-09-08"`, o seu `data-centavos` vale
       `-13643`, e o texto daquela entrada traz `já lançado na conta` e não traz
-      `previsto pelo histórico`
+      `previsto pelo histórico`; e o bloco traz `25 sem cobrança recente`, `28`
+      elementos `[data-dia]` e `59` elementos `[data-serie]`
 - [ ] `comportamental` — RF-18
       *Dado* o banco `/tmp/dash-011-e2e.sqlite` preparado do zero pelos mesmos
       dois comandos, o servidor subido com ele e um cookie de um único login
@@ -91,21 +105,41 @@ DASH_KEY_PATH=/tmp/dash-011-f1.key .venv/bin/python -m app`. O cookie
       `totalpasssao paulobra`, e a tela é lida de novo
       *Então* a primeira leitura traz `R$ 0,00` de economia projetada e a segunda
       traz `R$ 1.099,63`, sem reingestão e sem reinício de processo
-- [ ] `estrutural` — RF-05, RF-11, RF-22
-      As três tolerâncias existem como constante nomeada em escopo de módulo, com
-      o valor declarado no brief: `2%` para o desvio que separa duas compras,
-      `10` dias para a distância que realiza uma previsão, e um mês para o
-      alcance do piso de vida. Nenhuma delas aparece como literal no meio de uma
-      expressão
+- [ ] `estrutural` — RF-05, RF-11, RF-16, RF-17, RF-22
+      Em `app/commitments/` existem quatro constantes em escopo de módulo, cada
+      uma atribuída a um literal numa linha da forma `NOME = valor`: a tolerância
+      de desvio que separa duas compras, valendo `0.02`; a tolerância em dias que
+      realiza uma previsão, valendo `10`; o alcance do piso de vida, valendo `1`
+      mês; e a janela do calendário, valendo `45` e morando em
+      `app/commitments/calendar.py`. Nenhum desses quatro valores aparece como
+      literal no meio de uma expressão em nenhum dos arquivos do pacote
+- [ ] `comportamental` — RF-16
+      *Dado* o banco `/tmp/dash-011-f1.sqlite`
+      *Quando* `app.commitments.live` é importado e o piso de vida é calculado
+      para `date(2026, 9, 5)` e para `date(2026, 1, 15)`
+      *Então* o piso vale `2026-08-01` no primeiro caso e `2025-12-01` no
+      segundo, provando que ele alcança um mês para trás e que a virada de ano
+      não o quebra
+- [ ] `comportamental` — RF-17
+      *Dado* o servidor rodando contra `/tmp/dash-011-f1.sqlite` e um cookie
+      válido
+      *Quando* a resposta de `/comprometido?data=2026-09-05` é lida
+      *Então* o bloco `id="calendario"` traz as strings `05/09/2026` e
+      `20/10/2026`, que são a data de referência e ela mais 45 dias
 
 **Critérios de integração:**
 
-- [ ] `comando` — portão local, no lugar do CI que este repositório não tem
+- [ ] `comando` — portão local, no lugar do CI que este repositório não tem;
+      cobre RF-16, RF-17, RF-18 e RF-20 contra regressão
       `rtk proxy env DASH_ENV_FILE=/dev/null .venv/bin/python -m pytest -q`
       executado na raiz sai com código 0
 - [ ] `comando` — RF-19
+      O padrão traz os valores em centavos e as três contagens que não colidem
+      com rótulo de requisito nem com número de parcela; contagens de um ou dois
+      dígitos ficam de fora de propósito, porque `\b15\b` casa `RF-15` num
+      comentário e o critério passaria a medir a redação, não o código.
       `rtk proxy grep -REn --exclude-dir=__pycache__
-      "955300|12802|23376|37482|36861|426618|273997|109963|\b(74|51|125|26|66|96)\b"
+      "802679|1280264|23376|37482|36861|273997|109963|\b(115|74|41)\b"
       app/commitments app/routers/commitments.py` não imprime nenhuma linha, em
       nenhum dos dois fluxos de saída
 - [ ] `comando` — RF-20
@@ -113,11 +147,16 @@ DASH_KEY_PATH=/tmp/dash-011-f1.key .venv/bin/python -m app`. O cookie
       DASH_TODAY=2026-09-05 .venv/bin/python -m app.commitments.engine` executado
       **duas vezes seguidas** imprime a mesma contagem nas duas, e
       `select count(*) from commitments` devolve o mesmo número antes e depois
-- [ ] `estrutural` — RF-21
-      Nenhum documento aprovado de `product/items/003-comprometido/` afirma mais
-      `−R$ 12.802,64`, `R$ 374,82`, `96 séries` ou `6 parcelamentos vivos` como
-      número corrente, e cada trecho reescrito tem âncora de uma linha para o
-      item `011`. `docs/plano.md` permanece byte a byte igual
+- [ ] `estrutural` — RF-21, RF-26, RF-27
+      `rtk proxy grep -c "12.802,64\|374,82\|141,06"
+      product/items/003-comprometido/00-discovery.md
+      product/items/003-comprometido/01-brief.md` imprime `0` para os dois
+      arquivos, e cada um deles cita o item `011` ao menos uma vez;
+      `product/items/003-comprometido/03-plan.md` **continua** citando
+      `−R$ 12.802,64` nos seus critérios e ganha, antes do primeiro `##`, uma
+      nota que nomeia o item `011`; e `rtk proxy git diff --stat
+      $(git merge-base develop HEAD)..HEAD -- docs/plano.md` não imprime linha
+      nenhuma
 
 > A DoD global é do CI e não se repete aqui.
 
