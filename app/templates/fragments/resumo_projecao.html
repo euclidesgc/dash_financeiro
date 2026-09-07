@@ -61,10 +61,12 @@
           <span class="cifra">{{ entry['due_cents']|brl }}</span>
         </li>
         {% endif %}
+        {% if entry['variable_cents'] %}
         <li class="calendar-entry">
           <span class="calendar-name">gasto sem data <span class="cell-key">o que sobra do mês típico depois do compromisso, acumulado desde o dia anterior da lista</span></span>
           <span class="cifra">{{ entry['variable_cents']|brl }}</span>
         </li>
+        {% endif %}
       </ul>
     </li>
     {% endfor %}

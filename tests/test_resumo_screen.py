@@ -192,3 +192,14 @@ def test_the_screen_does_not_print_none_when_no_income_was_ever_observed(client)
 
     assert "None" not in _section(html, "projecao")
     assert "não há entrada observada no histórico" in html
+
+
+def test_a_date_with_no_complete_month_behind_it_says_so(client):
+    html = client.get("/?data=2020-01-01").text
+
+    block = _section(html, "projecao")
+
+    assert "Não há mês completo anterior a esta data na base" in html
+    assert "de <span" not in _section(html, "mes")
+    assert all(int(value) <= 0 for value in re.findall(r'data-variavel="(-?\d+)"', block))
+    assert 'class="calendar-name">gasto sem data' not in block

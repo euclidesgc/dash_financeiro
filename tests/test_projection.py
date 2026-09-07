@@ -121,3 +121,17 @@ def test_the_months_used_are_the_six_complete_ones_before_the_reference(
     assert monthly(conn, today=REFERENCE)["months"] == [
         "2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08",
     ]
+
+
+def test_the_undated_spending_is_never_an_inflow(taxonomy_conn, seed):
+    rows = [
+        transaction(f"out-{month}", f"{month}-20", -300.0, descricao="Assinatura X")
+        for month in ("2026-06", "2026-07", "2026-08", "2026-09")
+    ]
+    conn = balance(prepare(taxonomy_conn, seed, rows), 0)
+    recompute(conn, today=REFERENCE)
+    far = date(2020, 1, 1)
+
+    assert monthly(conn, today=far)["months"] == []
+    assert forecast(conn, today=far)["variable_cents"] == 0
+    assert all(day["variable_cents"] <= 0 for day in forecast(conn, today=far)["days"])

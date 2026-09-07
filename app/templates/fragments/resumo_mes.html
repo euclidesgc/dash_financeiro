@@ -1,10 +1,15 @@
 <section id="mes" class="panel panel-wide">
   <div class="stack-tight">
     <h2 class="section-title">O mês típico</h2>
-    <p class="lede">Mediana dos {{ median_months }} meses completos anteriores, de
+    {% if month['months'] %}
+    <p class="lede">Mediana dos {{ month['months']|length }} meses completos anteriores, de
       <span class="calendar-date">{{ month['months'][0]|mes }}</span> a
       <span class="calendar-date">{{ month['months'][-1]|mes }}</span>. Mediana e não média: um mês
       com crédito atípico puxaria a média e projetaria uma renda que não existe.</p>
+    {% else %}
+    <p class="lede">Não há mês completo anterior a esta data na base, e por isso não há mediana a
+      tirar. Os três números abaixo ficam em zero até o primeiro mês fechar.</p>
+    {% endif %}
   </div>
   <div class="figures">
     <div class="stack-tight">
