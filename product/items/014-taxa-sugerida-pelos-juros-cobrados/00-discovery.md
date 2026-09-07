@@ -42,7 +42,21 @@ zero.
   saldo médio negativo de R$ 38,01. Não é juro proporcional; é tarifa mínima
   dominando a razão.
 - **E3.2** — Abaixo de um piso de saldo, o mês é descartado. Com o piso, a
-  `CAIXA` fica em 8,04% de mediana sobre 4 meses.
+  `CAIXA` fica em 8,04% de mediana sobre 5 meses.
+
+### R3b — O banco cobra em atraso, e casar o juro com o mês errado inventa faixa
+
+- **E3b.1** — Na `CAIXA` os oito `COBRANCA DE JUROS` caem entre os dias 01 e 03:
+  o lançamento de 01/09 é o preço de **agosto**, não de setembro. Casando o
+  lançamento com o mês em que ele foi lançado, as taxas saem `383, 741, 867,
+  1153`; casando com o mês que ele remunera, saem praticamente constantes — que é
+  como um cheque especial contratado se parece.
+- **E3b.2** — A mediana quase não se move, mas a **faixa mostrada ao dono se
+  inventa**: a tela dizia "variou de 3,83% a 11,53%" onde a dispersão real é bem
+  menor. E era o **mês em curso**, com cinco dias de saldo sob um mês inteiro de
+  juros, que produzia o extremo de 11,53%.
+- **E3b.3** — O mês em curso fica de fora, e o juro dos primeiros dias conta para
+  o mês anterior. Achado do validador cego, fora da letra dos critérios.
 
 ### R4 — Cartão não tem taxa a derivar, e isso não é limitação de dado
 

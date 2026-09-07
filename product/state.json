@@ -674,14 +674,14 @@
       "created_at": "2026-09-07T12:24:22Z",
       "approvals": {
         "brief": {
-          "at": "2026-09-07T12:28:13Z",
-          "sha": "61f1566bd547f3e70aa80bd6fab53b5a43cd35cd",
+          "at": "2026-09-07T12:58:18Z",
+          "sha": "b2511b6117b870f5556748d75a398d323427fc71",
           "file": "product/items/014-taxa-sugerida-pelos-juros-cobrados/01-brief.md",
           "por": "autonomo"
         },
         "plan": {
-          "at": "2026-09-07T12:28:13Z",
-          "sha": "9931335e571d819209d156e5248884f4a9d7eb99",
+          "at": "2026-09-07T12:58:18Z",
+          "sha": "cc100141f82e522250d1bf5d753358d8a1b6119b",
           "file": "product/items/014-taxa-sugerida-pelos-juros-cobrados/03-plan.md",
           "por": "autonomo"
         }

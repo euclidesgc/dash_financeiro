@@ -15,14 +15,19 @@ _MOVES = (
 )
 _CHARGED = (
     f"SELECT COALESCE(SUM(amount_cents), 0) AS total FROM transactions "
-    f"WHERE account_id = ? AND substr(date, 1, 7) = ? AND {_INTEREST}"
+    f"WHERE account_id = ? AND substr(date, 1, 7) = ? AND {_INTEREST} "
+    f"AND CAST(substr(date, 9, 2) AS INTEGER) > {(ARREARS_DAYS := 5)}"
+)
+_CHARGED_EARLY = (
+    f"SELECT COALESCE(SUM(amount_cents), 0) AS total FROM transactions "
+    f"WHERE account_id = ? AND substr(date, 1, 7) = ? AND {_INTEREST} "
+    f"AND CAST(substr(date, 9, 2) AS INTEGER) <= {ARREARS_DAYS}"
 )
 
 # Below this, a fixed minimum fee dominates the charge and the ratio stops being
 # a rate: one month of this base shows 81% over an average balance of R$ 38.
 MIN_BALANCE_CENTS = 50000
 MIN_MONTHS = 3
-BASIS_POINTS = 100
 RATE_SCALE = 10000
 
 
@@ -49,7 +54,7 @@ def observed_rates(conn: sqlite3.Connection, *, today: date) -> dict[str, dict]:
         (BANK,),
     ):
         days = daily_balances(conn, account["id"], account["balance_cents"], today)
-        rates = _monthly_rates(conn, account["id"], days)
+        rates = _monthly_rates(conn, account["id"], days, today)
         if len(rates) < MIN_MONTHS:
             continue
         ordered = sorted(rate for _, rate in rates)
@@ -63,10 +68,18 @@ def observed_rates(conn: sqlite3.Connection, *, today: date) -> dict[str, dict]:
     return found
 
 
-def _monthly_rates(conn: sqlite3.Connection, account_id: str, days: dict) -> list[tuple[str, int]]:
+def _monthly_rates(
+    conn: sqlite3.Connection, account_id: str, days: dict, today: date
+) -> list[tuple[str, int]]:
+    # The month in progress is left out: five days of balance under a whole
+    # month of interest reads as a rate three times the real one, and it was that
+    # partial month producing the widest end of the range shown to the owner.
+    current = f"{today.year:04d}-{today.month:02d}"
     rates = []
     for month in sorted({when[:7] for when in days}):
-        charged = conn.execute(_CHARGED, (account_id, month)).fetchone()["total"]
+        if month >= current:
+            continue
+        charged = _charged_for(conn, account_id, month)
         if not charged:
             continue
         negative = [value for when, value in days.items() if when[:7] == month and value < 0]
@@ -77,6 +90,21 @@ def _monthly_rates(conn: sqlite3.Connection, account_id: str, days: dict) -> lis
             continue
         rates.append((month, round(abs(charged) / abs(average) * RATE_SCALE)))
     return rates
+
+
+def _charged_for(conn: sqlite3.Connection, account_id: str, month: str) -> int:
+    # The bank charges in arrears: the interest posted in the first days of a
+    # month is the price of the month before. Matching the posting to the month
+    # it was posted in, instead of the month it remunerates, turned a contracted
+    # rate that barely moves into a range three times wider than the real one.
+    inside = conn.execute(_CHARGED, (account_id, month)).fetchone()["total"]
+    following = conn.execute(_CHARGED_EARLY, (account_id, _next(month))).fetchone()["total"]
+    return inside + following
+
+
+def _next(month: str) -> str:
+    year, index = int(month[:4]), int(month[5:7])
+    return f"{year + index // 12:04d}-{index % 12 + 1:02d}"
 
 
 def _median(ordered: list[int]) -> int:

@@ -81,3 +81,44 @@ def test_a_late_payment_fine_is_not_the_price_of_carrying_a_balance(taxonomy_con
     conn = account(load(taxonomy_conn, rows), -300000)
 
     assert observed_rates(conn, today=REFERENCE) == {}
+
+
+def test_interest_posted_in_the_first_days_belongs_to_the_month_before(taxonomy_conn):
+    from app.debts.observed import _charged_for
+
+    rows = [
+        transaction("c", "2026-06-01", -1000.0, descricao="Compra"),
+        # The bank posts June's price on the second of July.
+        transaction("j", "2026-07-02", -60.0, descricao="COBRANCA DE JUROS"),
+    ]
+    conn = account(load(taxonomy_conn, rows), -100000)
+
+    assert _charged_for(conn, ACCOUNT["id"], "2026-06") == -6000
+    assert _charged_for(conn, ACCOUNT["id"], "2026-07") == 0
+
+
+def test_interest_posted_late_in_the_month_stays_in_it(taxonomy_conn):
+    from app.debts.observed import _charged_for
+
+    rows = [
+        transaction("c", "2026-06-01", -1000.0, descricao="Compra"),
+        transaction("j", "2026-06-28", -60.0, descricao="Saída JUROS LIMITE DA CONTA"),
+    ]
+    conn = account(load(taxonomy_conn, rows), -100000)
+
+    assert _charged_for(conn, ACCOUNT["id"], "2026-06") == -6000
+    assert _charged_for(conn, ACCOUNT["id"], "2026-05") == 0
+
+
+def test_the_month_in_progress_is_left_out(taxonomy_conn):
+    from app.debts.observed import _monthly_rates, daily_balances
+
+    rows = []
+    for when in ("2026-06", "2026-07", "2026-08", "2026-09"):
+        rows += month("a", when, -1000.0, interest=-80.0)
+    conn = account(load(taxonomy_conn, rows), -400000)
+    days = daily_balances(conn, ACCOUNT["id"], -400000, REFERENCE)
+    months = [when for when, _ in _monthly_rates(conn, ACCOUNT["id"], days, REFERENCE)]
+
+    assert "2026-09" not in months
+    assert months
