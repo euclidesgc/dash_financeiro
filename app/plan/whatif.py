@@ -40,6 +40,8 @@ def impact(conn: sqlite3.Connection, move: Move, *, today: date) -> dict:
         extra_once_cents=move.once_cents if move.kind == INCOME else -move.once_cents,
     )
     return {
+        "months": move.months,
+        "once_cents": move.once_cents,
         "before": before,
         "after": after,
         "monthly_delta_cents": signed_monthly(move),
@@ -88,6 +90,12 @@ def parse_move(kind: str, monthly: str, once: str, months: str) -> Move:
     )
 
 
+# A ceiling, not a nicety: past three hundred digits float() returns inf and
+# round(inf) raises, which is a 500 on a money field — the very class of defect
+# the strict reading exists to close. Twelve digits is more money than this
+# panel will ever be asked about.
+MAX_DIGITS = 12
+
 _MONEY = re.compile(r"^\d{1,3}(\.\d{3})*(,\d{1,2})?$|^\d+(,\d{1,2})?$")
 
 
@@ -99,11 +107,15 @@ def _cents(typed: str, field: str, *, allow_zero: bool = False) -> int:
     cleaned = (typed or "").strip().replace("R$", "").replace(" ", "")
     if not cleaned and allow_zero:
         return 0
-    if not _MONEY.match(cleaned):
+    if not _MONEY.match(cleaned) or len(cleaned.replace(".", "").replace(",", "")) > MAX_DIGITS:
         raise InvalidScenarioError(
-            f"{field} inválido: “{typed}”. Escreva na forma 1.234,56."
+            f"{field} inválido: “{typed}”. Escreva na forma 1.234,56, "
+            f"com no máximo {MAX_DIGITS} algarismos."
         )
-    cents = round(float(cleaned.replace(".", "").replace(",", ".")) * 100)
+    units, _, decimals = cleaned.replace(".", "").partition(",")
+    # Integer cents from integer parts: float would stop being exact long before
+    # the ceiling above, and the invariant of this base is integer cents.
+    cents = int(units or 0) * 100 + int((decimals or "0").ljust(2, "0"))
     if cents == 0 and not allow_zero:
         raise InvalidScenarioError(f"{field} precisa ser maior que zero.")
     return cents

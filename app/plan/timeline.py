@@ -111,10 +111,11 @@ def simulate(
         extra_once_cents = 0 if month == 1 else extra_once_cents
         if milestones["resultado"] is None and result >= 0:
             milestones["resultado"] = month
-        if result <= 0:
-            # A month in the red pays nothing down. Waiting only makes sense
-            # while a lever is still scheduled to arrive; with none left, the
-            # trend points the other way and any date would be invented.
+        if result + injected <= 0:
+            # A month in the red pays nothing down. The one-off is counted here
+            # too: discarding it before this check made a million reais of
+            # declared income change nothing on a base whose monthly result is
+            # negative — which is this base (RF-18).
             if any(when > month for when, _ in freed):
                 continue
             break

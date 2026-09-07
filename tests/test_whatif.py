@@ -153,3 +153,29 @@ def test_a_term_stops_the_effect_and_a_one_off_lands_once(taxonomy_conn):
 
     assert for_two["after"]["months_to_objective"] > forever["after"]["months_to_objective"]
     assert with_once["after"]["months_to_objective"] < forever["after"]["months_to_objective"]
+
+
+def test_a_value_of_absurd_magnitude_is_refused_and_not_a_crash():
+    for digits in (13, 40, 310):
+        with pytest.raises(InvalidScenarioError) as refusal:
+            parse_move(INCOME, "9" * digits, "", "")
+        assert "algarismos" in str(refusal.value)
+
+
+def test_cents_come_from_integers_and_not_from_a_float():
+    assert parse_move(INCOME, "999.999.999,99", "", "").monthly_cents == 99999999999
+    assert parse_move(INCOME, "0,1", "", "").monthly_cents == 10
+    assert parse_move(INCOME, "1,05", "", "").monthly_cents == 105
+
+
+def test_a_one_off_counts_even_when_the_month_starts_in_the_red(taxonomy_conn):
+    conn = prepare(taxonomy_conn, salary(1000.0) + rent(-3000.0))
+    without = impact(conn, move(INCOME, 100), today=REFERENCE)
+    with_once = impact(
+        conn,
+        Move(kind=INCOME, monthly_cents=100, once_cents=100000000, months=None),
+        today=REFERENCE,
+    )
+
+    assert without["after"]["months_to_objective"] is None
+    assert with_once["after"]["months_to_objective"] is not None

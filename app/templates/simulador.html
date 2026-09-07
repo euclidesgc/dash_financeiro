@@ -69,7 +69,9 @@
     </div>
     <p class="lede">Resultado mensal antes:
       <span class="cifra">{{ answer['before']['monthly_result_cents']|brl }}</span> · depois:
-      <span class="cifra">{{ answer['after']['monthly_result_cents']|brl }}</span>. A conta é a
+      <span class="cifra">{{ answer['after']['monthly_result_cents']|brl }}</span>{% if answer['months'] %},
+      e só por {{ answer['months'] }} {{ 'mês' if answer['months'] == 1 else 'meses' }} — depois
+      disso o resultado volta ao de antes{% endif %}. A conta é a
       mesma do <a href="/objetivo">Objetivo</a> — o simulador não tem motor próprio, para que os
       dois nunca discordem.</p>
   </section>

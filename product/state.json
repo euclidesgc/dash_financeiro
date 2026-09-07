@@ -499,7 +499,7 @@
     "008-simulador-e-base-de-fatos": {
       "title": "O simulador que responde em dias, e a base de fatos que so o humano sabe",
       "track": "rapida",
-      "stage": "execute",
+      "stage": "done",
       "stacks": [
         "python"
       ],
@@ -521,13 +521,18 @@
       "current_phase": 1,
       "phases": {
         "1": {
-          "status": "em_execucao",
+          "status": "aprovada",
           "reproved_count": 0,
-          "verdict": null,
-          "verdict_file": null,
-          "validated_sha": null,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/008-simulador-e-base-de-fatos/05-veredictos/fase-1.md",
+          "validated_sha": "1a680e43c10d675ff7fc36da4992507d0ff5d8fc",
           "pr": null,
-          "blocked_on": []
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T04:26:57Z",
+          "validated_trees": {
+            ".": "326d15ca63c7d0d8acbaa94d435657b2cb56ce00"
+          },
+          "criteria_sha": "b04772fb2d2a9eb4b35ec7ed2bd9dbc4445b95879e015d3555d72c7a55b8ce84"
         }
       },
       "divergences": {},
