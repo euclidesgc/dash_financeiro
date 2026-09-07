@@ -202,14 +202,14 @@
       "created_at": "2026-09-06T19:04:50Z",
       "approvals": {
         "brief": {
-          "at": "2026-09-06T19:48:43Z",
-          "sha": "6566ca0be2f0a1a7ff2e866e1856a8b0853563d9",
+          "at": "2026-09-07T01:03:12Z",
+          "sha": "b0013259f8dbcb250575cfee661d97ee5363ae7e",
           "file": "product/items/003-comprometido/01-brief.md",
           "por": "autonomo"
         },
         "plan": {
-          "at": "2026-09-06T19:54:09Z",
-          "sha": "18891686789f2842e08292383a888ec068ae3b8e",
+          "at": "2026-09-07T01:03:02Z",
+          "sha": "06640ab38d7221dc162f8e52d4bd2555fb616c0b",
           "file": "product/items/003-comprometido/03-plan.md",
           "por": "autonomo"
         }
@@ -282,14 +282,14 @@
       "created_at": "2026-09-07T00:04:09Z",
       "approvals": {
         "brief": {
-          "at": "2026-09-07T00:09:18Z",
-          "sha": "485b25f5f41476881f7d8029f67c85e14a8a3b28",
+          "at": "2026-09-07T01:03:12Z",
+          "sha": "7dcf84a8f0d4791fcd27f3e6b9cd1597398e615e",
           "file": "product/items/011-serie-duplicada-e-tolerancia-do-vencimento/01-brief.md",
           "por": "autonomo"
         },
         "plan": {
-          "at": "2026-09-07T00:40:25Z",
-          "sha": "509a53b167b7a012ff54f0b36ab9bdcdee3edd1d",
+          "at": "2026-09-07T01:03:12Z",
+          "sha": "20ee8a37b6c542597f505ac4816477ff98268c05",
           "file": "product/items/011-serie-duplicada-e-tolerancia-do-vencimento/03-plan.md",
           "por": "autonomo"
         }
