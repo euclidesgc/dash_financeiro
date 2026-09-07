@@ -415,7 +415,7 @@
     "006-sync-pluggy": {
       "title": "Sincronização sob demanda e diária, sem duplicar, e a tela que diz quando foi a última",
       "track": "rapida",
-      "stage": "execute",
+      "stage": "done",
       "stacks": [
         "python"
       ],
@@ -437,13 +437,18 @@
       "current_phase": 1,
       "phases": {
         "1": {
-          "status": "em_execucao",
+          "status": "aprovada",
           "reproved_count": 0,
-          "verdict": null,
-          "verdict_file": null,
-          "validated_sha": null,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/006-sync-pluggy/05-veredictos/fase-1.md",
+          "validated_sha": "f5575cfa680b975890495d9e6c29e75db373c6ac",
           "pr": null,
-          "blocked_on": []
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T03:11:57Z",
+          "validated_trees": {
+            ".": "2e111dc8a9d0b554c393bc5a9ed358784652c5d9"
+          },
+          "criteria_sha": "db4d634fad0222ae4fbe8989c0dc8762b7d55c96de6422b31115a3005f9dcbf7"
         }
       },
       "divergences": {},
