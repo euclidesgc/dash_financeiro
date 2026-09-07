@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "gates": [
+    {
+      "id": "G3",
+      "script": "scripts/gates/gate3_no_comments.sh",
+      "escape": "gate3-ok",
+      "applies_to": [
+        "src/**"
+      ],
+      "exempt": [
+        "**/tests/**",
+        "**/migrations/**"
+      ],
+      "cobra": "comentário que descreve mecânica em vez de justificar decisão",
+      "pack": "python"
+    },
+    {
+      "id": "G4",
+      "script": "scripts/gates/gate4_no_todo.sh",
+      "escape": null,
+      "applies_to": [
+        "src/**",
+        "tests/**"
+      ],
+      "exempt": [],
+      "cobra": "pendência marcada no código em vez de virar roadmap ou divergência",
+      "pack": "python"
+    },
+    {
+      "id": "G7",
+      "script": "scripts/gates/gate7_layer_boundary.sh",
+      "escape": "gate7-ok",
+      "applies_to": [
+        "src/**"
+      ],
+      "exempt": [
+        "**/tests/**"
+      ],
+      "cobra": "router montando consulta ou controlando transação, sem passar pelo service",
+      "pack": "python"
+    }
+  ]
+}

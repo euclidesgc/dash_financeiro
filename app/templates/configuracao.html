@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Configuração{% endblock %}
+
+{% macro setting(item, action, available) -%}
+<article class="setting" data-config="{{ item['name'] }}" data-valor="{{ item['value'] if item['value'] is not none else '' }}">
+  <div class="setting-what">
+    <h3 class="setting-name">{{ item['label'] }}</h3>
+    <p class="lede">{{ item['help'] }}</p>
+    <p class="lede">Muda <strong>{{ item['moves'] }}</strong>.</p>
+  </div>
+  {% if item['stored'] %}
+  <div class="setting-value">
+    <p class="eyebrow">Valor</p>
+    {% if item['value'] is not none %}
+    <p class="figure cifra setting-figure">{{ item['value']|unidade(item['unit']) }}</p>
+    <p class="lede">{% if item['valid_until'] %}Vale até {{ item['valid_until']|dia }}{% if item['stale'] %} <span class="mark-stale">vencido</span>{% endif %}{% else %}Sem prazo de validade.{% endif %}</p>
+    {% else %}
+    <p class="figure setting-absent">Ausente</p>
+    <p class="lede">{% if item['default'] is not none %}Enquanto não houver valor, o painel usa {{ item['default']|unidade(item['unit']) }}.{% else %}Enquanto não houver valor, o painel declara a premissa na tela em vez de fingir que sabe.{% endif %}</p>
+    {% endif %}
+    <form class="form" method="post" action="{{ action }}">
+      <div class="field">
+        <label class="field-label" for="campo-{{ item['name'] }}">{% if item['unit'] == 'meses' %}Meses{% elif item['unit'] == 'pontos-base' %}Por cento ao mês{% else %}Novo valor, em reais{% endif %}</label>
+        <input class="field-input" id="campo-{{ item['name'] }}" name="valor" inputmode="decimal"
+               placeholder="{% if item['unit'] == 'meses' %}6{% elif item['unit'] == 'pontos-base' %}1,99{% else %}0,00{% endif %}"
+               value="{{ item['value']|digitado(item['unit']) }}"
+               {% if item['name'] == 'mediana-meses' %}aria-describedby="janela-base"{% endif %}>
+      </div>
+      {% if item['name'] == 'mediana-meses' %}
+      <p class="lede" id="janela-base">A base tem {{ available }} {% if available == 1 %}mês fechado{% else %}meses fechados{% endif %}.
+        Uma janela maior que isso é recusada, não encurtada em silêncio.</p>
+      {% endif %}
+      <button class="button button-quiet button-small" type="submit" name="nome"
+              value="{{ item['name'] }}">Salvar</button>
+    </form>
+    {% if item['screen'] != action %}
+    <p class="lede">O mesmo valor se edita em <a href="{{ item['screen'] }}">{{ item['screen'] }}</a>,
+      no contexto da decisão.</p>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="setting-value">
+    <p class="eyebrow">Onde se edita</p>
+    <p class="lede">Não é uma linha aqui: é <strong>uma taxa por dívida</strong>, e cada uma tem a
+      sua. O campo está em <a href="{{ item['screen'] }}">{{ item['screen'] }}</a>, ao lado da
+      dívida que ela cobra.</p>
+  </div>
+  {% endif %}
+</article>
+{%- endmacro %}
+
+{% block content %}
+<main class="screen">
+  <header class="panel panel-wide">
+    <div class="scale" aria-hidden="true"></div>
+    <h1 class="screen-title">Configuração</h1>
+    <p class="lede">Tudo o que o painel não consegue ler no extrato e mesmo assim precisa para
+      calcular. Cada linha diz qual número ela move e onde se edita no contexto da decisão.</p>
+    {% if done or notice %}
+    <div class="notices">
+      {% if done %}<p class="notice notice-done" role="status">{{ done }}</p>{% endif %}
+      {% if notice %}<p class="notice" id="recusa" role="alert">{{ notice }}</p>{% endif %}
+    </div>
+    {% endif %}
+  </header>
+  <section id="fatos" class="panel panel-wide">
+    <div class="stack-tight">
+      <h2 class="section-title">Fatos</h2>
+      <p class="lede">O que o mundo informa: o banco, o contrato, o mercado. Envelhece, e por isso
+        carrega validade.</p>
+    </div>
+    <div class="settings">
+      {% for item in facts %}{{ setting(item, action, available_months) }}{% endfor %}
+    </div>
+  </section>
+  <section id="metas" class="panel panel-wide">
+    <div class="stack-tight">
+      <h2 class="section-title">Metas</h2>
+      <p class="lede">O que você decide. Enquanto não houver decisão, o painel usa a premissa
+        declarada — e diz qual é.</p>
+    </div>
+    <div class="settings">
+      {% for item in goals %}{{ setting(item, action, available_months) }}{% endfor %}
+    </div>
+  </section>
+  <section id="beneficiarios" class="panel panel-wide">
+    <div class="stack-tight">
+      <h2 class="section-title">Beneficiários</h2>
+      <p class="lede">Quem recebe o dinheiro, batizado por você uma vez e resolvido na leitura:
+        o apelido alcança todos os lançamentos daquele beneficiário, hoje e no futuro, e nenhum
+        total muda por causa dele. A lista é de <strong>todo o histórico</strong>, ordenada por
+        quanto cada um representa — os {{ payees_shown }} maiores de {{ payees_total }} cobrem
+        {{ (payees_covered_permille / 10)|round(1) }}% do gasto.</p>
+      {% if not lookup_on %}
+      <p class="lede">A consulta de nome fantasia por CNPJ está <strong>desligada</strong>. Ela
+        sai para a internet, e por isso é você quem liga: <code>DASH_CNPJ_LOOKUP</code> no
+        ambiente.</p>
+      {% endif %}
+    </div>
+    <div class="table-scroll">
+      <table class="data-table data-table-compact data-table-payees">
+        <caption class="sr-only">Beneficiários por gasto, do maior para o menor.</caption>
+        <thead><tr><th scope="col">Beneficiário</th><th scope="col" class="col-num">Gasto</th>
+          <th scope="col">Como aparece</th></tr></thead>
+        <tbody>
+          {% for row in payees %}
+          <tr data-beneficiario="{{ row['payee'] }}" data-origem="{{ row['origin'] }}"
+              data-gasto="{{ row['total_cents'] }}">
+            <td class="cell-name">{{ row['payee'] }}</td>
+            <td class="cifra col-num">{{ row['total_cents']|brl }}</td>
+            <td>
+              <p class="stack-tight"><span class="cell-label">{{ row['name'] }}</span>
+                <span class="cell-key">{{ origins[row['origin']] }}</span></p>
+              <form class="form form-inline" method="post" action="{{ payee_action }}">
+                <div class="field">
+                  <label class="field-label sr-only" for="apelido-{{ loop.index }}">Apelido de {{ row['payee'] }}</label>
+                  <input class="field-input" id="apelido-{{ loop.index }}" name="nome" type="text"
+                         placeholder="Apelido"
+                         value="{% if row['origin'] == 'dono' %}{{ row['name'] }}{% endif %}">
+                </div>
+                <button class="button button-quiet button-small" type="submit"
+                        name="beneficiario" value="{{ row['payee'] }}">Guardar o nome</button>
+              </form>
+              {% if lookup_on %}
+              <form class="form form-inline" method="post" action="{{ cnpj_action }}">
+                <button class="button button-quiet button-small" type="submit" name="beneficiario"
+                        value="{{ row['payee'] }}">Consultar o CNPJ</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% from "fragments/celula.html" import cell_name -%}
+<section id="tabela" class="panel panel-wide"
+         hx-get="{{ table_url }}" hx-trigger="submit from:#controles"
+         hx-include="#controles" hx-target="this" hx-swap="outerHTML">
+  <div class="stack-tight">
+    <p class="eyebrow">Total do período</p>
+    <p class="headline cifra{% if total_cents < 0 %} negative{% endif %}">{{ total_cents|brl }}</p>
+    <p class="lede">{{ entries }} lançamento{% if entries != 1 %}s{% endif %} de {{ start|dia }} a {{ end|dia }}.</p>
+  </div>
+  {% if rows %}
+  <div class="table-scroll">
+    <table class="data-table">
+      <caption class="sr-only">Gasto do período por {{ axis }}, do maior para o menor.</caption>
+      <thead>
+        <tr>
+          <th scope="col">{{ axis|capitalize }}</th>
+          <th scope="col" class="col-num">Gasto</th>
+          <th scope="col" class="col-num">Lançamentos</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <th scope="row" class="cell-name">
+            <a class="row-open"
+               href="{{ screen }}?eixo={{ axis|urlencode }}&amp;inicio={{ start }}&amp;fim={{ end }}&amp;chave={{ row['key']|urlencode }}"
+               hx-get="{{ detail_url }}?chave={{ row['key']|urlencode }}"
+               hx-include="#controles" hx-target="#detalhe" hx-swap="innerHTML">
+              {{ cell_name(row['key'], labels) }}
+            </a>
+          </th>
+          <td class="col-num"><span class="cifra">{{ row['amount_cents']|brl }}</span></td>
+          <td class="col-num">{{ row['entries'] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">
+    <p class="empty-title">Nenhum gasto neste período.</p>
+    <p class="lede">Escolha outras datas nos campos acima, ou volte aos seis meses fechados
+      mais recentes, que é onde a tela abre.</p>
+    <a class="button button-quiet" href="{{ screen }}?eixo={{ axis|urlencode }}">Voltar aos seis meses fechados</a>
+  </div>
+  {% endif %}
+  <div id="detalhe" class="detail" aria-live="polite">
+    {# The drill-down heading names the key the list was opened by, never a
+       resolved name: its own map travels with it. #}
+    {% with key=detail['key'], rows=detail['rows'], total_cents=detail['total_cents'],
+            labels=detail['labels'] %}
+    {% include "fragments/gastos_detalhe.html" %}
+    {% endwith %}
+  </div>
+</section>

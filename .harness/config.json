@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "harness_version": "0.9.2",
+  "mode": "full",
+  "route": "greenfield",
+  "product": "dash_financeiro — painel financeiro pessoal de um usuário, rodando local. Login, dashboard das movimentações bancárias (sincronizadas da Pluggy todo dia ou sob demanda) e IA que ajuda a alcançar o plano de curto, médio e longo prazo. Stack Python 3.12 + FastAPI + Jinja2 + HTMX + SQLite. O objetivo do produto é sair de um déficit de R$ 4.940,72/mês.",
+  "stacks": {
+    "api": "python"
+  },
+  "packs": {
+    "python": "0.1.0"
+  },
+  "paths": {
+    "api": "."
+  },
+  "brownfield": {},
+  "branches": {
+    "producao": "main",
+    "integracao": "develop"
+  },
+  "criteria_tools": {
+    "python": {
+      "comando": {
+        "runner": "bash"
+      },
+      "estrutural": {
+        "runner": "ast-grep",
+        "lang": "python",
+        "fallback": "leitura de arquivo com Grep"
+      },
+      "comportamental": {
+        "runner": "pytest + httpx.AsyncClient",
+        "formato": "Given-When-Then"
+      }
+    }
+  },
+  "command_quirks": [
+    {
+      "wrapper": "rtk",
+      "detecta": "hook global PreToolUse/Bash reescreve o comando e enxuga a saida",
+      "escape": "rtk proxy <comando>",
+      "quando_usar": "sempre que a evidencia de um criterio precisar da saida bruta e integra"
+    },
+    {
+      "comando": "uv run pytest",
+      "quirk": "Sai com código 5 quando NENHUM teste foi coletado, e 5 não é falha de teste — é ausência de teste. Um portão que só lê o código de saída dá o mesmo veredito para \"tudo passou\" e \"não havia nada\", então julgue pela saída, não pelo código."
+    },
+    {
+      "comando": "uv run mypy",
+      "quirk": "Sai zero quando não encontra arquivo nenhum para verificar. Aponte-o para o diretório de fontes e confira na saída quantos arquivos ele mediu."
+    }
+  ],
+  "language": {
+    "code": "en",
+    "docs": "pt-BR"
+  },
+  "env_findings": [
+    "proxy de saída rtk ativo por hook global (PreToolUse/Bash); escape para saída crua: `rtk proxy <comando>`",
+    "grafo de código mantido por hook global (.code-review-graph); o harness não instala um segundo mantenedor"
+  ],
+  "modo_autonomo": true
+}

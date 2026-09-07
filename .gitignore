@@ -16,3 +16,9 @@ venv/
 .mypy_cache/
 
 .DS_Store
+
+# harness
+.harness/runtime/
+
+# playwright mcp
+.playwright-mcp/

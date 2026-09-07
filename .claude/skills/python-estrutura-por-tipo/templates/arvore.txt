@@ -1,0 +1,20 @@
+src/
+├── main.py                 montagem da aplicação
+├── config.py               configuração do serviço
+├── database.py             engine, sessão e Base
+├── exceptions.py           taxonomia inteira do serviço
+├── schemas.py              todos os schemas de entrada e saída
+├── models.py               todas as tabelas
+├── dependencies.py         todas as dependências
+├── service.py              toda a regra de negócio
+└── repository.py           todo o SQL
+
+tests/
+├── conftest.py
+├── unit/
+└── integration/
+
+Um arquivo por tipo, no singular, sem subpasta por assunto. Quando um destes
+arquivos passar de algumas centenas de linhas, ou quando o segundo assunto
+aparecer, a árvore pede a estrutura por domínio: veja a skill
+`python-estrutura-por-dominio`.

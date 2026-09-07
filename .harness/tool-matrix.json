@@ -1,0 +1,230 @@
+{
+  "agents": {
+    "scout": {
+      "writes": [],
+      "bash": "readonly",
+      "deny_tools": [
+        "Task",
+        "Write",
+        "Edit",
+        "MultiEdit",
+        "WebFetch",
+        "WebSearch"
+      ],
+      "grep_policy": "teach-graph-first",
+      "read_full_max_bytes": 15360,
+      "mcp_allow": [
+        "mcp__code-review-graph__semantic_search_nodes_tool",
+        "mcp__code-review-graph__query_graph_tool",
+        "mcp__code-review-graph__get_minimal_context_tool",
+        "mcp__code-review-graph__get_impact_radius_tool",
+        "mcp__code-review-graph__detect_changes_tool"
+      ],
+      "origem": "nucleo"
+    },
+    "doc-writer": {
+      "writes": [
+        "product/**"
+      ],
+      "bash": "readonly",
+      "deny_tools": [
+        "Task",
+        "WebFetch",
+        "WebSearch"
+      ],
+      "mcp_allow": [],
+      "origem": "nucleo"
+    },
+    "plan-writer": {
+      "writes": [
+        "product/**"
+      ],
+      "bash": "readonly",
+      "deny_tools": [
+        "Task",
+        "WebFetch",
+        "WebSearch"
+      ],
+      "mcp_allow": [
+        "mcp__code-review-graph__get_impact_radius_tool",
+        "mcp__code-review-graph__get_architecture_overview_tool",
+        "mcp__code-review-graph__get_knowledge_gaps_tool"
+      ],
+      "origem": "nucleo"
+    },
+    "phase-validator": {
+      "writes": [],
+      "bash": "any",
+      "deny_tools": [
+        "Task",
+        "Write",
+        "Edit",
+        "MultiEdit",
+        "WebFetch",
+        "WebSearch"
+      ],
+      "mcp_allow": [
+        "mcp__code-review-graph__query_graph_tool"
+      ],
+      "origem": "nucleo"
+    },
+    "criteria-auditor": {
+      "writes": [],
+      "bash": "none",
+      "deny_tools": [
+        "Task",
+        "Write",
+        "Edit",
+        "MultiEdit",
+        "Bash",
+        "WebFetch",
+        "WebSearch"
+      ],
+      "mcp_allow": [],
+      "origem": "nucleo"
+    },
+    "divergence-auditor": {
+      "writes": [],
+      "bash": "readonly",
+      "deny_tools": [
+        "Task",
+        "Write",
+        "Edit",
+        "MultiEdit",
+        "WebFetch",
+        "WebSearch"
+      ],
+      "mcp_allow": [],
+      "origem": "nucleo"
+    },
+    "doc-reconciler": {
+      "writes": [
+        "product/**"
+      ],
+      "bash": "readonly",
+      "deny_tools": [
+        "Task",
+        "WebFetch",
+        "WebSearch"
+      ],
+      "mcp_allow": [],
+      "origem": "nucleo"
+    },
+    "security-auditor": {
+      "writes": [],
+      "bash": "any",
+      "deny_tools": [
+        "Task",
+        "Write",
+        "Edit",
+        "MultiEdit"
+      ],
+      "mcp_allow": [
+        "mcp__code-review-graph__query_graph_tool",
+        "mcp__code-review-graph__get_impact_radius_tool",
+        "mcp__code-review-graph__semantic_search_nodes_tool"
+      ],
+      "origem": "nucleo"
+    },
+    "test-runner": {
+      "writes": [],
+      "bash": "any",
+      "deny_tools": [
+        "Task",
+        "Write",
+        "Edit",
+        "MultiEdit",
+        "WebFetch",
+        "WebSearch"
+      ],
+      "mcp_allow": [],
+      "origem": "nucleo"
+    },
+    "python-arquiteto": {
+      "writes": [],
+      "bash": "readonly",
+      "deny_tools": [
+        "Task",
+        "Write",
+        "Edit",
+        "MultiEdit",
+        "WebFetch",
+        "WebSearch"
+      ],
+      "mcp_allow": [
+        "mcp__code-review-graph__get_architecture_overview_tool",
+        "mcp__code-review-graph__semantic_search_nodes_tool",
+        "mcp__code-review-graph__query_graph_tool"
+      ],
+      "origem": "pack"
+    },
+    "python-implementador": {
+      "writes": [
+        "./**"
+      ],
+      "bash": "scoped",
+      "deny_tools": [
+        "Task",
+        "WebFetch",
+        "WebSearch"
+      ],
+      "mcp_allow": [
+        "mcp__code-review-graph__semantic_search_nodes_tool",
+        "mcp__code-review-graph__query_graph_tool",
+        "mcp__code-review-graph__get_minimal_context_tool"
+      ],
+      "origem": "pack"
+    },
+    "python-revisor": {
+      "writes": [],
+      "bash": "readonly",
+      "deny_tools": [
+        "Task",
+        "Write",
+        "Edit",
+        "MultiEdit",
+        "WebFetch",
+        "WebSearch"
+      ],
+      "mcp_allow": [
+        "mcp__code-review-graph__get_review_context_tool",
+        "mcp__code-review-graph__detect_changes_tool",
+        "mcp__code-review-graph__get_impact_radius_tool",
+        "mcp__code-review-graph__query_graph_tool"
+      ],
+      "origem": "pack"
+    },
+    "python-testador": {
+      "writes": [
+        "./**"
+      ],
+      "bash": "scoped",
+      "deny_tools": [
+        "Task",
+        "WebFetch",
+        "WebSearch"
+      ],
+      "mcp_allow": [
+        "mcp__code-review-graph__query_graph_tool",
+        "mcp__code-review-graph__get_minimal_context_tool"
+      ],
+      "origem": "pack"
+    },
+    "python-validador": {
+      "writes": [],
+      "bash": "readonly",
+      "deny_tools": [
+        "Task",
+        "Write",
+        "Edit",
+        "MultiEdit",
+        "WebFetch",
+        "WebSearch"
+      ],
+      "mcp_allow": [
+        "mcp__code-review-graph__query_graph_tool"
+      ],
+      "origem": "pack"
+    }
+  }
+}

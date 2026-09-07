@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>{% block title %}Painel financeiro{% endblock %}</title>
+    <style>{{ tokens_css|safe }}</style>
+    <style>{{ app_css|safe }}</style>
+    {% block head_scripts %}{% endblock %}
+  </head>
+  <body>
+    <div class="shell">
+      {% block nav %}{% include "fragments/navegacao.html" %}{% endblock %}
+      {% block content %}{% endblock %}
+    </div>
+  </body>
+</html>

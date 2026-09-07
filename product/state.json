@@ -1,0 +1,751 @@
+{
+  "schema": 1,
+  "active_item": "015-configuracao-e-nome-do-beneficiario",
+  "items": {
+    "001-base-e-login": {
+      "title": "Base e login: schema, ingestão dos 1.942 lançamentos e acesso protegido",
+      "track": "completa",
+      "stage": "done",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-06T00:14:49Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-07T18:32:25Z",
+          "sha": "54293ef2c19dcaef470eed0a922043259d638d63",
+          "file": "product/items/001-base-e-login/01-brief.md",
+          "por": "humano"
+        },
+        "plan": {
+          "at": "2026-09-07T18:32:25Z",
+          "sha": "0e81b2d205ef6fc0e06ef2f81295f8dae7eb86f1",
+          "file": "product/items/001-base-e-login/03-plan.md",
+          "por": "humano"
+        }
+      },
+      "current_phase": 4,
+      "phases": {
+        "1": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/001-base-e-login/05-veredictos/fase-1.md",
+          "validated_sha": "844a5af4c166c72c99c7d71895a57c5beafc0e8f",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T18:32:19Z",
+          "validated_trees": {
+            ".": "b2560dbf5b2a6c1b4a69e57da1597caf802f9b6c"
+          },
+          "criteria_sha": "8c358d96ac89576c3ea2bbc9644b8050be96acaa9b0fdd8d4556894d0c60464f"
+        },
+        "2": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/001-base-e-login/05-veredictos/fase-2.md",
+          "validated_sha": "fb1288b4542185e5678880039ae8af4bedff8d75",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-06T01:11:41Z",
+          "validated_trees": {
+            ".": "642ce087b20cd219337992cf36cbbe2852d45f73"
+          },
+          "criteria_sha": "bfbbfe98705c76e190274857557aa741f4fa9847d140368be679a0b44fc809cc"
+        },
+        "3": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/001-base-e-login/05-veredictos/fase-3.md",
+          "validated_sha": "844a5af4c166c72c99c7d71895a57c5beafc0e8f",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T18:32:11Z",
+          "validated_trees": {
+            ".": "b2560dbf5b2a6c1b4a69e57da1597caf802f9b6c"
+          },
+          "criteria_sha": "bc9db9517c4d4dac8d629ef39dbc0698ccc86f4d6e3d3f067c800347df988b77"
+        },
+        "4": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/001-base-e-login/05-veredictos/fase-4.md",
+          "validated_sha": "e9a3756824518665f5003da5f76c1d49eb9aa056",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-06T02:22:32Z",
+          "validated_trees": {
+            ".": "b53f23246ab54eec3bb13101d390cbb8fffc9ded"
+          },
+          "criteria_sha": "f421f2306fe010a7a70ee114707ba9b1068d9c4d0a81770a995308c9695ed346"
+        }
+      },
+      "divergences": {
+        "D-001": {
+          "status": "RECONCILIADA",
+          "kind": "normal",
+          "phase": 4,
+          "detected_at": "2026-09-06T02:07:22Z",
+          "aprovada_at": "2026-09-06T02:07:27Z",
+          "ratificada_por": "humano",
+          "reconciliada_at": "2026-09-06T02:07:59Z",
+          "ratificacao_humana_at": "2026-09-07T14:19:07Z"
+        },
+        "D-003": {
+          "status": "RECONCILIADA",
+          "kind": "normal",
+          "phase": 1,
+          "detected_at": "2026-09-07T16:45:01Z",
+          "reconciliada_at": "2026-09-07T18:31:51Z"
+        }
+      },
+      "criteria_exception": null
+    },
+    "002-gastos-tres-eixos": {
+      "title": "Gastos nos três eixos: grupo, natureza e essencialidade, com regras editáveis",
+      "track": "rapida",
+      "stage": "done",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-06T02:25:52Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-06T17:12:53Z",
+          "sha": "489bd5a1a4d507e94388cd729d1040f85bc65c82",
+          "file": "product/items/002-gastos-tres-eixos/01-brief.md",
+          "por": "humano"
+        },
+        "plan": {
+          "at": "2026-09-06T18:45:49Z",
+          "sha": "ba88436e5e54d3a521bda4fa2b80fd11105d9f7f",
+          "file": "product/items/002-gastos-tres-eixos/03-plan.md",
+          "por": "autonomo"
+        }
+      },
+      "current_phase": 4,
+      "phases": {
+        "1": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/002-gastos-tres-eixos/05-veredictos/fase-1.md",
+          "validated_sha": "7e9851f76eb38620c0b4fbd0bab705459f2499ee",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-06T03:44:44Z",
+          "validated_trees": {
+            ".": "d48fe33920917a817f1e8ee1ab1a2ceba86f77bc"
+          },
+          "criteria_sha": "1eb1525753b5c05419095797e6ac6d6e7c6e87ee504df0fff45644c8c597b60f"
+        },
+        "2": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/002-gastos-tres-eixos/05-veredictos/fase-2.md",
+          "validated_sha": "eb90a994e3e46d0e3077d1ef6a769c0773707144",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-06T04:04:58Z",
+          "validated_trees": {
+            ".": "8d26c426ce37fa9d99cef7a11f02b72448419743"
+          },
+          "criteria_sha": "315016ae97e6b7846ad5eccd35f1d9fa11790aef967cf223535be5222fc3507d"
+        },
+        "3": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/002-gastos-tres-eixos/05-veredictos/fase-3.md",
+          "validated_sha": "d9db1236da67791db660470a34406b83cd55474d",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-06T17:27:48Z",
+          "validated_trees": {
+            ".": "2b518ef82e64894cd2b401d2f4ce4dc508742e73"
+          },
+          "escalation": {
+            "at": "2026-09-06T05:15:54Z",
+            "reproved_count": 2,
+            "diagnostico": null,
+            "opcoes": [
+              "criterio: o critério está errado ou mal escrito",
+              "decomposicao: a fase foi mal quebrada",
+              "abordagem: a implementação escolheu o caminho errado"
+            ]
+          },
+          "criteria_sha": "ddd42e01c92688550e76c3d7d280ca77cbed5a1d9b7289f8d31c9b3ad40879d7"
+        },
+        "4": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/002-gastos-tres-eixos/05-veredictos/fase-4.md",
+          "validated_sha": "473d98ea89d8ef25de028cbb412150a12db57cd7",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-06T18:41:10Z",
+          "validated_trees": {
+            ".": "6ca4b5f8fdf8489669c21bc7d5361adc6bdf8ff5"
+          },
+          "criteria_sha": "8a116741adb87d36e61fcfa1343402b316383c292371a8417fe5bb481fc506fd"
+        }
+      },
+      "divergences": {},
+      "criteria_exception": null
+    },
+    "003-comprometido": {
+      "title": "Comprometido: assinaturas, parcelamentos e o calendário de vencimentos",
+      "track": "rapida",
+      "stage": "done",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-06T19:04:50Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-07T01:03:12Z",
+          "sha": "b0013259f8dbcb250575cfee661d97ee5363ae7e",
+          "file": "product/items/003-comprometido/01-brief.md",
+          "por": "autonomo"
+        },
+        "plan": {
+          "at": "2026-09-07T01:03:02Z",
+          "sha": "06640ab38d7221dc162f8e52d4bd2555fb616c0b",
+          "file": "product/items/003-comprometido/03-plan.md",
+          "por": "autonomo"
+        }
+      },
+      "current_phase": 3,
+      "phases": {
+        "1": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/003-comprometido/05-veredictos/fase-1.md",
+          "validated_sha": "9d0f3bf354490dbae0e33b0d71a96f080448eda6",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-06T20:05:13Z",
+          "validated_trees": {
+            ".": "79b609b247bfd8fd2ab861f7f52335767e7cf261"
+          },
+          "escalation": {
+            "at": "2026-09-06T19:54:09Z",
+            "reproved_count": 2,
+            "diagnostico": null,
+            "opcoes": [
+              "criterio: o critério está errado ou mal escrito",
+              "decomposicao: a fase foi mal quebrada",
+              "abordagem: a implementação escolheu o caminho errado"
+            ]
+          },
+          "criteria_sha": "48989a48b32ded27f25d1b9fd1704d7f0a95805a8b51a440f3632eac3acdfbe8"
+        },
+        "2": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/003-comprometido/05-veredictos/fase-2.md",
+          "validated_sha": "5522c914ff244af7f53a81e84a1a5733a2ca8f98",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-06T20:40:50Z",
+          "validated_trees": {
+            ".": "25540778bba2654339e03c8ce4e297822cd77577"
+          },
+          "criteria_sha": "d4fd0b681fc8c4beb4b3c5cda90b7c332db226c65b7fa78789e88f60a427acad"
+        },
+        "3": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/003-comprometido/05-veredictos/fase-3.md",
+          "validated_sha": "6ce605686c8c38cb07e96187092972d0ea02a549",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-06T23:54:59Z",
+          "validated_trees": {
+            ".": "d2c026a4dd63c15ff9a48de04756e6fe4626b939"
+          },
+          "criteria_sha": "a3e27c7f0ff5054184582a5e79e428cf8acf505361b5f7c9f7d669e879b18e7d"
+        }
+      },
+      "divergences": {},
+      "criteria_exception": null
+    },
+    "011-serie-duplicada-e-tolerancia-do-vencimento": {
+      "title": "Integridade das séries: nenhum compromisso contado duas vezes, nenhuma parcela partida por centavo",
+      "track": "rapida",
+      "stage": "done",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-07T00:04:09Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-07T01:03:12Z",
+          "sha": "7dcf84a8f0d4791fcd27f3e6b9cd1597398e615e",
+          "file": "product/items/011-serie-duplicada-e-tolerancia-do-vencimento/01-brief.md",
+          "por": "autonomo"
+        },
+        "plan": {
+          "at": "2026-09-07T01:03:12Z",
+          "sha": "20ee8a37b6c542597f505ac4816477ff98268c05",
+          "file": "product/items/011-serie-duplicada-e-tolerancia-do-vencimento/03-plan.md",
+          "por": "autonomo"
+        }
+      },
+      "current_phase": 1,
+      "phases": {
+        "1": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/011-serie-duplicada-e-tolerancia-do-vencimento/05-veredictos/fase-1.md",
+          "validated_sha": "4faaeb993c00d168331a957dcac0004a3fae49ba",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T01:01:06Z",
+          "validated_trees": {
+            ".": "3d91b02dc44e388d33f23cb9999961f5a1b1a2d1"
+          },
+          "criteria_sha": "24f08745dc9470de629cc1e7dfd7dc99a950958995a220efd3466a54d7bcedcf"
+        }
+      },
+      "divergences": {},
+      "criteria_exception": null
+    },
+    "004-resumo-e-projecao": {
+      "title": "Resumo e projeção: saldo, dívida, o que sobra e os próximos 45 dias dia a dia",
+      "track": "rapida",
+      "stage": "done",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-07T01:03:27Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-07T01:06:37Z",
+          "sha": "c2ef448ba3efc1d11fd9b2805c0df1a26303493a",
+          "file": "product/items/004-resumo-e-projecao/01-brief.md",
+          "por": "autonomo"
+        },
+        "plan": {
+          "at": "2026-09-07T01:09:50Z",
+          "sha": "4cf8d6a4d60562c8392bf2ca9e95a8f01a5bcc8e",
+          "file": "product/items/004-resumo-e-projecao/03-plan.md",
+          "por": "autonomo"
+        }
+      },
+      "current_phase": 2,
+      "phases": {
+        "1": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/004-resumo-e-projecao/05-veredictos/fase-1.md",
+          "validated_sha": "f858133692d9a8ce9a6b6dc9e0edc2b70e6dba2d",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T01:15:24Z",
+          "validated_trees": {
+            ".": "79d4385ee2d1230403881ac51aa433578d956b17"
+          },
+          "criteria_sha": "1635f1e7f33feb22d3ff723aecb64f7bc4919562d8faf4bc32138b20bf1e5c80"
+        },
+        "2": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/004-resumo-e-projecao/05-veredictos/fase-2.md",
+          "validated_sha": "1a6bd3759bb94cef32bbdcbe71a4d0cad55396c5",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T02:09:53Z",
+          "validated_trees": {
+            ".": "a5f0ba344a3d3e49f17373dc83efd309f1c7885d"
+          },
+          "criteria_sha": "0903c41ced374489113e83c0ed4104ec23650232186d97bc042c1322f589efba"
+        }
+      },
+      "divergences": {},
+      "criteria_exception": null
+    },
+    "005-dividas-e-simuladores": {
+      "title": "Dívidas na escada de taxa, e o simulador que diz o que um aporte elimina",
+      "track": "rapida",
+      "stage": "done",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-07T02:12:12Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-07T02:12:41Z",
+          "sha": "c863ac8c28f67fb3498d9c98d1d90c71a2b7834c",
+          "file": "product/items/005-dividas-e-simuladores/01-brief.md",
+          "por": "autonomo"
+        },
+        "plan": {
+          "at": "2026-09-07T02:13:49Z",
+          "sha": "67d52dac802d260ecc72b94c053b42d0a10c2a88",
+          "file": "product/items/005-dividas-e-simuladores/03-plan.md",
+          "por": "autonomo"
+        }
+      },
+      "current_phase": 1,
+      "phases": {
+        "1": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/005-dividas-e-simuladores/05-veredictos/fase-1.md",
+          "validated_sha": "0892c0fac167fd21510655b770afd417bb558f81",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T02:36:47Z",
+          "validated_trees": {
+            ".": "044e180c0d39d22b23e9d844aafe98aac50f1dd9"
+          },
+          "criteria_sha": "05c704d7b08989e0b9f0057f058dc1805eccda78cd9cd98fe1a7052acbc1c10b"
+        }
+      },
+      "divergences": {},
+      "criteria_exception": null
+    },
+    "006-sync-pluggy": {
+      "title": "Sincronização sob demanda e diária, sem duplicar, e a tela que diz quando foi a última",
+      "track": "rapida",
+      "stage": "done",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-07T02:41:30Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-07T02:59:38Z",
+          "sha": "5a7df6ffe24e9d23568c9ea5af00f4f522021834",
+          "file": "product/items/006-sync-pluggy/01-brief.md",
+          "por": "autonomo"
+        },
+        "plan": {
+          "at": "2026-09-07T02:59:38Z",
+          "sha": "5d5610829f70c141108b51e6c380d9366258942b",
+          "file": "product/items/006-sync-pluggy/03-plan.md",
+          "por": "autonomo"
+        }
+      },
+      "current_phase": 1,
+      "phases": {
+        "1": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/006-sync-pluggy/05-veredictos/fase-1.md",
+          "validated_sha": "f5575cfa680b975890495d9e6c29e75db373c6ac",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T03:11:57Z",
+          "validated_trees": {
+            ".": "2e111dc8a9d0b554c393bc5a9ed358784652c5d9"
+          },
+          "criteria_sha": "db4d634fad0222ae4fbe8989c0dc8762b7d55c96de6422b31115a3005f9dcbf7"
+        }
+      },
+      "divergences": {},
+      "criteria_exception": null
+    },
+    "007-objetivo-e-linha-do-tempo": {
+      "title": "Um objetivo com data, tres cenarios e a linha do tempo que mostra o progresso",
+      "track": "rapida",
+      "stage": "done",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-07T03:13:21Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-07T03:35:30Z",
+          "sha": "41541186a4ccf48b34049201f333a73cf6e5d920",
+          "file": "product/items/007-objetivo-e-linha-do-tempo/01-brief.md",
+          "por": "autonomo"
+        },
+        "plan": {
+          "at": "2026-09-07T03:35:30Z",
+          "sha": "595511624be52bd40b838b354e527d9ba16a7115",
+          "file": "product/items/007-objetivo-e-linha-do-tempo/03-plan.md",
+          "por": "autonomo"
+        }
+      },
+      "current_phase": 1,
+      "phases": {
+        "1": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/007-objetivo-e-linha-do-tempo/05-veredictos/fase-1.md",
+          "validated_sha": "1295a5cb160c1ac3d80231173f10cf2120e85396",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T03:57:12Z",
+          "validated_trees": {
+            ".": "1c95b2263766cb65be9e9228e90098ef4eeb5a6e"
+          },
+          "criteria_sha": "e62c9beca29c3f2d2ef639b0bcd4a9bf7569386456434291785cb517b1cce77f"
+        }
+      },
+      "divergences": {},
+      "criteria_exception": null
+    },
+    "008-simulador-e-base-de-fatos": {
+      "title": "O simulador que responde em dias, e a base de fatos que so o humano sabe",
+      "track": "rapida",
+      "stage": "done",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-07T03:58:19Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-07T04:13:24Z",
+          "sha": "fe375175b9698dd76f2cc149fdb1fee0ee84265e",
+          "file": "product/items/008-simulador-e-base-de-fatos/01-brief.md",
+          "por": "autonomo"
+        },
+        "plan": {
+          "at": "2026-09-07T04:13:24Z",
+          "sha": "37c7c986c2324501dab96458092c0cd795003b84",
+          "file": "product/items/008-simulador-e-base-de-fatos/03-plan.md",
+          "por": "autonomo"
+        }
+      },
+      "current_phase": 1,
+      "phases": {
+        "1": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/008-simulador-e-base-de-fatos/05-veredictos/fase-1.md",
+          "validated_sha": "1a680e43c10d675ff7fc36da4992507d0ff5d8fc",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T04:26:57Z",
+          "validated_trees": {
+            ".": "326d15ca63c7d0d8acbaa94d435657b2cb56ce00"
+          },
+          "criteria_sha": "b04772fb2d2a9eb4b35ec7ed2bd9dbc4445b95879e015d3555d72c7a55b8ce84"
+        }
+      },
+      "divergences": {},
+      "criteria_exception": null
+    },
+    "009-ia-consultora": {
+      "title": "A IA pergunta o que falta, explica o numero, e nunca calcula",
+      "track": "rapida",
+      "stage": "done",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-07T04:27:46Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-07T04:46:28Z",
+          "sha": "00cf8d8712713d27a1aad47e1401044e53a3fd12",
+          "file": "product/items/009-ia-consultora/01-brief.md",
+          "por": "autonomo"
+        },
+        "plan": {
+          "at": "2026-09-07T04:46:28Z",
+          "sha": "bac91b262b990b4e09d2cb6db8f50e63dffb0284",
+          "file": "product/items/009-ia-consultora/03-plan.md",
+          "por": "autonomo"
+        }
+      },
+      "current_phase": 1,
+      "phases": {
+        "1": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/009-ia-consultora/05-veredictos/fase-1.md",
+          "validated_sha": "d478c15ba239a358bd03ffeab4e9fb9e7f2bb1ba",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T04:46:58Z",
+          "validated_trees": {
+            ".": "a0471532d53d1d33ee87ce2e5771f1d16b49d31a"
+          },
+          "criteria_sha": "70568ec06b203dc76ea686dd310b1e7ca9dab412b27843fadba304f5ccc7b77e"
+        }
+      },
+      "divergences": {},
+      "criteria_exception": null
+    },
+    "012-sync-pos-carga-atomica": {
+      "title": "Sucesso mentiroso: a pos-carga roda dentro do mesmo tratamento de erro",
+      "track": "rapida",
+      "stage": "done",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-07T12:18:23Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-07T12:19:40Z",
+          "sha": "632f38ec699bb408e590373983537adff73115b2",
+          "file": "product/items/012-sync-pos-carga-atomica/01-brief.md",
+          "por": "autonomo"
+        },
+        "plan": {
+          "at": "2026-09-07T12:19:40Z",
+          "sha": "d386b0d2ae1fe941a21528959afe64d902743bd2",
+          "file": "product/items/012-sync-pos-carga-atomica/03-plan.md",
+          "por": "autonomo"
+        }
+      },
+      "current_phase": 1,
+      "phases": {
+        "1": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/012-sync-pos-carga-atomica/05-veredictos/fase-1.md",
+          "validated_sha": "e73a1af4180268a87bf7a3c6275fdcc1202eafd9",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T12:32:25Z",
+          "validated_trees": {
+            ".": "1c9b7868e6b8aee7c02c572c16fbb8d179b8db1a"
+          },
+          "criteria_sha": "c38d71153cece09bf842065ae0f30cf34f19187705ad0b1e286cadc6c9d560de"
+        }
+      },
+      "divergences": {},
+      "criteria_exception": null
+    },
+    "013-objetivo-cenario-vazio-e-ponto-espurio": {
+      "title": "A tela nomeia a lista vazia, e data recusada nao grava ponto",
+      "track": "rapida",
+      "stage": "done",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-07T12:20:19Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-07T12:44:30Z",
+          "sha": "f6f1c6f85644409db42fa14a66ba0eec4532cfbf",
+          "file": "product/items/013-objetivo-cenario-vazio-e-ponto-espurio/01-brief.md",
+          "por": "autonomo"
+        },
+        "plan": {
+          "at": "2026-09-07T12:44:30Z",
+          "sha": "50aebd7fff4c92c7a4f16a0a04ce411a32c479a0",
+          "file": "product/items/013-objetivo-cenario-vazio-e-ponto-espurio/03-plan.md",
+          "por": "autonomo"
+        }
+      },
+      "current_phase": 1,
+      "phases": {
+        "1": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/013-objetivo-cenario-vazio-e-ponto-espurio/05-veredictos/fase-1.md",
+          "validated_sha": "a007336a9115f4ee19dbd41d4d65de77e76bda52",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T12:45:07Z",
+          "validated_trees": {
+            ".": "ed693d010136f4dc871aec206511b5ba7e9ada1a"
+          },
+          "criteria_sha": "35f4dd0ec58822ed0ee8c7cd7c32b9bdf34547b4775b765ef4ab4d683fb418b2"
+        }
+      },
+      "divergences": {},
+      "criteria_exception": null
+    },
+    "014-taxa-sugerida-pelos-juros-cobrados": {
+      "title": "A taxa sugerida pelos juros que ja foram cobrados, com a faixa a vista",
+      "track": "rapida",
+      "stage": "done",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-07T12:24:22Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-07T13:21:17Z",
+          "sha": "f51024ea55dede712ead7cd0da3da7850cbb4842",
+          "file": "product/items/014-taxa-sugerida-pelos-juros-cobrados/01-brief.md",
+          "por": "autonomo"
+        },
+        "plan": {
+          "at": "2026-09-07T13:21:17Z",
+          "sha": "8b16b9a5b74cbb8eecaa1d9b95a3f22f3c88d3e6",
+          "file": "product/items/014-taxa-sugerida-pelos-juros-cobrados/03-plan.md",
+          "por": "autonomo"
+        }
+      },
+      "current_phase": 1,
+      "phases": {
+        "1": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/014-taxa-sugerida-pelos-juros-cobrados/05-veredictos/fase-1.md",
+          "validated_sha": "fd0ea0ebfb19569315e4b3dadaef9c295323d348",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T13:23:32Z",
+          "validated_trees": {
+            ".": "9107b9f9e1a082ea60150dd21acade64315262e9"
+          },
+          "criteria_sha": "383a0ea93483377c233a0dcaa7596894adfc9be585f5ed527200d828811821a7"
+        }
+      },
+      "divergences": {},
+      "criteria_exception": null
+    },
+    "015-configuracao-e-nome-do-beneficiario": {
+      "title": "Area de configuracao: os valores que alimentam calculo e sugestao, e o nome real de cada beneficiario",
+      "track": "rapida",
+      "stage": "done",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-07T14:45:13Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-07T15:50:29Z",
+          "sha": "d0ea1046ab521ebc041ff0d48e2b1de72ef14224",
+          "file": "product/items/015-configuracao-e-nome-do-beneficiario/01-brief.md",
+          "por": "humano"
+        },
+        "plan": {
+          "at": "2026-09-07T18:06:48Z",
+          "sha": "f01b62b71d5fae5ef5f9c5f2252d4322061db377",
+          "file": "product/items/015-configuracao-e-nome-do-beneficiario/03-plan.md",
+          "por": "humano"
+        }
+      },
+      "current_phase": null,
+      "phases": {},
+      "divergences": {
+        "D-002": {
+          "status": "RECONCILIADA",
+          "kind": "normal",
+          "phase": 2,
+          "detected_at": "2026-09-07T18:06:42Z",
+          "reconciliada_at": "2026-09-07T18:06:48Z"
+        }
+      },
+      "criteria_exception": null
+    }
+  }
+}

@@ -1,0 +1,47 @@
+[project]
+name = "dash-financeiro"
+version = "0.1.0"
+description = "Painel financeiro pessoal local"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "jinja2",
+    "itsdangerous",
+    "argon2-cffi",
+    "python-multipart",
+    "python-dotenv",
+    "httpx",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "ruff>=0.16.6",
+    "debugpy>=1.8.21",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+# Deliberately narrow. The project has its own written norm and the gate exists
+# to catch what a reader misses — dead import, unused name, shadowed builtin,
+# import order — not to impose a second style over the one already in the code.
+select = ["E", "F", "I", "B", "UP", "C4"]
+
+[tool.ruff.lint.per-file-ignores]
+# A test fixture is a table of data, and wrapping a row of it to fit a column
+# makes the table harder to read than the long line ever was.
+"tests/*" = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "tests"]

@@ -1,0 +1,854 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-text);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+
+:focus {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}
+
+/* The login page is the one screen with no rail, and its shell holds a single
+   column: reserving the rail width there would leave an empty band beside a
+   form that has nowhere to navigate to yet. */
+.shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.shell:has(.rail) {
+  grid-template-columns: 12rem minmax(0, 1fr);
+}
+
+.rail {
+  background-color: var(--color-surface);
+  border-right: 1px solid var(--color-rule);
+}
+
+/* The rail stretches to paint the column, and the list inside it sticks: a
+   thirteen-month table scrolls for pages, and the way out of the screen is not
+   allowed to scroll away with it. */
+.rail-inner {
+  position: sticky;
+  top: 0;
+  max-height: 100vh;
+  overflow-y: auto;
+  display: grid;
+  align-content: start;
+  gap: var(--space-6);
+  padding: var(--space-8) var(--space-2);
+}
+
+/* The name of the panel is engraved on the instrument, not printed as a title:
+   it reads in the label voice, once, and never competes with the screen's own
+   heading two centimetres to the right. */
+.rail-mark {
+  margin: 0;
+  padding: 0 var(--space-3);
+  font-family: var(--font-data);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.rail-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+}
+
+/* Where you are is an edge, the same accent edge the notice uses to say a write
+   happened — and it never carries the meaning alone: the current screen also
+   takes the full ink and the heavier weight. */
+.rail-link {
+  display: block;
+  padding: var(--space-2);
+  border-left: var(--space-1) solid transparent;
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+  text-decoration: none;
+  transition: border-color var(--motion-fast) var(--motion-ease);
+}
+
+.rail-link:hover {
+  color: var(--color-ink);
+  border-left-color: var(--color-rule);
+}
+
+.rail-link-current {
+  color: var(--color-ink);
+  font-weight: 600;
+  border-left-color: var(--color-accent);
+}
+
+.rail-exit {
+  margin: 0 var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-rule);
+}
+
+.rail-exit-button {
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--color-ink-muted);
+  font-family: var(--font-text);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--color-rule);
+  text-underline-offset: 0.2em;
+}
+
+.rail-exit-button:hover {
+  color: var(--color-ink);
+}
+
+/* Below 60rem a 12rem rail and a two-measure table cannot share the width, and
+   the one that has to give is the menu: it lies down across the top and scrolls
+   inside itself, so the body never inherits the sideways scroll. */
+@media (max-width: 60rem) {
+  .shell:has(.rail) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rail {
+    border-right: 0;
+    border-bottom: 1px solid var(--color-rule);
+  }
+
+  .rail-inner {
+    position: static;
+    max-height: none;
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-2);
+    overflow-x: auto;
+  }
+
+  .rail-mark {
+    display: none;
+  }
+
+  .rail-list {
+    display: flex;
+  }
+
+  .rail-link {
+    padding: var(--space-3);
+    border-left: 0;
+    border-bottom: var(--space-1) solid transparent;
+    white-space: nowrap;
+  }
+
+  .rail-link-current {
+    border-bottom-color: var(--color-accent);
+  }
+
+  .rail-link:hover {
+    border-bottom-color: var(--color-rule);
+  }
+
+  .rail-exit {
+    margin: 0;
+    padding-top: 0;
+    border-top: 0;
+    white-space: nowrap;
+  }
+}
+
+/* Swapping a fragment in the middle of the screen changes the height of what
+   sits above the rest: scroll anchoring would hold the content below it still
+   and push the page down by exactly what the fragment gained. Whoever changed
+   the axis stays where they were reading. */
+.screen {
+  min-height: 100vh;
+  padding: var(--space-8) var(--space-4);
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: var(--space-8);
+  overflow-anchor: none;
+}
+
+.screen-centered {
+  align-content: center;
+}
+
+.panel {
+  width: 100%;
+  max-width: var(--measure);
+  /* A grid item floors at the intrinsic width of its content, and a chart
+     canvas keeps the width it was drawn at: without this the panel never
+     shrinks when the window narrows, and the body inherits the scroll. */
+  min-width: 0;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-md);
+  padding: var(--space-8);
+  display: grid;
+  gap: var(--space-6);
+}
+
+.panel-form {
+  max-width: 24rem;
+}
+
+.scale {
+  height: var(--space-4);
+  width: 100%;
+  background-image:
+    repeating-linear-gradient(
+      to right,
+      var(--color-accent) 0 1px,
+      transparent 1px calc(var(--space-2) * 5)
+    ),
+    repeating-linear-gradient(
+      to right,
+      var(--color-rule) 0 1px,
+      transparent 1px var(--space-2)
+    );
+  background-size:
+    100% 100%,
+    100% 45%;
+  background-position: left top;
+  background-repeat: no-repeat;
+}
+
+.screen-title {
+  margin: 0;
+  font-family: var(--font-data);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.lede {
+  margin: 0;
+  max-width: var(--measure);
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}
+
+.form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.field {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.field-label,
+.eyebrow,
+.data-table thead th {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.field-input {
+  width: 100%;
+  padding: var(--space-3);
+  font-family: var(--font-data);
+  font-size: var(--text-base);
+  color: var(--color-ink);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-field-border);
+  border-radius: var(--radius-sm);
+  transition: border-color var(--motion-fast) var(--motion-ease);
+}
+
+.field-input:focus {
+  border-color: var(--color-accent);
+}
+
+.notice {
+  margin: 0;
+  max-width: var(--measure);
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-ink);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-rule);
+  /* The thick left edge is what separates a message from a field: the two
+     share surface and radius, and only the edge says which is which. */
+  border-left: var(--space-1) solid var(--color-negative);
+  border-radius: var(--radius-sm);
+}
+
+/* The confirmation and the refusal share the shape of a notice and differ only
+   at the edge: the accent says the write happened, the negative edge says it
+   did not, and each one carries its own sentence besides. */
+.notice-done {
+  border-left-color: var(--color-accent);
+}
+
+.notices {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.button {
+  justify-self: start;
+  padding: var(--space-3) var(--space-6);
+  font-family: var(--font-text);
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-accent-ink);
+  background-color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: border-color var(--motion-fast) var(--motion-ease);
+}
+
+.button:hover {
+  border-color: var(--color-ink);
+}
+
+.button-block {
+  justify-self: stretch;
+  width: 100%;
+}
+
+.button-quiet {
+  color: var(--color-ink);
+  background-color: transparent;
+  border-color: var(--color-field-border);
+}
+
+.button-quiet:hover {
+  border-color: var(--color-accent);
+}
+
+.button-small {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.rule-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* A normalized description is data, not prose: it reads in the data face so
+   the shape a rule has to match is visible before anyone types one. */
+.sample {
+  font-family: var(--font-data);
+  overflow-wrap: anywhere;
+}
+
+.eyebrow {
+  margin: 0;
+}
+
+.stack-tight {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.stack {
+  display: grid;
+  gap: var(--space-4);
+  justify-items: start;
+}
+
+/* Above 75rem the panel is wide enough to seat two blocks that would otherwise
+   stack, and the chart beside its own table is the pair that gains the most:
+   the quick read and the datum stop being one scroll apart. */
+@media (min-width: 75rem) {
+  .panel-split {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .panel-split > .panel-across {
+    grid-column: 1 / -1;
+  }
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration-color: var(--color-rule);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+a.button {
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* A column of figures is not a column of prose: the panel that holds data takes
+   the width the monitor has, and the prose inside it keeps the 34rem measure of
+   its own — the two limits live on different elements because they answer to
+   different readers, the eye scanning a table and the eye reading a sentence. */
+.panel-wide {
+  max-width: var(--measure-wide);
+}
+
+.panels {
+  display: grid;
+  gap: var(--space-8);
+  width: 100%;
+  max-width: var(--measure-wide);
+  min-width: 0;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-4);
+}
+
+.controls .field {
+  flex: 1 1 calc(var(--measure) / 3);
+}
+
+.section-title {
+  margin: 0;
+  font-family: var(--font-data);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.headline {
+  margin: 0;
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.headline-small,
+.detail-sum,
+.figure {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.negative {
+  color: var(--color-negative);
+}
+
+.positive {
+  color: var(--color-positive);
+}
+
+/* The table scrolls, never the page: at 375 px a five-column table would push
+   the whole body sideways and take the controls with it. */
+.table-scroll {
+  overflow-x: auto;
+}
+
+/* A table of three columns does not become more readable by being 1500 px
+   wide: the eye loses the row between the name and the figure. The panel takes
+   the monitor, the table takes two measures and stops. */
+.data-table {
+  width: 100%;
+  max-width: calc(var(--measure) * 2);
+  border-collapse: collapse;
+  font-family: var(--font-data);
+  font-size: var(--text-sm);
+}
+
+.data-table th,
+.data-table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-rule);
+  text-align: left;
+  vertical-align: baseline;
+  font-weight: 400;
+}
+
+.data-table thead th {
+  border-bottom: 1px solid var(--color-field-border);
+  white-space: nowrap;
+}
+
+.data-table tbody tr:last-child th,
+.data-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* Thirteen months are a reference read at a glance, not the point of the
+   screen: the evolution table gives up row height so the total and the
+   crossings stay in view. */
+.data-table-compact th,
+.data-table-compact td {
+  padding: var(--space-1) var(--space-3);
+  line-height: 1.25;
+}
+
+.col-month {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.col-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.col-date {
+  white-space: nowrap;
+}
+
+.cell-name {
+  overflow-wrap: anywhere;
+  min-width: calc(var(--measure) / 4);
+}
+
+.cell-label {
+  display: block;
+}
+
+.cell-key {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--color-ink-muted);
+}
+
+.row-open {
+  display: block;
+  color: var(--color-ink);
+  text-decoration: underline;
+}
+
+.row-open:hover {
+  text-decoration-color: var(--color-accent);
+}
+
+.chart {
+  height: calc(var(--space-16) * 4);
+  min-width: 0;
+}
+
+.chart-canvas {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+}
+
+.crossings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+}
+
+.figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.figures > * {
+  flex: 1 1 calc(var(--measure) / 2);
+  min-width: 0;
+}
+
+/* The released cash is a consequence of the instalment list above it, not a
+   block of its own: the rule ties the two together instead of separating them
+   into two panels that would read as two unrelated answers. */
+.released {
+  display: grid;
+  gap: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-field-border);
+}
+
+.crossing {
+  flex: 1 1 calc(var(--measure) * 0.6);
+  min-width: 0;
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+  padding-left: var(--space-4);
+  border-left: 1px solid var(--color-rule);
+}
+
+.crossing-label {
+  margin: 0;
+  font-family: var(--font-data);
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+.crossing-total {
+  margin: 0;
+  font-size: var(--text-xl);
+}
+
+/* The dashed edge is what tells an empty block from a filled one before any
+   word is read, and it never carries the meaning alone: the text says what is
+   missing and which screen fixes it. */
+.empty {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px dashed var(--color-field-border);
+  border-radius: var(--radius-sm);
+}
+
+.empty-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* The window is a distance to walk, so it carries the graduated scale of the
+   instrument; the days below it are the marks on that ruler. */
+.calendar {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-4);
+}
+
+.calendar-day {
+  display: grid;
+  grid-template-columns: minmax(0, calc(var(--measure) / 3)) minmax(0, 1fr);
+  gap: var(--space-2) var(--space-6);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-rule);
+}
+
+.calendar-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  align-content: start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.calendar-date {
+  margin: 0;
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-base);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.calendar-sum {
+  margin: 0;
+  font-size: var(--text-base);
+}
+
+.calendar-entries {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+}
+
+.calendar-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  column-gap: var(--space-4);
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--color-rule);
+  font-size: var(--text-sm);
+}
+
+.calendar-entries li:last-child {
+  border-bottom: 0;
+}
+
+.calendar-name {
+  overflow-wrap: anywhere;
+}
+
+.detail {
+  display: grid;
+}
+
+.detail-open {
+  display: grid;
+  gap: var(--space-4);
+  justify-items: start;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-field-border);
+}
+
+.detail-open .table-scroll {
+  justify-self: stretch;
+}
+
+/* A day and its entries side by side need two readable columns, and below the
+   tablet width there is only room for one: stacked, the date keeps its own line
+   and the body never inherits the sideways scroll. */
+@media (max-width: 48rem) {
+  .calendar-day {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Forty-five days down a single column is a page of scrolling for a window that
+   fits on one screen. In columns each day stacks its own head over its entries,
+   because a column is never wide enough for both side by side. */
+@media (min-width: 75rem) {
+  .calendar {
+    grid-template-columns: repeat(auto-fit, minmax(26rem, 1fr));
+    column-gap: var(--space-8);
+  }
+
+  .calendar-day {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 34rem) {
+  .screen {
+    padding: var(--space-4) var(--space-2);
+    gap: var(--space-4);
+  }
+
+  .panel {
+    padding: var(--space-4);
+  }
+
+  .panels {
+    gap: var(--space-4);
+  }
+}
+
+.settings {
+  display: grid;
+  gap: var(--space-6);
+}
+
+/* Two columns because the two halves answer different questions: the left says
+   what the value is and what it moves, the right says what it is worth today
+   and takes the new one. A table cell cannot hold the sentence on the left. */
+.setting {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: var(--space-6);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-rule);
+}
+
+.settings > .setting:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.setting-what,
+.setting-value {
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+  min-width: 0;
+}
+
+.setting-name {
+  margin: 0;
+  font-family: var(--font-data);
+  font-size: var(--text-base);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.setting-figure {
+  font-family: var(--font-data);
+}
+
+/* Absent is a state, not a number: it reads in the muted ink, in the same face
+   as the figure it stands in for, so the eye never takes it for a value. */
+.setting-absent {
+  font-family: var(--font-data);
+  color: var(--color-ink-muted);
+}
+
+.setting-value .form {
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+@media (max-width: 48rem) {
+  .setting {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
+  }
+}
+
+/* A stale figure is a number that asks for a decision, and the muted key of a
+   table cell does not say that. The word carries the meaning on its own; the
+   colour only makes it findable in a column of quiet prose. */
+.mark-stale {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-negative);
+}
+
+/* Inside a table cell the field and its button sit on one line while there is
+   room: the row already carries the payee and the figure, and stacking three
+   more blocks under them would make thirty rows unreadable. */
+.form-inline {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+@media (max-width: 48rem) {
+  .form-inline {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+}
+
+/* Three columns, and the third holds a field and a button. Squeezed into 375 px
+   the row becomes four stacked fragments of words; the table keeps its reading
+   width and scrolls inside its own container, which is what .table-scroll
+   exists for. The body still never scrolls sideways. */
+.data-table-payees {
+  min-width: 32rem;
+}

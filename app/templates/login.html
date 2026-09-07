@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Entrar{% endblock %}
+{% block nav %}{% endblock %}
+{% block content %}
+<main class="screen screen-centered">
+  <div class="panel panel-form">
+    <div class="scale" aria-hidden="true"></div>
+    <h1 class="screen-title">Painel financeiro</h1>
+    <form class="form" method="post" action="/login">
+      {% if error %}
+      <p class="notice" id="erro-credencial" role="alert">{{ error }}</p>
+      {% endif %}
+      <div class="field">
+        <label class="field-label" for="campo-login">Login</label>
+        <input class="field-input" id="campo-login" name="login" type="text"
+               autocomplete="username" autocapitalize="none" spellcheck="false"
+               value="{{ login }}"
+               {% if error %}aria-describedby="erro-credencial" aria-invalid="true"{% endif %}>
+      </div>
+      <div class="field">
+        <label class="field-label" for="campo-senha">Senha</label>
+        <input class="field-input" id="campo-senha" name="senha" type="password"
+               autocomplete="current-password"
+               {% if error %}aria-describedby="erro-credencial" aria-invalid="true"{% endif %}>
+      </div>
+      <button class="button button-block" type="submit">Entrar</button>
+    </form>
+  </div>
+</main>
+{% endblock %}

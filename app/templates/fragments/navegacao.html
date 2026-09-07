@@ -1,0 +1,16 @@
+<div class="rail">
+  <nav class="rail-inner" aria-label="Telas do painel">
+    <p class="rail-mark">Painel financeiro</p>
+    <ul class="rail-list">
+      {% for screen in screens(request.url.path) %}
+      <li>
+        <a class="rail-link{% if screen.current %} rail-link-current{% endif %}"
+           href="{{ screen.href }}"{% if screen.current %} aria-current="page"{% endif %}>{{ screen.label }}</a>
+      </li>
+      {% endfor %}
+    </ul>
+    <form class="rail-exit" method="post" action="/logout">
+      <button class="rail-exit-button" type="submit">Sair</button>
+    </form>
+  </nav>
+</div>

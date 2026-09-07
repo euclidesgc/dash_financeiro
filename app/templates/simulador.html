@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}Simulador{% endblock %}
+{% block content %}
+<main class="screen">
+  <header class="panel panel-wide">
+    <div class="scale" aria-hidden="true"></div>
+    <h1 class="screen-title">Simulador</h1>
+    <p class="lede">Descreva a decisão e a resposta vem em <strong>dias</strong> — a unidade deste
+      painel é a distância até o objetivo, não o valor em reais. Reais são a entrada.</p>
+    {% if notice %}
+    <p class="notice" id="recusa" role="alert">{{ notice }}</p>
+    {% endif %}
+  </header>
+  <section id="formulario" class="panel panel-wide">
+    <h2 class="section-title">A decisão</h2>
+    <form method="post" action="{{ action }}" class="stack">
+      <input type="hidden" name="data" value="{{ reference }}">
+      <label class="eyebrow" for="tipo">Tipo</label>
+      <select class="field" id="tipo" name="tipo">
+        {% for kind in kinds %}<option value="{{ kind }}">{{ kind }}</option>{% endfor %}
+      </select>
+      <label class="eyebrow" for="mensal">Valor por mês</label>
+      <input class="field" id="mensal" name="mensal" inputmode="decimal" placeholder="0,00">
+      <label class="eyebrow" for="unico">Valor único, se houver</label>
+      <input class="field" id="unico" name="unico" inputmode="decimal" placeholder="0,00">
+      <label class="eyebrow" for="prazo">Prazo em meses, se houver</label>
+      <input class="field" id="prazo" name="prazo" inputmode="numeric" placeholder="">
+      <label class="eyebrow" for="nome">Guardar como (opcional)</label>
+      <input class="field" id="nome" name="nome" placeholder="">
+      <button class="button" type="submit">Simular</button>
+    </form>
+  </section>
+  {% if answer %}
+  <section id="resposta" class="panel panel-wide">
+    <h2 class="section-title">O que isso muda</h2>
+    <div class="figures">
+      <div class="stack-tight">
+        <p class="eyebrow">Efeito por mês</p>
+        <p class="figure cifra" data-mensal="{{ answer['monthly_delta_cents'] }}">{{ answer['monthly_delta_cents']|brl }}</p>
+      </div>
+      <div class="stack-tight">
+        <p class="eyebrow">Distância até o objetivo</p>
+        {% if answer['days_delta'] is not none %}
+        <p class="headline cifra{% if answer['days_delta'] < 0 %} positive{% elif answer['days_delta'] > 0 %} negative{% endif %}"
+           data-dias="{{ answer['days_delta'] }}">{{ answer['days_delta']|abs }} dias</p>
+        <p class="lede">{% if answer['days_delta'] < 0 %}Aproxima{% elif answer['days_delta'] > 0 %}Afasta{% else %}Não move{% endif %} o objetivo.</p>
+        {% else %}
+        <p class="headline cifra" data-dias="">—</p>
+        <p class="lede">
+          {%- if answer['reachable_before'] and not answer['reachable_after'] %}
+          Antes havia uma data; com esta decisão, <strong>não há</strong>. Não é uma diferença de
+          dias: é a diferença entre chegar e não chegar.
+          {%- elif answer['reachable_after'] and not answer['reachable_before'] %}
+          Antes <strong>não havia</strong> data; com esta decisão, passa a haver — em
+          {{ answer['after']['months_to_objective'] }} {{ 'mês' if answer['after']['months_to_objective'] == 1 else 'meses' }}. Não é uma diferença de dias: é a
+          diferença entre nunca e uma data.
+          {%- elif answer['after']['monthly_result_cents'] > 0 %}
+          Não há data nem antes nem depois. O resultado mensal passa a ser
+          <span class="cifra">{{ answer['after']['monthly_result_cents']|brl }}</span>, positivo —
+          mas menor do que os juros que a escada cobra por mês, então a dívida cresce mais rápido
+          do que a sobra a paga. Ataque o degrau de cima em <a href="/dividas">Dívidas</a>.
+          {%- else %}
+          Não há data nem antes nem depois: o resultado mensal continua negativo, e uma diferença
+          de dias precisaria de um primeiro termo que não existe.
+          {%- endif %}
+        </p>
+        {% endif %}
+      </div>
+    </div>
+    <p class="lede">Resultado mensal antes:
+      <span class="cifra">{{ answer['before']['monthly_result_cents']|brl }}</span> · depois:
+      <span class="cifra">{{ answer['after']['monthly_result_cents']|brl }}</span>{% if answer['months'] %},
+      e só por {{ answer['months'] }} {{ 'mês' if answer['months'] == 1 else 'meses' }} — depois
+      disso o resultado volta ao de antes{% endif %}. A conta é a
+      mesma do <a href="/objetivo">Objetivo</a> — o simulador não tem motor próprio, para que os
+      dois nunca discordem.</p>
+  </section>
+  {% endif %}
+  <section id="guardados" class="panel panel-wide">
+    <h2 class="section-title">Cenários guardados</h2>
+    {% if scenarios %}
+    <div class="table-scroll">
+      <table class="data-table">
+        <caption class="sr-only">Cenários guardados, em ordem alfabética.</caption>
+        <thead><tr><th scope="col">Nome</th><th scope="col">Tipo</th>
+          <th scope="col" class="col-num">Por mês</th><th scope="col" class="col-num">Prazo</th></tr></thead>
+        <tbody>
+          {% for item in scenarios %}
+          <tr data-cenario="{{ item['name'] }}" data-mensal="{{ item['monthly_cents'] }}">
+            <td>{{ item['name'] }}</td>
+            <td>{{ item['kind'] }}</td>
+            <td class="cifra col-num">{{ item['monthly_cents']|brl }}</td>
+            <td class="cifra col-num">{{ item['months'] if item['months'] else '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty">
+      <p class="empty-title">Nenhum cenário guardado.</p>
+      <p class="lede">Dê um nome a uma simulação acima e ela fica aqui para comparar com a
+        próxima.</p>
+    </div>
+    {% endif %}
+  </section>
+  <section id="fatos" class="panel panel-wide">
+    <h2 class="section-title">O que só você sabe</h2>
+    <p class="lede">O painel lê extrato. Saldo de quitação, custo de transporte, taxa de cartão —
+      nada disso está em extrato nenhum, e enquanto não estiver aqui a projeção usa premissa
+      declarada em vez de fato.</p>
+    {% if facts %}
+    <div class="table-scroll">
+      <table class="data-table">
+        <caption class="sr-only">Fatos informados, em ordem alfabética.</caption>
+        <thead><tr><th scope="col">Fato</th><th scope="col" class="col-num">Valor</th>
+          <th scope="col">Validade</th></tr></thead>
+        <tbody>
+          {% for fact in facts %}
+          <tr data-fato="{{ fact['name'] }}" data-valor="{{ fact['value'] }}">
+            <td>{{ fact['label'] }}</td>
+            <td class="cifra col-num">{{ fact['value']|unidade(fact['unit']) }}</td>
+            <td>{% if fact['valid_until'] %}{{ fact['valid_until']|dia }}{% if fact['stale'] %}
+              <span class="cell-key">vencido</span>{% endif %}{% else %}sem prazo{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty">
+      <p class="empty-title">Nenhum fato informado.</p>
+      <p class="lede">Enquanto nenhum estiver aqui, o painel declara a premissa na tela em vez de
+        fingir que sabe.</p>
+    </div>
+    {% endif %}
+    <form method="post" action="{{ fact_action }}" class="stack">
+      <input type="hidden" name="data" value="{{ reference }}">
+      <label class="eyebrow" for="fato-nome">Qual fato</label>
+      <select class="field" id="fato-nome" name="nome">
+        {% for item in catalog %}
+        <option value="{{ item['name'] }}">{{ item['label'] }}</option>
+        {% endfor %}
+      </select>
+      <label class="eyebrow" for="fato-valor">Valor</label>
+      <input class="field" id="fato-valor" name="valor" inputmode="decimal" placeholder="0,00">
+      <label class="eyebrow" for="fato-validade">Vale até (opcional)</label>
+      <input class="field" id="fato-validade" name="validade" placeholder="AAAA-MM-DD">
+      <button class="button button-quiet" type="submit">Guardar o fato</button>
+    </form>
+  </section>
+</main>
+{% endblock %}

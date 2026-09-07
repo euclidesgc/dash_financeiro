@@ -1,0 +1,28 @@
+<section id="mes" class="panel panel-wide">
+  <div class="stack-tight">
+    <h2 class="section-title">O mês típico</h2>
+    {% if month['months'] %}
+    <p class="lede">Mediana dos {{ month['months']|length }} meses completos anteriores, de
+      <span class="calendar-date">{{ month['months'][0]|mes }}</span> a
+      <span class="calendar-date">{{ month['months'][-1]|mes }}</span>. Mediana e não média: um mês
+      com crédito atípico puxaria a média e projetaria uma renda que não existe.</p>
+    {% else %}
+    <p class="lede">Não há mês completo anterior a esta data na base, e por isso não há mediana a
+      tirar. Os três números abaixo ficam em zero até o primeiro mês fechar.</p>
+    {% endif %}
+  </div>
+  <div class="figures">
+    <div class="stack-tight">
+      <p class="eyebrow">Renda esperada</p>
+      <p class="figure cifra">{{ month['income_cents']|brl }}</p>
+    </div>
+    <div class="stack-tight">
+      <p class="eyebrow">Gasto esperado</p>
+      <p class="figure cifra">{{ month['spending_cents']|brl }}</p>
+    </div>
+    <div class="stack-tight">
+      <p class="eyebrow">Quanto sobra</p>
+      <p class="headline cifra{% if month['leftover_cents'] < 0 %} negative{% elif month['leftover_cents'] > 0 %} positive{% endif %}">{{ month['leftover_cents']|brl }}</p>
+    </div>
+  </div>
+</section>

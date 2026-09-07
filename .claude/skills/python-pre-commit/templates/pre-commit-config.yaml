@@ -1,0 +1,33 @@
+# Os ganchos rodam antes do commit, com as MESMAS versões que o CI usa. Quando
+# divergem, o commit passa na máquina e reprova no runner, e a lição aprendida
+# é desligar o gancho.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.6
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: detect-private-key
+
+  - repo: local
+    hooks:
+      # O verificador de tipos roda como gancho local, contra o ambiente do
+      # projeto: um gancho isolado não enxerga as dependências e reporta
+      # "módulo não encontrado" no lugar do erro de tipo real.
+      - id: mypy
+        name: mypy
+        entry: uv run mypy --strict src
+        language: system
+        types: [python]
+        pass_filenames: false

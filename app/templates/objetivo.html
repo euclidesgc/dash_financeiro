@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Objetivo{% endblock %}
+{% block content %}
+<main class="screen">
+  <header class="panel panel-wide">
+    <div class="scale" aria-hidden="true"></div>
+    <h1 class="screen-title">O objetivo</h1>
+    {% if refused %}
+    <p class="notice" id="recusa" role="alert">A data pedida não foi aceita. A tela responde pela
+      data de hoje, e <strong>não gravou ponto</strong> na linha do tempo.</p>
+    {% endif %}
+    <p class="lede">{{ reserve_months }} meses de reserva, dimensionados pelo piso de sobrevivência
+      — o cruzamento <strong>{{ floor_label }}</strong>, que hoje vale
+      <span class="cifra">{{ floor_cents|brl }}</span> por mês. O financiamento imobiliário fica
+      de fora: no fundo da escada ele é a dívida mais barata que existe, e amortizá-lo antes de
+      ter reserva é trocar segurança por uma taxa que não está doendo.</p>
+    <div class="figures">
+      <div class="stack-tight">
+        <p class="eyebrow">Reserva alvo</p>
+        <p class="headline cifra" data-alvo="{{ base['reserve_target_cents'] }}">{{ base['reserve_target_cents']|brl }}</p>
+      </div>
+      <div class="stack-tight">
+        <p class="eyebrow">Resultado mensal de hoje</p>
+        <p class="headline cifra{% if base['monthly_result_cents'] < 0 %} negative{% else %} positive{% endif %}"
+           data-resultado="{{ base['monthly_result_cents'] }}">{{ base['monthly_result_cents']|brl }}</p>
+      </div>
+    </div>
+  </header>
+  <section id="cenarios" class="panel panel-wide">
+    <h2 class="section-title">Três cenários, três atos</h2>
+    <p class="lede">Nenhum deles é o outro vezes uma porcentagem. Cada um soma uma alavanca que o
+      painel já identificou e que você tem de puxar de verdade.</p>
+    {% if empty_levers %}
+    <p class="notice" id="alavanca-vazia" role="status">{% if empty_levers|length == 1 %}Uma
+      dessas alavancas está{% else %}Duas dessas alavancas estão{% endif %} em
+      <span class="cifra">R$ 0,00</span> porque a lista correspondente está vazia:
+      {{ empty_levers|join(" e ") }}. Não é que {% if empty_levers|length == 1 %}ela não renda —
+      é{% else %}elas não rendam — é{% endif %} que ainda não há o que contar.{% if base_equals_conservative %}
+      Por isso o cenário <strong>base</strong> devolve hoje o mesmo número do
+      <strong>conservador</strong>.{% endif %}</p>
+    {% endif %}
+    <div class="table-scroll">
+      <table class="data-table">
+        <caption class="sr-only">Cenários, do mais conservador ao mais otimista.</caption>
+        <thead>
+          <tr><th scope="col">Cenário</th><th scope="col">O que ele assume</th>
+            <th scope="col" class="col-num">Resultado mensal</th>
+            <th scope="col" class="col-num">Meses até o objetivo</th></tr>
+        </thead>
+        <tbody>
+          {% for run in scenarios %}
+          <tr data-cenario="{{ run['scenario'] }}" data-resultado="{{ run['monthly_result_cents'] }}"
+              data-meses="{{ run['months_to_objective'] if run['months_to_objective'] is not none else '' }}">
+            <td>{{ run['scenario'] }}</td>
+            <td>{{ run['label'] }}</td>
+            <td class="cifra col-num">{{ run['monthly_result_cents']|brl }}</td>
+            <td class="cifra col-num">{% if run['months_to_objective'] is not none %}{{ run['months_to_objective'] }}{% else %}não chega{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if not reachable %}
+    <div class="empty">
+      <p class="empty-title">Nenhum cenário chega ao objetivo.</p>
+      {% if base['missing_cents'] %}
+      <p class="lede">Não é uma data distante: é <strong>nunca</strong>, enquanto o resultado
+        mensal for negativo. Faltam <span class="cifra">{{ base['missing_cents']|brl }}</span> por
+        mês para que exista uma data — e é esse o número a atacar, não o alvo da reserva. Veja
+        onde cortar em <a href="/gastos">Gastos</a> e o que já está vendido em
+        <a href="/comprometido">Comprometido</a>.</p>
+      {% elif base['monthly_result_cents'] == 0 %}
+      <p class="lede">O resultado mensal fecha exatamente em zero: nada sobra para acumular, e
+        reserva não se forma de sobra nenhuma. Qualquer valor positivo por mês cria uma data —
+        veja onde cortar em <a href="/gastos">Gastos</a>.</p>
+      {% else %}
+      <p class="lede">O resultado mensal já é positivo, mas a sobra não vence os juros da escada
+        dentro do horizonte projetado: o que entra por mês é menor que o que a dívida cresce.
+        Ataque primeiro o degrau de cima em <a href="/dividas">Dívidas</a>.</p>
+      {% endif %}
+    </div>
+    {% endif %}
+    {% if unrated %}
+    <p class="notice" id="sem-taxa-aviso" role="status">A escada do objetivo enxerga só o que tem
+      taxa informada. Ficam de fora {{ unrated|length }} dívida(s), somando
+      <span class="cifra">{{ unrated_cents|brl }}</span> — o marco de dívidas está sendo calculado
+      sem elas. Informe as taxas em <a href="/dividas">Dívidas</a>.</p>
+    {% endif %}
+  </section>
+  <section id="marcos" class="panel panel-wide">
+    <h2 class="section-title">Os três marcos</h2>
+    <ol class="calendar">
+      {% for key, name, why in [
+        ('resultado', 'Resultado mensal ≥ 0', 'Sem isto não existe data para nada.'),
+        ('dividas', 'Nenhuma dívida acima de 1% ao mês', 'A escada zerada até o degrau barato.'),
+        ('reserva', reserve_months ~ ' meses de reserva', 'O objetivo.')] %}
+      <li class="calendar-day" data-marco="{{ key }}"
+          data-meses="{{ base['milestones'][key] if base['milestones'][key] is not none else '' }}">
+        <div class="calendar-head">
+          <h3 class="calendar-date">{{ name }}</h3>
+          <p class="calendar-sum cifra">{% if base['milestones'][key] is not none %}{{ base['milestones'][key] }} {{ 'mês' if base['milestones'][key] == 1 else 'meses' }}{% else %}não chega{% endif %}</p>
+        </div>
+        <ul class="calendar-entries">
+          <li class="calendar-entry"><span class="calendar-name">{{ why }}</span></li>
+        </ul>
+      </li>
+      {% endfor %}
+    </ol>
+  </section>
+  <section id="linha-do-tempo" class="panel panel-wide">
+    <h2 class="section-title">A linha do tempo</h2>
+    <p class="lede">Cada leitura desta tela grava um ponto. "Em março você projetava 30 meses,
+      hoje projeta 24" é o único sinal de progresso que este produto aceita — e ele só existe se
+      houver um março com que comparar. A reserva alvo aparece na série porque ela também se
+      move: comparar projeções contra um alvo que mudou é comparar coisas diferentes.</p>
+    <div class="scale" aria-hidden="true"></div>
+    {% if history|length > 1 %}
+    <div class="table-scroll">
+      <table class="data-table">
+        <caption class="sr-only">Projeções gravadas, do cenário base.</caption>
+        <thead><tr><th scope="col">Data de referência</th>
+          <th scope="col" class="col-num">Resultado mensal</th>
+          <th scope="col" class="col-num">Reserva alvo</th>
+          <th scope="col" class="col-num">Meses até o objetivo</th></tr></thead>
+        <tbody>
+          {% for point in history %}
+          <tr data-ponto="{{ point['reference_date'] }}">
+            <td class="calendar-date">{{ point['reference_date']|dia }}</td>
+            <td class="cifra col-num">{{ point['monthly_result_cents']|brl }}</td>
+            <td class="cifra col-num" data-alvo="{{ point['reserve_target_cents'] }}">{{ point['reserve_target_cents']|brl }}</td>
+            <td class="cifra col-num">{% if point['months_to_objective'] is not none %}{{ point['months_to_objective'] }}{% else %}não chega{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty">
+      <p class="empty-title">Um ponto só, por enquanto.</p>
+      <p class="lede">A linha do tempo precisa de duas leituras em datas diferentes para mostrar
+        movimento. Volte depois da próxima sincronização.</p>
+    </div>
+    {% endif %}
+  </section>
+</main>
+{% endblock %}

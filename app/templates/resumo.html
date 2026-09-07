@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Painel financeiro{% endblock %}
+{% block content %}
+<main class="screen">
+  <header class="panel panel-wide">
+    <div class="scale" aria-hidden="true"></div>
+    <h1 class="screen-title">Painel financeiro</h1>
+    {% if empty %}
+    <div class="empty">
+      <p class="empty-title">Nenhum lançamento na base.</p>
+      <p class="lede">O painel lê o que a carga trouxe do banco. Enquanto não houver lançamento, não
+        há posição a somar nem projeção a traçar — rode a ingestão e volte. Depois dela, as
+        <a href="/regras">Regras</a> dizem como cada gasto é classificado.</p>
+    </div>
+    {% else %}
+    {% if notice %}
+    <p class="notice" id="recusa" role="alert">{{ notice }} A tela responde pela data de hoje.</p>
+    {% endif %}
+    <p class="lede">Onde você está agora, e para onde isto vai nos próximos {{ window_days }} dias
+      se nada mudar.{% if not asked_today %} A posição é sempre a atual — o histórico dos saldos
+      não é guardado —, e a data pedida move só a projeção.{% endif %}</p>
+    <div class="figures">
+      <div class="stack-tight">
+        <p class="eyebrow">Posição consolidada</p>
+        <p class="headline cifra{% if position['consolidated_cents'] < 0 %} negative{% endif %}">{{ position['consolidated_cents']|brl }}</p>
+        <p class="lede">Contas e cartões somados.</p>
+      </div>
+      <div class="stack-tight">
+        <p class="eyebrow">Caixa</p>
+        <p class="figure cifra">{{ position['cash_cents']|brl }}</p>
+        <p class="lede">Só as contas bancárias. É o que entra no cheque especial.</p>
+      </div>
+      <div class="stack-tight">
+        <p class="eyebrow">Cartão</p>
+        <p class="figure cifra">{{ position['card_cents']|brl }}</p>
+        <p class="lede">Só os cartões. Dívida, não saldo.</p>
+      </div>
+    </div>
+    {% endif %}
+  </header>
+  {% include "fragments/resumo_sincronizacao.html" %}
+  {% if not empty %}
+  {% include "fragments/resumo_mes.html" %}
+  {% include "fragments/resumo_projecao.html" %}
+  {% endif %}
+</main>
+{% endblock %}

@@ -99,8 +99,8 @@ API real da Pluggy, o que mataria a entrega de hoje sem melhorar o produto.
 ## Modelo de dados (SQLite)
 
 `accounts` · `transactions` · `category_groups` · `categories` ·
-`category_rules` · `commitments` · `debts` · `goals` · `plan_params` ·
-`ai_usage` · `sync_runs`.
+`category_rules` · `commitments` · `debts` · `plan_goal` · `plan_facts` ·
+`plan_snapshots` · `scenarios` · `ai_usage` · `sync_runs`.
 
 Convenções herdadas do trabalho de extração, porque já provaram valer:
 
@@ -114,9 +114,14 @@ Convenções herdadas do trabalho de extração, porque já provaram valer:
   contas próprias viram "receita" e o painel mente.
 - `installment_current` / `installment_total`, da API ou do padrão `n/N` na
   descrição.
-- `plan_params` guarda o que só o humano sabe (saldo de quitação, custo de
-  transporte alternativo, taxa do cartão) como **parâmetro editável na tela**,
-  nunca como constante no código.
+- `plan_facts` guarda o que só o humano sabe (saldo de quitação, custo de
+  transporte alternativo, taxa do cartão), com **valor, unidade, origem, data da
+  resposta e prazo de validade** — estruturado para consulta, nunca constante no
+  código. Fato vencido volta a ser perguntado; fato ausente vira premissa
+  declarada na tela.
+- `plan_snapshots` grava a projeção a cada recálculo, para a linha do tempo ter
+  passado e o progresso ser medido pela mesma conta em duas datas.
+- `scenarios` guarda simulação salva, com o delta em dias que ela produziu.
 
 ## Taxonomia — três eixos, não um
 
@@ -165,9 +170,10 @@ quitação, e os três horizontes com progresso.
 Anthropic.** Ela é a norma visual deste projeto — direção estética, tipografia e
 as escolhas que evitam que a interface saia com cara de template padrão.
 
-Isso preenche exatamente a lacuna que a escolha de Python abriu: sem pack de
-stack no `generic_harness`, não há revisor de norma de código; a `frontend-design`
-cobre o lado da interface, que é o que o usuário vê todo dia.
+A norma de código é a do pack `python` do `generic_harness`, com os agents
+`python-arquiteto`, `python-implementador` e `python-revisor`; a
+`frontend-design` cobre o lado da interface, que é o que o usuário vê todo dia
+e que nenhum pack de backend alcança.
 
 Três restrições próprias deste produto, que valem acima de qualquer preferência
 estética:
@@ -208,14 +214,109 @@ A meta que era de médio prazo — zerar cheque especial e cartões — **passa 
 o curto prazo**, porque a venda do Duster a resolve de uma vez em vez de em
 nove meses de sobra mensal.
 
+## A unidade do produto: dias até o objetivo
+
+Toda decisão financeira é comparável quando medida na mesma unidade. Aqui a
+unidade não é real — é **tempo**. "Essa assinatura custa R$ 89/mês" não move
+ninguém; "essa assinatura custa **11 dias** a mais até você chegar lá" move.
+
+### O objetivo, e por que ele termina onde termina
+
+A linha do tempo vai de hoje até **6 meses de reserva (≈ R$ 49.400)**, com os
+três horizontes como marcos intermediários:
+
+| Marco | Condição de conclusão |
+|---|---|
+| **1. Respirar** | Resultado mensal ≥ 0 |
+| **2. Sair do caro** | Cheque especial e cartões zerados; nenhuma dívida acima de 1% a.m. |
+| **3. Objetivo** | 6 meses de piso essencial acumulados em reserva |
+
+**O financiamento imobiliário não entra no objetivo.** A 0,72% a.m. ele é a
+dívida mais barata da escada; amortizá-lo antes de ter reserva é trocar
+liquidez por juros baratos, e é o erro que a escada de taxa existe para evitar.
+Incluí-lo transformaria uma linha do tempo de anos numa de décadas, e um número
+que não se move não muda comportamento nenhum.
+
+### Como o número é calculado
+
+Simulação mês a mês, **código determinístico, nunca IA**: parte de renda
+regular, piso essencial, compromissos datados, parcelamentos com data de
+término e dívidas com suas taxas; aplica a sobra na escada (dívida mais cara
+primeiro) até o marco 2; depois acumula reserva até o marco 3. Devolve a data
+de cada marco.
+
+**O custo em dias de qualquer coisa é a diferença entre duas simulações** — com
+e sem o item. Nada mais que isso, e por isso é auditável.
+
+### Três cenários, nunca uma data só
+
+Uma data única mentiria. A renda varia de R$ 9.123 a R$ 13.593 e o gasto
+variável oscila; uma projeção pontual saltaria de 27 para 41 meses porque um mês
+foi atípico, e uma linha do tempo que pula assim perde a confiança na primeira
+semana. A tela mostra sempre **conservador · base · otimista**, e diz de quais
+premissas cada um saiu.
+
+### Histórico: a linha do tempo tem passado
+
+Cada recálculo grava um snapshot (`plan_snapshots`). O que isso compra é o único
+sinal de progresso que este produto aceita: **"em março você projetava 30 meses;
+hoje projeta 24"**. Não é streak, não é confete — é a mesma conta, feita em duas
+datas, mostrando que o trabalho está funcionando. E, quando não estiver
+funcionando, mostra isso também.
+
+## Base de fatos: o que só o humano sabe
+
+Boa parte do que decide a projeção não está em extrato nenhum — saldo de
+quitação antecipada, taxa real do cartão, custo de transporte sem o carro,
+quanto a escola vai subir no ano que vem. Esses fatos vivem em `plan_facts`,
+**estruturados para consulta**, cada um com valor, unidade, origem, data da
+resposta e prazo de validade.
+
+**A IA pergunta; o motor usa.** A regra que impede isso de virar chateação:
+
+- pergunta **só quando a resposta muda um número na tela**, e a pergunta diz
+  qual número;
+- **uma por vez**, e nunca de novo o que já foi respondido — a menos que o fato
+  tenha vencido (taxa de cartão respondida há oito meses é palpite, não fato);
+- **o app não insiste**: pergunta não respondida some da tela e volta só quando
+  voltar a importar. Enquanto isso a projeção usa o valor assumido e **diz na
+  tela que está assumindo**.
+
+Fato respondido entra na simulação imediatamente, e a linha do tempo se move na
+frente do usuário — que é a prova de que responder valeu a pena.
+
+## Simulador: "isso me afasta ou me aproxima?"
+
+Um formulário curto — **tipo** (receita ou despesa), **valor**, **recorrência**
+(única · mensal · parcelada em N), **prazo**, **taxa/juros** e **data de
+início** — e a resposta em três partes:
+
+1. **Afasta ou aproxima, e quanto**, em dias e na data do objetivo.
+2. **A linha do tempo antes e depois**, sobreposta, com os marcos deslocando.
+3. **O que isso significa na escada**: um aporte de R$ 10.000 no CDC vale mais
+   ou menos que os mesmos R$ 10.000 no cheque especial? A resposta é sempre o
+   mais caro primeiro, e o simulador mostra a diferença em dias.
+
+Cenário simulado pode ser **salvo** (`scenarios`) e comparado lado a lado —
+"vender o Duster e ficar sem carro" contra "vender e comprar um usado de R$ 25
+mil" é exatamente a decisão em aberto hoje, e ela merece ser vista, não
+argumentada.
+
+Cenário aplicado vira compromisso de verdade e sai do modo simulação.
+
 ## Papel da IA
 
 A chave (Gemini) vive só no servidor. A IA **nunca calcula** — recebe números
-prontos do motor determinístico e trabalha sobre eles.
+prontos do motor determinístico e trabalha sobre eles. Se a IA computasse "isso
+te afasta 11 dias", erraria, e um número errado na unidade central do produto
+destrói a confiança em tudo o mais. Ela pergunta, interpreta e explica; quem
+conta é função testada.
 
 | Tarefa | O que faz |
 |---|---|
-| `plano_coach` | Recebe o estado do plano (horizontes, progresso, escada de dívida, sobra projetada) e responde "qual o próximo passo e por quê", com o número que justifica |
+| `perguntar_o_que_falta` | Escolhe o fato ausente ou vencido cuja resposta mais move a projeção, e formula **uma** pergunta dizendo qual número ela muda |
+| `plano_coach` | Recebe o estado do plano (marcos, dias até o objetivo, escada de dívida, sobra projetada, fatos conhecidos) e responde "qual o próximo passo e por quê", com o número que justifica |
+| `explicar_simulacao` | Narra o resultado do simulador em linguagem direta — **sem recalcular nada**: recebe o delta em dias já computado |
 | `pergunta_livre` | "Por que estourei este mês?" — com acesso às agregações, não à opinião |
 | `sugestao_de_corte` | Lê o cruzamento variável × supérfluo e propõe cortes com o valor de cada um |
 | `categorizar` | Só o que as regras não pegaram; a resposta vira `category_rules` e a IA se aposenta sozinha à medida que aprende |
@@ -237,7 +338,9 @@ Cada fase toca no máximo duas famílias de prova.
 | **F2** | Taxonomia nos três eixos + Resumo (com projeção de 45 dias) + Gastos | Python · tela |
 | **F3** | Comprometido + Dívidas com a escada e os simuladores | Python · tela |
 | **F4** | Sync sob demanda e diário, com o estado visível na tela | integração externa |
-| **F5** | Motor do plano nos três horizontes + IA (`plano_coach`, `pergunta_livre`, `sugestao_de_corte`, `categorizar`) | IA |
+| **F5** | Objetivo, motor de projeção, linha do tempo com marcos e histórico de snapshots | Python · tela |
+| **F6** | Base de fatos + simulador "afasta ou aproxima", com cenários salvos e comparáveis | Python · tela |
+| **F7** | IA: pergunta o que falta, explica a simulação, orienta o próximo passo, responde pergunta livre e classifica o resíduo | IA |
 
 ## Segurança
 
@@ -245,7 +348,7 @@ Cada fase toca no máximo duas famílias de prova.
 - Hash Argon2, cookie assinado HttpOnly + SameSite=Lax, sessão expira, e
   **rate-limit no POST de login** (5 tentativas / 15 min) — sem ele, Argon2 só
   encarece o ataque, não o impede.
-- `PLUGGY_CLIENT_ID`/`CLIENT_SECRET` e a chave do Gemini **só** em `.env`
+- `PLUGGY_CLIENT_ID`/`PLUGGY_CLIENT_SECRET` e a chave do Gemini **só** em `.env`
   (gitignorado, modo 600). Nunca no repositório, nunca no HTML, nunca em log.
 - O SQLite mora fora do controle de versão. `data/` e `*.sqlite` no
   `.gitignore` desde o commit inicial.
@@ -271,9 +374,20 @@ Todo critério é falsificável e se compara com número congelado em 05/09/2026
 7. Rodar o sync duas vezes seguidas: `sync_runs` ganha duas linhas e
    `SELECT count(*) FROM transactions` **não muda**.
 8. Derrubar e subir o processo: a contagem de transações permanece igual.
-9. Com `GEMIMI_API_KEY` ausente, a tela do plano ainda mostra os números
+9. Com `GEMINI_API_KEY` ausente, a tela do plano ainda mostra os números
    determinísticos e informa que a leitura da IA está indisponível — sem erro
    500.
+10. A linha do tempo mostra **três cenários** com datas distintas para o marco
+    "Objetivo", e cada um declara a premissa de renda e de gasto variável que o
+    gerou.
+11. Simular uma despesa mensal de R$ 89 **afasta** a data do objetivo, e simular
+    a quitação do cheque especial **aproxima** — as duas com o delta em dias
+    visível, e o delta é a diferença entre duas execuções do mesmo motor.
+12. Responder um fato pendente (ex.: saldo de quitação do CDC) **muda a
+    projeção na tela sem recarregar a página**, e grava linha em `plan_facts`
+    com data e origem.
+13. Dois recálculos em datas distintas geram duas linhas em `plan_snapshots`, e
+    a tela mostra a variação entre elas.
 
 ## Fora do escopo
 

@@ -1,0 +1,2 @@
+RECURRING = "recurring"
+INSTALLMENT = "installment"

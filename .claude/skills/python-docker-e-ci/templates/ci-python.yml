@@ -1,0 +1,172 @@
+name: Python
+
+# O PR NASCE RASCUNHO, E O CI LOCAL É QUEM O PROMOVE
+#
+# Nenhum job roda enquanto o PR está em rascunho. A iteração acontece na máquina
+# de quem trabalha, com `scripts/gates/gates_runner.sh`, e o runner remoto só é
+# chamado quando o trabalho está pronto para revisão — uma vez, em vez de uma por
+# push.
+#
+# `ready_for_review` no `types` é o que fecha o ciclo, e é a metade que se
+# esquece: sem ele, sair do rascunho não dispara evento nenhum, e o PR fica
+# pronto e sem CI para sempre — trocar "roda demais" por "não roda nunca".
+#
+# `!= true` e não `== false`: em evento de `push` não existe `pull_request`, o
+# campo vem nulo, e nulo não é rascunho.
+
+on:
+  push:
+    branches: [{{branches}}]
+    paths:
+      - "{{path}}/**"
+      - "scripts/gates/**"
+      - ".github/workflows/ci-python.yml"
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+    paths:
+      - "{{path}}/**"
+      - "scripts/gates/**"
+      - ".github/workflows/ci-python.yml"
+
+# O token do fluxo é declarado aqui, e não herdado. Sem esta seção o job roda
+# com a permissão padrão do repositório — que em repositório antigo ainda é
+# escrita em tudo —, e uma ação de terceiro comprometida escreve com ela.
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: {{path}}
+
+jobs:
+  # `{{path}}` pode nascer declarado e vazio: o esqueleto do repositório cria a
+  # pasta antes de a fase da API escrever a primeira linha. Sem a guarda, o
+  # fluxo reprova por medir o que ainda não existe, e CI eternamente vermelho é
+  # CI que ninguém lê. Os jobs aparecem como PULADOS, nunca como verdes — um
+  # portão que não mediu não aprova nada.
+  guarda:
+    name: Há código Python?
+    if: github.event.pull_request.draft != true
+    runs-on: ubuntu-latest
+    outputs:
+      pronto: ${{ steps.olha.outputs.pronto }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      # O `working-directory` do topo vale para todo `run`, inclusive este. Sem
+      # o `.`, a busca vira `{{path}}/{{path}}/src` e a guarda responde "não há
+      # código" para tudo — os portões saem verdes por não terem medido.
+      - id: olha
+        working-directory: .
+        run: |
+          source scripts/gates/medir.sh
+          exige_caminho "{{path}}" "o pacote da API"
+          fontes=0
+          if [ -d "$(medir_raiz)/{{path}}/src" ]; then
+            fontes="$(conta_sob "{{path}}/src" -name '*.py')"
+          fi
+          echo "medido: $fontes fonte(s) sob {{path}}/src"
+          if [ "$fontes" -gt 0 ]; then
+            echo "pronto=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "pronto=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::{{path}} não tem código-fonte ainda (medido: 0). Os portões dele passam a valer na fase que o construir."
+          fi
+
+  qualidade:
+    needs: guarda
+    if: github.event.pull_request.draft != true && (needs.guarda.outputs.pronto == 'true')
+    name: Lint, tipos e testes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version-file: "{{path}}/.python-version"
+
+      # O uv entra por `pip install` com versão fixa em vez de por ação de
+      # terceiro: é uma dependência a menos para auditar, e a versão fica no
+      # mesmo lugar onde o resto do projeto a declara.
+      - name: uv
+        run: pip install --quiet uv==0.12.10
+
+      # `--frozen` recusa resolver de novo: se o `uv.lock` não bate com o
+      # `pyproject.toml`, o job falha aqui em vez de instalar silenciosamente
+      # uma árvore diferente da que roda na máquina de quem escreveu.
+      - name: Dependências
+        run: uv sync --frozen --all-extras
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Formatação
+        run: uv run ruff format --check .
+
+      - name: Tipos
+        run: uv run mypy --strict src
+
+      - name: Testes de unidade
+        run: uv run pytest tests/unit
+
+  integracao:
+    needs: guarda
+    if: github.event.pull_request.draft != true && (needs.guarda.outputs.pronto == 'true')
+    name: Integração
+    runs-on: ubuntu-latest
+
+    # O teste de integração fala com um Postgres de verdade: rodar contra um
+    # dublê provaria menos do que o critério comportamental exige, e a fonte
+    # primária trata mockar o banco em teste de integração como anti-padrão.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: harness
+          POSTGRES_PASSWORD: harness
+          POSTGRES_DB: harness_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U harness"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://harness:harness@localhost:5432/harness_test
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version-file: "{{path}}/.python-version"
+
+      - name: uv
+        run: pip install --quiet uv==0.12.10
+
+      - name: Dependências
+        run: uv sync --frozen --all-extras
+
+      # "Nada a medir ainda" é dito em voz alta, nunca deixado passar em
+      # silêncio: um passo que não encontrou teste e sai zero é indistinguível
+      # de um que passou.
+      - name: Testes de integração
+        run: |
+          if [ -z "$(find tests/integration -name 'test_*.py' -print -quit 2>/dev/null)" ]; then
+            echo "::notice::Nenhum teste de integração em {{path}}/tests/integration ainda — nada a medir."
+            exit 0
+          fi
+          uv run pytest tests/integration
+
+      # Modelo alterado sem migração correspondente é o defeito que só aparece
+      # no deploy. Aqui ele aparece no PR, e a ausência do esquema é dita em
+      # vez de presumida.
+      - name: Migração pendente
+        run: |
+          if [ ! -d migrations/versions ]; then
+            echo "::notice::Sem migrations/versions em {{path}} — nada a medir; o portão passa a valer no item que introduzir o esquema."
+            exit 0
+          fi
+          uv run alembic upgrade head
+          uv run alembic check

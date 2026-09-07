@@ -1,0 +1,121 @@
+CENTS = "centavos"
+BASIS_POINTS = "pontos-base"
+MONTHS = "meses"
+UNITS = (CENTS, BASIS_POINTS, MONTHS)
+
+FACT = "fato"
+GOAL = "meta"
+KINDS = (FACT, GOAL)
+
+CARD_RATE = "taxa-cartao"
+SETTLEMENT = "quitacao-cdc"
+TRANSPORT = "transporte-sem-carro"
+RESERVE = "reserva-meses"
+MEDIAN = "mediana-meses"
+
+# The defaults the code used as constants before there was a place to inform
+# them. They live here because a default and the value that replaces it are the
+# same number seen from two sides, and two homes is how they drift apart.
+RESERVE_MONTHS = 6
+MEDIAN_MONTHS = 6
+
+DEBTS_SCREEN = "/dividas"
+SIMULATOR_SCREEN = "/simulador"
+SETTINGS_SCREEN = "/configuracao"
+
+# The order is the order of how much the answer moves the projection, and it is
+# the order the advisor asks in: a rate decides where the next real goes, and a
+# payoff balance decides a thirty-nine thousand real question.
+CATALOG = (
+    {
+        "name": CARD_RATE,
+        "label": "Taxa mensal dos cartões",
+        "question": "a taxa mensal dos seus cartões",
+        "help": (
+            "A taxa que o cartão cobra sobre o saldo rotativo. Cada cartão tem a sua, e por "
+            "isso ela é um campo por dívida na tela de dívidas, e não uma linha aqui."
+        ),
+        "unit": BASIS_POINTS,
+        "kind": FACT,
+        "screen": DEBTS_SCREEN,
+        "moves": "a ordem da escada de dívida, e com ela onde o próximo real rende mais",
+        "default": None,
+        # One rate per debt, in debts.monthly_rate_bp: it is not a name → value
+        # line, and copying it into the store would create a second answer to the
+        # same question (RF-08).
+        "stored": False,
+    },
+    {
+        "name": SETTLEMENT,
+        "label": "Saldo de quitação do CDC do carro",
+        "question": "o saldo de quitação antecipada do CDC do carro",
+        "help": (
+            "Quanto o banco cobra hoje para encerrar o CDC antes do prazo. Só o banco informa, "
+            "e o número envelhece: vale a pena registrar até quando ele vale."
+        ),
+        "unit": CENTS,
+        "kind": FACT,
+        "screen": SIMULATOR_SCREEN,
+        "moves": "a conta de vender o carro, que é a maior decisão em aberto",
+        "default": None,
+        "stored": True,
+    },
+    {
+        "name": TRANSPORT,
+        "label": "Custo de transporte sem o carro",
+        "question": "quanto custaria seu transporte por mês sem o carro",
+        "help": (
+            "O que você gastaria por mês em transporte se vendesse o carro. Sem esse número a "
+            "venda aparece como economia bruta, e não como o que sobra de verdade."
+        ),
+        "unit": CENTS,
+        "kind": FACT,
+        "screen": SIMULATOR_SCREEN,
+        "moves": "o fluxo líquido que a venda do carro libera",
+        "default": None,
+        "stored": True,
+    },
+    {
+        "name": RESERVE,
+        "label": "Meses de reserva do objetivo",
+        "question": "quantos meses de sobrevivência a sua reserva precisa cobrir",
+        "help": (
+            "Quantos meses de piso de sobrevivência a reserva alvo precisa cobrir. É escolha "
+            "sua: seis meses é a premissa do painel enquanto você não decidir outra."
+        ),
+        "unit": MONTHS,
+        "kind": GOAL,
+        "screen": SETTINGS_SCREEN,
+        "moves": "a reserva alvo do objetivo, e com ela o tempo até alcançá-lo",
+        "default": RESERVE_MONTHS,
+        "stored": True,
+    },
+    {
+        "name": MEDIAN,
+        "label": "Meses da janela da mediana",
+        "question": "quantos meses fechados representam o seu mês típico",
+        "help": (
+            "Quantos meses fechados entram na mediana que define o mês típico. Uma janela mais "
+            "longa é mais estável; uma mais curta acompanha uma mudança recente mais depressa."
+        ),
+        "unit": MONTHS,
+        "kind": GOAL,
+        "screen": SETTINGS_SCREEN,
+        "moves": (
+            "o mês típico da projeção, e com ele o piso de sobrevivência e a reserva alvo — "
+            "os dois não são independentes"
+        ),
+        "default": MEDIAN_MONTHS,
+        "stored": True,
+    },
+)
+
+BY_NAME = {item["name"]: item for item in CATALOG}
+
+
+def entry(name: str) -> dict | None:
+    return BY_NAME.get(name)
+
+
+def of_kind(kind: str) -> tuple[dict, ...]:
+    return tuple(item for item in CATALOG if item["kind"] == kind)

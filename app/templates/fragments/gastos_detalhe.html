@@ -1,0 +1,34 @@
+{% if key %}
+<div class="detail-open">
+  <h3 class="section-title">{{ labels.get(key) or key }}</h3>
+  <p class="detail-sum"><span class="cifra">{{ total_cents|brl }}</span>
+    em {{ rows|length }} lançamento{% if rows|length != 1 %}s{% endif %}.</p>
+  <div class="table-scroll">
+    <table class="data-table">
+      <caption class="sr-only">Lançamentos que compõem a linha, do mais antigo ao mais recente.</caption>
+      <thead>
+        <tr>
+          <th scope="col">Data</th>
+          <th scope="col">Descrição</th>
+          <th scope="col">Conta</th>
+          <th scope="col" class="col-num">Valor</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td class="col-date">{{ row['date']|dia }}</td>
+          <th scope="row" class="cell-name">{{ row['description'] }}</th>
+          <td>{{ row['account'] }}</td>
+          <td class="col-num"><span class="cifra">{{ row['amount_cents']|brl }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <a class="button button-quiet"
+     href="{{ screen }}?eixo={{ axis|urlencode }}&amp;inicio={{ start }}&amp;fim={{ end }}"
+     hx-get="{{ detail_url }}" hx-include="#controles"
+     hx-target="#detalhe" hx-swap="innerHTML">Fechar a lista</a>
+</div>
+{% endif %}

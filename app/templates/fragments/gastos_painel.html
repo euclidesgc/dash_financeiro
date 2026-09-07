@@ -1,0 +1,120 @@
+{% from "fragments/celula.html" import cell_name -%}
+<div id="painel" class="panels"
+     hx-get="{{ panel_url }}" hx-trigger="submit from:#controles"
+     hx-include="#controles" hx-target="this" hx-swap="outerHTML">
+  <section id="evolucao" class="panel panel-wide panel-split">
+    <div class="stack-tight panel-across">
+      <h2 class="section-title">Evolução</h2>
+      <p class="lede">Treze meses até {{ end[:7] }}. O gráfico é a leitura rápida; a tabela é o dado,
+        e ela fica de pé mesmo quando o gráfico não carrega.</p>
+    </div>
+    <div id="grafico" class="chart" hidden><canvas class="chart-canvas"></canvas></div>
+    <div class="table-scroll">
+      <table class="data-table data-table-compact" id="serie">
+        <caption class="sr-only">Gasto de cada um dos treze meses.</caption>
+        <thead>
+          <tr>
+            <th scope="col">Mês</th>
+            <th scope="col" class="col-num">Gasto</th>
+            <th scope="col" class="col-num">Lançamentos</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for point in series %}
+          <tr data-mes="{{ point['month'] }}" data-centavos="{{ point['amount_cents'] }}">
+            <th scope="row" class="col-month">{{ point['month'] }}</th>
+            <td class="col-num"><span class="cifra">{{ point['amount_cents']|brl }}</span></td>
+            <td class="col-num">{{ point['entries'] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <section id="cruzamentos" class="panel panel-wide">
+    <div class="stack-tight">
+      <h2 class="section-title">Cruzamentos</h2>
+      <p class="lede">Os dois recortes que decidem o plano: o que dá para cortar e o que não dá.</p>
+    </div>
+    <div class="crossings">
+      {% for cross in crossings %}
+      <article class="crossing">
+        <div class="stack-tight">
+          <h3 class="crossing-label">{{ cross['label'] }}</h3>
+          <p class="crossing-total cifra{% if cross['total_cents'] < 0 %} negative{% endif %}">{{ cross['total_cents']|brl }}</p>
+          <p class="lede">Média mensal de <span class="cifra">{{ cross['monthly_average_cents']|brl }}</span>.</p>
+        </div>
+        {% if cross['rows'] %}
+        <div class="table-scroll">
+          <table class="data-table">
+            <caption class="sr-only">Categorias do cruzamento, do maior gasto para o menor.</caption>
+            <thead>
+              <tr>
+                <th scope="col">Categoria</th>
+                <th scope="col" class="col-num">Gasto</th>
+                <th scope="col" class="col-num">Lançamentos</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in cross['rows'] %}
+              <tr>
+                <th scope="row" class="cell-name">{{ cell_name(row['key'], labels) }}</th>
+                <td class="col-num"><span class="cifra">{{ row['amount_cents']|brl }}</span></td>
+                <td class="col-num">{{ row['entries'] }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="empty">
+          {% if period_total_cents == 0 %}
+          <p class="empty-title">Sem lançamento neste período.</p>
+          <p class="lede">O cruzamento se lê sobre o gasto do período escolhido. Escolha outras datas
+            nos campos acima.</p>
+          {% else %}
+          <p class="empty-title">Nada foi marcado como {{ cross['term'] }} ainda.</p>
+          <p class="lede">A classificação que vem pronta não decide o que é dispensável na sua casa.
+            Quem marca é você, na tela de <a href="/regras">Regras</a>.</p>
+          {% endif %}
+          {% if cross['candidates'] and period_total_cents != 0 %}
+          <p class="lede">Candidatas — as cinco maiores de {{ cross['nature'] }} × {{ cross['candidates_term'] }},
+            somando <span class="cifra">{{ cross['candidates_total_cents']|brl }}</span></p>
+          <div class="table-scroll">
+            <table class="data-table">
+              <caption class="sr-only">Categorias candidatas a virar corte.</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Categoria</th>
+                  <th scope="col" class="col-num">Gasto</th>
+                  <th scope="col" class="col-num">Lançamentos</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in cross['candidates'] %}
+                <tr>
+                  <th scope="row" class="cell-name">{{ cell_name(row['key'], labels) }}</th>
+                  <td class="col-num"><span class="cifra">{{ row['amount_cents']|brl }}</span></td>
+                  <td class="col-num">{{ row['entries'] }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+  <section id="residuo" class="panel panel-wide">
+    <div class="stack-tight">
+      <h2 class="section-title">Sem regra</h2>
+      <p class="headline-small"><span class="cifra">{{ residue['amount_cents']|brl }}</span>
+        em {{ residue['entries'] }} lançamento{% if residue['entries'] != 1 %}s{% endif %}.</p>
+      <p class="lede">É o que nenhuma regra alcançou no período. Cada lançamento aqui é uma regra
+        que falta escrever na tela de <a href="/regras">Regras</a>.</p>
+    </div>
+  </section>
+</div>

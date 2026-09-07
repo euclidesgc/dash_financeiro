@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Comprometido{% endblock %}
+{% block content %}
+<main class="screen">
+  <header class="panel panel-wide">
+    <div class="scale" aria-hidden="true"></div>
+    <h1 class="screen-title">Comprometido</h1>
+    <p class="lede">O que já está prometido antes de qualquer escolha deste mês. O valor de cada
+      linha é a média observada das cobranças, não o valor contratado, e o dia de cobrança é
+      previsão tirada do histórico da série.</p>
+    {% if notice %}
+    <p class="notice" id="recusa" role="alert">{{ notice }}</p>
+    {% endif %}
+    <div class="figures">
+      <div class="stack-tight">
+        <p class="eyebrow">Total comprometido</p>
+        <p class="headline cifra{% if committed_cents < 0 %} negative{% endif %}"
+           data-comprometido="{{ committed_cents }}">{{ committed_cents|brl }}</p>
+        <p class="lede">Por mês, somando as assinaturas e os parcelamentos em aberto.</p>
+      </div>
+      <div class="stack-tight">
+        <p class="eyebrow">Economia projetada</p>
+        <p class="headline cifra{% if projected_savings_cents %} positive{% endif %}">{{ projected_savings_cents|brl }}</p>
+        <p class="lede">Por mês, do que está marcado como "não uso mais".</p>
+      </div>
+    </div>
+  </header>
+  {% include "fragments/comprometido_assinaturas.html" %}
+  {% if dismissed %}
+  {% include "fragments/comprometido_dispensadas.html" %}
+  {% endif %}
+  {% include "fragments/comprometido_parcelamentos.html" %}
+  {% include "fragments/comprometido_calendario.html" %}
+</main>
+{% endblock %}
