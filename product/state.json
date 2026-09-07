@@ -275,7 +275,7 @@
     "011-serie-duplicada-e-tolerancia-do-vencimento": {
       "title": "Integridade das séries: nenhum compromisso contado duas vezes, nenhuma parcela partida por centavo",
       "track": "rapida",
-      "stage": "execute",
+      "stage": "done",
       "stacks": [
         "python"
       ],
