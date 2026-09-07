@@ -5,6 +5,10 @@
   <header class="panel panel-wide">
     <div class="scale" aria-hidden="true"></div>
     <h1 class="screen-title">O objetivo</h1>
+    {% if refused %}
+    <p class="notice" id="recusa" role="alert">A data pedida não foi aceita. A tela responde pela
+      data de hoje, e <strong>não gravou ponto</strong> na linha do tempo.</p>
+    {% endif %}
     <p class="lede">{{ reserve_months }} meses de reserva, dimensionados pelo piso de sobrevivência
       — o cruzamento <strong>{{ floor_label }}</strong>, que hoje vale
       <span class="cifra">{{ floor_cents|brl }}</span> por mês. O financiamento imobiliário fica
@@ -26,6 +30,15 @@
     <h2 class="section-title">Três cenários, três atos</h2>
     <p class="lede">Nenhum deles é o outro vezes uma porcentagem. Cada um soma uma alavanca que o
       painel já identificou e que você tem de puxar de verdade.</p>
+    {% if empty_levers %}
+    <p class="notice" id="alavanca-vazia" role="status">{% if empty_levers|length == 1 %}Uma
+      dessas alavancas está{% else %}Duas dessas alavancas estão{% endif %} em
+      <span class="cifra">R$ 0,00</span> porque a lista correspondente está vazia:
+      {{ empty_levers|join(" e ") }}. Não é que {% if empty_levers|length == 1 %}ela não renda —
+      é{% else %}elas não rendam — é{% endif %} que ainda não há o que contar.{% if base_equals_conservative %}
+      Por isso o cenário <strong>base</strong> devolve hoje o mesmo número do
+      <strong>conservador</strong>.{% endif %}</p>
+    {% endif %}
     <div class="table-scroll">
       <table class="data-table">
         <caption class="sr-only">Cenários, do mais conservador ao mais otimista.</caption>
