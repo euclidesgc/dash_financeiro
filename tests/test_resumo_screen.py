@@ -1,4 +1,5 @@
 import re
+from datetime import date
 
 import pytest
 from fastapi.testclient import TestClient
@@ -34,6 +35,7 @@ def _app(tmp_path, monkeypatch):
     monkeypatch.setenv("DASH_ENV_FILE", "/dev/null")
     monkeypatch.setenv("DASH_DB_PATH", str(tmp_path / "dash.sqlite"))
     monkeypatch.setenv("SESSION_SECRET", "chave-de-teste")
+    monkeypatch.setenv("DASH_TODAY", ASKED)
     app = create_app()
     conn = connect()
     seed_user(conn, LOGIN, PASSWORD)
@@ -220,3 +222,45 @@ def test_a_reference_that_is_not_today_says_the_position_is_still_current(client
 
     assert "A posição é sempre a atual" in html
     assert "Ponto de partida" in _section(html, "projecao")
+
+
+def test_no_query_string_and_an_unreadable_date_both_answer_without_a_500(client):
+    unasked = client.get("/")
+    unreadable = client.get("/?data=banana")
+
+    assert unasked.status_code == 200
+    assert 'id="recusa"' not in unasked.text
+    assert "05/09/2026" in _section(unasked.text, "projecao")
+    assert unreadable.status_code == 200
+    assert 'id="recusa"' in unreadable.text
+    assert "A tela responde pela data de hoje." in unreadable.text
+
+
+def test_a_blank_data_parameter_is_absence_not_refusal(client):
+    html = client.get("/?data=").text
+
+    assert 'id="recusa"' not in html
+    assert "05/09/2026" in _section(html, "projecao")
+
+
+def test_the_upper_range_boundary_is_accepted_not_refused(client):
+    html = client.get("/?data=2100-12-31").text
+
+    assert 'id="recusa"' not in html
+    assert "31/12/2100" in _section(html, "projecao")
+
+
+def test_a_date_that_breaks_calendar_arithmetic_is_refused_without_a_500(client):
+    answer = client.get("/?data=0001-01-01")
+
+    assert answer.status_code == 200
+    assert 'id="recusa"' in answer.text
+    assert "05/09/2026" in _section(answer.text, "projecao")
+
+
+def test_the_position_caveat_appears_only_when_the_clock_date_is_asked_by_name(client):
+    unasked = client.get("/")
+    asked_the_clock = client.get(f"/?data={date.today().isoformat()}")
+
+    assert "A posição é sempre a atual" not in unasked.text
+    assert "A posição é sempre a atual" in asked_the_clock.text
