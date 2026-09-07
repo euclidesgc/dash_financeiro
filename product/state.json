@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "active_item": "009-ia-consultora",
+  "active_item": "014-taxa-sugerida-pelos-juros-cobrados",
   "items": {
     "001-base-e-login": {
       "title": "Base e login: schema, ingestão dos 1.942 lançamentos e acesso protegido",
@@ -575,6 +575,43 @@
             ".": "a0471532d53d1d33ee87ce2e5771f1d16b49d31a"
           },
           "criteria_sha": "70568ec06b203dc76ea686dd310b1e7ca9dab412b27843fadba304f5ccc7b77e"
+        }
+      },
+      "divergences": {},
+      "criteria_exception": null
+    },
+    "014-taxa-sugerida-pelos-juros-cobrados": {
+      "title": "A taxa sugerida pelos juros que ja foram cobrados, com a faixa a vista",
+      "track": "rapida",
+      "stage": "execute",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-07T12:24:22Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-07T12:28:13Z",
+          "sha": "61f1566bd547f3e70aa80bd6fab53b5a43cd35cd",
+          "file": "product/items/014-taxa-sugerida-pelos-juros-cobrados/01-brief.md",
+          "por": "autonomo"
+        },
+        "plan": {
+          "at": "2026-09-07T12:28:13Z",
+          "sha": "9931335e571d819209d156e5248884f4a9d7eb99",
+          "file": "product/items/014-taxa-sugerida-pelos-juros-cobrados/03-plan.md",
+          "por": "autonomo"
+        }
+      },
+      "current_phase": 1,
+      "phases": {
+        "1": {
+          "status": "em_execucao",
+          "reproved_count": 0,
+          "verdict": null,
+          "verdict_file": null,
+          "validated_sha": null,
+          "pr": null,
+          "blocked_on": []
         }
       },
       "divergences": {},
