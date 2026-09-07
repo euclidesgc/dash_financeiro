@@ -62,12 +62,17 @@ falha com a ordem antiga do merge.
 
 ## Divergência
 
-**`D-002`, tipo `normal`, RECONCILIADA e pendente de ratificação.** O critério de
-guarda da fase 2 nomeava `POST /configuracao/cnpj`, rota que só a fase 3 cria, e
-passava por construção: a guarda é middleware e devolve `302` para qualquer
-caminho. Agora cada rota é cobrada na fase que a cria, e o critério exige as duas
-metades — com sessão a rota responde diferente de `404`, sem sessão responde
-`302`. **Trava o merge até a ratificação**, como manda a norma 4.
+**`D-002`, tipo `normal`, RECONCILIADA e ratificada.** O critério de guarda da
+fase 2 nomeava `POST /configuracao/cnpj`, rota que só a fase 3 cria, e passava
+por construção: a guarda é middleware e devolve `302` para qualquer caminho.
+Agora cada rota é cobrada na fase que a cria, e o critério exige as duas metades
+— com sessão a rota responde diferente de `404`, sem sessão responde `302`.
+Nenhuma linha de código mudou.
+
+Ela **não deveria ter virado pendência**, e a norma 4 foi reescrita por isso: o
+que trava merge é opção com impacto diferente para o dono, não toda divergência
+`normal`. A proposta `.harness/proposals/2026-09-07-001.md` leva a mesma correção
+para o harness.
 
 ## Raio de impacto
 
@@ -80,8 +85,9 @@ beneficiário.
 
 ## O que o dono precisa fazer
 
-1. **Ratificar ou rejeitar `D-002`.** Enquanto não ratificar, o merge está
-   travado.
+1. **Mergear a pilha em `develop`.** Não há mais nada travando. O merge não sai
+   do worktree porque `develop` está em uso no checkout principal, e o git recusa
+   ter a mesma branch em dois lugares.
 2. **Copiar o arquivo da base antes do primeiro boot depois do merge.** A
    migração `010` funde `plan_parameters` em `plan_facts` e derruba a tabela, e a
    `011` acrescenta quatro colunas em `transactions`. Rodaram limpas em toda base

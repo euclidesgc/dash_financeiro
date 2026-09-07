@@ -14,8 +14,11 @@ o processo vale, a norma de código é a do projeto. Ver `docs/plano.md`.
 1. Sem plano aprovado (`03-plan.md`), o guard recusa escrita em código.
 2. Cada agent escreve só no escopo declarado.
 3. Mudança de API começa no OpenAPI.
-4. Divergência de contrato para a fase; a normal segue na recomendação e
-   trava o merge até um humano ratificar.
+4. Divergência de contrato para a fase. A normal segue na recomendação: quando
+   uma opção atende o requisito, alcança o objetivo e é segura, ela se executa e
+   se registra — não trava merge nem vira pergunta. Trava só quando as opções
+   têm impacto genuinamente diferente para o dono: dinheiro, prazo, risco que
+   ele carrega, ou algo que só ele sabe.
 5. Critério de aceite é tipado (`comando`, `estrutural`, `comportamental`).
    Adjetivo não é critério.
 6. A DoD global é do CI e não se repete no plano.
