@@ -58,7 +58,10 @@ const processo = spawn(CHROME, [
   "--remote-debugging-port=0",
   "--no-sandbox",
   "--disable-gpu",
-  "--hide-scrollbars",
+  // Sem --hide-scrollbars de propósito: escondida, a barra vertical não consome
+  // largura, e as seis medições davam scrollWidth exatamente igual a
+  // innerWidth — folga zero. O navegador do dono tem barra, e é com ela que a
+  // pergunta "o corpo rola de lado?" precisa ser respondida.
   "--user-data-dir=/tmp/dash-viewport",
 ]);
 const endereco = await new Promise((resolve, reject) => {
