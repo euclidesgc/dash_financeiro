@@ -1,0 +1,10 @@
+# Decisões tomadas sem o humano — 007-objetivo-e-linha-do-tempo
+
+| # | Estágio | Decidido | Alternativa descartada | Por quê |
+|---|---|---|---|---|
+| D1 | discovery | O alvo é **derivado** do piso de sobrevivência | Copiar os ≈R$ 49.400 de `docs/plano.md` | O número do relatório saiu de outro recorte e congelaria em 05/09/2026. Derivado do cruzamento que o `002` já calcula, ele se move quando o piso se move — que é o comportamento que se quer de um alvo. |
+| D2 | discovery | Os cenários somam **alavancas nomeadas**, não multiplicadores | conservador/base/otimista como −20%/0/+20% da sobra | Um multiplicador é palpite vestido de plano: não diz o que fazer e não erra de forma verificável. Cada alavanca aqui é dinheiro que o produto já mede e nomeia um ato — marcar assinatura, cortar a lista, esperar o parcelamento acabar. |
+| D3 | discovery | Objetivo inalcançável grava **nulo**, e a tela diz "não chega" | Gravar um número grande, ou o teto do horizonte | Um número muito grande se lê como data distante. Isto não é distante: é nunca, enquanto o resultado mensal for negativo. Nulo obriga a tela a dizer a verdade. |
+| D4 | discovery | A tela mostra **quanto falta por mês** quando não há data | Mostrar só o alvo da reserva | Sem resultado positivo, o alvo é decoração. O número acionável é a distância até o zero: R$ 4.523,21 por mês. |
+| D5 | plan | **Toda leitura** da tela grava snapshot | Um botão "gravar ponto" | Ninguém aperta um botão para criar histórico, e sem histórico a linha do tempo não existe. A chave `(data, cenário)` impede que reler no mesmo dia infle a série. |
+| D6 | fase 1 | O código foi escrito **antes** do brief e do plano, e os dois foram redigidos contra a medição | Escrever os documentos primeiro, como nos itens anteriores | Registro porque é desvio de processo, não porque foi bom: a pressa da corrida levou a implementar e medir antes de escrever. O portão que importa — o validador cego, que não vê nem o plano nem o brief — continua intacto, e todos os números dos critérios saem de medição e não de previsão. |
