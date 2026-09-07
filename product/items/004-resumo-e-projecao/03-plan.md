@@ -46,11 +46,11 @@ DASH_TODAY=2026-09-05 .venv/bin/python -m app.ingest`.
       diferença entre o saldo daquele dia e o do dia anterior, para **todos** os
       dias da série
 - [ ] `estrutural` — RF-10
-      `app/projection/forecast.py` importa a janela de `app.commitments.calendar`
-      e **não** declara constante própria de horizonte: `rtk proxy grep -REn
-      --exclude-dir=__pycache__ "WINDOW_DAYS|HORIZON|\b45\b" app/projection`
-      imprime ao menos uma linha citando `WINDOW_DAYS` e nenhuma linha que
-      atribua `45` a um nome
+      `rtk proxy grep -REn --exclude-dir=__pycache__
+      "from app.commitments.calendar import" app/projection` imprime ao menos
+      uma linha, e ela importa `window`; e `rtk proxy grep -REn
+      --exclude-dir=__pycache__ "\b45\b" app/projection` não imprime nenhuma
+      linha. A janela vem do `003` e não é recortada de novo aqui
 
 **Critérios de integração:**
 

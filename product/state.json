@@ -330,8 +330,8 @@
           "por": "autonomo"
         },
         "plan": {
-          "at": "2026-09-07T01:08:15Z",
-          "sha": "4b80002b894f4401c1bb3ea191b74d834493295f",
+          "at": "2026-09-07T01:09:50Z",
+          "sha": "4cf8d6a4d60562c8392bf2ca9e95a8f01a5bcc8e",
           "file": "product/items/004-resumo-e-projecao/03-plan.md",
           "por": "autonomo"
         }
@@ -339,13 +339,18 @@
       "current_phase": 1,
       "phases": {
         "1": {
-          "status": "em_execucao",
+          "status": "aprovada",
           "reproved_count": 0,
-          "verdict": null,
-          "verdict_file": null,
-          "validated_sha": null,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/004-resumo-e-projecao/05-veredictos/fase-1.md",
+          "validated_sha": "f858133692d9a8ce9a6b6dc9e0edc2b70e6dba2d",
           "pr": null,
-          "blocked_on": []
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T01:15:24Z",
+          "validated_trees": {
+            ".": "79d4385ee2d1230403881ac51aa433578d956b17"
+          },
+          "criteria_sha": "1635f1e7f33feb22d3ff723aecb64f7bc4919562d8faf4bc32138b20bf1e5c80"
         }
       },
       "divergences": {},
