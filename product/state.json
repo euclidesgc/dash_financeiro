@@ -317,7 +317,7 @@
     "004-resumo-e-projecao": {
       "title": "Resumo e projeção: saldo, dívida, o que sobra e os próximos 45 dias dia a dia",
       "track": "rapida",
-      "stage": "execute",
+      "stage": "done",
       "stacks": [
         "python"
       ],

@@ -30,7 +30,7 @@ PR e commit já escritos.
 
 - [x] `011-serie-duplicada-e-tolerancia-do-vencimento` — O comprometido conta cada dívida uma vez só e conta só o que ainda vai sair da conta. Quatro defeitos do motor de compromissos, corrigidos juntos: o parcelamento que acabava e ressuscitava como assinatura, a compra partida em duas por um centavo de arredondamento, o total que somava assinatura parada, e a janela de vida que marcava como morta a cobrança datada no futuro. E o calendário passou a casar lançamento com previsão por distância entre datas, não pelo mês. O total da base de 05/09/2026 foi de −R$ 12.802,64 para **−R$ 8.026,79**, e as linhas gravadas de 151 para 115.
 
-- [ ] `004-resumo-e-projecao` — A tela inicial mostra saldo, dívida total, quanto sobra este mês e a **projeção de saldo dia a dia dos próximos 45 dias**. Depende de `003` porque a projeção soma os compromissos datados: sem eles, projeta só o passado. Com cheque especial a 3,52% a.m., o real marginal se ganha não entrando no vermelho — e é esta tela que impede.
+- [x] `004-resumo-e-projecao` — A tela inicial mostra saldo, dívida total, quanto sobra este mês e a **projeção de saldo dia a dia dos próximos 45 dias**. Depende de `003` porque a projeção soma os compromissos datados: sem eles, projeta só o passado. Com cheque especial a 3,52% a.m., o real marginal se ganha não entrando no vermelho — e é esta tela que impede.
 
 - [ ] `005-dividas-e-simuladores` — As dívidas aparecem ordenadas por taxa mensal, do cheque especial (3,52%) ao imóvel (0,72%), e o simulador responde quantas parcelas e quantos juros um aporte elimina. Inclui a decisão do Duster com **saldo de quitação e custo de transporte alternativo como parâmetro editável**, não como constante.
 
