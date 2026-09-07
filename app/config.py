@@ -17,6 +17,8 @@ SESSION_SECRET_BYTES = 32
 # The panel reads the already consolidated file by default: it is the path that
 # works without network, and the one every test exercises.
 DEFAULT_SYNC_SOURCE = "arquivo"
+CNPJ_LOOKUP = "DASH_CNPJ_LOOKUP"
+TRUE_WORDS = ("1", "true", "sim")
 PLUGGY_CREDENTIALS = ("PLUGGY_CLIENT_ID", "PLUGGY_CLIENT_SECRET")
 
 
@@ -31,6 +33,7 @@ class Config:
     transactions_path: str
     accounts_glob: str
     sync_source: str
+    cnpj_lookup: bool
     pluggy: dict[str, str | None]
 
 
@@ -72,6 +75,9 @@ def load_config(env: Mapping[str, str] | None = None) -> Config:
         transactions_path=_first(env, "DASH_TRANSACTIONS_PATH") or DEFAULT_TRANSACTIONS_PATH,
         accounts_glob=_first(env, "DASH_ACCOUNTS_GLOB") or DEFAULT_ACCOUNTS_GLOB,
         sync_source=_first(env, "DASH_SYNC_SOURCE") or DEFAULT_SYNC_SOURCE,
+        # Opt-in, and off by default: the only other egress of this product,
+        # the advisor, also exists only when the owner turns it on.
+        cnpj_lookup=(_first(env, CNPJ_LOOKUP) or "").strip().lower() in TRUE_WORDS,
         pluggy={name: _first(env, name) for name in PLUGGY_CREDENTIALS},
     )
 

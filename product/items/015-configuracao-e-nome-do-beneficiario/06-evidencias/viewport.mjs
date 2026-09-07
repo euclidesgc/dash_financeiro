@@ -5,6 +5,9 @@
 // Uso: node <este arquivo> <url> <cookie k=v>
 
 import { spawn } from "node:child_process";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const CHROME =
   process.env.DASH_CHROME ||
@@ -62,7 +65,7 @@ const processo = spawn(CHROME, [
   // largura, e as seis medições davam scrollWidth exatamente igual a
   // innerWidth — folga zero. O navegador do dono tem barra, e é com ela que a
   // pergunta "o corpo rola de lado?" precisa ser respondida.
-  "--user-data-dir=/tmp/dash-viewport",
+  `--user-data-dir=${mkdtempSync(join(tmpdir(), "dash-viewport-"))}`,
 ]);
 const endereco = await new Promise((resolve, reject) => {
   let saida = "";

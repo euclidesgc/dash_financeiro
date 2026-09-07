@@ -5,7 +5,14 @@ from pathlib import Path
 from app.queries.period import InvalidPeriodError, check_period
 from app.queries.spending import SPENDING
 
-__all__ = ("AXES", "InvalidPeriodError", "UnknownAxisError", "aggregate", "transactions_of")
+__all__ = (
+    "AXES",
+    "PAYEE_AXIS",
+    "InvalidPeriodError",
+    "UnknownAxisError",
+    "aggregate",
+    "transactions_of",
+)
 
 AXES_PATH = Path(__file__).resolve().parent / "axes.json"
 
@@ -15,6 +22,10 @@ AXES_PATH = Path(__file__).resolve().parent / "axes.json"
 _COLUMNS: dict[str, str] = json.loads(AXES_PATH.read_text(encoding="utf-8"))["axes"]
 
 AXES: tuple[str, ...] = tuple(_COLUMNS)
+
+# Derived from the data, never spelled out: the axis names are interface
+# vocabulary and no file of app/ may carry one as a literal.
+PAYEE_AXIS = next(name for name, column in _COLUMNS.items() if column == "payee")
 
 _UNKNOWN_AXIS = "eixo inválido: {value}. Eixos aceitos: {axes}"
 

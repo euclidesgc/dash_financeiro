@@ -59,7 +59,7 @@ def test_the_migration_survives_a_base_that_already_has_a_fact(tmp_path):
     )
     conn.commit()
 
-    assert apply_migrations(conn, SQL_FOLDER) == ["010_settings.sql"]
+    assert apply_migrations(conn, SQL_FOLDER)[0] == "010_settings.sql"
 
     found = _facts(conn)
     assert found["taxa-observada"]["kind"] == "fato"

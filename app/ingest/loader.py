@@ -36,6 +36,19 @@ _TRANSACTION_COLUMNS = (
     "is_refund",
     "refunded_by",
     "is_cash_withdrawal",
+    "merchant_name",
+    "merchant_legal_name",
+    "merchant_cnpj",
+    "receiver_name",
+)
+
+# _upsert writes every column on conflict, so loading a consolidated file made
+# before these keys existed would blank the four columns in every row already
+# there and leave sync_runs saying ok. The load refuses instead.
+_CONSOLIDATED_KEYS = ("nome_fantasia", "razao_social", "cnpj", "recebedor")
+STALE_CONSOLIDATED = (
+    "consolidado sem os campos de nome do beneficiário: rode "
+    "ingestao/pluggy_consolidate.py de novo antes de carregar"
 )
 
 _REQUIRED_TRANSACTION_FIELDS = (
@@ -76,6 +89,20 @@ def ingest(
     now: datetime | None = None,
 ) -> IngestResult:
     started = now or datetime.now(UTC)
+    stale = _stale_consolidated(transactions)
+    if stale is not None:
+        return _fail(
+            conn,
+            started=started,
+            now=started,
+            source=source,
+            message=STALE_CONSOLIDATED,
+            rejections=(stale,),
+            transactions_accepted=0,
+            transactions_written=0,
+            accounts_accepted=0,
+            accounts_written=0,
+        )
     account_rows, rejections = _map(accounts, _account_row)
     transaction_rows, transaction_rejections = _map(transactions, _transaction_row)
     rejections.extend(transaction_rejections)
@@ -298,6 +325,14 @@ def _account_row(index: int, raw: dict) -> tuple[dict | None, Rejection | None]:
     }, None
 
 
+def _stale_consolidated(transactions: list[dict]) -> Rejection | None:
+    for index, raw in enumerate(transactions):
+        missing = [key for key in _CONSOLIDATED_KEYS if key not in raw]
+        if missing:
+            return Rejection(index, "stale_consolidated", str(raw.get("descricao") or ""))
+    return None
+
+
 def _transaction_row(index: int, raw: dict) -> tuple[dict | None, Rejection | None]:
     label = str(raw.get("descricao") or "")
     for field, reason in _REQUIRED_TRANSACTION_FIELDS:
@@ -329,6 +364,13 @@ def _transaction_row(index: int, raw: dict) -> tuple[dict | None, Rejection | No
         "is_refund": int(bool(raw.get("eh_estorno"))),
         "refunded_by": raw.get("estornada_por") or None,
         "is_cash_withdrawal": int(bool(raw.get("eh_saque"))),
+        # The empty string is absence, not a value: the Pluggy sends an empty
+        # businessName on entries that do have a trade name, and storing it
+        # would make every "is not null" count answer too high.
+        "merchant_name": raw.get("nome_fantasia") or None,
+        "merchant_legal_name": raw.get("razao_social") or None,
+        "merchant_cnpj": raw.get("cnpj") or None,
+        "receiver_name": raw.get("recebedor") or None,
     }, None
 
 

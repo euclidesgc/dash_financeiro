@@ -83,6 +83,57 @@
       {% for item in goals %}{{ setting(item, action, available_months) }}{% endfor %}
     </div>
   </section>
+  <section id="beneficiarios" class="panel panel-wide">
+    <div class="stack-tight">
+      <h2 class="section-title">Beneficiários</h2>
+      <p class="lede">Quem recebe o dinheiro, batizado por você uma vez e resolvido na leitura:
+        o apelido alcança todos os lançamentos daquele beneficiário, hoje e no futuro, e nenhum
+        total muda por causa dele. A lista é de <strong>todo o histórico</strong>, ordenada por
+        quanto cada um representa — os {{ payees_shown }} maiores de {{ payees_total }} cobrem
+        {{ (payees_covered_permille / 10)|round(1) }}% do gasto.</p>
+      {% if not lookup_on %}
+      <p class="lede">A consulta de nome fantasia por CNPJ está <strong>desligada</strong>. Ela
+        sai para a internet, e por isso é você quem liga: <code>DASH_CNPJ_LOOKUP</code> no
+        ambiente.</p>
+      {% endif %}
+    </div>
+    <div class="table-scroll">
+      <table class="data-table data-table-compact data-table-payees">
+        <caption class="sr-only">Beneficiários por gasto, do maior para o menor.</caption>
+        <thead><tr><th scope="col">Beneficiário</th><th scope="col" class="col-num">Gasto</th>
+          <th scope="col">Como aparece</th></tr></thead>
+        <tbody>
+          {% for row in payees %}
+          <tr data-beneficiario="{{ row['payee'] }}" data-origem="{{ row['origin'] }}"
+              data-gasto="{{ row['total_cents'] }}">
+            <td class="cell-name">{{ row['payee'] }}</td>
+            <td class="cifra col-num">{{ row['total_cents']|brl }}</td>
+            <td>
+              <p class="stack-tight"><span class="cell-label">{{ row['name'] }}</span>
+                <span class="cell-key">{{ origins[row['origin']] }}</span></p>
+              <form class="form form-inline" method="post" action="{{ payee_action }}">
+                <div class="field">
+                  <label class="field-label sr-only" for="apelido-{{ loop.index }}">Apelido de {{ row['payee'] }}</label>
+                  <input class="field-input" id="apelido-{{ loop.index }}" name="nome" type="text"
+                         placeholder="Apelido"
+                         value="{% if row['origin'] == 'dono' %}{{ row['name'] }}{% endif %}">
+                </div>
+                <button class="button button-quiet button-small" type="submit"
+                        name="beneficiario" value="{{ row['payee'] }}">Guardar o nome</button>
+              </form>
+              {% if lookup_on %}
+              <form class="form form-inline" method="post" action="{{ cnpj_action }}">
+                <button class="button button-quiet button-small" type="submit" name="beneficiario"
+                        value="{{ row['payee'] }}">Consultar o CNPJ</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
   <nav class="panel panel-wide stack" aria-label="Telas do painel">
     <a class="button button-quiet" href="/">Voltar ao resumo</a>
   </nav>

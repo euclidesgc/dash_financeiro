@@ -7,6 +7,8 @@ from starlette.responses import Response
 
 from app.config import reference_date
 from app.db import connect
+from app.payees import names
+from app.payees.lookup import InvalidCnpjError, LookupUnavailableError, enabled, trade_name
 from app.projection.monthly import available_months
 from app.settings import store
 from app.settings.catalog import FACT, GOAL, MEDIAN
@@ -17,8 +19,23 @@ from .render import TEMPLATES
 router = APIRouter()
 
 SCREEN = "/configuracao"
+PAYEE = f"{SCREEN}/beneficiario"
+CNPJ = f"{SCREEN}/cnpj"
+
+# How many payees the screen offers to name, measured with the project's
+# spending predicate over all of history: these cover more than half the money,
+# and the largest of them is one the Pluggy does not name. The count itself
+# lives in tests/test_frozen_numbers.py, never here.
+PAYEES = 30
 
 SAVED = "Salvo."
+NAMED = "Nome guardado."
+FORGOTTEN = "Apelido apagado. O nome volta a ser o anterior."
+LOOKUP_OFF = (
+    "A consulta por CNPJ está desligada. Ligue DASH_CNPJ_LOOKUP no ambiente para usá-la."
+)
+NO_CNPJ = "Este beneficiário não tem CNPJ na base."
+UNKNOWN_PAYEE = "Beneficiário desconhecido: “{payee}”."
 
 
 @router.get(SCREEN)
@@ -46,6 +63,73 @@ def store_value(
         return _answer(request, conn, done=SAVED)
     finally:
         conn.close()
+
+
+@router.post(PAYEE)
+def name_payee(
+    request: Request,
+    beneficiario: Annotated[str, Form()] = "",
+    nome: Annotated[str, Form()] = "",
+) -> Response:
+    payee = _text(beneficiario)
+    conn = connect()
+    try:
+        if not _known(conn, payee):
+            return _answer(
+                request, conn, notice=UNKNOWN_PAYEE.format(payee=payee), status_code=400
+            )
+        given = _text(nome).strip()
+        if given:
+            names.name_it(conn, payee, given, names.OWNER)
+            return _answer(request, conn, done=NAMED)
+        # An empty field is the owner deleting the nickname, and RF-24 says the
+        # name then falls back to what was there before — never to the raw
+        # description, if a looked-up name is still stored.
+        names.forget(conn, payee, names.OWNER)
+        return _answer(request, conn, done=FORGOTTEN)
+    finally:
+        conn.close()
+
+
+@router.post(CNPJ)
+def look_up_cnpj(
+    request: Request,
+    beneficiario: Annotated[str, Form()] = "",
+) -> Response:
+    payee = _text(beneficiario)
+    conn = connect()
+    try:
+        if not enabled():
+            return _answer(request, conn, notice=LOOKUP_OFF)
+        cnpj = _cnpj_of(conn, payee)
+        if cnpj is None:
+            return _answer(request, conn, notice=NO_CNPJ)
+        try:
+            found = trade_name(cnpj)
+        except (InvalidCnpjError, LookupUnavailableError) as refusal:
+            # Degrades with 200 and says what happened in Portuguese, and the
+            # name already there stays: the same ruler as the advisor of 009.
+            return _answer(request, conn, notice=str(refusal))
+        names.name_it(conn, payee, found, names.LOOKUP)
+        return _answer(request, conn, done=f"Nome consultado: {found}.")
+    finally:
+        conn.close()
+
+
+def _known(conn: sqlite3.Connection, payee: str) -> bool:
+    found = conn.execute(
+        "SELECT 1 FROM transactions WHERE payee = ? LIMIT 1", (payee,)
+    ).fetchone()
+    return found is not None
+
+
+def _cnpj_of(conn: sqlite3.Connection, payee: str) -> str | None:
+    found = conn.execute(
+        "SELECT MIN(merchant_cnpj) AS cnpj FROM transactions "
+        "WHERE payee = ? AND merchant_cnpj IS NOT NULL",
+        (payee,),
+    ).fetchone()
+    return found["cnpj"] if found else None
 
 
 def _refuse_window_the_base_cannot_fill(conn: sqlite3.Connection, name: str, typed: str) -> None:
@@ -91,9 +175,18 @@ def _answer(
 
 def _context(conn: sqlite3.Connection) -> dict[str, Any]:
     reading = store.read(conn, today=reference_date())
+    listed = names.ranked(conn, PAYEES)
     return {
         "action": SCREEN,
+        "payee_action": PAYEE,
+        "cnpj_action": CNPJ,
         "facts": [item for item in reading if item["kind"] == FACT],
         "goals": [item for item in reading if item["kind"] == GOAL],
         "available_months": available_months(conn, today=reference_date()),
+        "payees": listed["payees"],
+        "payees_total": listed["total_payees"],
+        "payees_shown": PAYEES,
+        "payees_covered_permille": listed["covered_permille"],
+        "origins": names.ORIGINS,
+        "lookup_on": enabled(),
     }

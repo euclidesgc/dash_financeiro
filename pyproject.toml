@@ -11,12 +11,12 @@ dependencies = [
     "argon2-cffi",
     "python-multipart",
     "python-dotenv",
+    "httpx",
 ]
 
 [dependency-groups]
 dev = [
     "pytest",
-    "httpx",
     "ruff>=0.16.6",
     "debugpy>=1.8.21",
 ]

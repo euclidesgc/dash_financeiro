@@ -14,7 +14,11 @@
     "motivo_transferencia": "",
     "eh_saque": false,
     "eh_estorno": false,
-    "estornada_por": ""
+    "estornada_por": "",
+    "nome_fantasia": "",
+    "razao_social": "",
+    "cnpj": "",
+    "recebedor": ""
   },
   {
     "id": "fix-unica",
@@ -31,7 +35,11 @@
     "motivo_transferencia": "",
     "eh_saque": false,
     "eh_estorno": false,
-    "estornada_por": ""
+    "estornada_por": "",
+    "nome_fantasia": "",
+    "razao_social": "",
+    "cnpj": "",
+    "recebedor": ""
   },
   {
     "id": "fix-duplicada",
@@ -48,6 +56,10 @@
     "motivo_transferencia": "",
     "eh_saque": false,
     "eh_estorno": false,
-    "estornada_por": ""
+    "estornada_por": "",
+    "nome_fantasia": "",
+    "razao_social": "",
+    "cnpj": "",
+    "recebedor": ""
   }
 ]

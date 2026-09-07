@@ -13,10 +13,16 @@
 //
 // Uso:
 //   node scripts/capturas.mjs --item 015-... --url http://127.0.0.1:8015/configuracao \
-//     --nome configuracao --larguras 375,768,1440 --escuro 1440 [--cookie k=v] [--altura 900]
+//     --nome configuracao --larguras 375,768,1440 --escuro 1440 [--cookie k=v] \
+//     [--altura 900] [--seletor '#beneficiarios']
+//
+// --seletor recorta a captura no elemento pedido, para a imagem de um bloco
+// mostrar o bloco e não a tela inteira com ele em algum lugar.
 
 import { spawn } from "node:child_process";
+import { mkdtempSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -72,7 +78,9 @@ async function navegador() {
     "--no-sandbox",
     "--disable-gpu",
     "--hide-scrollbars",
-    "--user-data-dir=/tmp/dash-capturas",
+    // Um perfil fixo trava quando uma execução anterior não morreu, e o
+    // navegador sai com código 21 sem dizer por quê.
+    `--user-data-dir=${mkdtempSync(join(tmpdir(), "dash-capturas-"))}`,
   ]);
   const endereco = await new Promise((resolve, reject) => {
     let saida = "";
@@ -91,6 +99,26 @@ async function navegador() {
     });
   });
   return { processo, endereco };
+}
+
+async function caixa(falar, seletor) {
+  const { result } = await falar("Runtime.evaluate", {
+    expression: `(() => {
+      const alvo = document.querySelector(${JSON.stringify(seletor)});
+      if (!alvo) return null;
+      const caixa = alvo.getBoundingClientRect();
+      return {
+        x: caixa.left + window.scrollX,
+        y: caixa.top + window.scrollY,
+        width: caixa.width,
+        height: caixa.height,
+        scale: 1,
+      };
+    })()`,
+    returnByValue: true,
+  });
+  if (!result.value) throw new Error(`seletor sem elemento: ${seletor}`);
+  return result.value;
 }
 
 async function main() {
@@ -145,9 +173,11 @@ async function main() {
     });
     await falar("Page.navigate", { url: opcoes.url });
     await new Promise((resolve) => setTimeout(resolve, 700));
+    const recorte = opcoes.seletor ? await caixa(falar, opcoes.seletor) : undefined;
     const { data } = await falar("Page.captureScreenshot", {
       format: "png",
       captureBeyondViewport: true,
+      ...(recorte ? { clip: recorte } : {}),
     });
     const sufixo = tema === "dark" ? `dark-${valor}` : `${valor}`;
     const arquivo = join(pasta, `${opcoes.nome}-${sufixo}.png`);

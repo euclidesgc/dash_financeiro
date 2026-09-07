@@ -7,7 +7,8 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from app.db import connect
-from app.queries.axes import AXES, aggregate, transactions_of
+from app.payees.names import labels as payee_labels
+from app.queries.axes import AXES, PAYEE_AXIS, aggregate, transactions_of
 from app.queries.crossings import crossing
 from app.queries.period import InvalidPeriodError, check_period, default_period
 from app.queries.series import monthly_series
@@ -46,8 +47,11 @@ def spending_screen(request: Request) -> Response:
     axis, start, end = _selection(request)
     conn = connect()
     try:
-        context = _table_context(conn, axis, start, end, _key(request))
-        context.update(_panel_context(conn, start, end))
+        # The panel labels its crossings by category and the table labels the
+        # chosen axis; on the payee axis the table's map is the resolved one, so
+        # the table has the last word over the single `labels` the page renders.
+        context = _panel_context(conn, start, end)
+        context.update(_table_context(conn, axis, start, end, _key(request)))
     finally:
         conn.close()
     return TEMPLATES.TemplateResponse(request, "gastos.html", context)
@@ -124,6 +128,11 @@ def _table_context(
 ) -> dict[str, Any]:
     rows = aggregate(conn, axis=axis, start=start, end=end)
     context = _base(axis, start, end)
+    if axis == PAYEE_AXIS:
+        # Only the label. row['key'] is the label and the drill-down parameter
+        # at once, and replacing the rendered value would kill the opening of
+        # the list in silence (RF-28).
+        context["labels"] = {**context["labels"], **payee_labels(conn)}
     context.update(
         rows=rows,
         total_cents=sum(row["amount_cents"] for row in rows),

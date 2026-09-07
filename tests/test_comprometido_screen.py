@@ -22,8 +22,8 @@ ASKED = REFERENCE.isoformat()
 
 FIGURE = re.compile(r"^−?R\$ [\d.]+,\d{2}$")
 CIFRA = re.compile(r'class="[^"]*\bcifra\b[^"]*"[^>]*>([^<]*)<')
-COMMITTED = re.compile(r'class="headline cifra(?: negative)?">([^<]+)<')
-SAVED = re.compile(r'class="headline cifra(?: positive)?">([^<]+)<')
+COMMITTED = re.compile(r'class="headline cifra(?: negative)?"[^>]*>([^<]+)<')
+SAVED = re.compile(r'class="headline cifra(?: positive)?"[^>]*>([^<]+)<')
 
 BIG = "Assinatura grande"
 SMALL = "Assinatura pequena"

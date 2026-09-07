@@ -11,6 +11,7 @@ from app.commitments.calendar import WINDOW_DAYS, calendar, window
 from app.commitments.live import installments, released_cash, subscriptions, totals
 from app.commitments.mark import DismissRefusedError, dismiss, resume
 from app.db import connect
+from app.payees.names import labels as payee_labels
 from app.queries.period import InvalidPeriodError, day
 
 from .render import TEMPLATES
@@ -96,6 +97,16 @@ def _answer(
     )
 
 
+def _labels(conn: sqlite3.Connection, rows: list[dict]) -> dict[str, str]:
+    # The reading name of a series is the description the source sent; a payee
+    # the owner named, or one the Pluggy names, takes its place. Measured: the
+    # 115 series keys of this base are payees that exist.
+    resolved = payee_labels(conn)
+    return {
+        row["series_key"]: resolved.get(row["series_key"], row["description"]) for row in rows
+    }
+
+
 def _context(conn: sqlite3.Connection, today: date) -> dict[str, Any]:
     recurring = subscriptions(conn, today=today)
     live = installments(conn, today=today)
@@ -117,7 +128,7 @@ def _context(conn: sqlite3.Connection, today: date) -> dict[str, Any]:
         # The reading name of a series is the description the source sent; the key
         # underneath it is what the form posts back, and the two are shown by the
         # same macro the other screens use.
-        "labels": {row["series_key"]: row["description"] for row in recurring + live},
+        "labels": _labels(conn, recurring + live),
         "screen": SCREEN,
         "dismiss_url": DISMISS,
         "resume_url": RESUME,

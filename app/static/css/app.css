@@ -638,3 +638,28 @@ a.button {
   text-transform: uppercase;
   color: var(--color-negative);
 }
+
+/* Inside a table cell the field and its button sit on one line while there is
+   room: the row already carries the payee and the figure, and stacking three
+   more blocks under them would make thirty rows unreadable. */
+.form-inline {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+@media (max-width: 48rem) {
+  .form-inline {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+}
+
+/* Three columns, and the third holds a field and a button. Squeezed into 375 px
+   the row becomes four stacked fragments of words; the table keeps its reading
+   width and scrolls inside its own container, which is what .table-scroll
+   exists for. The body still never scrolls sideways. */
+.data-table-payees {
+  min-width: 32rem;
+}
