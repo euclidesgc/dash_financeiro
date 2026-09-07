@@ -22,15 +22,20 @@ DATE_FIELD = "data"
 
 @router.get(SCREEN)
 def objective_screen(request: Request) -> Response:
-    today = _reference(request.query_params.get(DATE_FIELD))
+    today, accepted = _reference(request.query_params.get(DATE_FIELD))
     conn = connect()
     try:
         runs = every_scenario(conn, today=today)
-        # Every reading writes a snapshot, because "in March you projected 30
-        # months, today you project 24" needs a March to compare against, and
-        # nobody remembers to press a button for that.
-        record(conn, runs, today=today)
-        return TEMPLATES.TemplateResponse(request, "objetivo.html", _context(conn, runs, today))
+        # Every accepted reading writes a snapshot, because "in March you
+        # projected 30 months, today you project 24" needs a March to compare
+        # against, and nobody remembers to press a button for that. A refused
+        # date does not: a typo in the URL would inject a point that cannot be
+        # told apart from a real reading afterwards (RF-02).
+        if accepted:
+            record(conn, runs, today=today)
+        context = _context(conn, runs, today)
+        context["refused"] = not accepted
+        return TEMPLATES.TemplateResponse(request, "objetivo.html", context)
     finally:
         conn.close()
 
@@ -39,7 +44,7 @@ EARLIEST = date(2000, 1, 1)
 LATEST = date(2100, 12, 31)
 
 
-def _reference(asked: object) -> date:
+def _reference(asked: object) -> tuple[date, bool]:
     # Every reading of this screen writes a point in a permanent series keyed by
     # this date, and the twelve-month window behind it does date arithmetic that
     # falls off the edge of the calendar: `0001-01-01` is valid ISO and took the
@@ -47,11 +52,14 @@ def _reference(asked: object) -> date:
     try:
         asked_date = day(asked, DATE_FIELD)
     except InvalidPeriodError:
-        return date.today()
-    return asked_date if EARLIEST <= asked_date <= LATEST else date.today()
+        return date.today(), False
+    if EARLIEST <= asked_date <= LATEST:
+        return asked_date, True
+    return date.today(), False
 
 
 def _context(conn: sqlite3.Connection, runs: list[dict], today: date) -> dict[str, Any]:
+    gained = levers(conn, today=today)
     return {
         "reference": today.isoformat(),
         "scenarios": runs,
@@ -59,9 +67,20 @@ def _context(conn: sqlite3.Connection, runs: list[dict], today: date) -> dict[st
         "floor_cents": survival_floor_cents(conn, today=today),
         "floor_label": floor_label(conn),
         "reserve_months": RESERVE_MONTHS,
-        "levers": levers(conn, today=today),
+        "levers": gained,
         "history": history(conn),
         "reachable": any(run["months_to_objective"] is not None for run in runs),
+        # A lever the owner has not pulled yet renders as R$ 0,00 under a label
+        # promising an act, and the screen used to leave the reader to guess why.
+        # It names the empty list instead (RF-01).
+        "empty_levers": [
+            name
+            for name, value in (
+                ("as assinaturas marcadas como “não uso mais”", gained["dismissed"]),
+                ("a lista de corte", gained["cut"]),
+            )
+            if not value
+        ],
         # The ladder of the objective only sees debts with a rate. Six of them
         # have none, and they are not small: leaving them out in silence would
         # make the milestone true over a fraction of the real debt (RF-18).

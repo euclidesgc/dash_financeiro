@@ -1,3 +1,4 @@
+import re
 from datetime import date
 
 from app.commitments import engine
@@ -160,3 +161,53 @@ def test_an_instalment_ending_this_month_is_already_in_the_path(taxonomy_conn):
     assert found["monthly_result_cents"] == 50000
     assert found["milestones"]["resultado"] == 0
     assert found["months_to_objective"] is not None
+
+
+def test_a_refused_date_does_not_write_a_point(taxonomy_conn, monkeypatch, tmp_path):
+    from fastapi.testclient import TestClient
+
+    from app.auth.seed import seed_user
+    from app.db import connect as open_db
+    from app.main import create_app
+
+    monkeypatch.setenv("DASH_ENV_FILE", "/dev/null")
+    monkeypatch.setenv("DASH_DB_PATH", str(tmp_path / "dash.sqlite"))
+    monkeypatch.setenv("SESSION_SECRET", "chave-de-teste")
+    app = create_app()
+    conn = open_db()
+    seed_user(conn, "teste", "senha-teste-9k2")
+    conn.close()
+    with TestClient(app, follow_redirects=False) as client:
+        client.post("/login", data={"login": "teste", "senha": "senha-teste-9k2"})
+        refused = client.get("/objetivo?data=0001-01-01")
+        client.get("/objetivo?data=2026-09-05")
+        client.get("/objetivo?data=2026-10-05")
+        seen = client.get("/objetivo?data=2026-09-05")
+
+    assert refused.status_code == 200
+    assert 'id="recusa"' in refused.text
+    assert "não gravou ponto" in refused.text
+    assert re.findall(r'data-ponto="([^"]+)"', seen.text) == ["2026-09-05", "2026-10-05"]
+
+
+def test_the_screen_names_the_empty_lever_lists(taxonomy_conn, monkeypatch, tmp_path):
+    from fastapi.testclient import TestClient
+
+    from app.auth.seed import seed_user
+    from app.db import connect as open_db
+    from app.main import create_app
+
+    monkeypatch.setenv("DASH_ENV_FILE", "/dev/null")
+    monkeypatch.setenv("DASH_DB_PATH", str(tmp_path / "dash.sqlite"))
+    monkeypatch.setenv("SESSION_SECRET", "chave-de-teste")
+    app = create_app()
+    conn = open_db()
+    seed_user(conn, "teste", "senha-teste-9k2")
+    conn.close()
+    with TestClient(app, follow_redirects=False) as client:
+        client.post("/login", data={"login": "teste", "senha": "senha-teste-9k2"})
+        html = client.get("/objetivo?data=2026-09-05").text
+
+    assert 'id="alavanca-vazia"' in html
+    assert "a lista de corte" in html
+    assert "mesmo número do" in html
