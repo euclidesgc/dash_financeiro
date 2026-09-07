@@ -1,5 +1,4 @@
 import re
-from datetime import date
 
 import pytest
 from fastapi.testclient import TestClient
@@ -10,6 +9,7 @@ from app.main import create_app
 from app.queries.axes import AXES
 from app.queries.period import default_period
 from app.queries.series import MONTHS
+from app.routers.reference import screen_date
 from app.taxonomy.classify import classify_all
 from app.taxonomy.seed import load_seed, seed_taxonomy
 from tests.conftest import ACCOUNT, load, transaction
@@ -57,7 +57,7 @@ def _figures(html: str) -> list[str]:
 
 @pytest.fixture()
 def window():
-    return default_period(date.today())
+    return default_period(screen_date(None).date)
 
 
 @pytest.fixture()
@@ -302,3 +302,21 @@ def test_the_account_of_the_row_reaches_the_open_list(client, vocabulary):
     assert "Data" in detail.text
     assert "Descrição" in detail.text
     assert "Conta" in detail.text
+
+
+def test_the_default_window_follows_the_reference_not_the_clock(tmp_path, monkeypatch):
+    monkeypatch.setenv("DASH_ENV_FILE", "/dev/null")
+    monkeypatch.setenv("DASH_DB_PATH", str(tmp_path / "dash.sqlite"))
+    monkeypatch.setenv("SESSION_SECRET", "chave-de-teste")
+    monkeypatch.setenv("DASH_TODAY", "2026-05-15")
+    app = create_app()
+    conn = connect()
+    seed_user(conn, LOGIN, PASSWORD)
+    conn.close()
+    with TestClient(app, follow_redirects=False) as client:
+        client.post("/login", data={"login": LOGIN, "senha": PASSWORD})
+        page = client.get(SCREEN)
+
+    assert page.status_code == 200
+    assert "de 01/11/2025 a 30/04/2026" in page.text
+    assert "de 01/03/2026 a 31/08/2026" not in page.text

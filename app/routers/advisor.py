@@ -17,8 +17,7 @@ from app.advisor.gaps import (
 from app.advisor.gemini import AdvisorUnavailableError, ask
 from app.config import load_config
 from app.db import connect
-from app.queries.period import InvalidPeriodError, day
-from app.routers.plan import EARLIEST, LATEST
+from app.routers.reference import screen_date
 
 from .render import TEMPLATES
 
@@ -32,9 +31,10 @@ MAX_QUESTION = 500
 
 @router.get(SCREEN)
 def advisor_screen(request: Request) -> Response:
+    reference = screen_date(request.query_params.get(DATE_FIELD))
     conn = connect()
     try:
-        return _answer(request, conn, _reference(request.query_params.get(DATE_FIELD)))
+        return _answer(request, conn, reference.date, notice=reference.notice)
     finally:
         conn.close()
 
@@ -45,7 +45,7 @@ def consult(
     pergunta: Annotated[str, Form()] = "",
     data: Annotated[str, Form()] = "",
 ) -> Response:
-    today = _reference(data)
+    today = screen_date(data).date
     asked = (pergunta or "").strip()
     conn = connect()
     try:
@@ -75,7 +75,7 @@ def postpone(
     nome: Annotated[str, Form()] = "",
     data: Annotated[str, Form()] = "",
 ) -> Response:
-    today = _reference(data)
+    today = screen_date(data).date
     conn = connect()
     try:
         try:
@@ -85,14 +85,6 @@ def postpone(
         return _answer(request, conn, today)
     finally:
         conn.close()
-
-
-def _reference(asked: object) -> date:
-    try:
-        asked_date = day(asked, DATE_FIELD)
-    except InvalidPeriodError:
-        return date.today()
-    return asked_date if EARLIEST <= asked_date <= LATEST else date.today()
 
 
 def _answer(

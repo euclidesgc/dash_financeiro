@@ -245,6 +245,57 @@ def test_the_screen_without_a_date_records_and_does_not_claim_a_refusal(
     assert written > 0
 
 
+def test_the_route_writes_a_point_by_the_reference_not_a_refused_date(
+    taxonomy_conn, monkeypatch, tmp_path
+):
+    from fastapi.testclient import TestClient
+
+    from app.auth.seed import seed_user
+    from app.db import connect as open_db
+    from app.main import create_app
+
+    monkeypatch.setenv("DASH_ENV_FILE", "/dev/null")
+    monkeypatch.setenv("DASH_DB_PATH", str(tmp_path / "dash.sqlite"))
+    monkeypatch.setenv("SESSION_SECRET", "chave-de-teste")
+    monkeypatch.setenv("DASH_TODAY", "2026-09-05")
+    app = create_app()
+    conn = open_db()
+    seed_user(conn, "teste", "senha-teste-9k2")
+    conn.execute("DELETE FROM plan_snapshots WHERE reference_date IN ('2026-08-01', '2026-09-05')")
+    conn.commit()
+    conn.close()
+
+    def _written():
+        reader = open_db()
+        try:
+            return [
+                row["reference_date"]
+                for row in reader.execute(
+                    "SELECT reference_date FROM plan_snapshots WHERE scenario = 'base'"
+                )
+            ]
+        finally:
+            reader.close()
+
+    with TestClient(app, follow_redirects=False) as client:
+        client.post("/login", data={"login": "teste", "senha": "senha-teste-9k2"})
+        accepted = client.get("/objetivo?data=2026-08-01")
+        refused = client.get("/objetivo?data=0001-01-01")
+        first_read = _written()
+        plain = client.get("/objetivo")
+        second_read = _written()
+
+    assert accepted.status_code == 200
+    assert refused.status_code == 200
+    assert plain.status_code == 200
+    assert 'id="recusa"' not in accepted.text
+    assert 'id="recusa"' in refused.text
+    assert 'id="recusa"' not in plain.text
+    assert "2026-08-01" in first_read
+    assert "2026-09-05" not in first_read
+    assert "2026-09-05" in second_read
+
+
 def test_one_empty_lever_does_not_claim_two_nor_claim_the_scenarios_are_equal(
     taxonomy_conn, monkeypatch, tmp_path
 ):

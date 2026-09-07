@@ -1,5 +1,4 @@
 import sqlite3
-from datetime import date
 from typing import Any
 
 from fastapi import APIRouter
@@ -13,6 +12,7 @@ from app.queries.crossings import crossing
 from app.queries.period import InvalidPeriodError, check_period, default_period
 from app.queries.series import monthly_series
 from app.queries.spending import SPENDING, total_spending_cents
+from app.routers.reference import screen_date
 from app.taxonomy.classify import residue
 from app.taxonomy.seed import load_seed
 
@@ -95,7 +95,7 @@ def _selection(request: Request) -> tuple[str, str, str]:
     # value it cannot read falls back to the default window instead of a 500.
     params = request.query_params
     axis = params.get("eixo", "")
-    default_start, default_end = default_period(date.today())
+    default_start, default_end = default_period(screen_date(None).date)
     start = params.get("inicio") or default_start
     end = params.get("fim") or default_end
     try:

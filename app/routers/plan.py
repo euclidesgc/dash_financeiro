@@ -10,7 +10,7 @@ from app.db import connect
 from app.debts.ladder import without_rate
 from app.plan.objective import floor_label, levers, reserve_months, survival_floor_cents
 from app.plan.timeline import BASE, every_scenario, history, record
-from app.queries.period import InvalidPeriodError, day
+from app.routers.reference import screen_date
 
 from .render import TEMPLATES
 
@@ -22,7 +22,8 @@ DATE_FIELD = "data"
 
 @router.get(SCREEN)
 def objective_screen(request: Request) -> Response:
-    today, accepted = _reference(request.query_params.get(DATE_FIELD))
+    reference = screen_date(request.query_params.get(DATE_FIELD))
+    today = reference.date
     conn = connect()
     try:
         runs = every_scenario(conn, today=today)
@@ -31,37 +32,13 @@ def objective_screen(request: Request) -> Response:
         # against, and nobody remembers to press a button for that. A refused
         # date does not: a typo in the URL would inject a point that cannot be
         # told apart from a real reading afterwards (RF-02).
-        if accepted:
+        if reference.notice is None:
             record(conn, runs, today=today)
         context = _context(conn, runs, today)
-        context["refused"] = not accepted
+        context["refused"] = reference.notice is not None
         return TEMPLATES.TemplateResponse(request, "objetivo.html", context)
     finally:
         conn.close()
-
-
-EARLIEST = date(2000, 1, 1)
-LATEST = date(2100, 12, 31)
-
-
-def _reference(asked: object) -> tuple[date, bool]:
-    # Every reading of this screen writes a point in a permanent series keyed by
-    # this date, and the twelve-month window behind it does date arithmetic that
-    # falls off the edge of the calendar: `0001-01-01` is valid ISO and took the
-    # route down with a 500 (RF-15).
-    # No parameter is not a refused date: it is the normal way into this screen,
-    # from the two links the product itself carries. Treating it as a refusal
-    # made the timeline stop growing through ordinary navigation, and printed
-    # "the date asked was not accepted" over a request that asked for none.
-    if asked is None or not str(asked).strip():
-        return date.today(), True
-    try:
-        asked_date = day(asked, DATE_FIELD)
-    except InvalidPeriodError:
-        return date.today(), False
-    if EARLIEST <= asked_date <= LATEST:
-        return asked_date, True
-    return date.today(), False
 
 
 def _context(conn: sqlite3.Connection, runs: list[dict], today: date) -> dict[str, Any]:

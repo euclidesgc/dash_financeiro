@@ -769,7 +769,7 @@
           "por": "humano"
         }
       },
-      "current_phase": 2,
+      "current_phase": 3,
       "phases": {
         "1": {
           "status": "aprovada",
@@ -798,6 +798,20 @@
             ".": "b19552a9453961228d9c00b36fe8894e3e116b0b"
           },
           "criteria_sha": "1304ca0f757a81ac6d7f6fa52e83a4c1ab702414b22eedd42ddb1cd4cddaff0a"
+        },
+        "3": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/016-data-de-referencia-no-caminho-de-recusa/05-veredictos/fase-3.md",
+          "validated_sha": "8c576cb73f9a551edb2ae0b22b117c1a10aa548e",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T23:38:17Z",
+          "validated_trees": {
+            ".": "9a79dec336f0ef0b3e1382017861767e06ec7ad8"
+          },
+          "criteria_sha": "3d6da0eadffb87952822a77a21005410653bf0ed37bb939171e31b021b17903e"
         }
       },
       "divergences": {},
