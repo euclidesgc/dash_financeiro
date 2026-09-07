@@ -4,9 +4,10 @@
     <p class="lede">A linha corre sobre a <strong>posição consolidada</strong> — contas e cartões
       juntos. Compra no cartão piora a posição no dia da compra, e o pagamento da fatura é
       transferência de dentro dela.</p>
-    <p class="lede">Cada dia soma três parcelas: o compromisso já datado, a renda esperada no dia
-      {{ forecast['income_day'] }} e o gasto sem data, diluído pelos dias do mês. Tudo
-      é previsão do histórico, não data contratual.</p>
+    <p class="lede">Cada dia soma três parcelas: o compromisso já datado,
+      {% if forecast['income_day'] %}a renda esperada no dia {{ forecast['income_day'] }}{% else %}nenhuma renda, porque não há entrada observada no histórico{% endif %}
+      e o gasto sem data, diluído pelos dias do mês. Tudo é previsão do histórico, não data
+      contratual.</p>
   </div>
   <div class="scale" aria-hidden="true"></div>
   <div class="figures">

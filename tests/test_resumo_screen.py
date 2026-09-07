@@ -172,3 +172,23 @@ def test_the_list_of_the_real_screen_ends_at_the_window_end(client):
     days = DAY.findall(_section(_screen(client).text, "projecao"))
 
     assert days[-1] == "2026-10-20"
+
+
+def test_a_window_moved_only_by_undated_spending_still_shows_a_line():
+    days = [
+        _line("2026-09-05", -1000, variable=0),
+        _line("2026-09-06", -1100),
+        _line("2026-09-07", -1200),
+    ]
+    shown = _moving(days)
+
+    assert [entry["date"] for entry in shown] == ["2026-09-07"]
+    assert shown[0]["variable_cents"] == -200
+    assert shown[0]["balance_cents"] == -1200
+
+
+def test_the_screen_does_not_print_none_when_no_income_was_ever_observed(client):
+    html = client.get("/?data=2020-01-01").text
+
+    assert "None" not in _section(html, "projecao")
+    assert "não há entrada observada no histórico" in html

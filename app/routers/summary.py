@@ -50,11 +50,12 @@ def _moving(days: list[dict[str, Any]]) -> list[dict[str, Any]]:
             continue
         shown.append(dict(entry, variable_cents=carried))
         carried = 0
-    # The last day of the window closes the list even when nothing moves on it.
-    # Without it, the undated spending of the quiet tail is carried and never
-    # handed to any row, and the list stops short of the balance the header
-    # announces — which is the one thing the list exists to prove.
-    if shown and (carried or shown[-1]["date"] != days[-1]["date"]):
+    # The last day of the window closes the list whenever anything is still
+    # carried, even a window with no income and no commitment at all. Without
+    # it the undated spending is never handed to any row: the list stops short
+    # of the balance the header announces — or disappears while the header
+    # announces a fall, and the screen contradicts itself in one panel.
+    if carried or (shown and shown[-1]["date"] != days[-1]["date"]):
         shown.append(dict(days[-1], variable_cents=carried))
     return shown
 
