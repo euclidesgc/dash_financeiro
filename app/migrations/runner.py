@@ -1,5 +1,5 @@
 import sqlite3
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 CONTROL_TABLE = """
@@ -43,7 +43,7 @@ def apply_migrations(conn: sqlite3.Connection, folder: Path) -> list[str]:
                     conn.execute(statement)
                 conn.execute(
                     "INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)",
-                    (version, datetime.now(timezone.utc).isoformat()),
+                    (version, datetime.now(UTC).isoformat()),
                 )
             except Exception:
                 conn.execute("ROLLBACK")

@@ -20,6 +20,8 @@ router = APIRouter()
 SCREEN = "/"
 DATE_FIELD = "data"
 
+_COUNT = "SELECT COUNT(*) AS total FROM transactions"
+
 
 @router.get(SCREEN)
 def summary_screen(request: Request) -> Response:
@@ -86,5 +88,5 @@ def _context(conn: sqlite3.Connection, today: date) -> dict[str, Any]:
         # shown gathers what was skipped since the previous one — otherwise the
         # figures on screen would not add up to the balance beside them.
         "moving": _moving(line["days"]),
-        "empty": conn.execute("SELECT COUNT(*) AS total FROM transactions").fetchone()["total"] == 0,
+        "empty": conn.execute(_COUNT).fetchone()["total"] == 0,
     }

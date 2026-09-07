@@ -1,6 +1,6 @@
 import sqlite3
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.auth.password import hash_password, verify_password
 from app.config import load_config
@@ -16,7 +16,7 @@ ROTATE_PASSWORD = (
 def seed_user(conn: sqlite3.Connection, login: str, password: str) -> None:
     row = conn.execute(CURRENT_HASH, (login,)).fetchone()
     if row is None:
-        created_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        created_at = datetime.now(UTC).isoformat(timespec="seconds")
         conn.execute(INSERT_USER, (login, hash_password(password), created_at))
         conn.commit()
         return

@@ -7,9 +7,9 @@ from starlette.responses import Response
 
 from app.db import connect
 from app.debts.ladder import (
+    VEHICLE,
     DebtNotFoundError,
     InvalidRateError,
-    VEHICLE,
     ladder,
     monthly_interest_cents,
     set_rate,

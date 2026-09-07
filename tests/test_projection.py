@@ -7,7 +7,7 @@ from app.projection.monthly import median, monthly
 from app.projection.position import positions
 from app.taxonomy import classify
 from app.taxonomy.seed import seed_taxonomy
-from tests.conftest import ACCOUNT, load, narrowed, transaction
+from tests.conftest import load, narrowed, transaction
 
 REFERENCE = date(2026, 9, 5)
 DAYS = 46
@@ -68,7 +68,7 @@ def test_every_day_of_the_line_is_the_day_before_plus_its_three_parts(
     conn = balance(prepare(taxonomy_conn, seed, rows), -100000)
     found = forecast(conn, today=REFERENCE)
 
-    for earlier, later in zip(found["days"], found["days"][1:]):
+    for earlier, later in zip(found["days"], found["days"][1:], strict=False):
         parts = later["income_cents"] + later["due_cents"] + later["variable_cents"]
         assert later["balance_cents"] == earlier["balance_cents"] + parts
     assert found["days"][0]["balance_cents"] == -100000

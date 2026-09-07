@@ -1,5 +1,5 @@
 import sqlite3
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.commitments import RECURRING
 
@@ -20,7 +20,7 @@ def dismiss(conn: sqlite3.Connection, series_key: str) -> None:
     conn.execute(
         "INSERT INTO commitment_dismissals (series_key, dismissed_at) VALUES (?, ?) "
         "ON CONFLICT (series_key) DO NOTHING",
-        (series_key, datetime.now(timezone.utc).isoformat()),
+        (series_key, datetime.now(UTC).isoformat()),
     )
     _apply(conn, series_key, 1)
 

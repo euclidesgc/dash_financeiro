@@ -74,7 +74,7 @@ def update_rule(
     given = (match_kind, match_value, group_id, nature, essentiality)
     values = {
         field: current[field] if value is None else value
-        for field, value in zip(_FIELDS, given)
+        for field, value in zip(_FIELDS, given, strict=True)
     }
     _validate(conn, **values)
     return _write(

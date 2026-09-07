@@ -1,9 +1,9 @@
 import sys
 
 from app.commitments.engine import main as recompute_command
-from app.debts.ladder import main as debts_command
 from app.config import load_config
 from app.db import connect
+from app.debts.ladder import main as debts_command
 from app.ingest.loader import ingest
 from app.ingest.source import load_accounts, load_transactions
 from app.migrate import run_migrations

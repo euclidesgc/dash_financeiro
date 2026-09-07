@@ -49,12 +49,14 @@ Bloco separado de propósito. Pendência de processo — portão, fluxo de CI,
 veredicto, varredura — não é dependência de item de produto nenhum, e promovê-la
 ao topo da fila é a régua local certa e o agregado errado.
 
-- [ ] `010-lint-e-formatador-python` — Existe portão de lint e formatação para o
-  código Python, rodando no `gates_runner.sh` e no fluxo de CI. Quatro validadores
-  seguidos registraram a ausência: hoje `ruff` não está no ambiente e nenhum
-  portão mede estilo, import morto ou variável não usada. É consequência
-  declarada de o projeto rodar em modo processo-apenas, sem pack de stack — e
-  por isso a compensação precisa ser explícita, não presumida.
+- [x] `010-lint-e-formatador-python` — Existe portão de lint para o código Python: `ruff`
+  está no ambiente travado, configurado em `pyproject.toml` com uma seleção deliberadamente
+  estreita (`E`, `F`, `I`, `B`, `UP`, `C4`), roda por `scripts/lint.sh` e no job `testes` do
+  fluxo de CI. Onze validadores registraram a ausência antes de ele existir. A regra escolhida
+  pega o que um leitor perde — import morto, nome não usado, ordem de import, `zip` sem
+  `strict` — e **não** impõe um segundo estilo sobre o que já está escrito no código. O
+  formatador (`ruff format`) ficou **de fora**: adotá-lo reescreveria 53 arquivos de uma vez,
+  e um diff desse tamanho esconde o próximo diff de verdade.
 
 ## Validações de campo pendentes
 

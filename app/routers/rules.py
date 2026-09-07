@@ -43,7 +43,10 @@ _RULES = (
     "GROUP BY r.id ORDER BY amount_cents, r.match_value"
 )
 
-_RULE = "SELECT id, match_kind, match_value, group_id, nature, essentiality FROM category_rules WHERE id = ?"
+_RULE = (
+    "SELECT id, match_kind, match_value, group_id, nature, essentiality "
+    "FROM category_rules WHERE id = ?"
+)
 
 _RULE_OF = "SELECT id FROM category_rules WHERE match_kind = ? AND match_value = ?"
 

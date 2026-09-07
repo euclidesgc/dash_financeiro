@@ -7,10 +7,10 @@ from app.auth.seed import seed_user
 from app.commitments import engine
 from app.db import connect
 from app.main import create_app
+from app.routers.summary import _moving
 from app.taxonomy.classify import classify_all
 from app.taxonomy.seed import seed_taxonomy
 from tests.conftest import load, narrowed, transaction
-from app.routers.summary import _moving
 from tests.test_comprometido_screen import LOGIN, PASSWORD, REFERENCE
 
 ASKED = REFERENCE.isoformat()
@@ -98,7 +98,7 @@ def test_the_projection_chains_day_by_day(client):
 
     assert days
     assert [when for when, *_ in days] == sorted({when for when, *_ in days})
-    for earlier, later in zip(days, days[1:]):
+    for earlier, later in zip(days, days[1:], strict=False):
         parts = sum(int(value) for value in later[2:])
         assert int(later[1]) == int(earlier[1]) + parts
 

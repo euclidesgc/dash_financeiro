@@ -1,6 +1,6 @@
 import math
 import sqlite3
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 WINDOW_SECONDS = 900
 MAX_FAILURES = 5
@@ -14,16 +14,16 @@ RECENT_FAILURES = (
 
 def _moment(now: datetime | None) -> datetime:
     if now is None:
-        return datetime.now(timezone.utc)
+        return datetime.now(UTC)
     if now.tzinfo is None:
-        return now.replace(tzinfo=timezone.utc)
+        return now.replace(tzinfo=UTC)
     return now
 
 
 # Every stamp is written with the same precision so that the window filter can
 # compare them as text, which is what SQLite indexes.
 def _stamp(moment: datetime) -> str:
-    return moment.astimezone(timezone.utc).isoformat(timespec="microseconds")
+    return moment.astimezone(UTC).isoformat(timespec="microseconds")
 
 
 def _record(conn: sqlite3.Connection, ip: str, success: int, now: datetime | None) -> None:

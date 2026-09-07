@@ -1,3 +1,4 @@
+import sqlite3
 from datetime import date
 
 import pytest
@@ -66,6 +67,6 @@ def test_a_failure_while_writing_leaves_no_row_changed(base, monkeypatch):
         return recurring
 
     monkeypatch.setattr(engine, "recurring_after_precedence", half_written)
-    with pytest.raises(Exception):
+    with pytest.raises(sqlite3.IntegrityError):
         engine.recompute(base, today=REFERENCE)
     assert snapshot(base) == before_rows

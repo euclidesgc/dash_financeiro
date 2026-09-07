@@ -106,5 +106,7 @@ jobs:
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - name: Instala o ambiente travado
         run: uv sync --locked
+      - name: ruff
+        run: uv run ruff check app tests
       - name: pytest
         run: uv run pytest -q

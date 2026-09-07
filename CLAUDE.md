@@ -56,8 +56,9 @@ o processo vale, a norma de código é a do projeto. Ver `docs/plano.md`.
 
 17. Grafo antes de busca crua: `semantic_search_nodes_tool`, `query_graph_tool`.
 18. Saída de comando se estreita na origem, não por camada que resume.
-19. Antes de dar por pronto: `bash scripts/gates/gates_runner.sh`. Portão que
-    não conseguiu medir reprova, nunca aprova.
+19. Antes de dar por pronto: `bash scripts/lint.sh` e
+    `bash scripts/gates/gates_runner.sh`. Portão que não conseguiu medir
+    reprova, nunca aprova.
 20. Erro repetido pela segunda vez vira causa raiz, não terceiro remendo.
 21. `/harness:doctor` diagnostica ambiente, hooks e estado.
 

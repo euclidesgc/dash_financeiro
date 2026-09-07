@@ -147,7 +147,7 @@ def instalments(prefix, months, values, *, total, description, day="08"):
             value,
             descricao=f"{description} {step}/{total}",
         )
-        for step, (month, value) in enumerate(zip(months, values), start=1)
+        for step, (month, value) in enumerate(zip(months, values, strict=True), start=1)
     ]
 
 

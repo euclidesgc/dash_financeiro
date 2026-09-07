@@ -1,6 +1,6 @@
 import sqlite3
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import InvalidOperation
 
 from app.accounts import CREDIT
@@ -71,7 +71,7 @@ def ingest(
     source: str,
     now: datetime | None = None,
 ) -> IngestResult:
-    started = now or datetime.now(timezone.utc)
+    started = now or datetime.now(UTC)
     account_rows, rejections = _map(accounts, _account_row)
     transaction_rows, transaction_rejections = _map(transactions, _transaction_row)
     rejections.extend(transaction_rejections)
@@ -131,7 +131,7 @@ def ingest(
     _record_run(
         conn,
         started=started,
-        finished=now or datetime.now(timezone.utc),
+        finished=now or datetime.now(UTC),
         source=source,
         status="ok",
         transactions_count=transactions_written,
@@ -169,7 +169,7 @@ def _fail(
     _record_run(
         conn,
         started=started,
-        finished=now or datetime.now(timezone.utc),
+        finished=now or datetime.now(UTC),
         source=source,
         status="failed",
         transactions_count=transactions_written,

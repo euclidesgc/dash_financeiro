@@ -26,7 +26,7 @@ def end_month(last_month: str, remaining: int) -> str:
 
 def consecutive_run(months: list[str]) -> int:
     longest = run = 1
-    for earlier, later in zip(months, months[1:]):
+    for earlier, later in zip(months, months[1:], strict=False):
         run = run + 1 if _index(later) - _index(earlier) == 1 else 1
         longest = max(longest, run)
     return longest

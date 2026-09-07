@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -59,7 +59,7 @@ def test_another_ip_is_not_blocked(db_path):
 
 def test_failures_outside_the_window_do_not_block(db_path):
     conn = connect(db_path)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     _fail(conn, MAX_FAILURES, now=now - timedelta(seconds=WINDOW_SECONDS + 60))
 
     assert blocked_seconds(conn, IP, now=now) == 0
