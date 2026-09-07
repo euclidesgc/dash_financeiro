@@ -33,3 +33,16 @@ def month(value: object) -> str:
         return date.fromisoformat(f"{value}-01").strftime("%m/%Y")
     except ValueError:
         return str(value)
+
+
+def rate(basis_points: object) -> str:
+    if basis_points is None:
+        return "—"
+    units, remainder = divmod(int(basis_points), CENTS)
+    return f"{units},{remainder:02d}%"
+
+
+def number(cents: object) -> str:
+    value = int(cents or 0)
+    units, remainder = divmod(abs(value), CENTS)
+    return f"{units},{remainder:02d}"
