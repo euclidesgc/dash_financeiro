@@ -708,19 +708,23 @@
     "015-configuracao-e-nome-do-beneficiario": {
       "title": "Area de configuracao: os valores que alimentam calculo e sugestao, e o nome real de cada beneficiario",
       "track": "rapida",
-      "stage": "discovery",
+      "stage": "execute",
       "stacks": [
         "python"
       ],
       "created_at": "2026-09-07T14:45:13Z",
       "approvals": {
         "brief": {
-          "at": null,
-          "sha": null
+          "at": "2026-09-07T15:50:29Z",
+          "sha": "d0ea1046ab521ebc041ff0d48e2b1de72ef14224",
+          "file": "product/items/015-configuracao-e-nome-do-beneficiario/01-brief.md",
+          "por": "humano"
         },
         "plan": {
-          "at": null,
-          "sha": null
+          "at": "2026-09-07T15:50:29Z",
+          "sha": "3887860d69fd8c91a5bb61ff66a6ad93b7b46e70",
+          "file": "product/items/015-configuracao-e-nome-do-beneficiario/03-plan.md",
+          "por": "humano"
         }
       },
       "current_phase": null,

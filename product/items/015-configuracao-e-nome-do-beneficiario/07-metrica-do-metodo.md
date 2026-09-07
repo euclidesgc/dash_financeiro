@@ -25,6 +25,46 @@ com eles que a comparação é honesta.
 O que essas rodadas custaram é o ponto: cada uma é um validador cego rodando os
 portões inteiros, e a reprovação chega **depois** de o código estar escrito.
 
+## O custo em tokens, medido do transcript
+
+A corrida inteira cabe numa sessão só, e o transcript traz `usage` por mensagem
+com carimbo de tempo. Cruzando com o carimbo dos commits — cada mensagem é
+atribuída ao item cujo commit a fecha — dá o custo real, contando entrada não
+cacheada, criação de cache e saída:
+
+| Item | Fases | Tokens |
+|---|---|---|
+| `001` base e login | 4 | 479.562 |
+| `002` gastos três eixos | 4 | 991.514 |
+| `003` comprometido | 3 | 1.297.263 |
+| `004` resumo e projeção | 2 | 238.326 |
+| `005` dívidas e simuladores | 1 | 142.461 |
+| `006` sync Pluggy | 1 | 106.462 |
+| `007` objetivo e linha do tempo | 1 | 136.381 |
+| `008` simulador e base de fatos | 1 | 96.084 |
+| `009` IA consultora | 1 | 82.505 |
+| `010` dívida técnica | — | 24.690 |
+| `011` série duplicada | 1 | 228.772 |
+| `012` sync pós-carga atômica | 1 | 784.806 |
+| `013` objetivo cenário vazio | 1 | 27.463 |
+| `014` taxa pelos juros cobrados | 1 | 176.551 |
+| **`015` — só o planejamento** | 3 | **370.872** |
+
+**O planejamento do `015` custou mais do que isso.** Os quatro revisores rodaram
+como subagentes e o gasto deles não entra no transcript desta sessão: 144.140 +
+150.438 + 151.735 + 166.554 = **612.867**. O planejamento completo custou
+**983.739 tokens** — mais que o item `002` inteiro, que teve quatro fases
+implementadas e validadas.
+
+Esse é o número que o método precisa justificar. A pergunta que a implementação
+responde não é se planejar assim é barato: é se **planejar caro sai mais barato
+que reprovar**. A comparação justa é o custo total por item, e por isso a
+implementação começa em sessão nova, com a conta zerada.
+
+A mediana dos itens de uma fase é **136.381** tokens, do `007`. Se a
+implementação das três fases do `015` couber em torno de três medianas — cerca
+de 410 mil — o método empata; abaixo disso, ganha.
+
 ## O que este item mede
 
 | # | Métrica | Alvo | Resultado |
