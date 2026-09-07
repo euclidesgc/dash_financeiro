@@ -457,7 +457,7 @@
     "007-objetivo-e-linha-do-tempo": {
       "title": "Um objetivo com data, tres cenarios e a linha do tempo que mostra o progresso",
       "track": "rapida",
-      "stage": "execute",
+      "stage": "done",
       "stacks": [
         "python"
       ],
@@ -479,13 +479,18 @@
       "current_phase": 1,
       "phases": {
         "1": {
-          "status": "em_execucao",
+          "status": "aprovada",
           "reproved_count": 0,
-          "verdict": null,
-          "verdict_file": null,
-          "validated_sha": null,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/007-objetivo-e-linha-do-tempo/05-veredictos/fase-1.md",
+          "validated_sha": "1295a5cb160c1ac3d80231173f10cf2120e85396",
           "pr": null,
-          "blocked_on": []
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T03:57:12Z",
+          "validated_trees": {
+            ".": "1c95b2263766cb65be9e9228e90098ef4eeb5a6e"
+          },
+          "criteria_sha": "e62c9beca29c3f2d2ef639b0bcd4a9bf7569386456434291785cb517b1cce77f"
         }
       },
       "divergences": {},

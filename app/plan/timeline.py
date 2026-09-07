@@ -69,6 +69,11 @@ def expensive_debts(conn: sqlite3.Connection) -> list[dict]:
 def simulate(conn: sqlite3.Connection, scenario: str, *, today: date) -> dict:
     steady = monthly_result_cents(conn, scenario, today=today)
     freed = released_by_month(conn, today=today) if scenario == OPTIMISTIC else []
+    # Only the cash that is still ahead is taken out of the starting point: an
+    # instalment ending in the month of the reading has already freed its money,
+    # and the loop starts at month one, so subtracting it here would make it
+    # vanish from the path while the headline went on announcing it.
+    freed = [(when, amount) for when, amount in freed if when >= 1]
     base_result = steady - sum(amount for _, amount in freed)
     target = reserve_target_cents(conn, today=today)
     steps = expensive_debts(conn)
