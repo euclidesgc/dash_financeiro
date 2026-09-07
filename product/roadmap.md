@@ -32,7 +32,7 @@ PR e commit já escritos.
 
 - [x] `004-resumo-e-projecao` — A tela inicial mostra saldo, dívida total, quanto sobra este mês e a **projeção de saldo dia a dia dos próximos 45 dias**. Depende de `003` porque a projeção soma os compromissos datados: sem eles, projeta só o passado. Com cheque especial a 3,52% a.m., o real marginal se ganha não entrando no vermelho — e é esta tela que impede.
 
-- [ ] `005-dividas-e-simuladores` — As dívidas aparecem ordenadas por taxa mensal, do cheque especial (3,52%) ao imóvel (0,72%), e o simulador responde quantas parcelas e quantos juros um aporte elimina. Inclui a decisão do Duster com **saldo de quitação e custo de transporte alternativo como parâmetro editável**, não como constante.
+- [x] `005-dividas-e-simuladores` — As dívidas aparecem ordenadas por taxa mensal, do cheque especial (3,52%) ao imóvel (0,72%), e o simulador responde quantas parcelas e quantos juros um aporte elimina. Inclui a decisão do Duster com **saldo de quitação e custo de transporte alternativo como parâmetro editável**, não como constante.
 
 - [ ] `006-sync-pluggy` — As movimentações se atualizam **sob demanda e todo dia**, sem duplicar nenhuma transação, e a tela diz quando foi a última sincronização e se ela falhou. Sync que falha em silêncio é pior que sync nenhum: o painel passa a mostrar dado velho com cara de dado fresco.
   **Herdado do `001`:** `sync_runs.transactions_count` hoje guarda quantas linhas existem depois da carga, não quantas entraram na execução — a segunda ingestão do mesmo arquivo grava o total sem inserir nada. Este item decide a semântica antes de mostrar "última sincronização" na tela.
@@ -70,6 +70,10 @@ exatamente ficou sem verificação e como verificar.
   (MFA) de tempos em tempos; a reconexão é interativa e não se automatiza. Como
   verificar: rodar o sync com as credenciais reais e conferir que `sync_runs` ganha
   linha e a contagem de transações não duplica.
+
+- **`005-dividas-e-simuladores`** — o saldo de quitação real do CDC só o banco informa, e a
+  taxa dos cartões só a fatura. Como verificar: preencher os dois campos na tela e conferir que
+  a escada se reordena e que o ágio ou desconto aparece com o sinal certo.
 
 - **`009-ia-consultora`** — a qualidade da resposta do Gemini só se julga lendo. Como
   verificar: fazer três perguntas sobre os próprios dados e conferir que os números

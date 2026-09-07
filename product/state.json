@@ -373,7 +373,7 @@
     "005-dividas-e-simuladores": {
       "title": "Dívidas na escada de taxa, e o simulador que diz o que um aporte elimina",
       "track": "rapida",
-      "stage": "execute",
+      "stage": "done",
       "stacks": [
         "python"
       ],
@@ -395,13 +395,18 @@
       "current_phase": 1,
       "phases": {
         "1": {
-          "status": "em_execucao",
+          "status": "aprovada",
           "reproved_count": 0,
-          "verdict": null,
-          "verdict_file": null,
-          "validated_sha": null,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/005-dividas-e-simuladores/05-veredictos/fase-1.md",
+          "validated_sha": "0892c0fac167fd21510655b770afd417bb558f81",
           "pr": null,
-          "blocked_on": []
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T02:36:47Z",
+          "validated_trees": {
+            ".": "044e180c0d39d22b23e9d844aafe98aac50f1dd9"
+          },
+          "criteria_sha": "05c704d7b08989e0b9f0057f058dc1805eccda78cd9cd98fe1a7052acbc1c10b"
         }
       },
       "divergences": {},
