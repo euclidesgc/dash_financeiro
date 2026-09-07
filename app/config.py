@@ -14,6 +14,11 @@ DEFAULT_TRANSACTIONS_PATH = "data/processed/transacoes.json"
 DEFAULT_ACCOUNTS_GLOB = "data/raw/accounts_*.json"
 SESSION_SECRET_BYTES = 32
 
+# The panel reads the already consolidated file by default: it is the path that
+# works without network, and the one every test exercises.
+DEFAULT_SYNC_SOURCE = "arquivo"
+PLUGGY_CREDENTIALS = ("PLUGGY_CLIENT_ID", "PLUGGY_CLIENT_SECRET")
+
 
 @dataclass(frozen=True)
 class Config:
@@ -25,6 +30,8 @@ class Config:
     key_path: str
     transactions_path: str
     accounts_glob: str
+    sync_source: str
+    pluggy: dict[str, str | None]
 
 
 def _first(env: Mapping[str, str], *names: str) -> str | None:
@@ -61,6 +68,8 @@ def load_config(env: Mapping[str, str] | None = None) -> Config:
         key_path=_first(env, "DASH_KEY_PATH") or DEFAULT_KEY_PATH,
         transactions_path=_first(env, "DASH_TRANSACTIONS_PATH") or DEFAULT_TRANSACTIONS_PATH,
         accounts_glob=_first(env, "DASH_ACCOUNTS_GLOB") or DEFAULT_ACCOUNTS_GLOB,
+        sync_source=_first(env, "DASH_SYNC_SOURCE") or DEFAULT_SYNC_SOURCE,
+        pluggy={name: _first(env, name) for name in PLUGGY_CREDENTIALS},
     )
 
 

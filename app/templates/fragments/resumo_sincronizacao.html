@@ -1,0 +1,26 @@
+<section id="sincronizacao" class="panel panel-wide">
+  <div class="stack-tight">
+    <h2 class="section-title">Os dados</h2>
+    {% if sync['failed'] %}
+    <p class="notice" role="alert">A última sincronização <strong>falhou</strong>:
+      {{ sync['latest']['message'] }}</p>
+    {% endif %}
+    {% if sync['succeeded'] %}
+    <p class="lede">Última sincronização bem-sucedida em
+      <span class="calendar-date">{{ sync['succeeded']['finished_at'][:10]|dia }}</span> às
+      <span class="calendar-date">{{ sync['succeeded']['finished_at'][11:16] }}</span>, com
+      <span class="cifra">{{ sync['succeeded']['transactions_count'] if sync['succeeded']['transactions_count'] is not none else '—' }}</span>
+      lançamento(s) inserido(s).</p>
+    {% if sync['stale'] %}
+    <p class="notice" role="status">O dado está parado há <strong>{{ sync['age_days'] }} dias</strong>.
+      O que você lê abaixo tem essa idade.</p>
+    {% endif %}
+    {% else %}
+    <p class="lede">Nunca sincronizado. Rode <code>{{ sync['command'] }}</code> ou use o botão
+      abaixo — sem isso o painel não tem o que ler.</p>
+    {% endif %}
+  </div>
+  <form method="post" action="{{ sync['action'] }}">
+    <button class="button" type="submit">Sincronizar agora</button>
+  </form>
+</section>
