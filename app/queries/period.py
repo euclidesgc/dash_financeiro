@@ -5,7 +5,7 @@ CLOSED_MONTHS = 6
 START_FIELD = "inicio"
 END_FIELD = "fim"
 
-_INVALID_DATE = "data inválida: {field} ({value})"
+INVALID_DATE = "data inválida: {field} ({value})"
 _INVALID_PERIOD = "período inválido: {end_field} ({end}) anterior a {start_field} ({start})"
 
 
@@ -17,14 +17,14 @@ def day(value: object, field: str) -> date:
     try:
         return date.fromisoformat(str(value))
     except (TypeError, ValueError):
-        raise InvalidPeriodError(_INVALID_DATE.format(field=field, value=value)) from None
+        raise InvalidPeriodError(INVALID_DATE.format(field=field, value=value)) from None
 
 
 def month(value: object, field: str = END_FIELD) -> date:
     try:
         return date.fromisoformat(f"{value}-01")
     except (TypeError, ValueError):
-        raise InvalidPeriodError(_INVALID_DATE.format(field=field, value=value)) from None
+        raise InvalidPeriodError(INVALID_DATE.format(field=field, value=value)) from None
 
 
 def check_period(start: object, end: object) -> tuple[date, date]:
