@@ -17,8 +17,7 @@ from app.plan.whatif import (
     save,
     saved,
 )
-from app.queries.period import InvalidPeriodError, day
-from app.routers.plan import EARLIEST, LATEST
+from app.routers.reference import screen_date
 from app.settings import store
 from app.settings.catalog import FACT as FACT_KIND
 from app.settings.catalog import of_kind
@@ -35,9 +34,10 @@ DATE_FIELD = "data"
 
 @router.get(SCREEN)
 def simulator_screen(request: Request) -> Response:
+    reference = screen_date(request.query_params.get(DATE_FIELD))
     conn = connect()
     try:
-        return _answer(request, conn, _reference(request.query_params.get(DATE_FIELD)))
+        return _answer(request, conn, reference.date, notice=reference.notice)
     finally:
         conn.close()
 
@@ -52,7 +52,7 @@ def run(
     nome: Annotated[str, Form()] = "",
     data: Annotated[str, Form()] = "",
 ) -> Response:
-    today = _reference(data)
+    today = screen_date(data).date
     conn = connect()
     try:
         try:
@@ -75,7 +75,7 @@ def store_fact(
     validade: Annotated[str, Form()] = "",
     data: Annotated[str, Form()] = "",
 ) -> Response:
-    today = _reference(data)
+    today = screen_date(data).date
     conn = connect()
     try:
         try:
@@ -85,14 +85,6 @@ def store_fact(
         return _answer(request, conn, today)
     finally:
         conn.close()
-
-
-def _reference(asked: object) -> date:
-    try:
-        asked_date = day(asked, DATE_FIELD)
-    except InvalidPeriodError:
-        return date.today()
-    return asked_date if EARLIEST <= asked_date <= LATEST else date.today()
 
 
 def _answer(
