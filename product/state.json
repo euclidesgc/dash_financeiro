@@ -297,13 +297,18 @@
       "current_phase": 1,
       "phases": {
         "1": {
-          "status": "em_execucao",
+          "status": "aprovada",
           "reproved_count": 0,
-          "verdict": null,
-          "verdict_file": null,
-          "validated_sha": null,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/011-serie-duplicada-e-tolerancia-do-vencimento/05-veredictos/fase-1.md",
+          "validated_sha": "4faaeb993c00d168331a957dcac0004a3fae49ba",
           "pr": null,
-          "blocked_on": []
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T01:01:06Z",
+          "validated_trees": {
+            ".": "3d91b02dc44e388d33f23cb9999961f5a1b1a2d1"
+          },
+          "criteria_sha": "24f08745dc9470de629cc1e7dfd7dc99a950958995a220efd3466a54d7bcedcf"
         }
       },
       "divergences": {},
