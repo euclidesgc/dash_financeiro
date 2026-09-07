@@ -44,8 +44,7 @@ EXPECTED_MIGRATIONS = [
 ]
 
 TABLE_NAMES = (
-    "select name from sqlite_master "
-    "where type='table' and name not like 'sqlite_%' order by name"
+    "select name from sqlite_master where type='table' and name not like 'sqlite_%' order by name"
 )
 
 

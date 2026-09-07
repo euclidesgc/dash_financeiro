@@ -150,9 +150,7 @@ def _detail_context(
         context.update(key=None, rows=[], total_cents=0)
         return context
     rows = transactions_of(conn, axis=axis, key=key, start=start, end=end)
-    context.update(
-        key=key, rows=rows, total_cents=sum(row["amount_cents"] for row in rows)
-    )
+    context.update(key=key, rows=rows, total_cents=sum(row["amount_cents"] for row in rows))
     return context
 
 

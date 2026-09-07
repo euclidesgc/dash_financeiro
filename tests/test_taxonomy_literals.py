@@ -55,7 +55,7 @@ def test_no_app_file_carries_a_vocabulary_term_as_a_literal(terms):
 def test_the_scanner_reports_a_planted_term(tmp_path, terms):
     planted = sorted(terms)[0]
     (tmp_path / "leak.py").write_text(
-        f'QUERY = "SELECT 1 FROM t WHERE c = \'{planted}\'"\n', encoding="utf-8"
+        f"QUERY = \"SELECT 1 FROM t WHERE c = '{planted}'\"\n", encoding="utf-8"
     )
     assert scan(tmp_path, terms) == [f"leak.py:1: {planted}"]
 

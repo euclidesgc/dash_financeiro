@@ -92,7 +92,10 @@ def test_the_mortgage_never_enters_the_expensive_ladder(taxonomy_conn):
 
 def test_the_three_scenarios_never_get_worse_from_left_to_right(taxonomy_conn):
     conn = prepare(taxonomy_conn, salary(5000.0) + rent(-1000.0))
-    runs = {run["scenario"]: run["monthly_result_cents"] for run in every_scenario(conn, today=REFERENCE)}
+    runs = {
+        run["scenario"]: run["monthly_result_cents"]
+        for run in every_scenario(conn, today=REFERENCE)
+    }
 
     assert runs[CONSERVATIVE] <= runs[BASE] <= runs[OPTIMISTIC]
 

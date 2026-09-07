@@ -36,9 +36,7 @@ def rows_of(conn):
 def kinds_of(conn, series_key):
     return sorted(
         row[0]
-        for row in conn.execute(
-            "SELECT kind FROM commitments WHERE series_key = ?", (series_key,)
-        )
+        for row in conn.execute("SELECT kind FROM commitments WHERE series_key = ?", (series_key,))
     )
 
 
@@ -48,11 +46,18 @@ def base(taxonomy_conn, seed):
         *monthly("sub", ["2026-06", "2026-07", "2026-08"], -581.68, "Assinatura viva"),
         *monthly("old", ["2025-10", "2025-11", "2025-12"], -109.00, "Assinatura parada"),
         transaction(
-            "live-1", "2026-08-11", -127.27, descricao="Loja parcelada",
-            parcela_atual=2, parcela_total=24,
+            "live-1",
+            "2026-08-11",
+            -127.27,
+            descricao="Loja parcelada",
+            parcela_atual=2,
+            parcela_total=24,
         ),
         transaction(
-            "dead-1", "2026-01-26", -797.13, descricao="IPVA parcela 1 de 3 Detran",
+            "dead-1",
+            "2026-01-26",
+            -797.13,
+            descricao="IPVA parcela 1 de 3 Detran",
         ),
     ]
     load(taxonomy_conn, rows)
@@ -121,8 +126,12 @@ def test_a_dead_installment_series_is_stored_and_left_out_of_the_live_list(base)
 
 def test_a_key_that_is_recurring_and_live_installment_counts_once(taxonomy_conn, seed):
     rows = monthly(
-        "both", ["2026-06", "2026-07", "2026-08"], -100.00, "Loja dupla",
-        parcela_atual=None, parcela_total=None,
+        "both",
+        ["2026-06", "2026-07", "2026-08"],
+        -100.00,
+        "Loja dupla",
+        parcela_atual=None,
+        parcela_total=None,
     )
     rows[-1]["parcela_atual"] = 2
     rows[-1]["parcela_total"] = 24
@@ -149,8 +158,12 @@ def test_the_command_carries_the_environment_date_into_the_recompute(
     taxonomy_conn, seed, tmp_path, monkeypatch
 ):
     rows = monthly(
-        "both", ["2026-06", "2026-07", "2026-08"], -100.00, "Loja dupla",
-        parcela_atual=None, parcela_total=None,
+        "both",
+        ["2026-06", "2026-07", "2026-08"],
+        -100.00,
+        "Loja dupla",
+        parcela_atual=None,
+        parcela_total=None,
     )
     rows[-1]["parcela_atual"] = 2
     rows[-1]["parcela_total"] = 24

@@ -84,12 +84,20 @@ def test_transfers_refunds_and_income_produce_no_series(taxonomy_conn, seed):
 def test_the_series_key_drops_the_installment_marker(taxonomy_conn, seed):
     rows = [
         transaction(
-            "p-1", "2026-07-11", -127.27, descricao="OTICA BARDASSON E 9/10",
-            parcela_atual=9, parcela_total=10,
+            "p-1",
+            "2026-07-11",
+            -127.27,
+            descricao="OTICA BARDASSON E 9/10",
+            parcela_atual=9,
+            parcela_total=10,
         ),
         transaction(
-            "p-2", "2026-08-11", -127.27, descricao="OTICA BARDASSON E 10/10",
-            parcela_atual=10, parcela_total=10,
+            "p-2",
+            "2026-08-11",
+            -127.27,
+            descricao="OTICA BARDASSON E 10/10",
+            parcela_atual=10,
+            parcela_total=10,
         ),
     ]
     conn = prepare(taxonomy_conn, seed, rows)
@@ -104,12 +112,20 @@ def test_the_series_key_drops_the_installment_marker(taxonomy_conn, seed):
 def test_two_purchases_at_the_same_store_are_two_series(taxonomy_conn, seed):
     rows = [
         transaction(
-            "p-1", "2026-08-11", -127.27, descricao="MERCADOLIVRE*MERCADOLIVRE",
-            parcela_atual=2, parcela_total=24,
+            "p-1",
+            "2026-08-11",
+            -127.27,
+            descricao="MERCADOLIVRE*MERCADOLIVRE",
+            parcela_atual=2,
+            parcela_total=24,
         ),
         transaction(
-            "p-2", "2026-08-11", -37.77, descricao="MERCADOLIVRE*MERCADOLIVRE",
-            parcela_atual=2, parcela_total=18,
+            "p-2",
+            "2026-08-11",
+            -37.77,
+            descricao="MERCADOLIVRE*MERCADOLIVRE",
+            parcela_atual=2,
+            parcela_total=18,
         ),
     ]
     conn = prepare(taxonomy_conn, seed, rows)
@@ -156,9 +172,7 @@ SIX = ["2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09"]
 
 def test_a_cent_of_rounding_does_not_split_one_purchase_in_two(taxonomy_conn, seed):
     values = [-136.47] + [-136.43] * 5
-    conn = prepare(
-        taxonomy_conn, seed, instalments("a", SIX, values, total=6, description="Loja")
-    )
+    conn = prepare(taxonomy_conn, seed, instalments("a", SIX, values, total=6, description="Loja"))
     detected = installment_series(conn)
 
     assert len(detected) == 1

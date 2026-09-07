@@ -122,7 +122,9 @@ def test_the_reading_comes_back_when_the_model_answers(monkeypatch):
             return None
 
         def json(self):
-            return {"candidates": [{"content": {"parts": [{"text": "O pior ponto é em outubro."}]}}]}
+            return {
+                "candidates": [{"content": {"parts": [{"text": "O pior ponto é em outubro."}]}}]
+            }
 
     monkeypatch.setattr(httpx, "post", lambda *a, **k: Answer())
     found = ask("por quê?", "contexto", api_key="chave")

@@ -35,7 +35,9 @@ def test_every_source_record_normalizes_to_the_key_the_consolidator_wrote(record
 
 @requires_source
 def test_no_source_record_normalizes_to_nothing(records):
-    assert [record["id"] for record in records if not normalize_description(record["descricao"])] == []
+    assert [
+        record["id"] for record in records if not normalize_description(record["descricao"])
+    ] == []
 
 
 @pytest.mark.parametrize(

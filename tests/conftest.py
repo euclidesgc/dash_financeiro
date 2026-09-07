@@ -18,6 +18,7 @@ def ignore_the_owner_env_file():
     # exercise its absence gets the value handed back by the file.
     os.environ["DASH_ENV_FILE"] = os.devnull
 
+
 ACCOUNT = {
     "id": "acc-1",
     "type": "BANK",

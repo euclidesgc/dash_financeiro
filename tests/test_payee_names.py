@@ -68,9 +68,10 @@ def test_the_empty_string_is_absence_and_never_a_value(conn):
     )
 
     assert stored["merchant_legal_name"] is None
-    assert conn.execute("SELECT count(*) FROM transactions WHERE merchant_name = ''").fetchone()[
-        0
-    ] == 0
+    assert (
+        conn.execute("SELECT count(*) FROM transactions WHERE merchant_name = ''").fetchone()[0]
+        == 0
+    )
 
 
 def test_the_precedence_walks_from_the_owner_down_to_the_description(conn):

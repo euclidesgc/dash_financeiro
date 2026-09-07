@@ -16,7 +16,12 @@ def month(prefix, when, spend, interest=None):
     rows = [transaction(f"{prefix}-{when}", f"{when}-01", spend, descricao="Compra")]
     if interest is not None:
         rows.append(
-            transaction(f"{prefix}-j-{when}", f"{when}-28", interest, descricao="Saída JUROS LIMITE DA CONTA")
+            transaction(
+                f"{prefix}-j-{when}",
+                f"{when}-28",
+                interest,
+                descricao="Saída JUROS LIMITE DA CONTA",
+            )
         )
     return rows
 
@@ -159,8 +164,7 @@ def test_a_truncated_oldest_month_is_measured_against_the_calendar(taxonomy_conn
     # The walk starts here, so June holds 26 reconstructed days, not 30.
     rows = [transaction("c", "2026-06-05", -3000.0, descricao="Compra")]
     rows += [
-        transaction(f"p-{day}", f"2026-06-{day}", 3000.0, descricao="Deposito")
-        for day in ("20",)
+        transaction(f"p-{day}", f"2026-06-{day}", 3000.0, descricao="Deposito") for day in ("20",)
     ]
     rows += [transaction("j", "2026-07-02", -100.0, descricao="COBRANCA DE JUROS")]
     for when in ("2026-07", "2026-08"):

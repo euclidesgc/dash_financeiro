@@ -35,15 +35,11 @@ def purchase(months, *, total=6, value=-136.43):
 def kinds(conn, series_key):
     return sorted(
         row[0]
-        for row in conn.execute(
-            "SELECT kind FROM commitments WHERE series_key = ?", (series_key,)
-        )
+        for row in conn.execute("SELECT kind FROM commitments WHERE series_key = ?", (series_key,))
     )
 
 
-def test_a_purchase_that_just_paid_its_last_instalment_leaves_no_subscription(
-    taxonomy_conn, seed
-):
+def test_a_purchase_that_just_paid_its_last_instalment_leaves_no_subscription(taxonomy_conn, seed):
     months = ["2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09"]
     conn = prepare(taxonomy_conn, seed, purchase(months))
     recompute(conn, today=REFERENCE)
@@ -55,9 +51,7 @@ def test_a_purchase_that_just_paid_its_last_instalment_leaves_no_subscription(
     assert kinds(conn, STORE) == [INSTALLMENT]
 
 
-def test_a_purchase_charged_before_the_window_gives_the_subscription_back(
-    taxonomy_conn, seed
-):
+def test_a_purchase_charged_before_the_window_gives_the_subscription_back(taxonomy_conn, seed):
     months = ["2025-11", "2025-12", "2026-01", "2026-02", "2026-03", "2026-04"]
     conn = prepare(taxonomy_conn, seed, purchase(months))
     recompute(conn, today=REFERENCE)
@@ -87,9 +81,7 @@ def test_a_charge_dated_ahead_is_live(taxonomy_conn, seed):
     assert totals(conn, today=REFERENCE)["committed_cents"] == -8000
 
 
-def test_a_subscription_that_stopped_leaves_the_total_and_stays_on_the_list(
-    taxonomy_conn, seed
-):
+def test_a_subscription_that_stopped_leaves_the_total_and_stays_on_the_list(taxonomy_conn, seed):
     stopped = [
         transaction(f"s-{month}", f"{month}-08", -50.0, descricao="Assinatura parada")
         for month in ("2026-01", "2026-02", "2026-03")

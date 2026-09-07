@@ -93,9 +93,7 @@ def _purchases(
     return [sorted(members, key=lambda item: item[0]["date"]) for _, members in clusters]
 
 
-def _installment(
-    key: str, total: int, items: list[tuple[sqlite3.Row, int | None]]
-) -> dict:
+def _installment(key: str, total: int, items: list[tuple[sqlite3.Row, int | None]]) -> dict:
     occurrences = [row for row, _ in items]
     seen = sorted({current for _, current in items if current})
     last_installment = max(seen) if seen else None

@@ -80,9 +80,7 @@ def _rules(
 def _fallback(conn: sqlite3.Connection) -> tuple:
     group = conn.execute("SELECT id FROM category_groups WHERE is_fallback = 1").fetchone()
     nature = conn.execute("SELECT value FROM natures WHERE is_fallback = 1").fetchone()
-    essentiality = conn.execute(
-        "SELECT value FROM essentialities WHERE is_fallback = 1"
-    ).fetchone()
+    essentiality = conn.execute("SELECT value FROM essentialities WHERE is_fallback = 1").fetchone()
     for table, row in (
         ("category_groups", group),
         ("natures", nature),

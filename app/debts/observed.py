@@ -7,12 +7,9 @@ from app.accounts import BANK
 # What the bank actually charged, not what the contract says. The description is
 # the only marker the source gives, and "mora" is a late-payment fine on a single
 # bill, not the price of carrying a negative balance.
-_INTEREST = (
-    "lower(description) LIKE '%juros%' AND lower(description) NOT LIKE '%mora%'"
-)
+_INTEREST = "lower(description) LIKE '%juros%' AND lower(description) NOT LIKE '%mora%'"
 _MOVES = (
-    "SELECT date, SUM(amount_cents) AS total FROM transactions "
-    "WHERE account_id = ? GROUP BY date"
+    "SELECT date, SUM(amount_cents) AS total FROM transactions WHERE account_id = ? GROUP BY date"
 )
 _CHARGED = (
     f"SELECT COALESCE(SUM(amount_cents), 0) AS total FROM transactions "

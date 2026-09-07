@@ -7,9 +7,7 @@ import sqlite3
 # then lies on a single axis, which is the most expensive way to be wrong.
 SPENDING = "amount_cents < 0 AND is_transfer = 0 AND is_refund = 0 AND refunded_by IS NULL"
 
-_TOTAL_SPENDING = (
-    f"SELECT coalesce(sum(amount_cents), 0) FROM transactions WHERE {SPENDING}"
-)
+_TOTAL_SPENDING = f"SELECT coalesce(sum(amount_cents), 0) FROM transactions WHERE {SPENDING}"
 
 
 def total_spending_cents(

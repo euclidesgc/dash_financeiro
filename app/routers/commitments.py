@@ -102,9 +102,7 @@ def _labels(conn: sqlite3.Connection, rows: list[dict]) -> dict[str, str]:
     # the owner named, or one the Pluggy names, takes its place. Measured: the
     # 115 series keys of this base are payees that exist.
     resolved = payee_labels(conn)
-    return {
-        row["series_key"]: resolved.get(row["series_key"], row["description"]) for row in rows
-    }
+    return {row["series_key"]: resolved.get(row["series_key"], row["description"]) for row in rows}
 
 
 def _context(conn: sqlite3.Connection, today: date) -> dict[str, Any]:

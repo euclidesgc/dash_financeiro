@@ -38,7 +38,9 @@ def client(tmp_path, monkeypatch):
     app = create_app()
     conn = connect()
     seed_user(conn, LOGIN, PASSWORD)
-    extra = transaction("out-extra", f"{CROWDED}-20", -1000.0, descricao="Moradia", categoria="Housing")
+    extra = transaction(
+        "out-extra", f"{CROWDED}-20", -1000.0, descricao="Moradia", categoria="Housing"
+    )
     prepare(conn, salary(5000.0) + rent(-1000.0) + [extra])
     conn.close()
     with TestClient(app, follow_redirects=False) as opened:

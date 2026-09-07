@@ -62,9 +62,7 @@ def seed_taxonomy(conn: sqlite3.Connection, seed: dict[str, Any] | None = None) 
     conn.commit()
 
 
-def _seed_terms(
-    conn: sqlite3.Connection, table: str, values: list[str], fallback: str
-) -> None:
+def _seed_terms(conn: sqlite3.Connection, table: str, values: list[str], fallback: str) -> None:
     conn.executemany(
         f"INSERT INTO {table} (value, position, is_fallback) VALUES (?, ?, ?) "
         "ON CONFLICT (value) DO NOTHING",

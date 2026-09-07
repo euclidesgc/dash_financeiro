@@ -52,13 +52,9 @@ SUBSCRIPTIONS = 3
 INSTALLMENTS = 2
 STALE_MARK = "Sem cobrança recente"
 EMPTY_TITLE = "Nenhum compromisso detectado"
-DISCLAIMER = (
-    '"Não uso mais" registra a decisão neste painel e não cancela nada no fornecedor.'
-)
+DISCLAIMER = '"Não uso mais" registra a decisão neste painel e não cancela nada no fornecedor.'
 FORECAST = "a média observada das cobranças, não o valor contratado"
-PREDICTION = (
-    "A data de cada vencimento é previsão a partir do histórico, não data contratual."
-)
+PREDICTION = "A data de cada vencimento é previsão a partir do histórico, não data contratual."
 WINDOW_START = "05/09/2026"
 WINDOW_END = "20/10/2026"
 STALE_SERIES = 1
@@ -80,7 +76,9 @@ def _rows(html: str, name: str) -> list[str]:
 
 
 def _ordering(html: str, name: str, attribute: str) -> list[int]:
-    return [abs(int(value)) for value in re.findall(f'{attribute}="(-?\\d+)"', _section(html, name))]
+    return [
+        abs(int(value)) for value in re.findall(f'{attribute}="(-?\\d+)"', _section(html, name))
+    ]
 
 
 def _totals(html: str) -> tuple[str, str]:
@@ -126,14 +124,22 @@ def client(tmp_path, monkeypatch, seed):
     ]
     rows.append(
         transaction(
-            "long-1", "2026-08-11", LONG_AMOUNT, descricao=LONG_PURCHASE,
-            parcela_atual=LONG_PAID, parcela_total=LONG_TOTAL,
+            "long-1",
+            "2026-08-11",
+            LONG_AMOUNT,
+            descricao=LONG_PURCHASE,
+            parcela_atual=LONG_PAID,
+            parcela_total=LONG_TOTAL,
         )
     )
     rows.append(
         transaction(
-            "short-1", "2026-08-04", SHORT_AMOUNT, descricao=SHORT_PURCHASE,
-            parcela_atual=SHORT_PAID, parcela_total=SHORT_TOTAL,
+            "short-1",
+            "2026-08-04",
+            SHORT_AMOUNT,
+            descricao=SHORT_PURCHASE,
+            parcela_atual=SHORT_PAID,
+            parcela_total=SHORT_TOTAL,
         )
     )
     load(conn, rows)

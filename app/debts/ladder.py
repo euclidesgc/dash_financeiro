@@ -23,8 +23,7 @@ MORTGAGE_FILE = "financiamento_caixa.json"
 VEHICLE_FILE = "cdc_safra_veiculo.json"
 
 _COLUMNS = (
-    "id, kind, name, balance_cents, monthly_rate_bp, term_months, payment_cents, "
-    "source, account_id"
+    "id, kind, name, balance_cents, monthly_rate_bp, term_months, payment_cents, source, account_id"
 )
 _INSERT = (
     "INSERT OR REPLACE INTO debts "
@@ -179,8 +178,7 @@ def without_rate(conn: sqlite3.Connection) -> list[dict]:
     return [
         dict(row)
         for row in conn.execute(
-            f"SELECT {_COLUMNS} FROM debts WHERE monthly_rate_bp IS NULL "
-            "ORDER BY balance_cents"
+            f"SELECT {_COLUMNS} FROM debts WHERE monthly_rate_bp IS NULL ORDER BY balance_cents"
         )
     ]
 

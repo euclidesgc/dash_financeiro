@@ -82,9 +82,7 @@ def simulation(
         if debt is None:
             return _answer(request, conn, notice=NOT_FOUND, status_code=400)
         try:
-            return _answer(
-                request, conn, simulation=simulate(debt, parse_money(aporte, "Aporte"))
-            )
+            return _answer(request, conn, simulation=simulate(debt, parse_money(aporte, "Aporte")))
         except (InvalidValueError, UnknownRateError) as refusal:
             return _answer(request, conn, notice=str(refusal), status_code=400)
     finally:

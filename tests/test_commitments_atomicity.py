@@ -34,8 +34,12 @@ def base(taxonomy_conn, seed):
     ]
     rows.append(
         transaction(
-            "live-1", "2026-08-11", -127.27, descricao="Loja parcelada",
-            parcela_atual=2, parcela_total=24,
+            "live-1",
+            "2026-08-11",
+            -127.27,
+            descricao="Loja parcelada",
+            parcela_atual=2,
+            parcela_total=24,
         )
     )
     load(taxonomy_conn, rows)

@@ -72,8 +72,7 @@ def vocabulary():
         "floor_category": next(
             rule["match_value"]
             for rule in categories
-            if rule["nature"] == floor["nature"]
-            and rule["essentiality"] == floor["essentiality"]
+            if rule["nature"] == floor["nature"] and rule["essentiality"] == floor["essentiality"]
         ),
         "candidates": [
             rule["match_value"]
@@ -97,7 +96,9 @@ def client(tmp_path, monkeypatch, window, vocabulary):
     load(
         conn,
         [
-            transaction("t-floor", start, FLOOR_AMOUNT / 100, categoria=vocabulary["floor_category"]),
+            transaction(
+                "t-floor", start, FLOOR_AMOUNT / 100, categoria=vocabulary["floor_category"]
+            ),
             transaction("t-cut", start, CUT_AMOUNT / 100, categoria=first),
             transaction("t-cut-small", end, SMALL_CUT_AMOUNT / 100, categoria=second),
             transaction("t-loose", end, LOOSE_AMOUNT / 100, categoria=UNKNOWN_CATEGORY),
@@ -155,9 +156,7 @@ def test_the_semantic_colour_marks_only_the_totals_that_ask_for_a_decision(clien
 
 def test_a_category_already_in_portuguese_shows_its_name_once(client, window):
     start, _ = window
-    key = next(
-        name for name, label in load_seed()["category_labels"].items() if name == label
-    )
+    key = next(name for name, label in load_seed()["category_labels"].items() if name == label)
     conn = connect()
     load(conn, [transaction("t-self", start, LOOSE_AMOUNT / 100, categoria=key)])
     classify_all(conn)

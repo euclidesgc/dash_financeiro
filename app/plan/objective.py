@@ -31,9 +31,7 @@ def survival_floor_cents(conn: sqlite3.Connection, *, today: date) -> int:
     months = complete_months(conn, today=today)
     if not months:
         return 0
-    found = crossing(
-        conn, slug=FLOOR_SLUG, start=f"{months[0]}-01", end=_last_day(months[-1])
-    )
+    found = crossing(conn, slug=FLOOR_SLUG, start=f"{months[0]}-01", end=_last_day(months[-1]))
     return abs(found.monthly_average_cents)
 
 
@@ -93,4 +91,3 @@ def _last_day(month: str) -> str:
 def baseline_cents(conn: sqlite3.Connection, *, today: date) -> int:
     results = monthly_results(conn, today=today)
     return median(results) if results else 0
-

@@ -93,9 +93,7 @@ def test_a_success_is_stored_with_its_flag(db_path):
     conn = connect(db_path)
     record_success(conn, IP)
 
-    stored = conn.execute(
-        "SELECT ip, success FROM login_attempts WHERE success = 1"
-    ).fetchall()
+    stored = conn.execute("SELECT ip, success FROM login_attempts WHERE success = 1").fetchall()
 
     assert [(row["ip"], row["success"]) for row in stored] == [(IP, 1)]
     conn.close()

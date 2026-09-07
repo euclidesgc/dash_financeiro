@@ -43,9 +43,7 @@ def rows():
         transaction("t-rent", "2026-03-05", -100.00, categoria=RENT),
         transaction("t-drugstore", "2026-06-02", -70.00, categoria=DRUGSTORE),
         transaction("t-income", "2026-03-06", 40.00, categoria=COFFEE),
-        transaction(
-            "t-internal", "2026-03-07", -80.00, categoria=COFFEE, eh_transferencia=True
-        ),
+        transaction("t-internal", "2026-03-07", -80.00, categoria=COFFEE, eh_transferencia=True),
         transaction(
             "t-refund",
             "2026-03-08",

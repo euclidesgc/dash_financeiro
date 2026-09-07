@@ -68,9 +68,7 @@ def base(taxonomy_conn, seed):
         seed,
         [
             *_monthly("live", ["2026-06-11", "2026-07-11", "2026-08-11"], LIVE_AMOUNT, LIVE),
-            *_monthly(
-                "old", ["2025-10-11", "2025-11-11", "2025-12-11"], STOPPED_AMOUNT, STOPPED
-            ),
+            *_monthly("old", ["2025-10-11", "2025-11-11", "2025-12-11"], STOPPED_AMOUNT, STOPPED),
             *_monthly("late", ["2026-06-30", "2026-07-31", "2026-08-31"], LATE_AMOUNT, LATE),
             transaction(
                 "buy-1",
@@ -131,8 +129,7 @@ def test_every_day_adds_up_the_entries_it_shows(base):
     shared = _day(days, "2026-09-11")
 
     assert all(
-        day["total_cents"] == sum(entry["amount_cents"] for entry in day["entries"])
-        for day in days
+        day["total_cents"] == sum(entry["amount_cents"] for entry in day["entries"]) for day in days
     )
     assert {entry["series_key"] for entry in shared["entries"]} == {LIVE_KEY, PURCHASE_KEY}
     assert shared["total_cents"] == int((LIVE_AMOUNT + PURCHASE_AMOUNT) * 100)

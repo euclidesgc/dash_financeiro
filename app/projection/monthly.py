@@ -50,7 +50,7 @@ def available_months(conn: sqlite3.Connection, *, today: date | None = None) -> 
 
 
 def complete_months(conn: sqlite3.Connection, *, today: date | None = None) -> list[str]:
-    return _seen(conn, today)[-median_months(conn):]
+    return _seen(conn, today)[-median_months(conn) :]
 
 
 def median(values: list[int]) -> int:

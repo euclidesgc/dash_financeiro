@@ -20,9 +20,7 @@ def _signer(secret: str, now: float | None) -> TimestampSigner:
     return _FixedClockSigner(secret, now)
 
 
-def issue_cookie(
-    login: str, *, secret: str, now: float | None = None, epoch: int = 0
-) -> str:
+def issue_cookie(login: str, *, secret: str, now: float | None = None, epoch: int = 0) -> str:
     payload = f"{login}{SEPARATOR}{epoch}".encode()
     return _signer(secret, now).sign(payload).decode()
 

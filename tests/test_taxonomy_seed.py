@@ -23,7 +23,9 @@ def test_a_second_and_a_third_seed_leave_every_count_untouched(seeded):
 
 
 def test_the_seeded_vocabulary_keeps_the_declared_order(seeded, seed):
-    groups = [row[0] for row in seeded.execute("SELECT name FROM category_groups ORDER BY position")]
+    groups = [
+        row[0] for row in seeded.execute("SELECT name FROM category_groups ORDER BY position")
+    ]
     natures = [row[0] for row in seeded.execute("SELECT value FROM natures ORDER BY position")]
     essentialities = [
         row[0] for row in seeded.execute("SELECT value FROM essentialities ORDER BY position")
@@ -35,11 +37,17 @@ def test_the_seeded_vocabulary_keeps_the_declared_order(seeded, seed):
 
 def test_each_vocabulary_declares_exactly_one_fallback(seeded, seed):
     for table, column, expected in (
-        ("category_groups", "name", [group["name"] for group in seed["groups"] if group["is_fallback"]]),
+        (
+            "category_groups",
+            "name",
+            [group["name"] for group in seed["groups"] if group["is_fallback"]],
+        ),
         ("natures", "value", [seed["fallback_nature"]]),
         ("essentialities", "value", [seed["fallback_essentiality"]]),
     ):
-        rows = [row[0] for row in seeded.execute(f"SELECT {column} FROM {table} WHERE is_fallback = 1")]
+        rows = [
+            row[0] for row in seeded.execute(f"SELECT {column} FROM {table} WHERE is_fallback = 1")
+        ]
         assert rows == expected
 
 
@@ -65,9 +73,7 @@ def test_every_seeded_rule_points_at_a_known_term(seeded):
 
 
 def test_the_seed_writes_both_kinds_of_rule(seeded):
-    kinds = {
-        row[0] for row in seeded.execute("SELECT DISTINCT match_kind FROM category_rules")
-    }
+    kinds = {row[0] for row in seeded.execute("SELECT DISTINCT match_kind FROM category_rules")}
     assert len(kinds) == 2
 
 

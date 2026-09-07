@@ -74,6 +74,16 @@ def test_no_screen_route_is_missing_from_the_rail():
     # the source of truth is the router that declares it, not this list.
     declared = {
         module.SCREEN
-        for module in (advisor, commitments, debts, plan, rules, settings, spending, summary, whatif)
+        for module in (
+            advisor,
+            commitments,
+            debts,
+            plan,
+            rules,
+            settings,
+            spending,
+            summary,
+            whatif,
+        )
     }
     assert declared == {item["href"] for item in navigation.SCREENS}

@@ -32,9 +32,7 @@ PAYEES = 30
 SAVED = "Salvo."
 NAMED = "Nome guardado."
 FORGOTTEN = "Apelido apagado. O nome volta a ser o anterior."
-LOOKUP_OFF = (
-    "A consulta por CNPJ está desligada. Ligue DASH_CNPJ_LOOKUP no ambiente para usá-la."
-)
+LOOKUP_OFF = "A consulta por CNPJ está desligada. Ligue DASH_CNPJ_LOOKUP no ambiente para usá-la."
 NO_CNPJ = "Este beneficiário não tem CNPJ na base."
 UNKNOWN_PAYEE = "Beneficiário desconhecido: “{payee}”."
 
@@ -76,9 +74,7 @@ def name_payee(
     conn = connect()
     try:
         if not _known(conn, payee):
-            return _answer(
-                request, conn, notice=UNKNOWN_PAYEE.format(payee=payee), status_code=400
-            )
+            return _answer(request, conn, notice=UNKNOWN_PAYEE.format(payee=payee), status_code=400)
         given = _text(nome).strip()
         if given:
             names.name_it(conn, payee, given, names.OWNER)
@@ -118,9 +114,7 @@ def look_up_cnpj(
 
 
 def _known(conn: sqlite3.Connection, payee: str) -> bool:
-    found = conn.execute(
-        "SELECT 1 FROM transactions WHERE payee = ? LIMIT 1", (payee,)
-    ).fetchone()
+    found = conn.execute("SELECT 1 FROM transactions WHERE payee = ? LIMIT 1", (payee,)).fetchone()
     return found is not None
 
 

@@ -32,9 +32,7 @@ def calendar(conn: sqlite3.Connection, *, today: date | None = None) -> list[Day
     first, last = window(today)
     series = _live_series(conn, first)
     recorded = _recorded_entries(conn, first, last, charged(conn, today=first))
-    entries = recorded + _remaining_predictions(
-        _predicted_entries(series, first, last), recorded
-    )
+    entries = recorded + _remaining_predictions(_predicted_entries(series, first, last), recorded)
     days: dict[str, list[Entry]] = defaultdict(list)
     for entry in entries:
         days[entry["date"]].append(entry)
@@ -53,9 +51,7 @@ def _live_series(conn: sqlite3.Connection, today: date) -> list[dict]:
     # dismissed one is money the owner already took out of the total: both stay
     # off the prediction, and the screen says how many (RF-22 do 003).
     recurring = [
-        row
-        for row in subscriptions(conn, today=today)
-        if row["live"] and not row["dismissed"]
+        row for row in subscriptions(conn, today=today) if row["live"] and not row["dismissed"]
     ]
     return recurring + installments(conn, today=today)
 
@@ -105,9 +101,7 @@ def _predicted_entries(series: list[dict], first: date, last: date) -> list[Entr
     return entries
 
 
-def _remaining_predictions(
-    predictions: list[Entry], recorded: list[Entry]
-) -> list[Entry]:
+def _remaining_predictions(predictions: list[Entry], recorded: list[Entry]) -> list[Entry]:
     # A recorded charge replaces the prediction it realises, and that is the
     # nearest one of its own series — measured between whole dates, so a series
     # due on the 29th and charged on the 1st of the next month is two days away

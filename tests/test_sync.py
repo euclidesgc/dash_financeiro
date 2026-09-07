@@ -49,7 +49,9 @@ def test_inserting_nothing_is_success_and_not_failure(taxonomy_conn):
     entries = [transaction("t-1", "2026-08-10", -10.0)]
     conn = load_twice(taxonomy_conn, entries)
 
-    assert conn.execute("SELECT status FROM sync_runs ORDER BY id DESC LIMIT 1").fetchone()[0] == "ok"
+    assert (
+        conn.execute("SELECT status FROM sync_runs ORDER BY id DESC LIMIT 1").fetchone()[0] == "ok"
+    )
 
 
 def test_a_run_that_inserts_new_rows_counts_only_the_new_ones(taxonomy_conn):

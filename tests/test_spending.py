@@ -60,7 +60,9 @@ def loaded(conn):
                 eh_transferencia=True,
                 motivo_transferencia="pagamento de fatura",
             ),
-            transaction("t-estorno", "2025-09-05", 40.00, eh_estorno=True, estornada_por="t-debito"),
+            transaction(
+                "t-estorno", "2025-09-05", 40.00, eh_estorno=True, estornada_por="t-debito"
+            ),
             transaction("t-debito", "2025-09-05", -40.00, estornada_por="t-estorno"),
         ],
         accounts=[ACCOUNT],

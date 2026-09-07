@@ -22,10 +22,7 @@ _FIELDS = (
     "ends_month",
 )
 
-_INSERT = (
-    f"INSERT INTO commitments ({', '.join(_FIELDS)}) "
-    f"VALUES ({', '.join('?' * len(_FIELDS))})"
-)
+_INSERT = f"INSERT INTO commitments ({', '.join(_FIELDS)}) VALUES ({', '.join('?' * len(_FIELDS))})"
 
 
 def recompute(conn: sqlite3.Connection, *, today: date | None = None) -> int:
@@ -58,9 +55,7 @@ def recurring_after_precedence(
     # never at what is still owed: in the month the last instalment falls the
     # series stops owing, the precedence would let go, and the recurring line —
     # built from those very charges — would resurrect a finished debt (RF-01).
-    charged = {
-        row["series_key"] for row in installments if row["last_seen_date"] >= floor
-    }
+    charged = {row["series_key"] for row in installments if row["last_seen_date"] >= floor}
     return [row for row in recurring if row["series_key"] not in charged]
 
 

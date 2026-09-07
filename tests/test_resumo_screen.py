@@ -165,7 +165,10 @@ def test_the_list_does_not_repeat_the_last_day_when_it_already_moves():
 
 
 def test_a_window_with_no_movement_at_all_shows_no_list():
-    assert _moving([_line("2026-09-05", -1000, variable=0), _line("2026-09-06", -1000, variable=0)]) == []
+    assert (
+        _moving([_line("2026-09-05", -1000, variable=0), _line("2026-09-06", -1000, variable=0)])
+        == []
+    )
 
 
 def test_the_list_of_the_real_screen_ends_at_the_window_end(client):

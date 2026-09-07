@@ -54,9 +54,7 @@ def test_a_base_with_no_movement_projects_a_flat_line(taxonomy_conn, seed):
     assert found["worst"]["balance_cents"] == -12345
 
 
-def test_every_day_of_the_line_is_the_day_before_plus_its_three_parts(
-    taxonomy_conn, seed
-):
+def test_every_day_of_the_line_is_the_day_before_plus_its_three_parts(taxonomy_conn, seed):
     rows = [
         transaction(f"in-{month}", f"{month}-14", 5000.0, descricao="Salario")
         for month in ("2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08")
@@ -74,9 +72,7 @@ def test_every_day_of_the_line_is_the_day_before_plus_its_three_parts(
     assert found["days"][0]["balance_cents"] == -100000
 
 
-def test_the_variable_share_is_what_the_dated_commitment_does_not_cover(
-    taxonomy_conn, seed
-):
+def test_the_variable_share_is_what_the_dated_commitment_does_not_cover(taxonomy_conn, seed):
     rows = [
         transaction(f"out-{month}", f"{month}-20", -300.0, descricao="Assinatura X")
         for month in ("2026-06", "2026-07", "2026-08", "2026-09")
@@ -92,9 +88,7 @@ def test_the_variable_share_is_what_the_dated_commitment_does_not_cover(
     assert found["income_day"] is None
 
 
-def test_the_worst_point_is_not_the_last_day_when_the_income_comes_after_it(
-    taxonomy_conn, seed
-):
+def test_the_worst_point_is_not_the_last_day_when_the_income_comes_after_it(taxonomy_conn, seed):
     rows = [
         transaction(f"in-{month}", f"{month}-28", 900.0, descricao="Salario")
         for month in ("2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08")
@@ -106,20 +100,30 @@ def test_the_worst_point_is_not_the_last_day_when_the_income_comes_after_it(
     assert found["worst"]["balance_cents"] <= found["days"][-1]["balance_cents"]
 
 
-def test_the_months_used_are_the_six_complete_ones_before_the_reference(
-    taxonomy_conn, seed
-):
+def test_the_months_used_are_the_six_complete_ones_before_the_reference(taxonomy_conn, seed):
     rows = [
         transaction(f"x-{month}", f"{month}-10", -10.0, descricao="Compra")
         for month in (
-            "2026-01", "2026-02", "2026-03", "2026-04",
-            "2026-05", "2026-06", "2026-07", "2026-08", "2026-09",
+            "2026-01",
+            "2026-02",
+            "2026-03",
+            "2026-04",
+            "2026-05",
+            "2026-06",
+            "2026-07",
+            "2026-08",
+            "2026-09",
         )
     ]
     conn = prepare(taxonomy_conn, seed, rows)
 
     assert monthly(conn, today=REFERENCE)["months"] == [
-        "2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08",
+        "2026-03",
+        "2026-04",
+        "2026-05",
+        "2026-06",
+        "2026-07",
+        "2026-08",
     ]
 
 

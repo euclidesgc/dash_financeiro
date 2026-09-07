@@ -20,9 +20,7 @@ def monthly_series(
     conn: sqlite3.Connection, *, end_month: str, months: int = MONTHS
 ) -> list[sqlite3.Row]:
     labels = _labels(month(end_month), months)
-    return conn.execute(
-        _SERIES.format(values=", ".join(["(?)"] * len(labels))), labels
-    ).fetchall()
+    return conn.execute(_SERIES.format(values=", ".join(["(?)"] * len(labels))), labels).fetchall()
 
 
 def _labels(last: date, months: int) -> list[str]:

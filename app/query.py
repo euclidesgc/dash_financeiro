@@ -25,7 +25,7 @@ def run(statement: str) -> int:
 
 def main(argv: list[str]) -> int:
     if len(argv) != 1:
-        print("usage: python -m app.query \"<select ...>\"", file=sys.stderr)
+        print('usage: python -m app.query "<select ...>"', file=sys.stderr)
         return 1
     return run(argv[0])
 

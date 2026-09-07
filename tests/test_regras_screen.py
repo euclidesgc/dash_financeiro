@@ -84,8 +84,20 @@ def client(tmp_path, monkeypatch, seed, terms):
         [
             transaction("t-held", START, HELD_AMOUNT / 100, descricao="Padaria", categoria=HELD),
             transaction("t-held-2", END, SECOND_AMOUNT / 100, descricao="Padaria", categoria=HELD),
-            transaction("t-loose", END, LOOSE_AMOUNT / 100, descricao="Loja do Bairro 12/03", categoria=LOOSE),
-            transaction("t-loose-2", END, SECOND_LOOSE_AMOUNT / 100, descricao="Loja do Bairro 15/04", categoria=LOOSE),
+            transaction(
+                "t-loose",
+                END,
+                LOOSE_AMOUNT / 100,
+                descricao="Loja do Bairro 12/03",
+                categoria=LOOSE,
+            ),
+            transaction(
+                "t-loose-2",
+                END,
+                SECOND_LOOSE_AMOUNT / 100,
+                descricao="Loja do Bairro 15/04",
+                categoria=LOOSE,
+            ),
         ],
     )
     seed_taxonomy(
@@ -140,12 +152,18 @@ def test_a_new_rule_says_how_many_transactions_it_reclassified(client, new_rule)
 
     assert written.status_code == 200
     assert "lançamentos reclassificados" in written.text
-    assert _count(
-        "SELECT count(*) FROM category_rules WHERE match_kind = ? AND match_value = ?",
-        MATCH_DESCRIPTION,
-        PAYEE,
-    ) == 1
-    assert _count("SELECT count(*) FROM transactions WHERE rule_id = ?", _rule_id(PAYEE)) == PAYEE_ENTRIES
+    assert (
+        _count(
+            "SELECT count(*) FROM category_rules WHERE match_kind = ? AND match_value = ?",
+            MATCH_DESCRIPTION,
+            PAYEE,
+        )
+        == 1
+    )
+    assert (
+        _count("SELECT count(*) FROM transactions WHERE rule_id = ?", _rule_id(PAYEE))
+        == PAYEE_ENTRIES
+    )
 
 
 def test_a_rule_that_reaches_nothing_says_so_instead_of_going_quiet(client, new_rule):
@@ -154,9 +172,10 @@ def test_a_rule_that_reaches_nothing_says_so_instead_of_going_quiet(client, new_
     assert written.status_code == 200
     assert "não alcançou nenhum lançamento" in written.text
     assert "caixa baixa, sem acento e sem dígito" in written.text
-    assert _count(
-        "SELECT count(*) FROM transactions WHERE rule_id = ?", _rule_id(PAYEE.capitalize())
-    ) == 0
+    assert (
+        _count("SELECT count(*) FROM transactions WHERE rule_id = ?", _rule_id(PAYEE.capitalize()))
+        == 0
+    )
 
 
 def test_the_form_shows_the_shape_a_description_is_matched_against(client):
@@ -164,7 +183,9 @@ def test_the_form_shows_the_shape_a_description_is_matched_against(client):
     samples = re.findall(r'<span class="sample">([^<]*)</span>', page.text)
 
     assert samples
-    assert all(sample == sample.lower() and not any(c.isdigit() for c in sample) for sample in samples)
+    assert all(
+        sample == sample.lower() and not any(c.isdigit() for c in sample) for sample in samples
+    )
 
 
 def test_editing_a_rule_reclassifies_what_it_holds(client, terms):
@@ -185,9 +206,10 @@ def test_editing_a_rule_reclassifies_what_it_holds(client, terms):
 
     assert edited.status_code == 200
     assert f"{HELD_ENTRIES} lançamentos reclassificados" in edited.text
-    assert _count(
-        "SELECT count(*) FROM transactions WHERE essentiality = ?", terms["last"]
-    ) == HELD_ENTRIES
+    assert (
+        _count("SELECT count(*) FROM transactions WHERE essentiality = ?", terms["last"])
+        == HELD_ENTRIES
+    )
 
 
 def test_removing_a_rule_drops_what_it_held_into_the_block_that_leads_the_screen(client):
@@ -266,7 +288,7 @@ def test_a_row_of_the_block_carries_the_match_back_into_the_form(client):
     page = client.get(SCREEN, params={"tipo": MATCH_CATEGORY, "valor": LOOSE})
 
     assert f'value="{LOOSE}"' in page.text
-    assert f'?tipo={MATCH_CATEGORY}&amp;valor=' in page.text
+    assert f"?tipo={MATCH_CATEGORY}&amp;valor=" in page.text
 
 
 def test_asking_to_edit_a_rule_opens_the_form_on_it(client):
@@ -280,7 +302,9 @@ def test_asking_to_edit_a_rule_opens_the_form_on_it(client):
 
 def test_a_form_body_that_carries_raw_utf8_bytes_still_finds_the_vocabulary(client, seed, new_rule):
     accented = next(value for value in seed["natures"] if not value.isascii())
-    body = "&".join(f"{field}={value}" for field, value in (new_rule | {"nature": accented}).items())
+    body = "&".join(
+        f"{field}={value}" for field, value in (new_rule | {"nature": accented}).items()
+    )
 
     written = client.post(
         SCREEN,
@@ -289,8 +313,11 @@ def test_a_form_body_that_carries_raw_utf8_bytes_still_finds_the_vocabulary(clie
     )
 
     assert written.status_code == 200
-    assert _count(
-        "SELECT count(*) FROM category_rules WHERE nature = ? AND match_value = ?",
-        accented,
-        PAYEE,
-    ) == 1
+    assert (
+        _count(
+            "SELECT count(*) FROM category_rules WHERE nature = ? AND match_value = ?",
+            accented,
+            PAYEE,
+        )
+        == 1
+    )

@@ -118,9 +118,7 @@ def _validate(
     if conn.execute("SELECT 1 FROM natures WHERE value = ?", (nature,)).fetchone() is None:
         raise InvalidTermError("invalid_nature", nature)
     if (
-        conn.execute(
-            "SELECT 1 FROM essentialities WHERE value = ?", (essentiality,)
-        ).fetchone()
+        conn.execute("SELECT 1 FROM essentialities WHERE value = ?", (essentiality,)).fetchone()
         is None
     ):
         raise InvalidTermError("invalid_essentiality", essentiality)

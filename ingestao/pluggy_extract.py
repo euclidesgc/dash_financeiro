@@ -9,10 +9,10 @@ Subcomandos:
 O CLIENT_SECRET e a apiKey nunca são impressos nem gravados em disco.
 Nenhum endpoint de escrita além do POST /items explicitamente confirmado é chamado.
 """
+
 import argparse
 import json
 import os
-import sys
 import time
 import urllib.error
 import urllib.parse
@@ -43,13 +43,15 @@ def carregar_env(path):
 
 def autenticar():
     env = carregar_env(ENV_PATH)
-    corpo = json.dumps({
-        "clientId": env["PLUGGY_CLIENT_ID"],
-        "clientSecret": env["PLUGGY_CLIENT_SECRET"],
-    }).encode()
+    corpo = json.dumps(
+        {
+            "clientId": env["PLUGGY_CLIENT_ID"],
+            "clientSecret": env["PLUGGY_CLIENT_SECRET"],
+        }
+    ).encode()
     req = urllib.request.Request(
-        f"{API}/auth", data=corpo,
-        headers={"Content-Type": "application/json"}, method="POST")
+        f"{API}/auth", data=corpo, headers={"Content-Type": "application/json"}, method="POST"
+    )
     with urllib.request.urlopen(req, timeout=60) as resposta:
         return json.loads(resposta.read())["apiKey"]
 
@@ -96,8 +98,13 @@ def paginar(api_key, path, params):
             return resultados, status, corpo
         lote = corpo.get("results", [])
         resultados.extend(lote)
-        salvar(path.strip("/").replace("/", "_") + "_" + params.get("accountId", params.get("itemId", "todos"))[:8],
-               corpo, pagina)
+        salvar(
+            path.strip("/").replace("/", "_")
+            + "_"
+            + params.get("accountId", params.get("itemId", "todos"))[:8],
+            corpo,
+            pagina,
+        )
         total_paginas = corpo.get("totalPages", 1)
         if pagina >= total_paginas or not lote:
             break
@@ -117,8 +124,11 @@ def paginar_cursor(api_key, path, params):
             return resultados, status, corpo
         lote = corpo.get("results", [])
         resultados.extend(lote)
-        salvar(path.strip("/").replace("/", "_") + "_" + params.get("accountId", "todos")[:8],
-               corpo, pagina)
+        salvar(
+            path.strip("/").replace("/", "_") + "_" + params.get("accountId", "todos")[:8],
+            corpo,
+            pagina,
+        )
         proximo = corpo.get("next")
         if not proximo or not lote:
             break
@@ -162,8 +172,7 @@ def cmd_criar_item(args):
         raise SystemExit("Criação de item exige --confirmo (autorização explícita do humano).")
     api_key = autenticar()
     conector = args.conector or CONNECTOR_MEU_PLUGGY
-    corpo = {"connectorId": conector, "parameters": {},
-             "oauthRedirectUri": args.redirect}
+    corpo = {"connectorId": conector, "parameters": {}, "oauthRedirectUri": args.redirect}
     status, item = chamar(api_key, "/items", metodo="POST", corpo=corpo)
     print(f"POST /items -> {status}")
     if status not in (200, 201):
@@ -249,8 +258,12 @@ def cmd_extrair(args):
 
 
 def extrair_um(api_key, item_id, args):
-    inventario = {"itemId": item_id, "extraidoEm": datetime.now().isoformat(), "contas": [],
-                  "faltantes": []}
+    inventario = {
+        "itemId": item_id,
+        "extraidoEm": datetime.now().isoformat(),
+        "contas": [],
+        "faltantes": [],
+    }
 
     status, item = chamar(api_key, f"/items/{item_id}")
     if status != 200:
@@ -262,7 +275,9 @@ def extrair_um(api_key, item_id, args):
     inventario["statusDetail"] = item.get("statusDetail")
     inventario["consentExpiresAt"] = item.get("consentExpiresAt")
 
-    status, contas = chamar(api_key, f"/accounts?{urllib.parse.urlencode({'itemId': item_id, 'pageSize': 500})}")
+    status, contas = chamar(
+        api_key, f"/accounts?{urllib.parse.urlencode({'itemId': item_id, 'pageSize': 500})}"
+    )
     if status != 200:
         raise SystemExit(f"GET /accounts -> {status}: {contas}")
     salvar(f"accounts_{item_id[:8]}", contas)
@@ -272,22 +287,29 @@ def extrair_um(api_key, item_id, args):
     for conta in lista_contas:
         conta_id = conta["id"]
         rotulo = f"{conta.get('name')} ({conta.get('type')}/{conta.get('subtype')})"
-        transacoes, st, err = paginar_cursor(api_key, "/v2/transactions",
-                                             {"accountId": conta_id})
+        transacoes, st, err = paginar_cursor(api_key, "/v2/transactions", {"accountId": conta_id})
         if st != 200:
             inventario["faltantes"].append(f"transactions da conta {rotulo}: HTTP {st} {err}")
             transacoes = []
         datas = sorted(t["date"] for t in transacoes if t.get("date"))
-        inventario["contas"].append({
-            "id": conta_id, "nome": conta.get("name"), "tipo": conta.get("type"),
-            "subtipo": conta.get("subtype"), "numero": conta.get("number"),
-            "saldo": conta.get("balance"), "moeda": conta.get("currencyCode"),
-            "transacoes": len(transacoes),
-            "primeira": datas[0][:10] if datas else None,
-            "ultima": datas[-1][:10] if datas else None,
-        })
-        print(f"  {rotulo}: {len(transacoes)} transacoes "
-              f"({datas[0][:10] if datas else '-'} a {datas[-1][:10] if datas else '-'})")
+        inventario["contas"].append(
+            {
+                "id": conta_id,
+                "nome": conta.get("name"),
+                "tipo": conta.get("type"),
+                "subtipo": conta.get("subtype"),
+                "numero": conta.get("number"),
+                "saldo": conta.get("balance"),
+                "moeda": conta.get("currencyCode"),
+                "transacoes": len(transacoes),
+                "primeira": datas[0][:10] if datas else None,
+                "ultima": datas[-1][:10] if datas else None,
+            }
+        )
+        print(
+            f"  {rotulo}: {len(transacoes)} transacoes "
+            f"({datas[0][:10] if datas else '-'} a {datas[-1][:10] if datas else '-'})"
+        )
 
         if conta.get("type") == "CREDIT":
             faturas, st, err = paginar(api_key, "/bills", {"accountId": conta_id})
@@ -296,7 +318,11 @@ def extrair_um(api_key, item_id, args):
             else:
                 print(f"    faturas: {len(faturas)}")
 
-    for nome, path in [("loans", "/loans"), ("investments", "/investments"), ("identity", "/identity")]:
+    for nome, path in [
+        ("loans", "/loans"),
+        ("investments", "/investments"),
+        ("identity", "/identity"),
+    ]:
         registros, st, err = paginar(api_key, path, {"itemId": item_id})
         if st != 200:
             inventario["faltantes"].append(f"{nome}: HTTP {st} {err}")

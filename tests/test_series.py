@@ -8,7 +8,10 @@ END_MONTH = "2026-03"
 
 
 def points(conn, end_month=END_MONTH, **extra):
-    return {row["month"]: row["amount_cents"] for row in monthly_series(conn, end_month=end_month, **extra)}
+    return {
+        row["month"]: row["amount_cents"]
+        for row in monthly_series(conn, end_month=end_month, **extra)
+    }
 
 
 @pytest.fixture
@@ -21,9 +24,7 @@ def conn(taxonomy_conn):
             transaction("t-march-again", "2026-03-20", -5.00),
             transaction("t-income", "2026-02-10", 400.00),
             transaction("t-internal", "2026-02-11", -80.00, eh_transferencia=True),
-            transaction(
-                "t-refund", "2026-02-12", 30.00, eh_estorno=True, estornada_por="t-debit"
-            ),
+            transaction("t-refund", "2026-02-12", 30.00, eh_estorno=True, estornada_por="t-debit"),
             transaction("t-debit", "2026-02-12", -30.00, estornada_por="t-refund"),
         ],
     )

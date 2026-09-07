@@ -51,9 +51,7 @@ class UnknownAxisError(LookupError):
         self.value = value
 
 
-def aggregate(
-    conn: sqlite3.Connection, *, axis: str, start: str, end: str
-) -> list[sqlite3.Row]:
+def aggregate(conn: sqlite3.Connection, *, axis: str, start: str, end: str) -> list[sqlite3.Row]:
     key = _key(axis)
     check_period(start, end)
     return conn.execute(
