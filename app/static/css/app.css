@@ -290,7 +290,8 @@ a.button {
 }
 
 .headline-small,
-.detail-sum {
+.detail-sum,
+.figure {
   margin: 0;
   font-size: var(--text-lg);
 }

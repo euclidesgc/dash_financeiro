@@ -1,0 +1,78 @@
+<section id="projecao" class="panel panel-wide">
+  <div class="stack-tight">
+    <h2 class="section-title">Os próximos {{ window_days }} dias</h2>
+    <p class="lede">A linha corre sobre a <strong>posição consolidada</strong> — contas e cartões
+      juntos. Compra no cartão piora a posição no dia da compra, e o pagamento da fatura é
+      transferência de dentro dela.</p>
+    <p class="lede">Cada dia soma três parcelas: o compromisso já datado, a renda esperada no dia
+      {{ forecast['income_day'] }} e o gasto sem data, diluído pelos dias do mês. Tudo
+      é previsão do histórico, não data contratual.</p>
+  </div>
+  <div class="scale" aria-hidden="true"></div>
+  <div class="figures">
+    <div class="stack-tight">
+      <p class="eyebrow">Hoje</p>
+      <p class="figure cifra">{{ start['balance_cents']|brl }}</p>
+      <p class="lede">{{ start['date']|dia }}</p>
+    </div>
+    <div class="stack-tight">
+      <p class="eyebrow">Pior ponto</p>
+      <p class="headline cifra{% if forecast['worst']['balance_cents'] < 0 %} negative{% endif %}">{{ forecast['worst']['balance_cents']|brl }}</p>
+      <p class="lede">{{ forecast['worst']['date']|dia }} — é ele que decide se o mês entra no
+        cheque especial, não o último dia.</p>
+    </div>
+    <div class="stack-tight">
+      <p class="eyebrow">Em {{ window_days }} dias</p>
+      <p class="figure cifra">{{ end['balance_cents']|brl }}</p>
+      <p class="lede">{{ end['date']|dia }} — {{ forecast['delta_cents']|brl }} no período.</p>
+    </div>
+  </div>
+  {% if moving %}
+  <ol class="calendar">
+    <li class="calendar-day" data-dia="{{ start['date'] }}" data-saldo="{{ start['balance_cents'] }}"
+        data-entra="0" data-sai="0" data-variavel="0">
+      <div class="calendar-head">
+        <h3 class="calendar-date">{{ start['date']|dia }}</h3>
+        <p class="calendar-sum cifra">{{ start['balance_cents']|brl }}</p>
+      </div>
+      <ul class="calendar-entries">
+        <li class="calendar-entry"><span class="calendar-name">ponto de partida</span></li>
+      </ul>
+    </li>
+    {% for entry in moving %}
+    <li class="calendar-day" data-dia="{{ entry['date'] }}" data-saldo="{{ entry['balance_cents'] }}"
+        data-entra="{{ entry['income_cents'] }}" data-sai="{{ entry['due_cents'] }}"
+        data-variavel="{{ entry['variable_cents'] }}">
+      <div class="calendar-head">
+        <h3 class="calendar-date">{{ entry['date']|dia }}</h3>
+        <p class="calendar-sum cifra">{{ entry['balance_cents']|brl }}</p>
+      </div>
+      <ul class="calendar-entries">
+        {% if entry['income_cents'] %}
+        <li class="calendar-entry">
+          <span class="calendar-name">renda esperada <span class="cell-key">previsto pelo histórico</span></span>
+          <span class="cifra">{{ entry['income_cents']|brl }}</span>
+        </li>
+        {% endif %}
+        {% if entry['due_cents'] %}
+        <li class="calendar-entry">
+          <span class="calendar-name">compromisso do dia <span class="cell-key">do calendário de vencimentos</span></span>
+          <span class="cifra">{{ entry['due_cents']|brl }}</span>
+        </li>
+        {% endif %}
+        <li class="calendar-entry">
+          <span class="calendar-name">gasto sem data <span class="cell-key">o que sobra do mês típico depois do compromisso, acumulado desde o dia anterior da lista</span></span>
+          <span class="cifra">{{ entry['variable_cents']|brl }}</span>
+        </li>
+      </ul>
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}
+  <div class="empty">
+    <p class="empty-title">Nenhum movimento previsto até {{ end['date']|dia }}.</p>
+    <p class="lede">A projeção soma o que o <a href="/comprometido">Comprometido</a> datou e a renda
+      que o histórico mostra. Sem série viva e sem entrada observada, não há o que somar.</p>
+  </div>
+  {% endif %}
+</section>

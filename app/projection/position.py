@@ -1,6 +1,6 @@
 import sqlite3
 
-from app.projection import BANK, CREDIT
+from app.ingest.loader import BANK, CREDIT
 
 _BY_TYPE = "SELECT type, COALESCE(SUM(balance_cents), 0) AS total FROM accounts GROUP BY type"
 

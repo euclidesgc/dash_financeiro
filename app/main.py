@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from app.auth.guard import install_guard
 from app.config import resolve_session_secret
 from app.migrate import run_migrations
-from app.routers import auth, commitments, health, pages, rules, spending
+from app.routers import auth, commitments, health, rules, spending, summary
 from app.routers.render import TEMPLATES, brl, day, month
 
 STYLESHEETS_FOLDER = Path(__file__).resolve().parent / "static" / "css"
@@ -29,7 +29,7 @@ def create_app() -> FastAPI:
     app.state.session_secret = resolve_session_secret()
     install_guard(app)
     app.include_router(auth.router)
-    app.include_router(pages.router)
+    app.include_router(summary.router)
     app.include_router(spending.router)
     app.include_router(rules.router)
     app.include_router(commitments.router)
