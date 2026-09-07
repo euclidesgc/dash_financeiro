@@ -1,3 +1,4 @@
+import os
 import sqlite3
 from copy import deepcopy
 
@@ -8,6 +9,14 @@ from app.db import connect
 from app.ingest.loader import ingest
 from app.migrate import run_migrations
 from app.taxonomy.seed import load_seed
+
+
+@pytest.fixture(autouse=True, scope="session")
+def ignore_the_owner_env_file():
+    # load_config falls back to the repository .env, so without this the suite
+    # reads the owner's real credentials, and a test that unsets a variable to
+    # exercise its absence gets the value handed back by the file.
+    os.environ["DASH_ENV_FILE"] = os.devnull
 
 ACCOUNT = {
     "id": "acc-1",

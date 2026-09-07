@@ -9,58 +9,8 @@
       "console": "integratedTerminal",
       "justMyCode": false,
       "python": "${workspaceFolder}/.venv/bin/python",
-      "cwd": "${workspaceFolder}"
-    },
-    {
-      "name": "Painel — base de teste em /tmp",
-      "type": "debugpy",
-      "request": "launch",
-      "module": "app",
-      "console": "integratedTerminal",
-      "justMyCode": false,
-      "python": "${workspaceFolder}/.venv/bin/python",
       "cwd": "${workspaceFolder}",
-      "env": {
-        "DASH_ENV_FILE": "/dev/null",
-        "DASH_DB_PATH": "/tmp/dash-vscode.sqlite",
-        "DASH_KEY_PATH": "/tmp/dash-vscode.key",
-        "LOGIN": "teste",
-        "PASSORD": "senha-teste-9k2",
-        "SESSION_SECRET": "segredo-de-teste-7h4",
-        "DASH_TODAY": "2026-09-05"
-      }
-    },
-    {
-      "name": "Carga (app.ingest)",
-      "type": "debugpy",
-      "request": "launch",
-      "module": "app.ingest",
-      "console": "integratedTerminal",
-      "justMyCode": false,
-      "python": "${workspaceFolder}/.venv/bin/python",
-      "cwd": "${workspaceFolder}"
-    },
-    {
-      "name": "Sincronizar (app.sync)",
-      "type": "debugpy",
-      "request": "launch",
-      "module": "app.sync",
-      "console": "integratedTerminal",
-      "justMyCode": false,
-      "python": "${workspaceFolder}/.venv/bin/python",
-      "cwd": "${workspaceFolder}"
-    },
-    {
-      "name": "Testes (pytest)",
-      "type": "debugpy",
-      "request": "launch",
-      "module": "pytest",
-      "args": ["-q"],
-      "console": "integratedTerminal",
-      "justMyCode": false,
-      "python": "${workspaceFolder}/.venv/bin/python",
-      "cwd": "${workspaceFolder}",
-      "env": { "DASH_ENV_FILE": "/dev/null" }
+      "preLaunchTask": "Preparar a base local"
     }
   ]
 }

@@ -45,9 +45,8 @@ confio e ninguém mais leia meu extrato.
   `users`, e o `password_hash` começa com `$argon2id$`.
 - **E2.2** — `SELECT * FROM users` não contém em nenhuma coluna o texto da senha
   do ambiente; o log da subida e o HTML da página de login também não.
-- **E2.3** — O `.env` do dono traz `LOGIN` e `PASSORD` (typo preservado). O seed
-  aceita `PASSORD` e `PASSWORD`, e `GEMIMI_API_KEY` e `GEMINI_API_KEY`, sem
-  exigir correção do arquivo.
+- **E2.3** — O `.env` do dono traz `LOGIN` e `PASSWORD`, e a chave do Gemini em
+  `GEMINI_API_KEY`. Nenhuma grafia com typo é lida.
 
 ### R3 — Cinco tentativas erradas em 15 minutos bloqueiam a sexta
 
