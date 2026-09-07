@@ -66,8 +66,17 @@ def expensive_debts(conn: sqlite3.Connection) -> list[dict]:
     ]
 
 
-def simulate(conn: sqlite3.Connection, scenario: str, *, today: date) -> dict:
-    steady = monthly_result_cents(conn, scenario, today=today)
+def simulate(
+    conn: sqlite3.Connection,
+    scenario: str,
+    *,
+    today: date,
+    extra_monthly_cents: int = 0,
+) -> dict:
+    # The extra is what the simulator of item 008 injects: the same engine
+    # answers "where am I going" and "what would this change", so the two can
+    # never disagree.
+    steady = monthly_result_cents(conn, scenario, today=today) + extra_monthly_cents
     freed = released_by_month(conn, today=today) if scenario == OPTIMISTIC else []
     # Only the cash that is still ahead is taken out of the starting point: an
     # instalment ending in the month of the reading has already freed its money,

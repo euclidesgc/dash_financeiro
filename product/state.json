@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "active_item": "007-objetivo-e-linha-do-tempo",
+  "active_item": "008-simulador-e-base-de-fatos",
   "items": {
     "001-base-e-login": {
       "title": "Base e login: schema, ingestão dos 1.942 lançamentos e acesso protegido",
@@ -491,6 +491,43 @@
             ".": "1c95b2263766cb65be9e9228e90098ef4eeb5a6e"
           },
           "criteria_sha": "e62c9beca29c3f2d2ef639b0bcd4a9bf7569386456434291785cb517b1cce77f"
+        }
+      },
+      "divergences": {},
+      "criteria_exception": null
+    },
+    "008-simulador-e-base-de-fatos": {
+      "title": "O simulador que responde em dias, e a base de fatos que so o humano sabe",
+      "track": "rapida",
+      "stage": "execute",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-07T03:58:19Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-07T04:02:06Z",
+          "sha": "64982078fe2bc7e0d02d24783fba0053847c9a77",
+          "file": "product/items/008-simulador-e-base-de-fatos/01-brief.md",
+          "por": "autonomo"
+        },
+        "plan": {
+          "at": "2026-09-07T04:02:06Z",
+          "sha": "7ccf8caabffe29d944d7ccfc5156669aabade383",
+          "file": "product/items/008-simulador-e-base-de-fatos/03-plan.md",
+          "por": "autonomo"
+        }
+      },
+      "current_phase": 1,
+      "phases": {
+        "1": {
+          "status": "em_execucao",
+          "reproved_count": 0,
+          "verdict": null,
+          "verdict_file": null,
+          "validated_sha": null,
+          "pr": null,
+          "blocked_on": []
         }
       },
       "divergences": {},
