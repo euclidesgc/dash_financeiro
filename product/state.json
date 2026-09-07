@@ -548,14 +548,14 @@
       "created_at": "2026-09-07T04:27:46Z",
       "approvals": {
         "brief": {
-          "at": "2026-09-07T04:31:43Z",
-          "sha": "3fe2e8c71e1caf4445cea839c64b1c37b2dc88a6",
+          "at": "2026-09-07T04:46:28Z",
+          "sha": "00cf8d8712713d27a1aad47e1401044e53a3fd12",
           "file": "product/items/009-ia-consultora/01-brief.md",
           "por": "autonomo"
         },
         "plan": {
-          "at": "2026-09-07T04:31:43Z",
-          "sha": "1cdbb45b9b7ef16daac24c5af359581cb45caca1",
+          "at": "2026-09-07T04:46:28Z",
+          "sha": "bac91b262b990b4e09d2cb6db8f50e63dffb0284",
           "file": "product/items/009-ia-consultora/03-plan.md",
           "por": "autonomo"
         }

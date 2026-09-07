@@ -137,3 +137,66 @@ def test_the_snapshot_never_calls_the_model(taxonomy_conn, monkeypatch):
     conn = base(taxonomy_conn)
 
     assert snapshot(conn, today=date(2026, 9, 5))["consolidated"] is not None
+
+
+def test_the_screen_shows_every_line_the_model_receives(taxonomy_conn):
+    from app.advisor.context import lines
+
+    conn = base(taxonomy_conn)
+    numbers = snapshot(conn, today=REFERENCE)
+    shown = lines(numbers)
+    text = as_text(numbers)
+
+    assert len(shown) == len(text.splitlines())
+    for line in shown:
+        assert f"{line['label']}: {line['value']}." in text
+
+
+def test_a_question_that_is_not_in_the_catalogue_is_refused(taxonomy_conn):
+    from app.advisor.gaps import UnknownQuestionError
+
+    with pytest.raises(UnknownQuestionError):
+        dismiss(taxonomy_conn, "x" * 5000)
+    with pytest.raises(UnknownQuestionError):
+        dismiss(taxonomy_conn, "<script>alert(1)</script>")
+
+    assert taxonomy_conn.execute("SELECT COUNT(*) FROM advisor_questions").fetchone()[0] == 0
+
+
+def test_postponing_everything_is_not_the_same_as_answering_everything(taxonomy_conn):
+    from app.advisor.gaps import WANTED, postponed
+
+    conn = base(taxonomy_conn)
+    for wanted in WANTED:
+        dismiss(conn, wanted["name"])
+
+    assert next_question(conn, today=REFERENCE) is None
+    assert postponed(conn) == len(WANTED)
+
+
+def test_the_refusal_of_the_provider_is_said_in_portuguese(monkeypatch):
+    class Answer:
+        status_code = 401
+
+        def raise_for_status(self):
+            raise httpx.HTTPStatusError("401", request=None, response=self)
+
+    monkeypatch.setattr(httpx, "post", lambda *a, **k: Answer())
+
+    with pytest.raises(AdvisorUnavailableError) as refusal:
+        ask("e daí?", "contexto", api_key="chave-errada")
+
+    assert "chave foi recusada" in str(refusal.value)
+    assert "HTTPStatusError" not in str(refusal.value)
+
+
+def test_a_timeout_is_said_in_portuguese(monkeypatch):
+    def slow(*args, **kwargs):
+        raise httpx.ReadTimeout("demorou")
+
+    monkeypatch.setattr(httpx, "post", slow)
+
+    with pytest.raises(AdvisorUnavailableError) as refusal:
+        ask("e daí?", "contexto", api_key="chave")
+
+    assert "demorou demais" in str(refusal.value)

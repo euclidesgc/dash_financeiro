@@ -27,3 +27,20 @@
 - **RF-14** — Pergunta vazia ou acima de 500 caracteres é recusada com `400`.
 - **RF-15** — A tela obedece à linguagem visual; nenhum número medido aparece
   como literal no código.
+
+## O que o veredicto obrigou a escrever
+
+- **RF-16** — A tabela da tela mostra **todas** as linhas que vão para o modelo,
+  não um subconjunto. Mostrava cinco de oito, e as três de fora incluíam caixa e
+  cartão: se o modelo citasse um deles — e a instrução o autoriza —, o dono não
+  acharia o número na tela e leria como invenção. A tela que existe para provar
+  que a IA não inventa era a que produzia a suspeita.
+- **RF-17** — A mensagem de indisponibilidade é **em português e acionável**:
+  chave recusada, excesso de chamadas, demora e formato inesperado dizem coisas
+  diferentes. Antes, todas chegavam com o nome da classe do erro em inglês.
+- **RF-18** — "Nada a perguntar porque está tudo respondido" e "nada a perguntar
+  porque você adiou tudo" são **estados diferentes**, e só o primeiro significa
+  que a projeção roda sobre fato. O segundo diz, com todas as letras, que ela
+  segue usando premissa.
+- **RF-19** — O adiamento aceita **apenas** nome do catálogo. Qualquer string ia
+  para a tabela como chave primária, sem teto, num POST autenticado.

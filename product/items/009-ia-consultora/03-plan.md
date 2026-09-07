@@ -58,6 +58,20 @@ DASH_KEY_PATH=/tmp/dash-009.key .venv/bin/python -m app`. **Nenhuma variável
       `rtk proxy grep -c "NUNCA CALCULA" app/advisor/gemini.py` imprime `1`, e
       `rtk proxy grep -REn --exclude-dir=__pycache__ "httpx" app/advisor` imprime
       linhas **apenas** de `app/advisor/gemini.py`
+- [ ] `comportamental` — RF-16, RF-18, RF-19
+      *Dado* o servidor rodando e um cookie válido
+      *Quando* a tela é lida, as **três** perguntas são adiadas uma a uma, a tela
+      é lida de novo, e um `POST /consultor/adiar` é feito com `nome=xxxx`
+      *Então* a primeira leitura traz **nove** elementos `data-numero`, o mesmo
+      número de linhas que `app.advisor.context.as_text` produz; a segunda traz o
+      texto `porque você adiou tudo` e a palavra `premissa`; e o último `POST`
+      devolve `400`
+- [ ] `comando` — RF-17
+      `rtk proxy env DASH_ENV_FILE=/dev/null .venv/bin/python -m pytest -q
+      tests/test_advisor.py` sai com código 0, e o arquivo contém um teste que
+      afirma que uma recusa `401` do provedor devolve mensagem com `chave foi
+      recusada` e **sem** a string `HTTPStatusError`, e outro que afirma que um
+      timeout devolve `demorou demais`
 - [ ] `comportamental` — RF-15
       *Dado* o Chromium com `prefers-reduced-motion: reduce` emulado, sessão
       válida e `http://127.0.0.1:8000/consultor?data=2026-09-05` carregada

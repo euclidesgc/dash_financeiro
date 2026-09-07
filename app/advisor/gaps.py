@@ -56,7 +56,21 @@ def next_question(conn: sqlite3.Connection, *, today: date) -> dict | None:
     return found[0] if found else None
 
 
+class UnknownQuestionError(LookupError):
+    pass
+
+
+def postponed(conn: sqlite3.Connection) -> int:
+    return conn.execute(
+        "SELECT COUNT(*) FROM advisor_questions WHERE dismissed_at IS NOT NULL"
+    ).fetchone()[0]
+
+
 def dismiss(conn: sqlite3.Connection, name: str) -> None:
+    # Only a name from the catalogue: any string would grow the table without a
+    # ceiling on an authenticated POST, and none of them would ever be shown.
+    if name not in {wanted["name"] for wanted in WANTED}:
+        raise UnknownQuestionError("Pergunta desconhecida.")
     conn.execute(
         "INSERT INTO advisor_questions (name, asked_at, dismissed_at) "
         "VALUES (?, datetime('now'), datetime('now')) "

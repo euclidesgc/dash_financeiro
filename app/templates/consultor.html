@@ -28,9 +28,17 @@
     </form>
     {% else %}
     <div class="empty">
+      {% if postponed %}
+      <p class="empty-title">Nada a perguntar — porque você adiou tudo.</p>
+      <p class="lede">{{ postponed }} pergunta(s) foram adiadas e nenhum fato foi informado. A
+        projeção segue usando <strong>premissa</strong>, não fato, e o painel não vai insistir.
+        Quando quiser responder, os campos estão em <a href="/dividas">Dívidas</a> e
+        <a href="/simulador">Simulador</a>.</p>
+      {% else %}
       <p class="empty-title">Nada a perguntar.</p>
       <p class="lede">Tudo o que só você sabe já está informado e dentro da validade. Enquanto
         continuar assim, a projeção usa fato e não premissa.</p>
+      {% endif %}
     </div>
     {% endif %}
   </section>
@@ -56,23 +64,20 @@
   </section>
   <section id="numeros" class="panel panel-wide">
     <h2 class="section-title">O que ela lê</h2>
-    <p class="lede">Este é o contexto exato que vai para o modelo. Ele pode copiar daqui e mais
-      nada.</p>
+    <p class="lede">Este é o contexto exato que vai para o modelo — as mesmas linhas, na mesma
+      ordem. Ele pode copiar daqui e mais nada, e por isso você acha na tela todo número que ele
+      citar.</p>
     <div class="table-scroll">
       <table class="data-table">
         <caption class="sr-only">Números determinísticos entregues ao modelo.</caption>
         <thead><tr><th scope="col">Número</th><th scope="col" class="col-num">Valor</th></tr></thead>
         <tbody>
-          <tr data-numero="consolidada"><td>Posição consolidada</td>
-            <td class="cifra col-num">{{ numbers['consolidated']|brl }}</td></tr>
-          <tr data-numero="comprometido"><td>Comprometido por mês</td>
-            <td class="cifra col-num">{{ numbers['committed']|brl }}</td></tr>
-          <tr data-numero="resultado"><td>Resultado mensal</td>
-            <td class="cifra col-num">{{ numbers['monthly_result']|brl }}</td></tr>
-          <tr data-numero="reserva"><td>Reserva alvo</td>
-            <td class="cifra col-num">{{ numbers['reserve_target']|brl }}</td></tr>
-          <tr data-numero="pior"><td>Pior ponto dos próximos 45 dias</td>
-            <td class="cifra col-num">{{ numbers['worst_balance']|brl }}</td></tr>
+          {% for line in context_lines %}
+          <tr data-numero="{{ loop.index }}">
+            <td>{{ line['label'] }}</td>
+            <td class="cifra col-num">{{ line['value'] }}</td>
+          </tr>
+          {% endfor %}
         </tbody>
       </table>
     </div>

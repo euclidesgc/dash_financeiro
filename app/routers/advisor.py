@@ -6,8 +6,14 @@ from fastapi import APIRouter, Form
 from starlette.requests import Request
 from starlette.responses import Response
 
-from app.advisor.context import as_text, snapshot
-from app.advisor.gaps import dismiss, next_question, pending
+from app.advisor.context import as_text, lines, snapshot
+from app.advisor.gaps import (
+    UnknownQuestionError,
+    dismiss,
+    next_question,
+    pending,
+    postponed,
+)
 from app.advisor.gemini import AdvisorUnavailableError, ask
 from app.config import load_config
 from app.db import connect
@@ -72,9 +78,10 @@ def postpone(
     today = _reference(data)
     conn = connect()
     try:
-        if not nome.strip():
-            return _answer(request, conn, today, notice="Pergunta desconhecida.", status_code=400)
-        dismiss(conn, nome.strip())
+        try:
+            dismiss(conn, nome.strip())
+        except UnknownQuestionError as refusal:
+            return _answer(request, conn, today, notice=str(refusal), status_code=400)
         return _answer(request, conn, today)
     finally:
         conn.close()
@@ -110,8 +117,13 @@ def _context(conn: sqlite3.Connection, today: date) -> dict[str, Any]:
         "reference": today.isoformat(),
         "numbers": numbers,
         "context_text": as_text(numbers),
+        "context_lines": lines(numbers),
         "question": next_question(conn, today=today),
         "pending": pending(conn, today=today),
+        # "Nothing to ask because everything is answered" and "nothing to ask
+        # because you postponed everything" are different states, and only one of
+        # them means the projection is running on fact.
+        "postponed": postponed(conn) if not next_question(conn, today=today) else 0,
         "action": SCREEN,
         "dismiss_action": DISMISS,
         "has_key": bool(load_config().gemini_api_key),
