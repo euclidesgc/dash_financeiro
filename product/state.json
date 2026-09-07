@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "active_item": "006-sync-pluggy",
+  "active_item": "007-objetivo-e-linha-do-tempo",
   "items": {
     "001-base-e-login": {
       "title": "Base e login: schema, ingestão dos 1.942 lançamentos e acesso protegido",
@@ -449,6 +449,48 @@
             ".": "2e111dc8a9d0b554c393bc5a9ed358784652c5d9"
           },
           "criteria_sha": "db4d634fad0222ae4fbe8989c0dc8762b7d55c96de6422b31115a3005f9dcbf7"
+        }
+      },
+      "divergences": {},
+      "criteria_exception": null
+    },
+    "007-objetivo-e-linha-do-tempo": {
+      "title": "Um objetivo com data, tres cenarios e a linha do tempo que mostra o progresso",
+      "track": "rapida",
+      "stage": "done",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-07T03:13:21Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-07T03:35:30Z",
+          "sha": "41541186a4ccf48b34049201f333a73cf6e5d920",
+          "file": "product/items/007-objetivo-e-linha-do-tempo/01-brief.md",
+          "por": "autonomo"
+        },
+        "plan": {
+          "at": "2026-09-07T03:35:30Z",
+          "sha": "595511624be52bd40b838b354e527d9ba16a7115",
+          "file": "product/items/007-objetivo-e-linha-do-tempo/03-plan.md",
+          "por": "autonomo"
+        }
+      },
+      "current_phase": 1,
+      "phases": {
+        "1": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/007-objetivo-e-linha-do-tempo/05-veredictos/fase-1.md",
+          "validated_sha": "1295a5cb160c1ac3d80231173f10cf2120e85396",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T03:57:12Z",
+          "validated_trees": {
+            ".": "1c95b2263766cb65be9e9228e90098ef4eeb5a6e"
+          },
+          "criteria_sha": "e62c9beca29c3f2d2ef639b0bcd4a9bf7569386456434291785cb517b1cce77f"
         }
       },
       "divergences": {},
