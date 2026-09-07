@@ -64,6 +64,17 @@ ao topo da fila é a régua local certa e o agregado errado.
   formatador (`ruff format`) ficou **de fora**: adotá-lo reescreveria 53 arquivos de uma vez,
   e um diff desse tamanho esconde o próximo diff de verdade.
 
+- [ ] `016-data-de-referencia-no-caminho-de-recusa` — `_reference` de
+  `app/routers/whatif.py` e de `app/routers/advisor.py` cai em `date.today()`
+  quando a data pedida é inválida ou está fora da faixa, em vez de
+  `app.config.reference_date()`, que é quem lê `DASH_TODAY`. Efeito medido pelo
+  validador da fase 1 do `015`: com `DASH_TODAY=2026-09-05` no processo,
+  `/simulador` e `/consultor` renderizam a data de hoje de verdade — e é esse
+  `today` que decide se um fato está **vencido**, então uma leitura sem data
+  pedida pode marcar como vencido o que a data de referência ainda considera
+  válido. Pré-existente desde o item `008`, fora do diff do `015`. Varrer os
+  demais `date.today()` de rota entra no mesmo item.
+
 ## Validações de campo pendentes
 
 O que só o hardware, o aparelho real ou o navegador real provam. Não vira tipo
