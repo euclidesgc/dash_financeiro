@@ -10,9 +10,21 @@ class InvalidAmountError(ValueError):
     pass
 
 
+class UnknownRateError(ValueError):
+    pass
+
+
 def simulate(debt: dict, extra_cents: int) -> dict[str, Any]:
     if extra_cents <= 0:
         raise InvalidAmountError("O aporte precisa ser maior que zero.")
+    if not debt["monthly_rate_bp"]:
+        # Answering R$ 0,00 here is not abstaining: it is the stronger claim that
+        # the money saves nothing. The screen already says two sections above
+        # that guessing a rate would be the panel deciding what it does not know.
+        raise UnknownRateError(
+            f"Sem a taxa de {debt['name']}, não dá para dizer o que o aporte economiza. "
+            "Informe a taxa primeiro."
+        )
     balance = abs(debt["balance_cents"])
     rate = (debt["monthly_rate_bp"] or 0) / RATE_SCALE
     if extra_cents >= balance:
@@ -61,14 +73,17 @@ def _answer(debt: dict, applied: int, instalments: int, interest: int, leftover:
     }
 
 
-def parse_amount(typed: str) -> int:
+def parse_amount(typed: str, field: str = "Aporte") -> int:
+    # The field is named by the caller because the same reader serves the extra
+    # payment and the two parameters of the car decision, and a refusal that
+    # names the wrong field points the owner at something they did not touch.
     cleaned = (typed or "").strip().replace("R$", "").replace(".", "").replace(",", ".")
     try:
         value = float(cleaned)
     except ValueError:
-        raise InvalidAmountError(f"Aporte inválido: {typed!r}.") from None
+        raise InvalidAmountError(f"{field} inválido: “{typed}”.") from None
     if value <= 0:
-        raise InvalidAmountError("O aporte precisa ser maior que zero.")
+        raise InvalidAmountError(f"{field} precisa ser maior que zero.")
     return round(value * BASIS_POINTS)
 
 

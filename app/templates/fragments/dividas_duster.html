@@ -20,9 +20,11 @@
       <p class="figure cifra" data-quitacao="{{ settlement_cents }}">{{ settlement_cents|brl }}</p>
     </div>
     <div class="stack-tight">
-      <p class="eyebrow">Desconto da quitação</p>
-      <p class="headline cifra positive" data-desconto="{{ discount_cents }}">{{ discount_cents|brl }}</p>
-      <p class="lede">Contra o valor presente das parcelas que faltam.</p>
+      <p class="eyebrow">{% if discount_cents >= 0 %}Desconto da quitação{% else %}Ágio da quitação{% endif %}</p>
+      <p class="headline cifra {% if discount_cents >= 0 %}positive{% else %}negative{% endif %}" data-desconto="{{ discount_cents }}">{{ discount_cents|brl }}</p>
+      <p class="lede">Contra o valor presente das parcelas que faltam.
+        {% if discount_cents < 0 %}O banco está cobrando <strong>acima</strong> do que o
+        cronograma vale: quitar assim custa mais do que seguir pagando.{% endif %}</p>
     </div>
   </div>
   {% endif %}

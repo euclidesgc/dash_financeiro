@@ -189,10 +189,18 @@ def without_rate(conn: sqlite3.Connection) -> list[dict]:
     ]
 
 
+class DebtNotFoundError(LookupError):
+    pass
+
+
 def set_rate(conn: sqlite3.Connection, debt_id: int, typed: str) -> None:
-    conn.execute(
+    # A write that touches no row and answers 200 shows the owner a screen that
+    # reloads as if it had saved.
+    changed = conn.execute(
         "UPDATE debts SET monthly_rate_bp = ? WHERE id = ?", (parse_rate(typed), debt_id)
-    )
+    ).rowcount
+    if not changed:
+        raise DebtNotFoundError("Dívida não encontrada.")
     conn.commit()
 
 
@@ -203,9 +211,11 @@ def parse_rate(typed: str) -> int | None:
     try:
         value = float(cleaned)
     except ValueError:
-        raise InvalidRateError(f"Taxa inválida: {typed!r}.") from None
+        raise InvalidRateError(f"Taxa inválida: “{typed}”.") from None
     if value < 0 or value * BASIS_POINTS > MAX_RATE_BP:
-        raise InvalidRateError(f"Taxa fora da faixa: {typed!r}. Use de 0 a 100% ao mês.")
+        raise InvalidRateError(
+            f"Taxa fora da faixa: “{typed}”. Use de 0 a 100% ao mês."
+        )
     return round(value * BASIS_POINTS)
 
 

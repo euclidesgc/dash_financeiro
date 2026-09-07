@@ -128,3 +128,55 @@ def test_a_rate_typed_by_the_owner_survives_the_reload(taxonomy_conn, tmp_path, 
     rebuild(taxonomy_conn, today=date(2026, 9, 5))
 
     assert ladder(taxonomy_conn)[0]["monthly_rate_bp"] == 352
+
+
+def test_the_vehicle_step_is_built_by_the_loader_and_not_by_the_test(
+    taxonomy_conn, tmp_path, monkeypatch
+):
+    import json
+
+    folder = tmp_path / "manual"
+    folder.mkdir()
+    (folder / ladder_module.VEHICLE_FILE).write_text(
+        json.dumps(
+            {
+                "prazo_meses": 60,
+                "juros_efetivo_mensal_pct": 1.63,
+                "valor_parcela": 1235.33,
+                "primeiro_vencimento": "2025-06-11",
+            }
+        )
+    )
+    monkeypatch.setenv(ladder_module.MANUAL_DIR, str(folder))
+    rebuild(taxonomy_conn, today=date(2026, 9, 5))
+    row = ladder(taxonomy_conn)[0]
+
+    assert row["kind"] == "vehicle"
+    assert row["term_months"] == TERM
+    assert row["balance_cents"] == -VEHICLE_BALANCE
+    assert row["monthly_rate_bp"] == RATE_BP
+    assert row["payment_cents"] == -PAYMENT
+
+
+def test_a_rate_written_to_a_step_that_does_not_exist_is_refused(taxonomy_conn):
+    from app.debts.ladder import DebtNotFoundError, set_rate
+
+    with pytest.raises(DebtNotFoundError):
+        set_rate(taxonomy_conn, 999, "3,52")
+
+
+def test_a_debt_without_a_rate_refuses_to_be_simulated():
+    from app.debts.simulate import UnknownRateError
+
+    with pytest.raises(UnknownRateError) as refusal:
+        simulate(step(monthly_rate_bp=None, term_months=None, payment_cents=None), 500000)
+
+    assert "Informe a taxa primeiro." in str(refusal.value)
+
+
+def test_a_refusal_names_the_field_the_owner_touched():
+    with pytest.raises(InvalidAmountError) as refusal:
+        parse_amount("abc", "Saldo de quitação")
+
+    assert "Saldo de quitação inválido" in str(refusal.value)
+    assert "'" not in str(refusal.value)

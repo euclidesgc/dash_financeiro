@@ -7,6 +7,7 @@ from starlette.responses import Response
 
 from app.db import connect
 from app.debts.ladder import (
+    DebtNotFoundError,
     InvalidRateError,
     VEHICLE,
     ladder,
@@ -14,7 +15,13 @@ from app.debts.ladder import (
     set_rate,
     without_rate,
 )
-from app.debts.simulate import InvalidAmountError, parse_amount, parameter, simulate
+from app.debts.simulate import (
+    InvalidAmountError,
+    UnknownRateError,
+    parameter,
+    parse_amount,
+    simulate,
+)
 
 from .render import TEMPLATES
 
@@ -37,7 +44,12 @@ KIND_LABELS = {
 
 SETTLEMENT = "quitacao"
 TRANSPORT = "transporte"
-PARAMETERS = (SETTLEMENT, TRANSPORT)
+PARAMETERS = {
+    SETTLEMENT: "Saldo de quitação",
+    TRANSPORT: "Custo de transporte",
+}
+
+NOT_FOUND = "Dívida não encontrada."
 
 
 @router.get(SCREEN)
@@ -58,8 +70,8 @@ def rate(
     conn = connect()
     try:
         try:
-            set_rate(conn, int(degrau), taxa)
-        except (InvalidRateError, ValueError) as refusal:
+            set_rate(conn, _identifier(degrau), taxa)
+        except (InvalidRateError, DebtNotFoundError) as refusal:
             return _answer(request, conn, notice=str(refusal), status_code=400)
         return _answer(request, conn)
     finally:
@@ -76,10 +88,10 @@ def simulation(
     try:
         debt = _debt(conn, degrau)
         if debt is None:
-            return _answer(request, conn, notice="Dívida não encontrada.", status_code=400)
+            return _answer(request, conn, notice=NOT_FOUND, status_code=400)
         try:
             return _answer(request, conn, simulation=simulate(debt, parse_amount(aporte)))
-        except InvalidAmountError as refusal:
+        except (InvalidAmountError, UnknownRateError) as refusal:
             return _answer(request, conn, notice=str(refusal), status_code=400)
     finally:
         conn.close()
@@ -94,9 +106,11 @@ def store_parameter(
     conn = connect()
     try:
         if nome not in PARAMETERS:
-            return _answer(request, conn, notice=f"Parâmetro desconhecido: {nome!r}.", status_code=400)
+            return _answer(
+                request, conn, notice=f"Parâmetro desconhecido: “{nome}”.", status_code=400
+            )
         try:
-            cents = parse_amount(valor)
+            cents = parse_amount(valor, PARAMETERS[nome])
         except InvalidAmountError as refusal:
             return _answer(request, conn, notice=str(refusal), status_code=400)
         conn.execute(
@@ -110,10 +124,19 @@ def store_parameter(
         conn.close()
 
 
+def _identifier(asked: str) -> int:
+    # A key that is not a number is a debt that does not exist, and the reader
+    # says so in pt-BR instead of letting the interpreter answer in English.
+    try:
+        return int(asked)
+    except ValueError:
+        raise DebtNotFoundError(NOT_FOUND) from None
+
+
 def _debt(conn: sqlite3.Connection, asked: str) -> dict | None:
     try:
-        found = conn.execute("SELECT * FROM debts WHERE id = ?", (int(asked),)).fetchone()
-    except ValueError:
+        found = conn.execute("SELECT * FROM debts WHERE id = ?", (_identifier(asked),)).fetchone()
+    except DebtNotFoundError:
         return None
     return dict(found) if found else None
 
@@ -147,9 +170,11 @@ def _context(conn: sqlite3.Connection) -> dict[str, Any]:
         "vehicle": vehicle,
         "settlement_cents": settlement,
         "transport_cents": parameter(conn, TRANSPORT),
-        # The discount is the whole reason the owner would call the bank: it is
-        # the difference between what the schedule is worth and what they would
-        # actually pay to end it.
+        # The difference between what the schedule is worth and what the bank
+        # actually charges to end it. It is a discount only when it is positive:
+        # banks often quote settlement above the strict present value, and
+        # calling that a discount — in the colour of a gain — would be the screen
+        # lying in favour of a thirty-nine thousand real decision.
         "discount_cents": (
             abs(vehicle["balance_cents"]) - settlement
             if vehicle and settlement is not None
