@@ -50,11 +50,10 @@ DASH_KEY_PATH=/tmp/dash-006.key .venv/bin/python -m app`.
       contagem de linhas inseridas
 - [ ] `comportamental` — RF-12
       *Dado* o servidor rodando, um cookie válido, e uma linha de falha inserida
-      em `sync_runs` por `rtk proxy env DASH_ENV_FILE=/dev/null
-      DASH_DB_PATH=/tmp/dash-006.sqlite .venv/bin/python -m app.query "insert
-      into sync_runs (started_at, finished_at, source, status, message) values
-      ('2026-09-05T10:00:00', '2026-09-05T10:00:01', 'teste', 'failed', 'o item
-      da Pluggy expirou')"`
+      em `sync_runs` **por escrita direta no SQLite** — `app.query` é
+      somente-leitura desde o item `001` e recusa qualquer coisa que não seja
+      `select` ou `pragma` —, com `source='teste'`, `status='failed'` e
+      `message='o item da Pluggy expirou'`
       *Quando* `GET /?data=2026-09-05` é buscada
       *Então* o bloco `id="sincronizacao"` traz a string `o item da Pluggy
       expirou`, traz a palavra `falhou`, e **continua** trazendo a data da última
@@ -86,6 +85,27 @@ DASH_KEY_PATH=/tmp/dash-006.key .venv/bin/python -m app`.
 - [ ] `comando` — RF-16
       `rtk proxy grep -REn --exclude-dir=__pycache__ "\b1942\b" app` não imprime
       nenhuma linha
+- [ ] `comportamental` — RF-17
+      *Dado* uma fonte de dados em que um lançamento aponta para uma conta que
+      não existe, e o servidor rodando com um cookie válido
+      *Quando* `POST /sincronizar` é executado
+      *Então* a resposta **não** é `500`; o HTML traz a palavra `falhou`; a
+      contagem de transações da base fica **igual** à de antes; e
+      `select status, source from sync_runs order by id desc limit 1` devolve uma
+      linha com `failed`
+- [ ] `comportamental` — RF-18
+      *Dado* uma linha de falha em `sync_runs` cuja `message` é a mensagem
+      técnica do carregador (`rejected=1`)
+      *Quando* `GET /?data=2026-09-05` é buscada com cookie válido
+      *Então* o bloco `id="sincronizacao"` **não** traz as strings `rejected=`,
+      `accepted=` nem `present=`, e traz uma frase em português que diz quantas
+      linhas a fonte recusou
+- [ ] `comando` — RF-19
+      `rtk proxy env DASH_ENV_FILE=/dev/null .venv/bin/python -m pytest -q
+      tests/test_sync.py` sai com código 0, e o arquivo contém um teste que
+      afirma que uma execução gravada às 02:00 UTC do dia 7 é lida como dia 6 num
+      fuso de −03:00, e outro que afirma que a idade em dias é contada sobre a
+      data local e não sobre a UTC
 - [ ] `comportamental` — RF-08 guarda
       *Dado* nenhuma sessão
       *Quando* `rtk proxy curl -s -o /dev/null -w "%{http_code}" -X POST

@@ -12,13 +12,24 @@ from app.projection.forecast import forecast
 from app.projection.monthly import MONTHS, monthly
 from app.projection.position import positions
 from app.queries.period import InvalidPeriodError, day
+from app.sync import (
+    STALE_DAYS,
+    MissingCredentialError,
+    days_since,
+    finished_on,
+    last_runs,
+    readable,
+    synchronise,
+)
 
 from .render import TEMPLATES
 
 router = APIRouter()
 
 SCREEN = "/"
+SYNC = "/sincronizar"
 DATE_FIELD = "data"
+COMMAND = "python -m app.sync"
 
 _COUNT = "SELECT COUNT(*) AS total FROM transactions"
 
@@ -28,11 +39,44 @@ def summary_screen(request: Request) -> Response:
     today, notice = _reference(request.query_params.get(DATE_FIELD))
     conn = connect()
     try:
-        context = _context(conn, today)
-        context.update(notice=notice)
-        return TEMPLATES.TemplateResponse(request, "resumo.html", context)
+        return _answer(request, conn, today, notice=notice)
     finally:
         conn.close()
+
+
+@router.post(SYNC)
+def synchronise_now(request: Request) -> Response:
+    today, _ = _reference(request.query_params.get(DATE_FIELD))
+    conn = connect()
+    try:
+        try:
+            outcome = synchronise(conn, today=today)
+        except MissingCredentialError as refusal:
+            return _answer(request, conn, today, notice=str(refusal), status_code=400)
+        return _answer(request, conn, today, notice=_said(outcome))
+    finally:
+        conn.close()
+
+
+def _said(outcome) -> str:
+    if outcome.status != "ok":
+        return f"A sincronização falhou: {readable(outcome.message)}"
+    if not outcome.transactions:
+        return "Sincronizado. Nenhum lançamento novo."
+    return f"Sincronizado. {outcome.transactions} lançamento(s) novo(s)."
+
+
+def _answer(
+    request: Request,
+    conn: sqlite3.Connection,
+    today: date,
+    *,
+    notice: str | None = None,
+    status_code: int = 200,
+) -> Response:
+    context = _context(conn, today)
+    context.update(notice=notice)
+    return TEMPLATES.TemplateResponse(request, "resumo.html", context, status_code=status_code)
 
 
 def _reference(asked: object) -> tuple[date, str | None]:
@@ -89,4 +133,24 @@ def _context(conn: sqlite3.Connection, today: date) -> dict[str, Any]:
         # figures on screen would not add up to the balance beside them.
         "moving": _moving(line["days"]),
         "empty": conn.execute(_COUNT).fetchone()["total"] == 0,
+        "sync": _sync(conn, today),
+    }
+
+
+def _sync(conn: sqlite3.Connection, today: date) -> dict[str, Any]:
+    runs = last_runs(conn)
+    age = days_since(runs["succeeded"], today)
+    return {
+        "latest": runs["latest"],
+        "succeeded": runs["succeeded"],
+        "succeeded_at": finished_on(runs["succeeded"]),
+        "reason": readable(runs["latest"]["message"]) if runs["latest"] else None,
+        "age_days": age,
+        # The number the owner reads has an age, and the age is part of the
+        # number: a panel showing a fortnight-old statement with the face of a
+        # fresh one gets every decision wrong at once (RF-13).
+        "stale": age is not None and age > STALE_DAYS,
+        "failed": bool(runs["latest"] and runs["latest"]["status"] != "ok"),
+        "action": SYNC,
+        "command": COMMAND,
     }

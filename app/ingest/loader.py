@@ -92,6 +92,15 @@ def ingest(
         )
 
     try:
+        # Counted before the upsert: after it, everything is present, and
+        # "how many rows are there" is not the same question as "how many
+        # entered" (RF-01).
+        accounts_before = _count_present(
+            conn, "accounts", "id", [row["id"] for row in account_rows]
+        )
+        transactions_before = _count_present(
+            conn, "transactions", "pluggy_id", [row["pluggy_id"] for row in transaction_rows]
+        )
         conn.executemany(
             _upsert("accounts", _ACCOUNT_COLUMNS, "id"),
             [tuple(row[column] for column in _ACCOUNT_COLUMNS) for row in account_rows],
@@ -100,31 +109,49 @@ def ingest(
             _upsert("transactions", _TRANSACTION_COLUMNS, "pluggy_id"),
             [tuple(row[column] for column in _TRANSACTION_COLUMNS) for row in transaction_rows],
         )
-        accounts_written = _count_present(
+        accounts_present = _count_present(
             conn, "accounts", "id", [row["id"] for row in account_rows]
         )
-        transactions_written = _count_present(
+        transactions_present = _count_present(
             conn, "transactions", "pluggy_id", [row["pluggy_id"] for row in transaction_rows]
         )
-    except Exception:
-        conn.rollback()
-        raise
+        accounts_written = accounts_present - accounts_before
+        transactions_written = transactions_present - transactions_before
+    except Exception as failure:
+        # The exception path has to leave a trace too. Rolling back and
+        # re-raising means the sync failed, wrote nothing to sync_runs, and the
+        # next screen goes on showing the last success with the face of fresh
+        # data — the failure mode this whole item exists to kill (RF-17).
+        return _fail(
+            conn,
+            started=started,
+            now=now,
+            source=source,
+            message=f"erro de escrita: {type(failure).__name__}",
+            rejections=(),
+            transactions_accepted=len(transaction_rows),
+            transactions_written=0,
+            accounts_accepted=len(account_rows),
+            accounts_written=0,
+        )
 
-    if transactions_written != len(transaction_rows) or accounts_written != len(account_rows):
+    if transactions_present != len(transaction_rows) or accounts_present != len(account_rows):
         return _fail(
             conn,
             started=started,
             now=now,
             source=source,
             message=(
-                f"transactions accepted={len(transaction_rows)} written={transactions_written} "
-                f"accounts accepted={len(account_rows)} written={accounts_written}"
+                f"transactions accepted={len(transaction_rows)} present={transactions_present} "
+                f"accounts accepted={len(account_rows)} present={accounts_present}"
             ),
             rejections=(),
             transactions_accepted=len(transaction_rows),
             transactions_written=transactions_written,
             accounts_accepted=len(account_rows),
             accounts_written=accounts_written,
+            transactions_present=transactions_present,
+            accounts_present=accounts_present,
         )
 
     message = f"transactions={transactions_written} accounts={accounts_written}"
@@ -136,6 +163,8 @@ def ingest(
         status="ok",
         transactions_count=transactions_written,
         accounts_count=accounts_written,
+        transactions_present=transactions_present,
+        accounts_present=accounts_present,
         message=message,
     )
     conn.commit()
@@ -162,6 +191,8 @@ def _fail(
     transactions_written: int,
     accounts_accepted: int,
     accounts_written: int,
+    transactions_present: int = 0,
+    accounts_present: int = 0,
 ) -> IngestResult:
     # The failure row has to outlive the rollback it describes, so it is written
     # after the rollback, in a transaction of its own.
@@ -174,6 +205,8 @@ def _fail(
         status="failed",
         transactions_count=transactions_written,
         accounts_count=accounts_written,
+        transactions_present=transactions_present,
+        accounts_present=accounts_present,
         message=message,
     )
     conn.commit()
@@ -197,11 +230,14 @@ def _record_run(
     status: str,
     transactions_count: int,
     accounts_count: int,
+    transactions_present: int,
+    accounts_present: int,
     message: str,
 ) -> None:
     conn.execute(
-        "INSERT INTO sync_runs (started_at, finished_at, source, status, "
-        "transactions_count, accounts_count, message) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO sync_runs (started_at, finished_at, source, status, transactions_count, "
+        "accounts_count, transactions_present, accounts_present, message) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
             started.isoformat(),
             finished.isoformat(),
@@ -209,6 +245,8 @@ def _record_run(
             status,
             transactions_count,
             accounts_count,
+            transactions_present,
+            accounts_present,
             message,
         ),
     )

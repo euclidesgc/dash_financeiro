@@ -56,11 +56,11 @@ def test_divergence_rolls_back_and_the_failed_run_survives(conn, accounts):
     transactions = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))
     result = ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
     assert result.status == "failed"
-    assert "accepted=3 written=2" in result.message
+    assert "accepted=3 present=2" in result.message
     assert counts(conn) == (0, 0, 1)
     run = conn.execute("SELECT status, message FROM sync_runs").fetchone()
     assert run["status"] == "failed"
-    assert "accepted=3 written=2" in run["message"]
+    assert "accepted=3 present=2" in run["message"]
 
 
 def test_second_run_over_the_same_source_does_not_duplicate(conn, accounts):
