@@ -318,10 +318,16 @@ valor muda, e grava — sem que a tela passe a dizer um número e calcular outro
       catálogo, e não `grep` por nome de constante Python, que nunca casaria com
       um catálogo em kebab-case
 - [ ] `comportamental` — RF-12, invariante 24
-      *Dado* nenhuma sessão
-      *Quando* `GET /configuracao` e `POST /configuracao/cnpj` são chamadas
-      *Então* as duas respondem `302`, o que `tests/test_route_guard.py` já
-      verifica sozinho para toda rota registrada
+      *Dado* um cookie válido e, em seguida, nenhuma sessão
+      *Quando* `GET /configuracao` e `POST /configuracao` são chamadas nas duas
+      condições
+      *Então* com sessão nenhuma delas responde `404` — isto é, as rotas
+      existem — e sem sessão as duas respondem `302`. As duas metades são
+      necessárias: a guarda é middleware e responde antes do roteamento, então
+      `302` sem sessão sozinho é o que qualquer URL inventada também devolve.
+      `tests/test_route_guard.py` cobre a segunda metade para toda rota
+      registrada. A rota `POST /configuracao/cnpj` é cobrada pela fase 3, que é
+      quem a cria — ver `04-divergencias/D-002.md`
 
 ---
 
@@ -496,6 +502,13 @@ dono digitar nada, e o resto ele batiza uma vez, começando pelo dinheiro.
       app/queries app/commitments app/plan app/projection app/debts app/taxonomy`
       não imprime nenhuma linha — proibir o identificador não basta, um
       `LEFT JOIN payee_names` escrito à mão passaria limpo e mudaria o `GROUP BY`
+- [ ] `comportamental` — RF-12, RF-25a, invariante 24
+      *Dado* um cookie válido e, em seguida, nenhuma sessão
+      *Quando* `POST /configuracao/cnpj` e `POST /configuracao/beneficiario` são
+      chamadas nas duas condições
+      *Então* com sessão nenhuma delas responde `404` — isto é, as rotas que a
+      fase 3 cria existem — e sem sessão as duas respondem `302`
+      — ver `04-divergencias/D-002.md`
 - [ ] `comando` — norma 15
       `rtk proxy env DASH_ENV_FILE=/dev/null .venv/bin/python -c "import
       tomllib,pathlib; d=tomllib.loads(pathlib.Path('pyproject.toml').read_text());
