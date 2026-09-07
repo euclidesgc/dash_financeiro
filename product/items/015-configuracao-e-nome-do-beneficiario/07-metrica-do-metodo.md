@@ -102,64 +102,75 @@ medido antes, e todos se confirmaram contra a base: `53`, `338`, `169`, `404`,
 `148`, `720`, `137`, `55,53%`, `72,83%`, `36,1%`. Um critério foi reescrito, mas
 por erro de fronteira de fase, não de número.
 
-**Métrica 7 — 1.468.201 tokens, contra um alvo de 410.000.** É o resultado mais
-importante deste documento, e ele é contrário ao método:
+**Métrica 7 — 1.483.321 tokens.** O alvo de 410.000 estava errado, e errado
+contra o método: ele era "três medianas de item de uma fase", e o `015` tem três
+fases, 24 etapas, duas telas, duas migrações e a primeira saída de rede nova do
+produto. A comparação que mede o método é com itens do mesmo tamanho, todos
+feitos **sem** revisão pré-código:
 
-| Parte | Tokens |
-|---|---|
-| Sessão de implementação (`input` + `cache_creation` + `output`) | 1.224.435 |
-| Quatro rodadas de validação cega, à parte | 243.766 |
-| **Total da implementação** | **1.468.201** |
-| Planejamento, medido antes | 983.739 |
-| **Item `015` inteiro** | **2.451.940** |
+| Item | Fases | Tokens |
+|---|---|---|
+| `002` | 4 | 991.514 |
+| `003` | 3 | 1.297.263 |
+| **`015` — só a implementação** | 3 | **1.483.321** |
+| `015` — com o planejamento | 3 | 2.467.060 |
 
-A mediana dos itens de uma fase é 136.381, e o item mais caro da corrida até
-aqui — o `003`, com três fases — custou 1.297.263. O `015` custou **quase o
-dobro do mais caro**, e a implementação sozinha já passou dele.
+Contra o `003`, o par mais próximo: a implementação custou **+14%**. O item
+inteiro custou **+90%**, e essa diferença é quase toda os quatro revisores
+pré-código (612.867).
 
-A contagem é do transcript no momento em que esta tabela foi escrita. Escrever e
-commitar este documento e o registro de entrega custou mais 15.120 tokens, que a
-tabela não tem como conter sem se perseguir: o fechamento da sessão principal é
-**1.239.555**, e o total com os quatro validadores, **1.483.321**. A conclusão
-não muda em nenhuma das duas contagens.
+Ou seja: **o método não encareceu a implementação. Ele acrescentou um custo fixo
+de planejamento.**
 
-## O veredicto do método, medido
+O gasto da implementação não veio de o plano ser detalhado. Veio de **número de
+turnos** — 449 mensagens, cada uma recacheando um transcript que só cresce — e os
+três maiores blocos são a fase de tela (o laço escrever, servir, capturar, olhar,
+corrigir), a prova executada em duplicata (todo critério comportamental roda duas
+vezes, uma minha e uma do validador cego: 243.766, 16% do total) e a ingestão do
+plano numa sessão zerada de propósito.
 
-O método **acertou na qualidade e errou no custo**, e não por pouco.
+## O veredicto, em uma frase
 
-Do lado que ele prometia: 36 problemas achados enquanto o custo de mudar era
-reescrever um parágrafo; 1,33 rodada de validação por fase contra 1,55; nenhum
-número de critério escrito de cabeça; nenhuma pergunta ao dono. As três fases
-foram aprovadas, e as duas que fecharam na primeira rodada fecharam com o
-validador dizendo que os critérios discriminavam de verdade.
+**O método é mais preciso e menos econômico que o do generic-harness, e a
+diferença de precisão vem de um buraco que o harness tem por construção.**
 
-Do lado que ele custou: **3,6 vezes o alvo**. E o alvo não era ambicioso — era
-três medianas.
+O harness confere o plano de duas maneiras, e as duas são cegas de propósito:
 
-O gasto não veio do plano ser detalhado. Veio de três coisas medíveis:
+| Quem | Vê | Não vê | Pergunta que responde |
+|---|---|---|---|
+| `criteria-auditor` | spec e critérios | o código | cada `RF-nn` tem critério que o cubra? |
+| `phase-validator` | critérios e código | spec e plano | o código cumpre o critério? |
 
-1. **A fase de tela.** Ajustar interface é um laço de escrever, servir,
-   capturar, olhar a imagem e corrigir. Cada volta custa uma captura lida como
-   imagem, e foram muitas: campo estreito demais, `input` escondido derrubando a
-   medição de fonte, tabela espremida a 375 px, e o servidor que lê o CSS uma vez
-   no boot e não recarregava a folha — quatro voltas que nenhum plano teria
-   evitado.
-2. **A prova executada.** Todo critério comportamental foi rodado contra um
-   servidor de verdade, com base preparada, e várias vezes: uma para eu conferir,
-   outra pelo validador. É o que torna o veredicto confiável, e é caro.
-3. **Os quatro validadores cegos**, 243.766 tokens, que existem justamente para
-   não confiar em quem implementou.
+Falta o terceiro eixo: **ninguém lê o plano contra o código antes de
+implementar.** Os 36 problemas saíram exatamente daí, e nenhum deles é alcançável
+pelos outros dois — `ALTER TABLE ADD COLUMN NOT NULL` que passa em tabela vazia e
+quebra na base do dono; três catálogos onde o plano supunha dois; um `import` no
+topo de `test_debts.py` que derruba 17 testes de uma vez; `grep -o
+'data-config="[a-z-]*"'` que some com a linha inteira se o nome tiver dígito.
 
-O que **não** custou: decidir. Nenhuma ambiguidade virou pergunta, nenhuma
-escolha foi refeita depois de implementada, e nenhuma fase precisou ser
-reescrita por ter entendido o requisito errado.
+**Custo desse buraco, medido:** 3 defeitos vivos em produção havia semanas, e 7
+critérios que teriam passado em verde medindo a coisa errada.
 
-A conclusão honesta é que o planejamento em acúmulo **não se paga em tokens** —
-paga-se em rodadas de validação e em defeito que não chega ao código. Se o custo
-é o critério de adoção, o método reprova. Se o critério é quanto defeito escapa
-para a base do dono, ele aprova: os três defeitos vivos que a revisão pré-código
-encontrou estavam em produção havia semanas, e nenhum deles seria achado por
-este item se ele tivesse sido só implementado.
+**Preço para fechá-lo:** 612.867 tokens neste item, com quatro revisores.
+
+## O ponto cego que o método novo tem
+
+A única fase que não passou de primeira falhou **na fronteira entre duas fases**:
+um critério da fase 2 cobrava uma rota que só a fase 3 cria, e passava por
+construção. Os quatro revisores leram fase 1, fase 2, fase 3 e a transversal de
+segurança — ninguém leu as costuras.
+
+## O que não dá para afirmar
+
+**n = 1.** Três fases, um item, um implementador. A melhora de 1,55 para 1,33
+rodada por fase é 4 rodadas contra 4,65 esperadas — dentro do ruído. O que **não**
+está no ruído é 36 problemas achados antes de existir código e 3 defeitos vivos
+que nenhuma implementação do `015` teria encostado.
+
+## O que fazer com isto
+
+A recomendação — o que adotar no generic-harness, o que não adotar, e o que
+melhorar nele — está em `.harness/proposals/2026-09-07-002.md`.
 
 ## O que o método já pagou, antes de custar código
 
@@ -200,14 +211,12 @@ beneficiários são **720** e não 721, porque o projeto tem um predicado de gas
 a primeira saída de rede sem opt-in, num produto que se define como local, com o
 destino não nomeado e uma lista ordenada por dinheiro.
 
-## O que já dá para dizer do método
+## Onde o defeito aparece
 
-O planejamento em acúmulo custou **uma sessão** e ainda não escreveu código. A
-comparação honesta não é com o tempo: é com **onde** o defeito aparece. Na linha
-de base, 6 das 11 fases souberam do problema pela validação cega — isto é,
-**depois** de o código existir, e cada reprovação custa uma rodada inteira de
-portões. Aqui, 36 problemas apareceram enquanto o custo de mudar era reescrever
-um parágrafo.
+É a comparação que mais importa e a que não está em tokens. Na linha de base, 6
+das 11 fases souberam do problema pela **validação cega** — depois de o código
+existir, com uma rodada inteira de portões por reprovação. Aqui, 36 problemas
+apareceram enquanto o custo de mudar era reescrever um parágrafo.
 
 As métricas 2 a 5 e a 7 fecharam com a implementação, e estão acima. A 6 fechou
 no planejamento: **quatorze ambiguidades, quatorze resolvidas por padrão do
