@@ -6,6 +6,7 @@ from app.auth.guard import install_guard
 from app.config import resolve_session_secret
 from app.migrate import run_migrations
 from app.routers import (
+    advisor,
     auth,
     commitments,
     debts,
@@ -48,5 +49,6 @@ def create_app() -> FastAPI:
     app.include_router(debts.router)
     app.include_router(plan.router)
     app.include_router(whatif.router)
+    app.include_router(advisor.router)
     app.include_router(health.router)
     return app

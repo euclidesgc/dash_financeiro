@@ -8,6 +8,7 @@ from app.migrations.runner import apply_migrations
 
 EXPECTED_TABLES = [
     "accounts",
+    "advisor_questions",
     "categories",
     "category_groups",
     "category_rules",
@@ -37,6 +38,7 @@ EXPECTED_MIGRATIONS = [
     "006_sync_semantics.sql",
     "007_plan.sql",
     "008_facts.sql",
+    "009_advisor.sql",
 ]
 
 TABLE_NAMES = (
@@ -65,7 +67,7 @@ def test_second_run_applies_nothing(conn):
     row = conn.execute(
         "select count(*), min(version), max(version) from schema_migrations"
     ).fetchone()
-    assert tuple(row) == (len(EXPECTED_MIGRATIONS), "001", "008")
+    assert tuple(row) == (len(EXPECTED_MIGRATIONS), "001", "009")
 
 
 def test_the_session_epoch_starts_at_zero(conn):

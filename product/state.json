@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "active_item": "008-simulador-e-base-de-fatos",
+  "active_item": "009-ia-consultora",
   "items": {
     "001-base-e-login": {
       "title": "Base e login: schema, ingestão dos 1.942 lançamentos e acesso protegido",
@@ -533,6 +533,43 @@
             ".": "326d15ca63c7d0d8acbaa94d435657b2cb56ce00"
           },
           "criteria_sha": "b04772fb2d2a9eb4b35ec7ed2bd9dbc4445b95879e015d3555d72c7a55b8ce84"
+        }
+      },
+      "divergences": {},
+      "criteria_exception": null
+    },
+    "009-ia-consultora": {
+      "title": "A IA pergunta o que falta, explica o numero, e nunca calcula",
+      "track": "rapida",
+      "stage": "execute",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-07T04:27:46Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-07T04:31:43Z",
+          "sha": "3fe2e8c71e1caf4445cea839c64b1c37b2dc88a6",
+          "file": "product/items/009-ia-consultora/01-brief.md",
+          "por": "autonomo"
+        },
+        "plan": {
+          "at": "2026-09-07T04:31:43Z",
+          "sha": "1cdbb45b9b7ef16daac24c5af359581cb45caca1",
+          "file": "product/items/009-ia-consultora/03-plan.md",
+          "por": "autonomo"
+        }
+      },
+      "current_phase": 1,
+      "phases": {
+        "1": {
+          "status": "em_execucao",
+          "reproved_count": 0,
+          "verdict": null,
+          "verdict_file": null,
+          "validated_sha": null,
+          "pr": null,
+          "blocked_on": []
         }
       },
       "divergences": {},
