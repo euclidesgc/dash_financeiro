@@ -18,6 +18,7 @@ from app.routers import (
     summary,
     whatif,
 )
+from app.routers.navigation import marked
 from app.routers.render import (
     TEMPLATES,
     brl,
@@ -44,6 +45,7 @@ def create_app() -> FastAPI:
     # styling before any session exists.
     TEMPLATES.env.globals["tokens_css"] = _stylesheet("tokens.css")
     TEMPLATES.env.globals["app_css"] = _stylesheet("app.css")
+    TEMPLATES.env.globals["screens"] = marked
     TEMPLATES.env.filters["brl"] = brl
     TEMPLATES.env.filters["dia"] = day
     TEMPLATES.env.filters["mes"] = month

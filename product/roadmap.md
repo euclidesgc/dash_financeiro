@@ -51,6 +51,17 @@ PR e commit já escritos.
 
 - [x] `015-configuracao-e-nome-do-beneficiario` — Existe **uma** tela para o que só o humano sabe: `/configuracao` lista o catálogo em **fatos** (o que o mundo informa) e **metas** (o que o dono decide), diz qual número cada valor move, e grava. `plan_facts` é o armazém único e `plan_parameters` deixou de existir — o mesmo fato tinha dois nomes, e por isso o painel perguntava para sempre o que já tinha sido respondido. Existe **um** leitor de valor digitado, com uma gramática por unidade: `/dividas` lia `5000.00` como R$ 500.000,00 em silêncio, no campo que decide a venda do carro. E o beneficiário ganhou nome de verdade: o que a Pluggy já manda alcança **404** lançamentos e **148** beneficiários sem o dono digitar nada, e os **30** maiores do gasto — que cobrem **55,5%** do dinheiro — ele batiza uma vez, resolvido na leitura, sem que nenhum total mude. A consulta de nome por CNPJ é **opt-in**: o produto é local por definição.
 
+- [x] `017-navegacao-lateral-e-largura-de-monitor` — A navegação é uma barra fixa
+  na lateral esquerda, presente em toda tela com dado e ausente no login, com a
+  tela corrente marcada pela aresta de acento e por `aria-current`. Ela substitui
+  a pilha de botões no rodapé do Resumo e o "Voltar ao resumo" das outras seis
+  telas — e alcança `Gastos`, `Comprometido` e `Regras`, que não tinham saída
+  nenhuma. Junto, o painel de dado passa a tomar a largura do monitor
+  (`--measure-wide`, `96rem`) enquanto o texto se mantém em `--measure`: acima de
+  `75rem` o calendário de 45 dias se abre em colunas e o gráfico de evolução senta
+  ao lado da própria tabela. Abaixo de `60rem` a barra deita no topo e rola dentro
+  de si.
+
 ## Dívida técnica
 
 Bloco separado de propósito. Pendência de processo — portão, fluxo de CI,

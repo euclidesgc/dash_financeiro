@@ -10,6 +10,9 @@
     {% block head_scripts %}{% endblock %}
   </head>
   <body>
-    {% block content %}{% endblock %}
+    <div class="shell">
+      {% block nav %}{% include "fragments/navegacao.html" %}{% endblock %}
+      {% block content %}{% endblock %}
+    </div>
   </body>
 </html>

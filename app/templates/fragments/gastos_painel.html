@@ -2,8 +2,8 @@
 <div id="painel" class="panels"
      hx-get="{{ panel_url }}" hx-trigger="submit from:#controles"
      hx-include="#controles" hx-target="this" hx-swap="outerHTML">
-  <section id="evolucao" class="panel panel-wide">
-    <div class="stack-tight">
+  <section id="evolucao" class="panel panel-wide panel-split">
+    <div class="stack-tight panel-across">
       <h2 class="section-title">Evolução</h2>
       <p class="lede">Treze meses até {{ end[:7] }}. O gráfico é a leitura rápida; a tabela é o dado,
         e ela fica de pé mesmo quando o gráfico não carrega.</p>

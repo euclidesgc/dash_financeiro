@@ -137,9 +137,19 @@ Base de 4px, sem valor fora da escala.
 | `--space-8` | `2rem` (32px) |
 | `--space-12` | `3rem` (48px) |
 | `--space-16` | `4rem` (64px) |
+| `--measure` | `34rem` |
+| `--measure-wide` | `96rem` |
 
-Largura de leitura: `--measure` = `34rem`. Nenhum bloco de texto passa disso, em
-monitor nenhum.
+Duas medidas, porque são dois leitores. `--measure` é a **largura de leitura**:
+nenhum bloco de texto passa dela, em monitor nenhum, e o limite mora no
+parágrafo — não no painel que o contém. `--measure-wide` é a **largura de
+dado**: o painel que carrega tabela, gráfico ou calendário toma a largura que o
+monitor tem, porque uma coluna de cifras não é uma coluna de prosa.
+
+Acima de `75rem` de viewport o painel largo comporta dois blocos que sozinhos
+empilhariam: o calendário da projeção se abre em colunas e o gráfico senta ao
+lado da própria tabela. A tabela, essa, para em duas medidas (`68rem`) — mais
+larga que isso, o olho perde a linha entre o nome e o valor.
 
 ## Raio
 
@@ -208,11 +218,28 @@ isso o formato não muda: token de frente, token de fundo, papel, mínimo exigid
 |---|---|
 | Contraste AA nos dois temas | a tabela acima, medida por `tests/test_contrast.py` |
 | Foco visível em tudo que recebe foco | percorrer a tela inteira só com `Tab` |
-| Responsivo de 375 a 1440 | sem rolagem horizontal do corpo nas três larguras |
+| Responsivo de 375 a 1920 | sem rolagem horizontal do corpo em 375, 768, 1024, 1440 e 1920 |
 | `prefers-reduced-motion` respeitado | a animação some, o estado final permanece |
 | Nenhum valor mágico | cor e espaço vêm do token; hexadecimal só em `tokens.css` |
 | Estado vazio e de erro acionáveis | dizem o que aconteceu e qual é o próximo ato |
 | Algarismo tabular em toda cifra | `font-variant-numeric: tabular-nums` na classe de cifra |
+
+## Navegação
+
+As telas do painel são um lugar onde se está, não um passo de uma sequência: a
+navegação é uma barra fixa na lateral esquerda, com o nome do painel gravado em
+versalete no alto e a saída da sessão embaixo, separada por um fio. Ela é a
+mesma em todas as telas com dado, e não existe na de login, onde ainda não há
+para onde ir.
+
+Onde se está é uma **aresta**: o traço de acento de `--space-1` na borda
+esquerda do item, o mesmo que a mensagem usa para dizer que uma escrita
+aconteceu. A aresta nunca carrega o sentido sozinha — o item atual também toma
+a tinta cheia e o peso 600, e leva `aria-current="page"`.
+
+Abaixo de `60rem` a barra deita: vira uma faixa no topo que rola dentro de si
+mesma, com a aresta na borda inferior, e o corpo da página nunca herda a
+rolagem lateral.
 
 ## Escrita de interface
 
