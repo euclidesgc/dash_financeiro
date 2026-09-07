@@ -336,7 +336,7 @@
           "por": "autonomo"
         }
       },
-      "current_phase": 1,
+      "current_phase": 2,
       "phases": {
         "1": {
           "status": "aprovada",
@@ -351,6 +351,20 @@
             ".": "79d4385ee2d1230403881ac51aa433578d956b17"
           },
           "criteria_sha": "1635f1e7f33feb22d3ff723aecb64f7bc4919562d8faf4bc32138b20bf1e5c80"
+        },
+        "2": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/004-resumo-e-projecao/05-veredictos/fase-2.md",
+          "validated_sha": "1a6bd3759bb94cef32bbdcbe71a4d0cad55396c5",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T02:09:53Z",
+          "validated_trees": {
+            ".": "a5f0ba344a3d3e49f17373dc83efd309f1c7885d"
+          },
+          "criteria_sha": "0903c41ced374489113e83c0ed4104ec23650232186d97bc042c1322f589efba"
         }
       },
       "divergences": {},

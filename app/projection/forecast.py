@@ -21,8 +21,12 @@ def forecast(conn: sqlite3.Connection, *, today: date | None = None) -> dict:
     # The dated commitment is only the datable half of the spending. Projecting
     # the whole income against half the spending makes the line rise over a
     # window that reaches two salaries, and the panel would announce that the
-    # deficit closes by itself (RF-13).
-    variable = month["spending_cents"] - committed
+    # deficit closes by itself (RF-13). Floored at zero because undated spending
+    # is spending: with no complete month to take the median from, the expected
+    # spending is zero while the commitment is not, and the subtraction alone
+    # would credit the difference as money coming in — a panel wrong with
+    # internal consistency, which is the expensive way to be wrong.
+    variable = min(month["spending_cents"] - committed, 0)
     due = {day["date"]: day["total_cents"] for day in calendar(conn, today=first)}
     income_day = _income_day(conn, first)
 

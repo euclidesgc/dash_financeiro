@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from decimal import InvalidOperation
 
+from app.accounts import CREDIT
 from app.ingest.money import FractionalCentsError, to_cents
 
 # SQLite caps host parameters per statement, so the source is compared against
@@ -239,7 +240,7 @@ def _account_row(index: int, raw: dict) -> tuple[dict | None, Rejection | None]:
         return None, Rejection(index, "invalid_balance", label)
     # Pluggy reports a card balance as a positive number, and a card balance is
     # debt: negative is money leaving, in any kind of account (invariant 22).
-    if raw.get("type") == "CREDIT":
+    if raw.get("type") == CREDIT:
         balance = -balance
     return {
         "id": raw["id"],
