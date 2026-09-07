@@ -12,7 +12,15 @@ from app.projection.forecast import forecast
 from app.projection.monthly import MONTHS, monthly
 from app.projection.position import positions
 from app.queries.period import InvalidPeriodError, day
-from app.sync import STALE_DAYS, MissingCredentialError, days_since, last_runs, synchronise
+from app.sync import (
+    STALE_DAYS,
+    MissingCredentialError,
+    days_since,
+    finished_on,
+    last_runs,
+    readable,
+    synchronise,
+)
 
 from .render import TEMPLATES
 
@@ -135,6 +143,8 @@ def _sync(conn: sqlite3.Connection, today: date) -> dict[str, Any]:
     return {
         "latest": runs["latest"],
         "succeeded": runs["succeeded"],
+        "succeeded_at": finished_on(runs["succeeded"]),
+        "reason": readable(runs["latest"]["message"]) if runs["latest"] else None,
         "age_days": age,
         # The number the owner reads has an age, and the age is part of the
         # number: a panel showing a fortnight-old statement with the face of a

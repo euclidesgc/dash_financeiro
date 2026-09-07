@@ -50,3 +50,19 @@ Escrito no presente. Cada requisito é `RF-nn`.
   **Sincronizar agora**.
 - **RF-16** — A tela obedece à linguagem visual, e nenhum número medido aparece
   como literal no código.
+
+## O que uma falha de escrita não pode fazer
+
+- **RF-17** — Uma carga que estoura no meio da escrita **grava linha de falha**
+  em `sync_runs` e não derruba a rota. Hoje o caminho de exceção desfaz a escrita
+  e repropaga sem registrar nada: a sincronização falhou, não deixou rastro, e a
+  tela seguinte continua exibindo a última execução bem-sucedida com cara de dado
+  fresco — que é exatamente o modo de falha que este item existe para matar.
+- **RF-18** — A mensagem que a tela mostra é **em português**. A do carregador é
+  técnica e em inglês (`rejected=1`, `transactions accepted=1942 present=1900`) e
+  serve ao log, não ao dono, que é quem precisa decidir o que fazer com a falha.
+- **RF-19** — A hora gravada é UTC e a data de referência é local. A tela e a
+  contagem de idade **convertem** para o fuso local antes de comparar: sem isso,
+  uma carga rodada depois das 21h aparece com a data do dia seguinte e a idade
+  sai um dia menor que a real — justamente o número que este item existe para
+  tornar honesto.

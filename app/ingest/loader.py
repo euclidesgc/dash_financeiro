@@ -117,9 +117,23 @@ def ingest(
         )
         accounts_written = accounts_present - accounts_before
         transactions_written = transactions_present - transactions_before
-    except Exception:
-        conn.rollback()
-        raise
+    except Exception as failure:
+        # The exception path has to leave a trace too. Rolling back and
+        # re-raising means the sync failed, wrote nothing to sync_runs, and the
+        # next screen goes on showing the last success with the face of fresh
+        # data — the failure mode this whole item exists to kill (RF-17).
+        return _fail(
+            conn,
+            started=started,
+            now=now,
+            source=source,
+            message=f"erro de escrita: {type(failure).__name__}",
+            rejections=(),
+            transactions_accepted=len(transaction_rows),
+            transactions_written=0,
+            accounts_accepted=len(account_rows),
+            accounts_written=0,
+        )
 
     if transactions_present != len(transaction_rows) or accounts_present != len(account_rows):
         return _fail(

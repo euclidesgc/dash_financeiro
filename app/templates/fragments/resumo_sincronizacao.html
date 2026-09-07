@@ -3,12 +3,12 @@
     <h2 class="section-title">Os dados</h2>
     {% if sync['failed'] %}
     <p class="notice" role="alert">A última sincronização <strong>falhou</strong>:
-      {{ sync['latest']['message'] }}</p>
+      {{ sync['reason'] }}</p>
     {% endif %}
     {% if sync['succeeded'] %}
     <p class="lede">Última sincronização bem-sucedida em
-      <span class="calendar-date">{{ sync['succeeded']['finished_at'][:10]|dia }}</span> às
-      <span class="calendar-date">{{ sync['succeeded']['finished_at'][11:16] }}</span>, com
+      <span class="calendar-date">{{ sync['succeeded_at'].strftime('%d/%m/%Y') }}</span> às
+      <span class="calendar-date">{{ sync['succeeded_at'].strftime('%H:%M') }}</span>, com
       <span class="cifra">{{ sync['succeeded']['transactions_count'] if sync['succeeded']['transactions_count'] is not none else '—' }}</span>
       lançamento(s) inserido(s).</p>
     {% if sync['stale'] %}

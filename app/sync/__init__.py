@@ -1,3 +1,4 @@
+import re
 import sqlite3
 from dataclasses import dataclass
 from datetime import date, datetime
@@ -85,10 +86,44 @@ def last_runs(conn: sqlite3.Connection) -> dict:
     }
 
 
-def days_since(run: dict | None, today: date) -> int | None:
+def finished_on(run: dict | None) -> datetime | None:
+    # Written in UTC and read against a local reference date. Without the
+    # conversion a load run after nine at night shows tomorrow's date and the age
+    # comes out a day short — the very number this item exists to make honest
+    # (RF-19).
     if not run or not run["finished_at"]:
         return None
-    return (today - datetime.fromisoformat(run["finished_at"]).date()).days
+    stamp = datetime.fromisoformat(run["finished_at"])
+    return stamp.astimezone() if stamp.tzinfo else stamp
+
+
+def days_since(run: dict | None, today: date) -> int | None:
+    when = finished_on(run)
+    return None if when is None else (today - when.date()).days
+
+
+_REJECTED = re.compile(r"rejected=(\d+)")
+_PRESENT = re.compile(r"accepted=(\d+) present=(\d+)")
+_WRITE = re.compile(r"erro de escrita: (\w+)")
+
+
+def readable(message: str | None) -> str:
+    # The loader speaks to the log, in English and in its own terms. The owner is
+    # the one who has to decide what to do about the failure (RF-18).
+    if not message:
+        return "sem detalhe registrado."
+    rejected = _REJECTED.search(message)
+    if rejected:
+        count = int(rejected.group(1))
+        return f"a fonte trouxe {count} lançamento(s) que o painel não conseguiu ler."
+    present = _PRESENT.search(message)
+    if present:
+        missing = int(present.group(1)) - int(present.group(2))
+        return f"{missing} lançamento(s) aceito(s) não chegaram à tabela; nada foi gravado."
+    write = _WRITE.search(message)
+    if write:
+        return f"a escrita no banco foi recusada ({write.group(1)}); nada foi gravado."
+    return message
 
 
 def main() -> int:

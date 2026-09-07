@@ -1,10 +1,18 @@
-from datetime import date
+import time
+from datetime import date, timedelta, timezone
 
 import pytest
 
 from app.config import PLUGGY_CREDENTIALS
 from app.ingest.loader import ingest
-from app.sync import MissingCredentialError, days_since, last_runs, synchronise
+from app.sync import (
+    MissingCredentialError,
+    days_since,
+    finished_on,
+    last_runs,
+    readable,
+    synchronise,
+)
 from tests.conftest import ACCOUNT, transaction
 
 REFERENCE = date(2026, 9, 5)
@@ -108,3 +116,47 @@ def test_the_age_of_the_data_is_counted_from_the_last_success(taxonomy_conn):
 
     assert days_since(succeeded, REFERENCE) is not None
     assert days_since(None, REFERENCE) is None
+
+
+def test_a_write_that_blows_up_still_leaves_a_failed_run(taxonomy_conn):
+    before = rows(taxonomy_conn)
+    result = ingest(
+        taxonomy_conn,
+        transactions=[transaction("t-orfa", "2026-08-10", -10.0, conta_id="nao-existe")],
+        accounts=[ACCOUNT],
+        source="tests",
+    )
+
+    assert result.status == "failed"
+    assert rows(taxonomy_conn) == before
+    assert runs(taxonomy_conn)[-1][2] == "failed"
+    assert "erro de escrita" in _message(taxonomy_conn)
+
+
+def _message(conn):
+    return conn.execute("SELECT message FROM sync_runs ORDER BY id DESC LIMIT 1").fetchone()[0]
+
+
+def test_the_technical_message_is_said_in_portuguese():
+    assert "não conseguiu ler" in readable("rejected=1")
+    assert "não chegaram à tabela" in readable(
+        "transactions accepted=1942 present=1900 accounts accepted=12 present=12"
+    )
+    assert "recusada (IntegrityError)" in readable("erro de escrita: IntegrityError")
+    assert readable(None) == "sem detalhe registrado."
+
+
+def test_a_run_stamped_in_utc_is_read_in_the_local_zone():
+    stamped = {"finished_at": "2026-09-07T02:00:00+00:00"}
+    minus_three = timezone(timedelta(hours=-3))
+
+    assert finished_on(stamped).astimezone(minus_three).date() == date(2026, 9, 6)
+
+
+def test_the_age_is_counted_over_the_local_date(monkeypatch):
+    stamped = {"finished_at": "2026-09-07T02:00:00+00:00"}
+    monkeypatch.setenv("TZ", "America/Sao_Paulo")
+    time.tzset()
+
+    assert days_since(stamped, date(2026, 9, 6)) == 0
+    assert days_since(stamped, date(2026, 9, 8)) == 2
