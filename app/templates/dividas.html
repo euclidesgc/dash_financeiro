@@ -57,6 +57,10 @@
     <p class="lede">Estas dívidas não entram na escada: sem a taxa não dá para saber onde o próximo
       real rende mais, e chutar seria o painel decidindo o que não sabe. A taxa está no extrato ou
       na fatura.</p>
+    <p class="lede">Onde o banco já cobrou juros, o campo vem <strong>preenchido com uma
+      sugestão</strong>: a mediana do que ele cobrou, dividida pelo saldo negativo médio de cada
+      dia. É estimativa, não contrato — a faixa aparece ao lado, e ela é larga. Cartão não tem
+      sugestão: o saldo de um cartão é fatura, e fatura paga inteira não cobra juro nenhum.</p>
     <div class="table-scroll">
     <table class="data-table">
       <caption class="sr-only">Dívidas sem taxa informada, do maior saldo para o menor.</caption>
@@ -67,14 +71,21 @@
           <td>{{ step['name'] }}<span class="cell-key">{{ kind_labels.get(step['kind'], step['kind']) }}</span></td>
           <td class="cifra col-num">{{ step['balance_cents']|brl }}</td>
           <td>
+            {% set seen = observed.get(step['account_id']) %}
             <form method="post" action="{{ rate_action }}" class="stack-tight">
               <input type="hidden" name="degrau" value="{{ step['id'] }}">
               <label class="sr-only" for="taxa-{{ step['id'] }}">Taxa mensal de {{ step['name'] }}</label>
-              <input class="field" id="taxa-{{ step['id'] }}" name="taxa"
-                     inputmode="decimal" placeholder="0,00" value="">
+              <input class="field" id="taxa-{{ step['id'] }}" name="taxa" inputmode="decimal"
+                     placeholder="0,00" value="{% if seen %}{{ seen['median_bp']|taxa|replace('%','') }}{% endif %}">
               <button class="button button-quiet" type="submit">Salvar</button>
             </form>
-          </td>
+            {% if seen %}
+            <p class="cell-key" data-sugerida="{{ seen['median_bp'] }}"
+               data-faixa="{{ seen['lowest_bp'] }}-{{ seen['highest_bp'] }}">
+              Sugestão: {{ seen['median_bp']|taxa }}, mediana dos juros que o banco cobrou em
+              {{ seen['months'] }} meses. Variou de {{ seen['lowest_bp']|taxa }} a
+              {{ seen['highest_bp']|taxa }} — confirme com o extrato antes de salvar.</p>
+            {% endif %}
         </tr>
         {% endfor %}
       </tbody>

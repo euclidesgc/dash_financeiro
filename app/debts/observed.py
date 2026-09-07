@@ -1,0 +1,86 @@
+import sqlite3
+from datetime import date, timedelta
+
+from app.accounts import BANK
+
+# What the bank actually charged, not what the contract says. The description is
+# the only marker the source gives, and "mora" is a late-payment fine on a single
+# bill, not the price of carrying a negative balance.
+_INTEREST = (
+    "lower(description) LIKE '%juros%' AND lower(description) NOT LIKE '%mora%'"
+)
+_MOVES = (
+    "SELECT date, SUM(amount_cents) AS total FROM transactions "
+    "WHERE account_id = ? GROUP BY date"
+)
+_CHARGED = (
+    f"SELECT COALESCE(SUM(amount_cents), 0) AS total FROM transactions "
+    f"WHERE account_id = ? AND substr(date, 1, 7) = ? AND {_INTEREST}"
+)
+
+# Below this, a fixed minimum fee dominates the charge and the ratio stops being
+# a rate: one month of this base shows 81% over an average balance of R$ 38.
+MIN_BALANCE_CENTS = 50000
+MIN_MONTHS = 3
+BASIS_POINTS = 100
+RATE_SCALE = 10000
+
+
+def daily_balances(conn: sqlite3.Connection, account_id: str, balance: int, today: date) -> dict:
+    # Walked backwards from the balance the source reports: interest is charged
+    # on the daily negative balance, and a monthly average hides the days the
+    # account spent in the black.
+    moves = {row["date"]: row["total"] for row in conn.execute(_MOVES, (account_id,))}
+    if not moves:
+        return {}
+    first = min(moves)
+    days, running, when = {}, balance, today
+    while when.isoformat() >= first:
+        days[when.isoformat()] = running
+        running -= moves.get(when.isoformat(), 0)
+        when -= timedelta(days=1)
+    return days
+
+
+def observed_rates(conn: sqlite3.Connection, *, today: date) -> dict[str, dict]:
+    found = {}
+    for account in conn.execute(
+        "SELECT id, name, balance_cents FROM accounts WHERE type = ? AND balance_cents < 0",
+        (BANK,),
+    ):
+        days = daily_balances(conn, account["id"], account["balance_cents"], today)
+        rates = _monthly_rates(conn, account["id"], days)
+        if len(rates) < MIN_MONTHS:
+            continue
+        ordered = sorted(rate for _, rate in rates)
+        found[account["id"]] = {
+            "name": account["name"],
+            "months": len(ordered),
+            "median_bp": _median(ordered),
+            "lowest_bp": ordered[0],
+            "highest_bp": ordered[-1],
+        }
+    return found
+
+
+def _monthly_rates(conn: sqlite3.Connection, account_id: str, days: dict) -> list[tuple[str, int]]:
+    rates = []
+    for month in sorted({when[:7] for when in days}):
+        charged = conn.execute(_CHARGED, (account_id, month)).fetchone()["total"]
+        if not charged:
+            continue
+        negative = [value for when, value in days.items() if when[:7] == month and value < 0]
+        if not negative:
+            continue
+        average = sum(negative) / len(negative)
+        if abs(average) < MIN_BALANCE_CENTS:
+            continue
+        rates.append((month, round(abs(charged) / abs(average) * RATE_SCALE)))
+    return rates
+
+
+def _median(ordered: list[int]) -> int:
+    middle = len(ordered) // 2
+    if len(ordered) % 2:
+        return ordered[middle]
+    return (ordered[middle - 1] + ordered[middle]) // 2

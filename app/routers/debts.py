@@ -1,10 +1,12 @@
 import sqlite3
+from datetime import date
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Form
 from starlette.requests import Request
 from starlette.responses import Response
 
+from app.config import reference_date
 from app.db import connect
 from app.debts.ladder import (
     VEHICLE,
@@ -15,6 +17,7 @@ from app.debts.ladder import (
     set_rate,
     without_rate,
 )
+from app.debts.observed import observed_rates
 from app.debts.simulate import (
     InvalidAmountError,
     UnknownRateError,
@@ -154,9 +157,13 @@ def _answer(
     return TEMPLATES.TemplateResponse(request, "dividas.html", context, status_code=status_code)
 
 
-def _context(conn: sqlite3.Connection) -> dict[str, Any]:
+def _context(conn: sqlite3.Connection, today: date | None = None) -> dict[str, Any]:
     steps = ladder(conn)
     missing = without_rate(conn)
+    # Derived from the interest the bank actually charged, never adopted in
+    # silence: the spread between the months is wide, and a suggestion the owner
+    # confirms is honest where a fact would not be (invariante 26).
+    observed = observed_rates(conn, today=today or reference_date())
     vehicle = next((row for row in steps + missing if row["kind"] == VEHICLE), None)
     settlement = parameter(conn, SETTLEMENT)
     return {
@@ -167,6 +174,7 @@ def _context(conn: sqlite3.Connection) -> dict[str, Any]:
         "without_rate": missing,
         "empty": not steps and not missing,
         "kind_labels": KIND_LABELS,
+        "observed": observed,
         "vehicle": vehicle,
         "settlement_cents": settlement,
         "transport_cents": parameter(conn, TRANSPORT),
