@@ -192,3 +192,32 @@ def test_a_failure_after_the_load_demotes_the_run_instead_of_claiming_success(
     assert runs(taxonomy_conn)[-1][2] == "failed"
     assert "pós-carga falhou" in _message(taxonomy_conn)
     assert "não foram recalculados" in readable(_message(taxonomy_conn))
+
+
+def test_the_demotion_names_its_own_row_and_not_the_largest_id(taxonomy_conn, monkeypatch):
+    import app.sync as sync
+
+    def explode_after_someone_else_writes(conn, today):
+        conn.execute(
+            "INSERT INTO sync_runs (started_at, finished_at, source, status, message) "
+            "VALUES ('2026-09-05T00:00:00', '2026-09-05T00:00:01', 'outro', 'ok', 'alheia')"
+        )
+        conn.commit()
+        raise RuntimeError("quebrou depois")
+
+    monkeypatch.setattr(sync, "_after", explode_after_someone_else_writes)
+    synchronise(taxonomy_conn, today=REFERENCE)
+    found = [
+        (row["source"], row["status"])
+        for row in taxonomy_conn.execute("SELECT * FROM sync_runs ORDER BY id")
+    ]
+
+    assert found[-1] == ("outro", "ok")
+    assert found[-2][1] == "failed"
+
+
+def test_the_message_does_not_promise_the_previous_state():
+    said = readable("pós-carga falhou: RuntimeError")
+
+    assert "Parte das telas pode estar desatualizada" in said
+    assert "mostram o estado anterior" not in said

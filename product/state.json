@@ -605,13 +605,18 @@
       "current_phase": 1,
       "phases": {
         "1": {
-          "status": "em_execucao",
+          "status": "aprovada",
           "reproved_count": 0,
-          "verdict": null,
-          "verdict_file": null,
-          "validated_sha": null,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/012-sync-pos-carga-atomica/05-veredictos/fase-1.md",
+          "validated_sha": "e73a1af4180268a87bf7a3c6275fdcc1202eafd9",
           "pr": null,
-          "blocked_on": []
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T12:32:25Z",
+          "validated_trees": {
+            ".": "1c9b7868e6b8aee7c02c572c16fbb8d179b8db1a"
+          },
+          "criteria_sha": "c38d71153cece09bf842065ae0f30cf34f19187705ad0b1e286cadc6c9d560de"
         }
       },
       "divergences": {},

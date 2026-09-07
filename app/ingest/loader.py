@@ -61,6 +61,10 @@ class IngestResult:
     transactions_written: int
     accounts_accepted: int
     accounts_written: int
+    # The id of the row this run wrote in sync_runs. Whoever needs to correct
+    # that row later has to name it: targeting the largest id assumes nobody
+    # else writes in between, and that assumption has no owner.
+    run_id: int | None = None
 
 
 def ingest(
@@ -155,7 +159,7 @@ def ingest(
         )
 
     message = f"transactions={transactions_written} accounts={accounts_written}"
-    _record_run(
+    run_id = _record_run(
         conn,
         started=started,
         finished=now or datetime.now(UTC),
@@ -176,6 +180,7 @@ def ingest(
         transactions_written=transactions_written,
         accounts_accepted=len(account_rows),
         accounts_written=accounts_written,
+        run_id=run_id,
     )
 
 
@@ -197,7 +202,7 @@ def _fail(
     # The failure row has to outlive the rollback it describes, so it is written
     # after the rollback, in a transaction of its own.
     conn.rollback()
-    _record_run(
+    run_id = _record_run(
         conn,
         started=started,
         finished=now or datetime.now(UTC),
@@ -218,6 +223,7 @@ def _fail(
         transactions_written=transactions_written,
         accounts_accepted=accounts_accepted,
         accounts_written=accounts_written,
+        run_id=run_id,
     )
 
 
@@ -233,8 +239,8 @@ def _record_run(
     transactions_present: int,
     accounts_present: int,
     message: str,
-) -> None:
-    conn.execute(
+) -> int:
+    written = conn.execute(
         "INSERT INTO sync_runs (started_at, finished_at, source, status, transactions_count, "
         "accounts_count, transactions_present, accounts_present, message) "
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -250,6 +256,7 @@ def _record_run(
             message,
         ),
     )
+    return int(written.lastrowid or 0)
 
 
 def _map(rows: list[dict], mapper) -> tuple[list[dict], list[Rejection]]:

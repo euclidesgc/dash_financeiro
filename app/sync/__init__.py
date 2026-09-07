@@ -70,16 +70,17 @@ def synchronise(conn: sqlite3.Connection, *, today: date | None = None) -> SyncO
         # the commitment recomputation or the ladder rebuild blows up here, that
         # row goes on claiming success with the derived tables frozen — a lying
         # success, which is the opposite of what item 006 delivered (RF-21).
-        return _demote(conn, failure)
+        return _demote(conn, result.run_id, failure)
     return _outcome(result)
 
 
-def _demote(conn: sqlite3.Connection, failure: Exception) -> SyncOutcome:
+def _demote(conn: sqlite3.Connection, run_id: int | None, failure: Exception) -> SyncOutcome:
+    # The row of this run, named. Aiming at the largest id assumes nobody writes
+    # in between, and that assumption has no owner.
     message = f"pós-carga falhou: {type(failure).__name__}"
     conn.execute(
-        "UPDATE sync_runs SET status = 'failed', message = ? "
-        "WHERE id = (SELECT MAX(id) FROM sync_runs)",
-        (message,),
+        "UPDATE sync_runs SET status = 'failed', message = ? WHERE id = ?",
+        (message, run_id),
     )
     conn.commit()
     return SyncOutcome(status="failed", message=message, transactions=0, accounts=0)
@@ -167,10 +168,14 @@ def readable(message: str | None) -> str:
         return f"a escrita no banco foi recusada ({write.group(1)}); nada foi gravado."
     after = _AFTER.search(message)
     if after:
+        # Not "the screens show the previous state": the three steps commit as
+        # they go, so a failure in the second or third leaves the base partly
+        # updated. Promising more than the code delivers is the same defect this
+        # item exists to kill, one sentence smaller.
         return (
             f"os lançamentos entraram, mas a classificação e os compromissos não foram "
-            f"recalculados ({after.group(1)}). As telas mostram o estado anterior; "
-            "sincronize de novo."
+            f"recalculados até o fim ({after.group(1)}). Parte das telas pode estar "
+            "desatualizada; sincronize de novo."
         )
     unreadable = _SOURCE.search(message)
     if unreadable:
