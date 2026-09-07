@@ -104,6 +104,7 @@ def _base(tmp_path, monkeypatch, name: str):
     monkeypatch.setenv("DASH_ENV_FILE", "/dev/null")
     monkeypatch.setenv("DASH_DB_PATH", str(tmp_path / name))
     monkeypatch.setenv("SESSION_SECRET", "chave-de-teste")
+    monkeypatch.setenv("DASH_TODAY", ASKED)
     app = create_app()
     conn = connect()
     seed_user(conn, LOGIN, PASSWORD)
@@ -309,3 +310,25 @@ def test_an_empty_base_shows_what_happened_and_where_to_go_next(empty_client):
     assert _rows(page.text, "parcelamentos") == []
     assert EMPTY_TITLE in page.text
     assert '<a href="/gastos">' in page.text[page.text.index(EMPTY_TITLE) :]
+
+
+def test_calendar_window_pair_without_query_string_and_with_an_unreadable_date(client):
+    unasked = client.get(SCREEN)
+    unreadable = client.get(SCREEN, params={"data": "banana"})
+
+    assert unasked.status_code == 200
+    assert unreadable.status_code == 200
+    for answer in (unasked, unreadable):
+        block = _section(answer.text, "calendario")
+        assert f">{WINDOW_START}<" in block
+        assert f">{WINDOW_END}<" in block
+    assert 'id="recusa"' not in unasked.text
+    assert 'id="recusa"' in unreadable.text
+
+
+def test_a_date_that_breaks_calendar_arithmetic_is_refused_without_a_500(client):
+    answer = client.get(SCREEN, params={"data": "0001-01-01"})
+
+    assert answer.status_code == 200
+    assert 'id="recusa"' in answer.text
+    assert f">{WINDOW_START}<" in _section(answer.text, "calendario")

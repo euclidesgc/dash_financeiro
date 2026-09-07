@@ -87,16 +87,31 @@ ao topo da fila é a régua local certa e o agregado errado.
   136 arquivos produzem e decide entre corrigir de uma vez ou tolerar uma
   baseline decrescente — a medição vem antes da escolha, não depois.
 
-- [ ] `016-data-de-referencia-no-caminho-de-recusa` — `_reference` de
-  `app/routers/whatif.py` e de `app/routers/advisor.py` cai em `date.today()`
-  quando a data pedida é inválida ou está fora da faixa, em vez de
-  `app.config.reference_date()`, que é quem lê `DASH_TODAY`. Efeito medido pelo
-  validador da fase 1 do `015`: com `DASH_TODAY=2026-09-05` no processo,
-  `/simulador` e `/consultor` renderizam a data de hoje de verdade — e é esse
-  `today` que decide se um fato está **vencido**, então uma leitura sem data
-  pedida pode marcar como vencido o que a data de referência ainda considera
-  válido. Pré-existente desde o item `008`, fora do diff do `015`. Varrer os
-  demais `date.today()` de rota entra no mesmo item.
+- [x] `016-data-de-referencia-no-caminho-de-recusa` — Toda tela responde pela
+  data de referência do processo, e existe **um** leitor dela
+  (`app/routers/reference.py`), não seis. O defeito era mais largo do que a linha
+  original dizia: `day(None, …)` levanta como data ilegível levanta, então
+  **entrar na tela sem `?data=` era o caminho de recusa** — o normal, não a
+  borda. Daí saíam três coisas medidas: a tela inicial imprimia
+  `data inválida: data (None)` sobre uma data que ninguém digitou; `/` e
+  `/comprometido` devolviam **500** (`year 0 is out of range`) para
+  `?data=0001-01-01`, o mesmo defeito que `/objetivo` já tinha resolvido com
+  faixa; e `/simulador`, `/consultor` e `/comprometido` recusavam em silêncio.
+  O leitor distingue **três** situações — sem pedido, pedido aceito, pedido
+  recusado — e `/objetivo` grava ponto na linha do tempo por `notice is None`,
+  nunca por `asked`, porque a ausência de parâmetro **deve** gravar. Um guarda
+  em `tests/test_route_guard.py` acusa a sétima rota que tentar resolver a data
+  sozinha, e ele tem teste do próprio dente. Fechou com **526 testes**, lint e
+  portões limpos.
+
+- [ ] `019-varredura-de-rota-que-nao-desce-em-subpasta` — O guarda que impede uma
+  rota de resolver a data de tela por conta própria varre
+  `app/routers/` com `glob("*.py")`, que não desce em subpasta, enquanto o
+  critério de integração do `016` usa `grep -R`. Hoje os dois coincidem, porque
+  os 15 módulos estão todos no nível de cima. No dia em que nascer um subpacote
+  sob `app/routers/`, o guarda fica cego, verde e silencioso — a pior das três
+  combinações. Trocar por `rglob("*.py")` fecha a diferença, e o item existe
+  porque guarda que cala é pior que guarda que não existe: ninguém volta a olhar.
 
 ## Validações de campo pendentes
 

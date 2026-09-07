@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "active_item": "015-configuracao-e-nome-do-beneficiario",
+  "active_item": "016-data-de-referencia-no-caminho-de-recusa",
   "items": {
     "001-base-e-login": {
       "title": "Base e login: schema, ingestão dos 1.942 lançamentos e acesso protegido",
@@ -745,6 +745,76 @@
           "reconciliada_at": "2026-09-07T18:06:48Z"
         }
       },
+      "criteria_exception": null
+    },
+    "016-data-de-referencia-no-caminho-de-recusa": {
+      "title": "A data de referencia sobrevive a recusa: rota que rejeita a data pedida volta para a referencia do processo, nao para hoje",
+      "track": "rapida",
+      "stage": "done",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-07T21:47:27Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-07T21:57:48Z",
+          "sha": "2fd883866a48593d698704cd2d182d92bcb7b914",
+          "file": "product/items/016-data-de-referencia-no-caminho-de-recusa/01-brief.md",
+          "por": "humano"
+        },
+        "plan": {
+          "at": "2026-09-07T22:40:37Z",
+          "sha": "758ee3ec1c30c5dd4f4dd51d6cfcd99706aff1d1",
+          "file": "product/items/016-data-de-referencia-no-caminho-de-recusa/03-plan.md",
+          "por": "humano"
+        }
+      },
+      "current_phase": 3,
+      "phases": {
+        "1": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/016-data-de-referencia-no-caminho-de-recusa/05-veredictos/fase-1.md",
+          "validated_sha": "a9ffaad1e62228de5876ef57670034e5d04fa985",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T22:56:35Z",
+          "validated_trees": {
+            ".": "bf55007d67b62545252e490e4ec1b28f63ad4600"
+          },
+          "criteria_sha": "28489908f3c099750273604466f8a5adc26c32bd44eb0c5e3703ddd769377cb5"
+        },
+        "2": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/016-data-de-referencia-no-caminho-de-recusa/05-veredictos/fase-2.md",
+          "validated_sha": "1291d92d6eea810b75f38fdea725f9f5dc626a3c",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T23:17:05Z",
+          "validated_trees": {
+            ".": "b19552a9453961228d9c00b36fe8894e3e116b0b"
+          },
+          "criteria_sha": "1304ca0f757a81ac6d7f6fa52e83a4c1ab702414b22eedd42ddb1cd4cddaff0a"
+        },
+        "3": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/016-data-de-referencia-no-caminho-de-recusa/05-veredictos/fase-3.md",
+          "validated_sha": "8c576cb73f9a551edb2ae0b22b117c1a10aa548e",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T23:38:17Z",
+          "validated_trees": {
+            ".": "9a79dec336f0ef0b3e1382017861767e06ec7ad8"
+          },
+          "criteria_sha": "3d6da0eadffb87952822a77a21005410653bf0ed37bb939171e31b021b17903e"
+        }
+      },
+      "divergences": {},
       "criteria_exception": null
     }
   }

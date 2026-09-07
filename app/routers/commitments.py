@@ -12,7 +12,7 @@ from app.commitments.live import installments, released_cash, subscriptions, tot
 from app.commitments.mark import DismissRefusedError, dismiss, resume
 from app.db import connect
 from app.payees.names import labels as payee_labels
-from app.queries.period import InvalidPeriodError, day
+from app.routers.reference import screen_date
 
 from .render import TEMPLATES
 
@@ -27,9 +27,10 @@ DATE_FIELD = "data"
 
 @router.get(SCREEN)
 def commitments_screen(request: Request) -> Response:
+    reference = screen_date(request.query_params.get(DATE_FIELD))
     conn = connect()
     try:
-        return _answer(request, conn, _reference(request.query_params.get(DATE_FIELD)))
+        return _answer(request, conn, reference.date, notice=reference.notice)
     finally:
         conn.close()
 
@@ -58,7 +59,7 @@ def _mark(
     series_key: str,
     asked: str,
 ) -> Response:
-    today = _reference(asked)
+    today = screen_date(asked).date
     conn = connect()
     try:
         try:
@@ -71,15 +72,6 @@ def _mark(
         return _answer(request, conn, today)
     finally:
         conn.close()
-
-
-def _reference(asked: object) -> date:
-    # The screen is reached by hand-typed URL as often as by its own form, so a
-    # date it cannot read falls back to today instead of a 500.
-    try:
-        return day(asked, DATE_FIELD)
-    except InvalidPeriodError:
-        return date.today()
 
 
 def _answer(

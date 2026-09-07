@@ -11,7 +11,7 @@ from app.db import connect
 from app.projection.forecast import forecast
 from app.projection.monthly import median_months, monthly
 from app.projection.position import positions
-from app.queries.period import InvalidPeriodError, day
+from app.routers.reference import Reference, screen_date
 from app.sync import (
     STALE_DAYS,
     MissingCredentialError,
@@ -36,24 +36,24 @@ _COUNT = "SELECT COUNT(*) AS total FROM transactions"
 
 @router.get(SCREEN)
 def summary_screen(request: Request) -> Response:
-    today, notice = _reference(request.query_params.get(DATE_FIELD))
+    reference = screen_date(request.query_params.get(DATE_FIELD))
     conn = connect()
     try:
-        return _answer(request, conn, today, notice=notice)
+        return _answer(request, conn, reference, notice=reference.notice)
     finally:
         conn.close()
 
 
 @router.post(SYNC)
 def synchronise_now(request: Request) -> Response:
-    today, _ = _reference(request.query_params.get(DATE_FIELD))
+    reference = screen_date(request.query_params.get(DATE_FIELD))
     conn = connect()
     try:
         try:
-            outcome = synchronise(conn, today=today)
+            outcome = synchronise(conn, today=reference.date)
         except MissingCredentialError as refusal:
-            return _answer(request, conn, today, notice=str(refusal), status_code=400)
-        return _answer(request, conn, today, notice=_said(outcome))
+            return _answer(request, conn, reference, notice=str(refusal), status_code=400)
+        return _answer(request, conn, reference, notice=_said(outcome))
     finally:
         conn.close()
 
@@ -69,25 +69,21 @@ def _said(outcome) -> str:
 def _answer(
     request: Request,
     conn: sqlite3.Connection,
-    today: date,
+    reference: Reference,
     *,
     notice: str | None = None,
     status_code: int = 200,
 ) -> Response:
-    context = _context(conn, today)
-    context.update(notice=notice)
+    context = _context(conn, reference.date)
+    context.update(
+        notice=notice,
+        # The balances are always the current ones: no history of them is kept,
+        # so the reference date moves the projection and never the position.
+        # Saying "hoje" over a date the owner typed would be the screen naming
+        # a day it is not describing.
+        asked_today=not reference.asked,
+    )
     return TEMPLATES.TemplateResponse(request, "resumo.html", context, status_code=status_code)
-
-
-def _reference(asked: object) -> tuple[date, str | None]:
-    # Reached by hand-typed URL as often as by its own links, so a date it cannot
-    # read falls back to today instead of a 500 — and says so, because a screen
-    # that silently answers a different question than the one asked is worse
-    # than one that refuses.
-    try:
-        return day(asked, DATE_FIELD), None
-    except InvalidPeriodError as refusal:
-        return date.today(), str(refusal)
 
 
 def _moving(days: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -114,11 +110,6 @@ def _context(conn: sqlite3.Connection, today: date) -> dict[str, Any]:
     month = monthly(conn, today=today)
     return {
         "reference": today.isoformat(),
-        # The balances are always the current ones: no history of them is kept,
-        # so the reference date moves the projection and never the position.
-        # Saying "hoje" over a date the owner typed would be the screen naming
-        # a day it is not describing.
-        "asked_today": today == date.today(),
         "position": positions(conn),
         "month": month,
         "window_days": WINDOW_DAYS,

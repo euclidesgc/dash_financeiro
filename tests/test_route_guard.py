@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -59,3 +61,25 @@ def test_the_login_form_is_the_open_door(client):
 
     assert rejected.status_code == 401
     assert REJECTED_MESSAGE in rejected.text
+
+
+ROUTERS_DIR = Path(__file__).resolve().parent.parent / "app" / "routers"
+
+CLOCK_CALL = "date.today()"
+
+
+def _accused(sources: dict[str, str]) -> list[str]:
+    return sorted(name for name, text in sources.items() if CLOCK_CALL in text)
+
+
+def test_no_router_resolves_the_screen_date_by_itself():
+    sources = {path.name: path.read_text() for path in ROUTERS_DIR.glob("*.py")}
+    accused = _accused(sources)
+
+    assert accused == [], f"resolve a data pelo relógio: {', '.join(accused)}"
+
+
+def test_the_sweep_accuses_a_source_that_calls_the_clock():
+    accused = _accused({"fake.py": "from datetime import date\ndate.today()\n"})
+
+    assert accused == ["fake.py"]
