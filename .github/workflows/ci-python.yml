@@ -1,0 +1,101 @@
+name: Python
+
+# O PR NASCE RASCUNHO, E O CI LOCAL É QUEM O PROMOVE
+#
+# Nenhum job roda enquanto o PR está em rascunho. A iteração acontece na máquina
+# de quem trabalha, com `scripts/gates/gates_runner.sh`, e o runner remoto só é
+# chamado quando o trabalho está pronto para revisão — uma vez, em vez de uma por
+# push.
+#
+# `ready_for_review` no `types` é o que fecha o ciclo, e é a metade que se
+# esquece: sem ele, sair do rascunho não dispara evento nenhum, e o PR fica
+# pronto e sem CI para sempre — trocar "roda demais" por "não roda nunca".
+#
+# `!= true` e não `== false`: em evento de `push` não existe `pull_request`, o
+# campo vem nulo, e nulo não é rascunho.
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+# O token do fluxo é declarado aqui, e não herdado. Sem esta seção o job roda
+# com a permissão padrão do repositório — que em repositório antigo ainda é
+# escrita em tudo —, e uma ação de terceiro comprometida escreve com ela.
+permissions:
+  contents: read
+
+jobs:
+  # O template do pack mede `src/` e um Postgres de serviço. Este projeto é de
+  # pacote plano — `app`, `financas`, `ingestao` — sobre SQLite em arquivo, e a
+  # guarda que procurasse `src` responderia "não há código" para tudo: os
+  # portões sairiam verdes por não terem medido.
+  guarda:
+    name: Há código Python?
+    if: github.event.pull_request.draft != true
+    runs-on: ubuntu-latest
+    outputs:
+      pronto: ${{ steps.olha.outputs.pronto }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - id: olha
+        run: |
+          source scripts/gates/medir.sh
+          fontes=0
+          for pacote in app financas ingestao; do
+            if [ -d "$pacote" ]; then
+              fontes=$(( fontes + $(conta_sob "$pacote" -name '*.py') ))
+            fi
+          done
+          echo "medido: $fontes fonte(s) nos pacotes da aplicação"
+          if [ "$fontes" -gt 0 ]; then
+            echo "pronto=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "pronto=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::nenhum pacote da aplicação tem código-fonte (medido: 0)."
+          fi
+
+  qualidade:
+    needs: guarda
+    if: github.event.pull_request.draft != true && (needs.guarda.outputs.pronto == 'true')
+    name: Lint, formatação e testes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+
+      # O uv entra por `pip install` com versão fixa em vez de por ação de
+      # terceiro: é uma dependência a menos para auditar, e a versão fica no
+      # mesmo lugar onde o resto do projeto a declara.
+      - name: uv
+        run: pip install --quiet uv==0.12.10
+
+      # `--frozen` recusa resolver de novo: se o `uv.lock` não bate com o
+      # `pyproject.toml`, o job falha aqui em vez de instalar silenciosamente
+      # uma árvore diferente da que roda na máquina de quem escreveu.
+      - name: Dependências
+        run: uv sync --frozen
+
+      - name: Lint
+        run: uv run ruff check app financas ingestao tests
+
+      - name: Formatação
+        run: uv run ruff format --check app financas ingestao tests
+
+      # `uv run pytest` sai com código 5 quando NENHUM teste foi coletado, e 5
+      # não é falha de teste — é ausência de teste. Um passo que só lê o código
+      # de saída dá o mesmo veredito para "tudo passou" e "não havia nada".
+      - name: Testes
+        run: |
+          saida=$(uv run pytest -q 2>&1) || codigo=$?
+          echo "$saida"
+          if [ "${codigo:-0}" = "5" ]; then
+            echo "::error::pytest não coletou teste nenhum — o portão não mediu."
+            exit 1
+          fi
+          exit "${codigo:-0}"

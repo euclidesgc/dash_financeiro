@@ -170,9 +170,10 @@ quitação, e os três horizontes com progresso.
 Anthropic.** Ela é a norma visual deste projeto — direção estética, tipografia e
 as escolhas que evitam que a interface saia com cara de template padrão.
 
-Isso preenche exatamente a lacuna que a escolha de Python abriu: sem pack de
-stack no `generic_harness`, não há revisor de norma de código; a `frontend-design`
-cobre o lado da interface, que é o que o usuário vê todo dia.
+A norma de código é a do pack `python` do `generic_harness`, com os agents
+`python-arquiteto`, `python-implementador` e `python-revisor`; a
+`frontend-design` cobre o lado da interface, que é o que o usuário vê todo dia
+e que nenhum pack de backend alcança.
 
 Três restrições próprias deste produto, que valem acima de qualquer preferência
 estética:

@@ -139,6 +139,92 @@
       ],
       "mcp_allow": [],
       "origem": "nucleo"
+    },
+    "python-arquiteto": {
+      "writes": [],
+      "bash": "readonly",
+      "deny_tools": [
+        "Task",
+        "Write",
+        "Edit",
+        "MultiEdit",
+        "WebFetch",
+        "WebSearch"
+      ],
+      "mcp_allow": [
+        "mcp__code-review-graph__get_architecture_overview_tool",
+        "mcp__code-review-graph__semantic_search_nodes_tool",
+        "mcp__code-review-graph__query_graph_tool"
+      ],
+      "origem": "pack"
+    },
+    "python-implementador": {
+      "writes": [
+        "./**"
+      ],
+      "bash": "scoped",
+      "deny_tools": [
+        "Task",
+        "WebFetch",
+        "WebSearch"
+      ],
+      "mcp_allow": [
+        "mcp__code-review-graph__semantic_search_nodes_tool",
+        "mcp__code-review-graph__query_graph_tool",
+        "mcp__code-review-graph__get_minimal_context_tool"
+      ],
+      "origem": "pack"
+    },
+    "python-revisor": {
+      "writes": [],
+      "bash": "readonly",
+      "deny_tools": [
+        "Task",
+        "Write",
+        "Edit",
+        "MultiEdit",
+        "WebFetch",
+        "WebSearch"
+      ],
+      "mcp_allow": [
+        "mcp__code-review-graph__get_review_context_tool",
+        "mcp__code-review-graph__detect_changes_tool",
+        "mcp__code-review-graph__get_impact_radius_tool",
+        "mcp__code-review-graph__query_graph_tool"
+      ],
+      "origem": "pack"
+    },
+    "python-testador": {
+      "writes": [
+        "./**"
+      ],
+      "bash": "scoped",
+      "deny_tools": [
+        "Task",
+        "WebFetch",
+        "WebSearch"
+      ],
+      "mcp_allow": [
+        "mcp__code-review-graph__query_graph_tool",
+        "mcp__code-review-graph__get_minimal_context_tool"
+      ],
+      "origem": "pack"
+    },
+    "python-validador": {
+      "writes": [],
+      "bash": "readonly",
+      "deny_tools": [
+        "Task",
+        "Write",
+        "Edit",
+        "MultiEdit",
+        "WebFetch",
+        "WebSearch"
+      ],
+      "mcp_allow": [
+        "mcp__code-review-graph__query_graph_tool"
+      ],
+      "origem": "pack"
     }
   }
 }

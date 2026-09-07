@@ -1,0 +1,9 @@
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["factory.*", "asyncpg.*"]
+ignore_missing_imports = true

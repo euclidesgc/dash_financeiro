@@ -73,9 +73,19 @@ ao topo da fila é a régua local certa e o agregado errado.
   estreita (`E`, `F`, `I`, `B`, `UP`, `C4`), roda por `scripts/lint.sh` e no job `testes` do
   fluxo de CI. Onze validadores registraram a ausência antes de ele existir. A regra escolhida
   pega o que um leitor perde — import morto, nome não usado, ordem de import, `zip` sem
-  `strict` — e **não** impõe um segundo estilo sobre o que já está escrito no código. O
-  formatador (`ruff format`) ficou **de fora**: adotá-lo reescreveria 53 arquivos de uma vez,
-  e um diff desse tamanho esconde o próximo diff de verdade.
+  `strict`. O formatador (`ruff format --check`) entrou junto do pack `python`, no diff que
+  o adotou e em nenhum outro: os 49 arquivos reescritos ficaram num commit só, separado, e
+  é por isso que o diff seguinte volta a ser legível. O escopo do portão cobre os três
+  pacotes — enquanto foi `app tests`, as 35 violações de `financas` e `ingestao` ficaram
+  invisíveis por itens inteiros.
+
+- [ ] `018-tipagem-estrita-em-python` — `mypy --strict` roda sobre `app`,
+  `financas` e `ingestao`, e o portão de lint o inclui. Hoje `mypy` não é nem
+  dependência declarada: a skill `python-tipagem-estrita` do pack e a norma 35 do
+  `CLAUDE.md` cobram tipagem que nenhum comando verifica, e norma que nada mede
+  não governa. O item declara `mypy` no ambiente travado, mede quantos erros os
+  136 arquivos produzem e decide entre corrigir de uma vez ou tolerar uma
+  baseline decrescente — a medição vem antes da escolha, não depois.
 
 - [ ] `016-data-de-referencia-no-caminho-de-recusa` — `_reference` de
   `app/routers/whatif.py` e de `app/routers/advisor.py` cai em `date.today()`

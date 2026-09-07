@@ -66,7 +66,7 @@ pelo dono em 07/09/2026, e a fase 4 do `001` saiu de `blocked-on-D-001`.
 
 ## O processo
 
-Plugin **generic-harness**, modo processo-apenas. Leia o estado antes de tudo:
+Plugin **generic-harness** com o pack `python`. Leia o estado antes de tudo:
 
 ```bash
 python3 "$CLAUDE_PLUGIN_ROOT/scripts/state/state.py" read

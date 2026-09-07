@@ -1,9 +1,6 @@
 # dash_financeiro — painel financeiro pessoal de um usuário, rodando local. Login, dashboard das movimentações bancárias (sincronizadas da Pluggy todo dia ou sob demanda) e IA que ajuda a alcançar o plano de curto, médio e longo prazo. Stack Python 3.12 + FastAPI + Jinja2 + HTMX + SQLite. O objetivo do produto é sair de um déficit de R$ 4.940,72/mês.
 
-Frentes: nenhuma frente declarada.
-
-**Sem pack de stack** — Python não é coberto pelo harness. É atalho deliberado:
-o processo vale, a norma de código é a do projeto. Ver `docs/plano.md`.
+Frentes: api em `.` (python).
 
 ## Processo
 
@@ -61,5 +58,23 @@ o processo vale, a norma de código é a do projeto. Ver `docs/plano.md`.
 21. `/harness:doctor` diagnostica ambiente, hooks e estado.
 
 Detalhe nas skills do harness.
+
+## Python · FastAPI (`.`)
+
+29. Domínio é pasta (`plan`, `payees`, `sync`); o router dele fica em
+    `app/routers/`, um por domínio — a forma por tipo do pack, que vale porque
+    o serviço é pequeno e de dono único.
+30. Router traduz HTTP; não monta consulta nem dá commit (G7).
+31. I/O aguardável em `async def`; bloqueante em `def`; nunca bloqueante dentro
+    de `async def`.
+32. Dependência valida, não só injeta; forma `Annotated[T, Depends(...)]`.
+33. Junção e agregação em SQL, em `app/queries`; Pydantic só valida a resposta.
+34. Esquema muda por arquivo em `app/migrations`, aplicado por `app/migrate.py`.
+    Não há Alembic, e SQLite é o banco em todo ambiente.
+35. `scripts/lint.sh` é `ruff check` e `ruff format --check` nos três pacotes.
+    `mypy --strict` ainda não roda: é item de roadmap.
+
+Detalhe nas skills `python-*`; as de SQLAlchemy, Alembic e `BaseSettings`
+descrevem ferramenta que este projeto não usa.
 
 <!-- harness:claude-md -->
