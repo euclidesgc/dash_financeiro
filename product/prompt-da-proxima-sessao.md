@@ -42,19 +42,19 @@ do lint. Todos passaram por validador cego, todos integrados em `develop` com
 
 ## O que espera o dono
 
-1. **Ratificar `D-001`** — a divergência do `001` sobre a folha de estilo
-   responder 302 em vez de 404. É a única linha de `esperando_humano`:
-   `state.py diverge-set --item 001-base-e-login --id D-001 --status APROVADA --por humano`
-2. **Confirmar as taxas em `/dividas`.** Os dois cheques especiais chegam com
+`state.py check` está com **`esperando_humano` vazio**: `D-001` foi ratificada
+pelo dono em 07/09/2026, e a fase 4 do `001` saiu de `blocked-on-D-001`.
+
+1. **Confirmar as taxas em `/dividas`.** Os dois cheques especiais chegam com
    sugestão medida — `itau` 6,71%, `CAIXA` 8,00% —, e basta salvar para elas
    entrarem na escada. **A taxa dos quatro cartões o painel não consegue
    derivar**: o saldo de um cartão é fatura, e fatura paga inteira não cobra juro
    nenhum. Enquanto não vierem da fatura, R$ 16.744,62 ficam fora da escada e o
    marco de dívidas do objetivo é calculado sem eles.
-3. **Marcar as assinaturas que não usa mais** e **revisar as 77 categorias** nas
+2. **Marcar as assinaturas que não usa mais** e **revisar as 77 categorias** nas
    telas de Comprometido e Regras. Os dois cenários do objetivo que dependem
    disso rendem hoje exatamente zero.
-4. **Informar o saldo de quitação do CDC** em `/simulador`, para fechar a conta
+3. **Informar o saldo de quitação do CDC** em `/simulador`, para fechar a conta
    do carro.
 
 ## Validações de campo pendentes
@@ -72,6 +72,12 @@ Plugin **generic-harness**, modo processo-apenas. Leia o estado antes de tudo:
 python3 "$CLAUDE_PLUGIN_ROOT/scripts/state/state.py" read
 node scripts/loop/decide-next-action.mjs
 ```
+
+**A régua que o dono deu em 07/09/2026:** *opção técnica com uma alternativa
+claramente certa e justificada é execução, não pergunta.* Divergência `normal`
+cuja recomendação você mesmo assina não se escala — decide, registra, e segue. O
+que ele quer garantido: o sistema **atende o requisito, alcança o objetivo e é
+seguro**. Quando os três apontam para a mesma opção, ela se faz.
 
 **A régua desta corrida, aprendida cara:** *uma validação cega por fase*. Achado
 que o próprio validador marca como "não reprova" vira correção com teste que

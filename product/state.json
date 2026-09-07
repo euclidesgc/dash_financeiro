@@ -75,9 +75,7 @@
           "verdict_file": "product/items/001-base-e-login/05-veredictos/fase-4.md",
           "validated_sha": "e9a3756824518665f5003da5f76c1d49eb9aa056",
           "pr": null,
-          "blocked_on": [
-            "D-001"
-          ],
+          "blocked_on": [],
           "verdict_at": "2026-09-06T02:22:32Z",
           "validated_trees": {
             ".": "b53f23246ab54eec3bb13101d390cbb8fffc9ded"
@@ -92,8 +90,9 @@
           "phase": 4,
           "detected_at": "2026-09-06T02:07:22Z",
           "aprovada_at": "2026-09-06T02:07:27Z",
-          "ratificada_por": "autonomo",
-          "reconciliada_at": "2026-09-06T02:07:59Z"
+          "ratificada_por": "humano",
+          "reconciliada_at": "2026-09-06T02:07:59Z",
+          "ratificacao_humana_at": "2026-09-07T14:19:07Z"
         }
       },
       "criteria_exception": null

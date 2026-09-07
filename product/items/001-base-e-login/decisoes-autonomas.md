@@ -46,6 +46,10 @@ Cada linha aqui é um `state.py approve --por autonomo` ou um
 
 O que a corrida **não** decidiu de propósito.
 
-- **Ratificar `D-001`** com `state.py diverge-set --item 001-base-e-login --id D-001 --status APROVADA --por humano`. Enquanto isso não acontece, a fase 4 permanece marcada `blocked-on-D-001` — é a espera funcionando, não defeito, e o item fecha com ela pendente.
+- ~~**Ratificar `D-001`**~~ — **feito em 07/09/2026, pelo dono.** Ele escolheu a
+  opção (a) — reescrever `RF-41` para medir o invariante verdadeiro — e disse que
+  esta não era decisão para escalar: opção técnica com uma alternativa claramente
+  certa e justificada é execução, não pergunta. A fase 4 saiu de
+  `blocked-on-D-001`.
 - **Decidir se o `01-brief.md` vira `01-prd.md` + `02-spec.md`** (ver `D16`). O item está na trilha completa desde a aprovação de `D-001`.
 - **Trocar o título "Painel financeiro"** por outro, se preferir (ver `D18`).
