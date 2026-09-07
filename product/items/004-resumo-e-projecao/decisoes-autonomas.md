@@ -1,0 +1,15 @@
+# Decisões tomadas sem o humano — 004-resumo-e-projecao
+
+O dono autorizou esta corrida. Uma linha por decisão, com a alternativa
+descartada e o porquê. Nada aqui foi aprovado por ele.
+
+## Decisões
+
+| # | Estágio | Decidido | Alternativa descartada | Por quê |
+|---|---|---|---|---|
+| D1 | discovery | A projeção corre sobre a **posição consolidada** (contas + cartões) | Projetar só o caixa, que é o que entra no cheque especial | Os 54 lançamentos com data futura da base estão **todos** em conta de cartão: são parcelas lançadas adiante na fatura, e nenhuma sai do caixa no dia em que está datada. Projetar o caixa exigiria a data de vencimento de cada fatura, que a base não traz. Na posição consolidada a compra piora a posição no dia da compra e o pagamento da fatura é transferência de dentro da posição — soma zero, e já vem marcado `is_transfer`. O caixa aparece na tela como número próprio, para o cheque especial continuar visível. |
+| D2 | discovery | A renda esperada é a **mediana** dos seis meses completos | Média dos seis meses; mediana dos 13 meses; renda declarada pelo dono | 03/2026 tem R$ 42.210,26 de crédito atípico, que `docs/plano.md` exclui à mão. A média daria R$ 16.605,25 e projetaria renda que não existe; a mediana devolve R$ 12.226,21 e neutraliza o mês atípico sem regra especial e sem alguém decidir o que é atípico. Renda declarada é parâmetro editável e chega no `008`, quando `plan_facts` existir — até lá a tela declara a premissa. |
+| D3 | discovery | O **gasto variável** entra diluído por dia do mês | Projetar só o compromisso datado | Só com compromisso datado e renda, a janela de 45 dias — que alcança dois salários — faz a linha **subir** R$ 7.276,37, e o painel diria que o déficit se fecha sozinho. O comprometido é R$ 8.026,79 de um gasto mediano de R$ 17.677,46: a metade que falta é o que decide o sinal da linha. Diluir por dia é a distribuição mais pobre que não mente — não afirma um dia específico, e a soma do mês está certa. |
+| D4 | discovery | "Quanto sobra" é renda mediana menos gasto mediano | Reproduzir os R$ 4.940,72 de `docs/plano.md` | Aquele número foi medido sobre 5 meses, excluindo março à mão, num recorte que a tela não teria como reproduzir sem cravar a exclusão no código. A tela calcula o seu próprio, **−R$ 5.451,25**, declara a régua, e as duas medidas ficam na mesma ordem de grandeza por caminhos independentes — o que vale mais do que uma bater na outra por construção. |
+| D5 | plan | A rota `GET /` passa a servir o Resumo, substituindo a tela mínima do `001` | Criar `/resumo` e deixar `/` como está | A entrega da fase 4 do `001` já registrou `app/templates/home.html` como tela provisória a ser substituída por este item. Rota nova para a tela principal deixaria a raiz do painel servindo um placeholder. |
+| D6 | plan | Duas fases: motor e tela | Três fases, separando a linha do tempo da tela | A linha do tempo é um bloco dentro da mesma resposta HTTP e escreve na mesma folha de estilo. Em fases separadas seriam dois critérios impossíveis de medir sem a outra metade. |
