@@ -3,13 +3,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from decimal import InvalidOperation
 
+from app.accounts import CREDIT
 from app.ingest.money import FractionalCentsError, to_cents
-
-# The account-type vocabulary of the source. It has one home because the sign
-# normalisation below and every reader that groups by type have to agree on the
-# same string, and agreeing by textual coincidence is how they stop agreeing.
-BANK = "BANK"
-CREDIT = "CREDIT"
 
 # SQLite caps host parameters per statement, so the source is compared against
 # the database in chunks instead of one IN clause holding every identifier.

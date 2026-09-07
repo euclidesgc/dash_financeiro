@@ -10,6 +10,7 @@ from app.main import create_app
 from app.taxonomy.classify import classify_all
 from app.taxonomy.seed import seed_taxonomy
 from tests.conftest import load, narrowed, transaction
+from app.routers.summary import _moving
 from tests.test_comprometido_screen import LOGIN, PASSWORD, REFERENCE
 
 ASKED = REFERENCE.isoformat()
@@ -127,3 +128,47 @@ def test_the_screen_needs_a_session(tmp_path, monkeypatch):
 
     assert answer.status_code == 302
     assert answer.headers["location"] == "/login"
+
+
+def _line(when, balance, income=0, due=0, variable=-100):
+    return {
+        "date": when,
+        "balance_cents": balance,
+        "income_cents": income,
+        "due_cents": due,
+        "variable_cents": variable,
+    }
+
+
+def test_the_list_reaches_the_end_of_the_window_when_the_tail_is_quiet():
+    days = [
+        _line("2026-09-05", -1000, variable=0),
+        _line("2026-09-06", -1200, due=-100),
+        _line("2026-09-07", -1300),
+        _line("2026-09-08", -1400),
+    ]
+    shown = _moving(days)
+
+    assert shown[-1]["date"] == "2026-09-08"
+    assert shown[-1]["balance_cents"] == -1400
+    assert shown[-1]["variable_cents"] == -200
+
+
+def test_the_list_does_not_repeat_the_last_day_when_it_already_moves():
+    days = [
+        _line("2026-09-05", -1000, variable=0),
+        _line("2026-09-06", -1200, due=-100),
+    ]
+    shown = _moving(days)
+
+    assert [entry["date"] for entry in shown] == ["2026-09-06"]
+
+
+def test_a_window_with_no_movement_at_all_shows_no_list():
+    assert _moving([_line("2026-09-05", -1000, variable=0), _line("2026-09-06", -1000, variable=0)]) == []
+
+
+def test_the_list_of_the_real_screen_ends_at_the_window_end(client):
+    days = DAY.findall(_section(_screen(client).text, "projecao"))
+
+    assert days[-1] == "2026-10-20"
