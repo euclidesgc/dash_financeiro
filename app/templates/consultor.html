@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Consultor{% endblock %}
+{% block content %}
+<main class="screen">
+  <header class="panel panel-wide">
+    <div class="scale" aria-hidden="true"></div>
+    <h1 class="screen-title">Consultor</h1>
+    <p class="lede">A IA lê e explica; <strong>quem calcula é código testado</strong>. Todo número
+      abaixo veio do motor determinístico do painel — se ela citasse um número que ela mesma
+      contou, erraria, e um número errado na unidade central deste produto destrói a confiança em
+      todo o resto.</p>
+    {% if notice %}
+    <p class="notice" id="recusa" role="alert">{{ notice }}</p>
+    {% endif %}
+  </header>
+  <section id="pergunta" class="panel panel-wide">
+    <h2 class="section-title">O que falta saber</h2>
+    {% if question %}
+    <p class="lede">Uma pergunta de cada vez. Esta é a que mais move a projeção:</p>
+    <p class="headline" data-pergunta="{{ question['name'] }}">Qual é {{ question['label'] }}?</p>
+    <p class="lede">A resposta muda <strong>{{ question['moves'] }}</strong>.
+      {% if question['stale'] %}O valor que você deu antes venceu.{% endif %}
+      Informe em <a href="{{ question['where'] }}">{{ question['where'] }}</a>.</p>
+    <form method="post" action="{{ dismiss_action }}">
+      <input type="hidden" name="nome" value="{{ question['name'] }}">
+      <input type="hidden" name="data" value="{{ reference }}">
+      <button class="button button-quiet" type="submit">Agora não</button>
+    </form>
+    {% else %}
+    <div class="empty">
+      {% if postponed %}
+      <p class="empty-title">Nada a perguntar — porque você adiou tudo.</p>
+      <p class="lede">{{ postponed }} pergunta(s) foram adiadas e nenhum fato foi informado. A
+        projeção segue usando <strong>premissa</strong>, não fato, e o painel não vai insistir.
+        Quando quiser responder, os campos estão em <a href="/dividas">Dívidas</a> e
+        <a href="/simulador">Simulador</a>.</p>
+      {% else %}
+      <p class="empty-title">Nada a perguntar.</p>
+      <p class="lede">Tudo o que só você sabe já está informado e dentro da validade. Enquanto
+        continuar assim, a projeção usa fato e não premissa.</p>
+      {% endif %}
+    </div>
+    {% endif %}
+  </section>
+  <section id="conversa" class="panel panel-wide">
+    <h2 class="section-title">Pergunte sobre os seus dados</h2>
+    <form method="post" action="{{ action }}" class="stack">
+      <input type="hidden" name="data" value="{{ reference }}">
+      <label class="eyebrow" for="pergunta-livre">Pergunta</label>
+      <input class="field" id="pergunta-livre" name="pergunta" value="{{ asked or '' }}"
+             placeholder="Por que o pior ponto é em outubro?">
+      <button class="button" type="submit">Perguntar</button>
+    </form>
+    {% if reading %}
+    <p class="notice" id="leitura" role="status">{{ reading }}</p>
+    {% endif %}
+    {% if unavailable %}
+    <p class="notice" id="indisponivel" role="status">{{ unavailable }}</p>
+    {% endif %}
+    {% if not has_key %}
+    <p class="lede">Sem <code>GEMINI_API_KEY</code> no ambiente a leitura da IA não roda. Os
+      números abaixo continuam iguais: eles não dependem dela.</p>
+    {% endif %}
+  </section>
+  <section id="numeros" class="panel panel-wide">
+    <h2 class="section-title">O que ela lê</h2>
+    <p class="lede">Este é o contexto exato que vai para o modelo — as mesmas linhas, na mesma
+      ordem. Ele pode copiar daqui e mais nada, e por isso você acha na tela todo número que ele
+      citar.</p>
+    <div class="table-scroll">
+      <table class="data-table">
+        <caption class="sr-only">Números determinísticos entregues ao modelo.</caption>
+        <thead><tr><th scope="col">Número</th><th scope="col" class="col-num">Valor</th></tr></thead>
+        <tbody>
+          {% for line in context_lines %}
+          <tr data-numero="{{ loop.index }}">
+            <td>{{ line['label'] }}</td>
+            <td class="cifra col-num">{{ line['value'] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <nav class="panel panel-wide stack" aria-label="Telas do painel">
+    <a class="button button-quiet" href="/">Voltar ao resumo</a>
+  </nav>
+</main>
+{% endblock %}
