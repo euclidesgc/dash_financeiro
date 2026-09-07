@@ -83,31 +83,60 @@ def test_a_late_payment_fine_is_not_the_price_of_carrying_a_balance(taxonomy_con
     assert observed_rates(conn, today=REFERENCE) == {}
 
 
-def test_interest_posted_in_the_first_days_belongs_to_the_month_before(taxonomy_conn):
-    from app.debts.observed import _charged_for
+def charges(conn, day):
+    from app.debts.observed import _charged_for, posts_in_arrears
 
-    rows = [
+    arrears = posts_in_arrears(conn, ACCOUNT["id"])
+    return arrears, {
+        month: _charged_for(conn, ACCOUNT["id"], month, arrears)
+        for month in ("2026-05", "2026-06", "2026-07")
+    }
+
+
+def posted_on(day):
+    return [
         transaction("c", "2026-06-01", -1000.0, descricao="Compra"),
-        # The bank posts June's price on the second of July.
-        transaction("j", "2026-07-02", -60.0, descricao="COBRANCA DE JUROS"),
+        transaction("j", f"2026-07-{day}", -60.0, descricao="COBRANCA DE JUROS"),
     ]
-    conn = account(load(taxonomy_conn, rows), -100000)
-
-    assert _charged_for(conn, ACCOUNT["id"], "2026-06") == -6000
-    assert _charged_for(conn, ACCOUNT["id"], "2026-07") == 0
 
 
-def test_interest_posted_late_in_the_month_stays_in_it(taxonomy_conn):
-    from app.debts.observed import _charged_for
+def test_an_account_that_posts_early_is_charging_in_arrears(taxonomy_conn):
+    conn = account(load(taxonomy_conn, posted_on("02")), -100000)
+    arrears, found = charges(conn, "02")
 
+    assert arrears is True
+    assert found["2026-06"] == -6000
+    assert found["2026-07"] == 0
+
+
+def test_the_boundary_is_the_account_posting_day_and_not_a_fixed_cut(taxonomy_conn):
+    # The day the real base posts on, and the day a fixed cut of five missed.
+    conn = account(load(taxonomy_conn, posted_on("06")), -100000)
+    arrears, found = charges(conn, "06")
+
+    assert arrears is True
+    assert found["2026-06"] == -6000
+
+
+def test_an_account_that_posts_late_is_not_charging_in_arrears(taxonomy_conn):
     rows = [
         transaction("c", "2026-06-01", -1000.0, descricao="Compra"),
         transaction("j", "2026-06-28", -60.0, descricao="Saída JUROS LIMITE DA CONTA"),
     ]
     conn = account(load(taxonomy_conn, rows), -100000)
+    arrears, found = charges(conn, "28")
 
-    assert _charged_for(conn, ACCOUNT["id"], "2026-06") == -6000
-    assert _charged_for(conn, ACCOUNT["id"], "2026-05") == 0
+    assert arrears is False
+    assert found["2026-06"] == -6000
+    assert found["2026-05"] == 0
+
+
+def test_the_median_of_an_even_count_is_rounded_and_not_truncated():
+    from app.debts.observed import _median
+
+    assert _median([1, 2]) == 2  # 1,5 arredonda para 2
+    assert _median([1, 2, 3, 4]) == 2  # 2,5 arredonda para o par, como o Python faz
+    assert _median([100, 300]) == 200
 
 
 def test_the_month_in_progress_is_left_out(taxonomy_conn):

@@ -20,15 +20,18 @@ DASH_KEY_PATH=/tmp/dash-014.key DASH_TODAY=2026-09-05 .venv/bin/python -m app`.
       .venv/bin/python -c` com um trecho que abre o banco, chama
       `app.debts.observed.observed_rates(conn, today=date(2026, 9, 5))` e imprime
       o mapa, mostra **duas** contas: uma chamada `itau`, com `median_bp` igual a
-      `422`, `lowest_bp` igual a `210`, `highest_bp` igual a `680` e `months`
-      igual a `7`; e uma chamada `CAIXA`, com `median_bp` igual a `799` e
-      `months` igual a `5`
+      `671`, `lowest_bp` igual a `458`, `highest_bp` igual a `984` e `months`
+      igual a `7`; e uma chamada `CAIXA`, com `median_bp` igual a `800` e
+      `months` igual a `4`
 - [ ] `comando` — RF-13, RF-14
       `rtk proxy env DASH_ENV_FILE=/dev/null .venv/bin/python -m pytest -q
       tests/test_observed_rates.py` sai com código 0, e o arquivo contém um teste
-      que afirma que juros lançados nos **primeiros dias** de um mês contam para o
-      mês **anterior**, outro que afirma que juros lançados no fim do mês ficam
-      nele, e outro que afirma que o **mês em curso** não entra na lista de meses
+      que afirma que uma conta que posta cedo **cobra em atraso** e que o juro
+      conta para o mês anterior; outro que faz o mesmo com o lançamento no **dia
+      6** — o dia em que a conta real posta, e o que um corte fixo em cinco dias
+      não alcançava; outro que afirma que conta que posta no fim do mês **não**
+      cobra em atraso; outro que afirma que o **mês em curso** não entra; e outro
+      que afirma que a mediana de uma contagem par é **arredondada**
 - [ ] `comando` — RF-15
       `rtk proxy env DASH_ENV_FILE=/dev/null DASH_DB_PATH=/tmp/dash-014.sqlite
       .venv/bin/python -c` com um trecho que conta as tags do bloco
@@ -39,9 +42,9 @@ DASH_KEY_PATH=/tmp/dash-014.key DASH_TODAY=2026-09-05 .venv/bin/python -m app`.
       *Quando* `rtk proxy curl -s -b "dash_session=<cookie>"
       http://127.0.0.1:8000/dividas` é executado
       *Então* a resposta é `200`; o bloco `id="sem-taxa"` traz **exatamente
-      dois** elementos com `data-sugerida`, com os valores `422` e `799` e os
-      `data-faixa` `210-680` e `313-816`; o campo de taxa da linha do `itau` vem
-      com `value="4,22"`; e **nenhuma** linha de cartão traz `data-sugerida`
+      dois** elementos com `data-sugerida`, com os valores `671` e `800` e os
+      `data-faixa` `458-984` e `313-816`; o campo de taxa da linha do `itau` vem
+      com `value="6,71"`; e **nenhuma** linha de cartão traz `data-sugerida`
 - [ ] `comportamental` — RF-11
       *Dado* o servidor rodando e um cookie válido
       *Quando* a tela é buscada e, **sem** enviar nenhum `POST`, o banco é
@@ -68,7 +71,7 @@ DASH_KEY_PATH=/tmp/dash-014.key DASH_TODAY=2026-09-05 .venv/bin/python -m app`.
 - [ ] `comando` — portão de lint
       `rtk proxy bash scripts/lint.sh` sai com código 0
 - [ ] `comando` — RF-12
-      `rtk proxy grep -REn --exclude-dir=__pycache__ "\b(422|799|210|680|313|816)\b"
+      `rtk proxy grep -REn --exclude-dir=__pycache__ "\b(671|800|458|984|313|816)\b"
       app/debts app/routers/debts.py app/templates/dividas.html` não imprime
       nenhuma linha
 - [ ] `estrutural` — RF-10

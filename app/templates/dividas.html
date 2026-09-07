@@ -58,9 +58,11 @@
       real rende mais, e chutar seria o painel decidindo o que não sabe. A taxa está no extrato ou
       na fatura.</p>
     <p class="lede">Onde o banco já cobrou juros, o campo vem <strong>preenchido com uma
-      sugestão</strong>: a mediana do que ele cobrou, dividida pelo saldo negativo médio de cada
-      dia. É estimativa, não contrato — a faixa aparece ao lado, e ela é larga. Cartão não tem
-      sugestão: o saldo de um cartão é fatura, e fatura paga inteira não cobra juro nenhum.</p>
+      sugestão</strong>: mês a mês, o juro cobrado dividido pelo saldo negativo médio daquele
+      mês, e a mediana dos meses. Quando a conta é cobrada no começo do mês, o juro conta para o
+      mês anterior — é o que o banco está cobrando. É estimativa, não contrato, e a faixa aparece
+      ao lado. Cartão não tem sugestão: o saldo de um cartão é fatura, e fatura paga inteira não
+      cobra juro nenhum.</p>
     <div class="table-scroll">
     <table class="data-table">
       <caption class="sr-only">Dívidas sem taxa informada, do maior saldo para o menor.</caption>
@@ -82,8 +84,9 @@
             {% if seen %}
             <p class="cell-key" data-sugerida="{{ seen['median_bp'] }}"
                data-faixa="{{ seen['lowest_bp'] }}-{{ seen['highest_bp'] }}">
-              Sugestão: {{ seen['median_bp']|taxa }}, mediana dos juros que o banco cobrou em
-              {{ seen['months'] }} meses. Variou de {{ seen['lowest_bp']|taxa }} a
+              Sugestão: {{ seen['median_bp']|taxa }}. Para cada um de {{ seen['months'] }} meses,
+              o juro cobrado dividido pelo saldo negativo médio daquele mês; a sugestão é a
+              mediana desses meses. Variou de {{ seen['lowest_bp']|taxa }} a
               {{ seen['highest_bp']|taxa }} — confirme com o extrato antes de salvar.</p>
             {% endif %}
           </td>
