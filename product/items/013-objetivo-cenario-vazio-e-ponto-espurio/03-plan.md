@@ -33,6 +33,17 @@ DASH_KEY_PATH=/tmp/dash-013.key .venv/bin/python -m app`.
       distinct reference_date from plan_snapshots order by reference_date"`
       imprime **exatamente duas** linhas, `2026-09-05` e `2026-10-05` — a data de
       hoje **não** aparece
+- [ ] `comportamental` — RF-04
+      *Dado* o servidor rodando e um cookie válido, e o banco recém-preparado
+      *Quando* `GET /objetivo` é buscada **sem** parâmetro `data`
+      *Então* a resposta é `200`, **não** traz `id="recusa"`, e
+      `select count(*) from plan_snapshots` passa a ser **maior que zero**
+- [ ] `comando` — RF-04, RF-05
+      `rtk proxy env DASH_ENV_FILE=/dev/null .venv/bin/python -m pytest -q
+      tests/test_plan.py` sai com código 0, e o arquivo contém um teste que
+      afirma que a tela sem parâmetro grava ponto e não traz `id="recusa"`, e
+      outro que, com **uma** assinatura dispensada, afirma que o aviso diz `Uma`
+      e não `Duas dessas alavancas`, e que ele **não** traz `mesmo número do`
 - [ ] `comando` — RF-01, RF-02
       `rtk proxy env DASH_ENV_FILE=/dev/null .venv/bin/python -m pytest -q
       tests/test_plan.py` sai com código 0, e o arquivo contém um teste que

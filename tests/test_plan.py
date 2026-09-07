@@ -211,3 +211,62 @@ def test_the_screen_names_the_empty_lever_lists(taxonomy_conn, monkeypatch, tmp_
     assert 'id="alavanca-vazia"' in html
     assert "a lista de corte" in html
     assert "mesmo número do" in html
+
+
+def test_the_screen_without_a_date_records_and_does_not_claim_a_refusal(
+    taxonomy_conn, monkeypatch, tmp_path
+):
+    from fastapi.testclient import TestClient
+
+    from app.auth.seed import seed_user
+    from app.db import connect as open_db
+    from app.main import create_app
+
+    monkeypatch.setenv("DASH_ENV_FILE", "/dev/null")
+    monkeypatch.setenv("DASH_DB_PATH", str(tmp_path / "dash.sqlite"))
+    monkeypatch.setenv("SESSION_SECRET", "chave-de-teste")
+    app = create_app()
+    conn = open_db()
+    seed_user(conn, "teste", "senha-teste-9k2")
+    conn.close()
+    with TestClient(app, follow_redirects=False) as client:
+        client.post("/login", data={"login": "teste", "senha": "senha-teste-9k2"})
+        plain = client.get("/objetivo")
+    conn = open_db()
+    written = conn.execute("SELECT COUNT(*) FROM plan_snapshots").fetchone()[0]
+    conn.close()
+
+    assert plain.status_code == 200
+    assert 'id="recusa"' not in plain.text
+    assert written > 0
+
+
+def test_one_empty_lever_does_not_claim_two_nor_claim_the_scenarios_are_equal(
+    taxonomy_conn, monkeypatch, tmp_path
+):
+    from fastapi.testclient import TestClient
+
+    from app.auth.seed import seed_user
+    from app.db import connect as open_db
+    from app.main import create_app
+
+    monkeypatch.setenv("DASH_ENV_FILE", "/dev/null")
+    monkeypatch.setenv("DASH_DB_PATH", str(tmp_path / "dash.sqlite"))
+    monkeypatch.setenv("SESSION_SECRET", "chave-de-teste")
+    app = create_app()
+    conn = open_db()
+    seed_user(conn, "teste", "senha-teste-9k2")
+    conn.execute(
+        "INSERT INTO commitments (kind, series_key, description, amount_cents, "
+        "last_seen_date, installment_total, dismissed) "
+        "VALUES ('recurring', 'x', 'Assinatura X', -246720, '2026-09-01', 0, 1)"
+    )
+    conn.commit()
+    conn.close()
+    with TestClient(app, follow_redirects=False) as client:
+        client.post("/login", data={"login": "teste", "senha": "senha-teste-9k2"})
+        html = client.get("/objetivo?data=2026-09-05").text
+
+    assert "Uma\n      dessas alavancas está" in html or "Uma dessas alavancas está" in html
+    assert "Duas dessas alavancas" not in html
+    assert "mesmo número do" not in html

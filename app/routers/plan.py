@@ -49,6 +49,12 @@ def _reference(asked: object) -> tuple[date, bool]:
     # this date, and the twelve-month window behind it does date arithmetic that
     # falls off the edge of the calendar: `0001-01-01` is valid ISO and took the
     # route down with a 500 (RF-15).
+    # No parameter is not a refused date: it is the normal way into this screen,
+    # from the two links the product itself carries. Treating it as a refusal
+    # made the timeline stop growing through ordinary navigation, and printed
+    # "the date asked was not accepted" over a request that asked for none.
+    if asked is None or not str(asked).strip():
+        return date.today(), True
     try:
         asked_date = day(asked, DATE_FIELD)
     except InvalidPeriodError:
@@ -81,6 +87,10 @@ def _context(conn: sqlite3.Connection, runs: list[dict], today: date) -> dict[st
             )
             if not value
         ],
+        # base == conservador only when both lists are empty: base adds both
+        # levers, conservador adds neither. Saying it over one empty list would
+        # contradict the two different numbers in the table beside it.
+        "base_equals_conservative": not gained["dismissed"] and not gained["cut"],
         # The ladder of the objective only sees debts with a rate. Six of them
         # have none, and they are not small: leaving them out in silence would
         # make the milestone true over a fraction of the real debt (RF-18).

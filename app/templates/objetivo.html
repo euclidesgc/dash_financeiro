@@ -31,11 +31,13 @@
     <p class="lede">Nenhum deles é o outro vezes uma porcentagem. Cada um soma uma alavanca que o
       painel já identificou e que você tem de puxar de verdade.</p>
     {% if empty_levers %}
-    <p class="notice" id="alavanca-vazia" role="status">Duas dessas alavancas estão em
+    <p class="notice" id="alavanca-vazia" role="status">{% if empty_levers|length == 1 %}Uma
+      dessas alavancas está{% else %}Duas dessas alavancas estão{% endif %} em
       <span class="cifra">R$ 0,00</span> porque a lista correspondente está vazia:
-      {{ empty_levers|join(" e ") }}. Não é que elas não rendam — é que ainda não há o que
-      contar. Por isso o cenário <strong>base</strong> devolve hoje o mesmo número do
-      <strong>conservador</strong>.</p>
+      {{ empty_levers|join(" e ") }}. Não é que {% if empty_levers|length == 1 %}ela não renda —
+      é{% else %}elas não rendam — é{% endif %} que ainda não há o que contar.{% if base_equals_conservative %}
+      Por isso o cenário <strong>base</strong> devolve hoje o mesmo número do
+      <strong>conservador</strong>.{% endif %}</p>
     {% endif %}
     <div class="table-scroll">
       <table class="data-table">
