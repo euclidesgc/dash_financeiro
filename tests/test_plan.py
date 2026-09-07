@@ -59,7 +59,7 @@ def test_a_month_that_ends_in_the_red_never_reaches_the_objective(taxonomy_conn)
 
     assert found["monthly_result_cents"] < 0
     assert found["months_to_objective"] is None
-    assert found["milestones"]["resultado"] is None
+    assert found["milestones"] == {"resultado": None, "dividas": None, "reserva": None}
     assert found["missing_cents"] == -found["monthly_result_cents"]
 
 
@@ -77,7 +77,7 @@ def test_the_mortgage_never_enters_the_expensive_ladder(taxonomy_conn):
     conn = prepare(taxonomy_conn, salary(5000.0) + rent(-1000.0))
     conn.execute(
         "INSERT INTO debts (kind, name, balance_cents, monthly_rate_bp, source) "
-        "VALUES ('mortgage', 'Imovel', -20000000, 72, 'teste'), "
+        "VALUES ('mortgage', 'Imovel', -20000000, 200, 'teste'), "
         "('card', 'Cartao', -500000, 900, 'teste')"
     )
     conn.commit()
@@ -103,3 +103,27 @@ def test_every_reading_writes_a_point_and_the_same_day_writes_only_one(taxonomy_
     record(conn, runs, today=date(2026, 10, 5))
 
     assert [point["reference_date"] for point in history(conn)] == ["2026-09-05", "2026-10-05"]
+
+
+def test_a_ladder_already_clear_was_cleared_in_month_zero(taxonomy_conn):
+    conn = prepare(taxonomy_conn, salary(9000.0) + rent(-1000.0))
+    conn.execute("DELETE FROM debts")
+    conn.commit()
+    found = simulate(conn, CONSERVATIVE, today=REFERENCE)
+
+    assert found["milestones"]["dividas"] == 0
+
+
+def test_a_month_that_goes_entirely_to_the_debt_does_not_feed_the_reserve(taxonomy_conn):
+    conn = prepare(taxonomy_conn, salary(9000.0) + rent(-1000.0))
+    conn.execute("DELETE FROM debts")
+    conn.execute(
+        "INSERT INTO debts (kind, name, balance_cents, monthly_rate_bp, source) "
+        "VALUES ('card', 'Cartao', ?, 900, 'teste')",
+        (-simulate(conn, CONSERVATIVE, today=REFERENCE)["monthly_result_cents"] * 100 // 109,),
+    )
+    conn.commit()
+    found = simulate(conn, CONSERVATIVE, today=REFERENCE)
+
+    assert found["milestones"]["dividas"] == 1
+    assert found["milestones"]["reserva"] != 1

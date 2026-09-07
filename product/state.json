@@ -464,14 +464,14 @@
       "created_at": "2026-09-07T03:13:21Z",
       "approvals": {
         "brief": {
-          "at": "2026-09-07T03:19:19Z",
-          "sha": "862f85f12ffa3fb6d50e7291e9703621a56b1caa",
+          "at": "2026-09-07T03:35:30Z",
+          "sha": "41541186a4ccf48b34049201f333a73cf6e5d920",
           "file": "product/items/007-objetivo-e-linha-do-tempo/01-brief.md",
           "por": "autonomo"
         },
         "plan": {
-          "at": "2026-09-07T03:19:19Z",
-          "sha": "8881e39e53b4e40df2c707bb64b4b5cbe5eadbca",
+          "at": "2026-09-07T03:35:30Z",
+          "sha": "595511624be52bd40b838b354e527d9ba16a7115",
           "file": "product/items/007-objetivo-e-linha-do-tempo/03-plan.md",
           "por": "autonomo"
         }

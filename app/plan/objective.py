@@ -3,7 +3,7 @@ from datetime import date
 
 from app.commitments.live import released_cash
 from app.commitments.live import totals as commitment_totals
-from app.projection.monthly import MONTHS, complete_months, median
+from app.projection.monthly import complete_months, median
 from app.queries.crossings import crossing
 from app.queries.spending import SPENDING
 
@@ -41,7 +41,7 @@ def floor_label(conn: sqlite3.Connection) -> str:
     # the vocabulary is data, and a screen that spells it out becomes a second
     # place to change when the owner renames it (RF do 002).
     found = conn.execute(_LABEL, (FLOOR_SLUG,)).fetchone()
-    return found["label"] if found else FLOOR_SLUG
+    return found["label"] if found else "o piso de sobrevivência"
 
 
 def reserve_target_cents(conn: sqlite3.Connection, *, today: date) -> int:
@@ -86,5 +86,3 @@ def baseline_cents(conn: sqlite3.Connection, *, today: date) -> int:
     results = monthly_results(conn, today=today)
     return median(results) if results else 0
 
-
-MEDIAN_MONTHS = MONTHS

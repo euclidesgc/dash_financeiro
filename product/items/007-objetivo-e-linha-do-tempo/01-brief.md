@@ -32,3 +32,28 @@
 - **RF-13** — `GET /objetivo` fica atrás da sessão, e o Resumo leva até ela.
 - **RF-14** — A tela obedece à linguagem visual; nenhum número medido aparece
   como literal no código.
+
+## O que o veredicto reprovado obrigou a escrever
+
+- **RF-15** — Data de referência fora de `2000-01-01`–`2100-12-31` cai na data de
+  hoje. `0001-01-01` é ISO válido, passava a guarda e estourava doze meses antes,
+  em aritmética de calendário, derrubando a rota com `500`.
+- **RF-16** — O caixa que um parcelamento libera entra na simulação **no mês em
+  que ele acaba**, não no primeiro. O rótulo do cenário diz "ao acabar" e o
+  código passa a honrá-lo.
+- **RF-17** — Só o que a escada **não** consumiu vai para a reserva. Somar o mês
+  inteiro quando a sobra é exatamente zero creditava um mês que foi todo para a
+  dívida, e antecipava o objetivo em um mês.
+- **RF-18** — A escada do objetivo só enxerga dívida com taxa informada. A tela
+  diz **quantas ficaram de fora e quanto elas somam**, porque o marco de dívidas
+  estava sendo calculado sobre uma fração da dívida real, em silêncio.
+- **RF-19** — Escada já limpa foi limpa no mês **zero**, não no mês um.
+- **RF-20** — Quando não há data mas o resultado mensal **não** é negativo, a
+  tela diz que a sobra não vence os juros da escada, em vez de afirmar "enquanto
+  o resultado for negativo" com um "faltam R$ 0,00" ao lado.
+- **RF-21** — A linha do tempo mostra a **reserva alvo** de cada ponto: ela se
+  move quando a janela de seis meses desliza, e comparar projeções contra um alvo
+  que mudou é comparar coisas diferentes.
+- **RF-22** — A tela usa **meses** como unidade em todos os blocos. A tabela de
+  cenários dizia "dias" e calculava `meses × 30`, que erra cerca de cinco dias
+  por ano de projeção.

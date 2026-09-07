@@ -49,8 +49,28 @@ DASH_KEY_PATH=/tmp/dash-007.key .venv/bin/python -m app`.
       deixa os três marcos nulos e o "falta" igual ao resultado invertido; um que
       afirma que um mês positivo alcança o objetivo e devolve meses; um que
       afirma que uma dívida de tipo `mortgage` **não** entra na escada do
-      objetivo enquanto uma de tipo `card` entra; e um que afirma que ler duas
-      vezes no mesmo dia grava um ponto só
+      objetivo enquanto uma de tipo `card` entra, com a taxa do imóvel **acima**
+      do corte de 1% ao mês, para que o teste exercite a guarda e não a
+      comparação de taxa; um que afirma que ler duas vezes no mesmo dia grava um
+      ponto só; um que afirma que uma escada já limpa devolve `dividas == 0`; e
+      um que afirma que um mês que vai inteiro para a dívida **não** alcança a
+      reserva no mesmo mês. O teste do mês negativo afirma os **três** marcos
+- [ ] `comportamental` — RF-15, RF-20, RF-18
+      *Dado* o servidor rodando e um cookie válido
+      *Quando* `GET /objetivo?data=0001-01-01` é buscada
+      *Então* a resposta é `200`, **não** `500`; e a resposta de
+      `/objetivo?data=2026-09-05` traz o bloco `id="sem-taxa-aviso"` com a
+      contagem de dívidas sem taxa e a soma delas
+- [ ] `comando` — RF-16, RF-17, RF-19, RF-22
+      `rtk proxy grep -REn --exclude-dir=__pycache__ "\* 30" app/templates` não
+      imprime nenhuma linha; e `rtk proxy grep -c "released_by_month"
+      app/plan/timeline.py` imprime um número maior que 1
+- [ ] `comportamental` — RF-21
+      *Dado* o servidor rodando e um cookie válido
+      *Quando* `/objetivo?data=2026-09-05` e `/objetivo?data=2026-10-05` são
+      buscadas e a primeira é buscada de novo
+      *Então* o bloco `id="linha-do-tempo"` traz dois elementos com `data-alvo`,
+      e os dois valores são **diferentes** entre si
 - [ ] `comportamental` — RF-14
       *Dado* o Chromium com `prefers-reduced-motion: reduce` emulado, sessão
       válida e `http://127.0.0.1:8000/objetivo?data=2026-09-05` carregada

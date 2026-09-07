@@ -1,6 +1,7 @@
 import sqlite3
 from datetime import date
 
+from app.commitments.live import released_cash
 from app.debts.ladder import MORTGAGE, ladder
 from app.plan.objective import baseline_cents, levers, reserve_target_cents
 from app.projection.position import positions
@@ -11,6 +12,7 @@ OPTIMISTIC = "otimista"
 SCENARIOS = (CONSERVATIVE, BASE, OPTIMISTIC)
 
 EXPENSIVE_RATE_BP = 100
+RATE_SCALE = 10000
 HORIZON_MONTHS = 360
 
 LABELS = {
@@ -18,6 +20,21 @@ LABELS = {
     BASE: "as assinaturas marcadas caem e a lista de corte é cortada",
     OPTIMISTIC: "o do meio, mais o caixa que os parcelamentos liberam ao acabar",
 }
+
+
+def released_by_month(conn: sqlite3.Connection, *, today: date) -> list[tuple[int, int]]:
+    # The cash an instalment frees arrives when the instalment ends, not today:
+    # the label says "ao acabar" and the simulation has to honour it (RF-16).
+    reference = f"{today.year:04d}-{today.month:02d}"
+    freed = []
+    for row in released_cash(conn, today=today):
+        ahead = _months_between(reference, row["month"])
+        freed.append((max(ahead, 0), row["amount_cents"]))
+    return sorted(freed)
+
+
+def _months_between(start: str, end: str) -> int:
+    return (int(end[:4]) - int(start[:4])) * 12 + int(end[5:7]) - int(start[5:7])
 
 
 def monthly_result_cents(conn: sqlite3.Connection, scenario: str, *, today: date) -> int:
@@ -29,8 +46,6 @@ def monthly_result_cents(conn: sqlite3.Connection, scenario: str, *, today: date
     result = baseline_cents(conn, today=today)
     if scenario in (BASE, OPTIMISTIC):
         result += gained["dismissed"] + gained["cut"]
-    if scenario == OPTIMISTIC:
-        result += gained["released"]
     return result
 
 
@@ -46,17 +61,24 @@ def expensive_debts(conn: sqlite3.Connection) -> list[dict]:
 
 
 def simulate(conn: sqlite3.Connection, scenario: str, *, today: date) -> dict:
-    result = monthly_result_cents(conn, scenario, today=today)
+    base_result = monthly_result_cents(conn, scenario, today=today)
+    freed = released_by_month(conn, today=today) if scenario == OPTIMISTIC else []
     target = reserve_target_cents(conn, today=today)
-    owed = [abs(row["balance_cents"]) for row in expensive_debts(conn)]
-    rates = [(row["monthly_rate_bp"] or 0) / 10000 for row in expensive_debts(conn)]
+    steps = expensive_debts(conn)
+    owed = [abs(row["balance_cents"]) for row in steps]
+    rates = [(row["monthly_rate_bp"] or 0) / RATE_SCALE for row in steps]
     cash = positions(conn)["cash_cents"]
 
     milestones: dict[str, int | None] = {"resultado": None, "dividas": None, "reserva": None}
-    if result >= 0:
+    if base_result >= 0:
         milestones["resultado"] = 0
+    # A ladder that is already clear was cleared in month zero, not in month one.
+    if not any(owed):
+        milestones["dividas"] = 0
     reserve = 0
+    result = base_result
     for month in range(1, HORIZON_MONTHS + 1):
+        result += sum(amount for when, amount in freed if when == month)
         if result <= 0:
             # A month that ends in the red cannot pay anything down, and the debt
             # grows at its own rate: saying "in N months" here would be inventing
@@ -74,19 +96,22 @@ def simulate(conn: sqlite3.Connection, scenario: str, *, today: date) -> dict:
         if milestones["dividas"] is None and not any(owed):
             milestones["dividas"] = month
         if not any(owed):
-            reserve += spare if spare else result
+            # Only what the ladder did not swallow goes to the reserve. Adding the
+            # whole month when the spare happens to be exactly zero would credit
+            # a month that went entirely to the debt (RF-17).
+            reserve += spare
             if milestones["reserva"] is None and reserve >= target:
                 milestones["reserva"] = month
                 break
     return {
         "scenario": scenario,
         "label": LABELS[scenario],
-        "monthly_result_cents": result,
         "reserve_target_cents": target,
         "cash_cents": cash,
         "expensive_cents": -sum(abs(row["balance_cents"]) for row in expensive_debts(conn)),
         "milestones": milestones,
         "months_to_objective": milestones["reserva"],
+        "monthly_result_cents": base_result,
         # Without a date, the only useful number left is how far the monthly
         # result is from zero: that is the distance between "never" and "a date
         # exists", and it is the one thing the owner can act on.

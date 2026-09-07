@@ -32,7 +32,7 @@
         <thead>
           <tr><th scope="col">Cenário</th><th scope="col">O que ele assume</th>
             <th scope="col" class="col-num">Resultado mensal</th>
-            <th scope="col" class="col-num">Dias até o objetivo</th></tr>
+            <th scope="col" class="col-num">Meses até o objetivo</th></tr>
         </thead>
         <tbody>
           {% for run in scenarios %}
@@ -41,7 +41,7 @@
             <td>{{ run['scenario'] }}</td>
             <td>{{ run['label'] }}</td>
             <td class="cifra col-num">{{ run['monthly_result_cents']|brl }}</td>
-            <td class="cifra col-num">{% if run['months_to_objective'] is not none %}{{ run['months_to_objective'] * 30 }}{% else %}não chega{% endif %}</td>
+            <td class="cifra col-num">{% if run['months_to_objective'] is not none %}{{ run['months_to_objective'] }}{% else %}não chega{% endif %}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -50,12 +50,24 @@
     {% if not reachable %}
     <div class="empty">
       <p class="empty-title">Nenhum cenário chega ao objetivo.</p>
+      {% if base['missing_cents'] %}
       <p class="lede">Não é uma data distante: é <strong>nunca</strong>, enquanto o resultado
         mensal for negativo. Faltam <span class="cifra">{{ base['missing_cents']|brl }}</span> por
         mês para que exista uma data — e é esse o número a atacar, não o alvo da reserva. Veja
         onde cortar em <a href="/gastos">Gastos</a> e o que já está vendido em
         <a href="/comprometido">Comprometido</a>.</p>
+      {% else %}
+      <p class="lede">O resultado mensal já é positivo, mas a sobra não vence os juros da escada
+        dentro do horizonte projetado: o que entra por mês é menor que o que a dívida cresce.
+        Ataque primeiro o degrau de cima em <a href="/dividas">Dívidas</a>.</p>
+      {% endif %}
     </div>
+    {% endif %}
+    {% if unrated %}
+    <p class="notice" id="sem-taxa-aviso" role="status">A escada do objetivo enxerga só o que tem
+      taxa informada. Ficam de fora {{ unrated|length }} dívida(s), somando
+      <span class="cifra">{{ unrated_cents|brl }}</span> — o marco de dívidas está sendo calculado
+      sem elas. Informe as taxas em <a href="/dividas">Dívidas</a>.</p>
     {% endif %}
   </section>
   <section id="marcos" class="panel panel-wide">
@@ -82,7 +94,8 @@
     <h2 class="section-title">A linha do tempo</h2>
     <p class="lede">Cada leitura desta tela grava um ponto. "Em março você projetava 30 meses,
       hoje projeta 24" é o único sinal de progresso que este produto aceita — e ele só existe se
-      houver um março com que comparar.</p>
+      houver um março com que comparar. A reserva alvo aparece na série porque ela também se
+      move: comparar projeções contra um alvo que mudou é comparar coisas diferentes.</p>
     <div class="scale" aria-hidden="true"></div>
     {% if history|length > 1 %}
     <div class="table-scroll">
@@ -90,12 +103,14 @@
         <caption class="sr-only">Projeções gravadas, do cenário base.</caption>
         <thead><tr><th scope="col">Data de referência</th>
           <th scope="col" class="col-num">Resultado mensal</th>
+          <th scope="col" class="col-num">Reserva alvo</th>
           <th scope="col" class="col-num">Meses até o objetivo</th></tr></thead>
         <tbody>
           {% for point in history %}
           <tr data-ponto="{{ point['reference_date'] }}">
             <td class="calendar-date">{{ point['reference_date']|dia }}</td>
             <td class="cifra col-num">{{ point['monthly_result_cents']|brl }}</td>
+            <td class="cifra col-num" data-alvo="{{ point['reserve_target_cents'] }}">{{ point['reserve_target_cents']|brl }}</td>
             <td class="cifra col-num">{% if point['months_to_objective'] is not none %}{{ point['months_to_objective'] }}{% else %}não chega{% endif %}</td>
           </tr>
           {% endfor %}
