@@ -117,9 +117,9 @@
           <th scope="col">Validade</th></tr></thead>
         <tbody>
           {% for fact in facts %}
-          <tr data-fato="{{ fact['name'] }}" data-valor="{{ fact['value_cents'] }}">
+          <tr data-fato="{{ fact['name'] }}" data-valor="{{ fact['value'] }}">
             <td>{{ fact['label'] }}</td>
-            <td class="cifra col-num">{{ fact['value_cents']|brl }}</td>
+            <td class="cifra col-num">{{ fact['value']|unidade(fact['unit']) }}</td>
             <td>{% if fact['valid_until'] %}{{ fact['valid_until']|dia }}{% if fact['stale'] %}
               <span class="cell-key">vencido</span>{% endif %}{% else %}sem prazo{% endif %}</td>
           </tr>
@@ -136,10 +136,12 @@
     {% endif %}
     <form method="post" action="{{ fact_action }}" class="stack">
       <input type="hidden" name="data" value="{{ reference }}">
-      <label class="eyebrow" for="fato-nome">Nome curto</label>
-      <input class="field" id="fato-nome" name="nome" placeholder="quitacao-cdc">
-      <label class="eyebrow" for="fato-rotulo">Como aparece na tela</label>
-      <input class="field" id="fato-rotulo" name="rotulo" placeholder="Saldo de quitação do CDC">
+      <label class="eyebrow" for="fato-nome">Qual fato</label>
+      <select class="field" id="fato-nome" name="nome">
+        {% for item in catalog %}
+        <option value="{{ item['name'] }}">{{ item['label'] }}</option>
+        {% endfor %}
+      </select>
       <label class="eyebrow" for="fato-valor">Valor</label>
       <input class="field" id="fato-valor" name="valor" inputmode="decimal" placeholder="0,00">
       <label class="eyebrow" for="fato-validade">Vale até (opcional)</label>

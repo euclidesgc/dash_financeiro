@@ -4,14 +4,13 @@ import pytest
 
 from app.debts import ladder as ladder_module
 from app.debts.ladder import (
-    InvalidRateError,
     ladder,
     monthly_interest_cents,
-    parse_rate,
     rebuild,
     without_rate,
 )
-from app.debts.simulate import InvalidAmountError, parse_amount, simulate
+from app.debts.simulate import simulate
+from app.settings.typed import InvalidValueError, parse_money, parse_rate
 
 VEHICLE_BALANCE = 3917636
 PAYMENT = 123533
@@ -64,7 +63,7 @@ def test_a_debt_with_no_term_answers_in_interest_and_not_in_instalments():
 
 
 def test_an_extra_payment_of_zero_is_refused():
-    with pytest.raises(InvalidAmountError):
+    with pytest.raises(InvalidValueError):
         simulate(step(), 0)
 
 
@@ -76,7 +75,7 @@ def test_the_instalments_removed_come_off_the_end_of_the_schedule():
 
 
 def test_a_rate_outside_the_range_is_refused_by_name():
-    with pytest.raises(InvalidRateError) as refusal:
+    with pytest.raises(InvalidValueError) as refusal:
         parse_rate("-1")
 
     assert "-1" in str(refusal.value)
@@ -92,7 +91,7 @@ def test_a_rate_is_read_with_a_comma_and_a_percent_sign():
 
 
 def test_an_amount_is_read_in_the_brazilian_form():
-    assert parse_amount("10.000,00") == 1000000
+    assert parse_money("10.000,00") == 1000000
 
 
 def test_the_monthly_interest_of_a_step_without_a_rate_is_zero():
@@ -175,8 +174,8 @@ def test_a_debt_without_a_rate_refuses_to_be_simulated():
 
 
 def test_a_refusal_names_the_field_the_owner_touched():
-    with pytest.raises(InvalidAmountError) as refusal:
-        parse_amount("abc", "Saldo de quitação")
+    with pytest.raises(InvalidValueError) as refusal:
+        parse_money("abc", "Saldo de quitação")
 
     assert "Saldo de quitação inválido" in str(refusal.value)
     assert "'" not in str(refusal.value)

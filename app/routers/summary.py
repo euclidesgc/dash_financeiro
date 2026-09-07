@@ -9,9 +9,10 @@ from starlette.responses import Response
 from app.commitments.calendar import WINDOW_DAYS
 from app.db import connect
 from app.projection.forecast import forecast
-from app.projection.monthly import MONTHS, monthly
+from app.projection.monthly import monthly
 from app.projection.position import positions
 from app.queries.period import InvalidPeriodError, day
+from app.settings.catalog import MEDIAN_MONTHS
 from app.sync import (
     STALE_DAYS,
     MissingCredentialError,
@@ -122,7 +123,7 @@ def _context(conn: sqlite3.Connection, today: date) -> dict[str, Any]:
         "position": positions(conn),
         "month": month,
         "window_days": WINDOW_DAYS,
-        "median_months": MONTHS,
+        "median_months": MEDIAN_MONTHS,
         "forecast": line,
         "start": line["days"][0],
         "end": line["days"][-1],

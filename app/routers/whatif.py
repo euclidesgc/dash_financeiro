@@ -10,7 +10,6 @@ from app.db import connect
 from app.plan.whatif import (
     INCOME,
     KINDS,
-    InvalidScenarioError,
     facts,
     impact,
     parse_move,
@@ -20,6 +19,9 @@ from app.plan.whatif import (
 )
 from app.queries.period import InvalidPeriodError, day
 from app.routers.plan import EARLIEST, LATEST
+from app.settings import store
+from app.settings.catalog import CATALOG
+from app.settings.typed import InvalidValueError
 
 from .render import TEMPLATES
 
@@ -54,7 +56,7 @@ def run(
     try:
         try:
             move = parse_move(tipo, mensal, unico, prazo)
-        except InvalidScenarioError as refusal:
+        except InvalidValueError as refusal:
             return _answer(request, conn, today, notice=str(refusal), status_code=400)
         answer = impact(conn, move, today=today)
         if nome.strip():
@@ -68,7 +70,6 @@ def run(
 def store_fact(
     request: Request,
     nome: Annotated[str, Form()] = "",
-    rotulo: Annotated[str, Form()] = "",
     valor: Annotated[str, Form()] = "",
     validade: Annotated[str, Form()] = "",
     data: Annotated[str, Form()] = "",
@@ -77,21 +78,9 @@ def store_fact(
     conn = connect()
     try:
         try:
-            move = parse_move(INCOME, valor, "", "")
-            until = parse_validity(validade)
-        except InvalidScenarioError as refusal:
+            store.write(conn, nome.strip(), valor, valid_until=parse_validity(validade))
+        except InvalidValueError as refusal:
             return _answer(request, conn, today, notice=str(refusal), status_code=400)
-        if not nome.strip():
-            return _answer(
-                request, conn, today, notice="O fato precisa de um nome.", status_code=400
-            )
-        conn.execute(
-            "INSERT OR REPLACE INTO plan_facts "
-            "(name, label, value_cents, unit, source, captured_at, valid_until) "
-            "VALUES (?, ?, ?, 'centavos', 'humano', datetime('now'), ?)",
-            (nome.strip(), rotulo.strip() or nome.strip(), move.monthly_cents, until),
-        )
-        conn.commit()
         return _answer(request, conn, today)
     finally:
         conn.close()
@@ -125,6 +114,7 @@ def _context(conn: sqlite3.Connection, today: date) -> dict[str, Any]:
         "kinds": KINDS,
         "scenarios": saved(conn),
         "facts": facts(conn, today=today),
+        "catalog": [item for item in CATALOG if item["stored"]],
         "fact_action": FACT,
         "action": SCREEN,
     }

@@ -16,7 +16,7 @@ def base(conn):
 def fact(conn, name, valid_until=None):
     conn.execute(
         "INSERT OR REPLACE INTO plan_facts "
-        "(name, label, value_cents, unit, source, captured_at, valid_until) "
+        "(name, label, value, unit, source, captured_at, valid_until) "
         "VALUES (?, ?, 100, 'centavos', 'humano', '2026-01-01', ?)",
         (name, name, valid_until),
     )

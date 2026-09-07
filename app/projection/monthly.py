@@ -2,8 +2,7 @@ import sqlite3
 from datetime import date
 
 from app.queries.spending import SPENDING
-
-MONTHS = 6
+from app.settings.catalog import MEDIAN_MONTHS
 
 _MONTHS_SEEN = (
     "SELECT DISTINCT substr(date, 1, 7) AS month FROM transactions "
@@ -36,7 +35,7 @@ def complete_months(conn: sqlite3.Connection, *, today: date | None = None) -> l
     # compare a fraction of a month against whole ones.
     current = (today or date.today()).strftime("%Y-%m")
     seen = [row["month"] for row in conn.execute(_MONTHS_SEEN, (current,))]
-    return seen[-MONTHS:]
+    return seen[-MEDIAN_MONTHS:]
 
 
 def median(values: list[int]) -> int:

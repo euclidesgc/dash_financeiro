@@ -3,7 +3,7 @@ from datetime import date
 
 from app.commitments import engine
 from app.debts.ladder import rebuild
-from app.plan.objective import RESERVE_MONTHS, reserve_target_cents, survival_floor_cents
+from app.plan.objective import reserve_target_cents, survival_floor_cents
 from app.plan.timeline import (
     BASE,
     CONSERVATIVE,
@@ -14,6 +14,7 @@ from app.plan.timeline import (
     record,
     simulate,
 )
+from app.settings.catalog import RESERVE_MONTHS
 from app.taxonomy import classify
 from app.taxonomy.seed import load_seed, seed_taxonomy
 from tests.conftest import load, transaction

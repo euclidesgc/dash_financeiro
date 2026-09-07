@@ -6,10 +6,10 @@ from app.commitments.live import totals as commitment_totals
 from app.projection.monthly import complete_months, median
 from app.queries.crossings import crossing
 from app.queries.spending import SPENDING
+from app.settings.catalog import RESERVE_MONTHS
 
 FLOOR_SLUG = "piso"
 CUT_SLUG = "corte"
-RESERVE_MONTHS = 6
 
 _LABEL = "SELECT label FROM crossings WHERE slug = ?"
 
