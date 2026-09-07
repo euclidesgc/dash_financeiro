@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Dívidas{% endblock %}
+{% block content %}
+<main class="screen">
+  <header class="panel panel-wide">
+    <div class="scale" aria-hidden="true"></div>
+    <h1 class="screen-title">Dívidas</h1>
+    <p class="lede">A escada ordena pela taxa mensal, do mais caro ao mais barato. O próximo real
+      rende mais no degrau de cima — sempre, e independentemente do tamanho do saldo.</p>
+    {% if notice %}
+    <p class="notice" id="recusa" role="alert">{{ notice }}</p>
+    {% endif %}
+  </header>
+  {% if empty %}
+  <section class="panel panel-wide">
+    <div class="empty">
+      <p class="empty-title">Nenhuma dívida na base.</p>
+      <p class="lede">Os degraus nascem das contas com saldo negativo e dos contratos em
+        <code>data/manual/</code>. Enquanto não houver nem um nem outro, não há escada a
+        subir — veja o <a href="/">Resumo</a> para a posição de hoje.</p>
+    </div>
+  </section>
+  {% else %}
+  <section id="escada" class="panel panel-wide">
+    <h2 class="section-title">A escada</h2>
+    {% if ladder %}
+    <div class="table-scroll">
+    <table class="data-table">
+      <caption class="sr-only">Dívidas com taxa informada, da mais cara para a mais barata.</caption>
+      <thead>
+        <tr><th scope="col">Dívida</th><th scope="col" class="col-num">Taxa ao mês</th>
+          <th scope="col" class="col-num">Juros por mês</th><th scope="col" class="col-num">Saldo</th></tr>
+      </thead>
+      <tbody>
+        {% for step in ladder %}
+        <tr data-degrau="{{ step['id'] }}" data-taxa="{{ step['monthly_rate_bp'] }}"
+            data-saldo="{{ step['balance_cents'] }}">
+          <td>{{ step['name'] }}<span class="cell-key">{{ kind_labels.get(step['kind'], step['kind']) }}</span></td>
+          <td class="cifra col-num">{{ step['monthly_rate_bp']|taxa }}</td>
+          <td class="cifra col-num">{{ step['interest_cents']|brl }}</td>
+          <td class="cifra col-num">{{ step['balance_cents']|brl }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+    <div class="empty">
+      <p class="empty-title">Nenhum degrau com taxa informada.</p>
+      <p class="lede">A escada só ordena o que tem taxa. Informe abaixo a de cada dívida.</p>
+    </div>
+    {% endif %}
+  </section>
+  {% if without_rate %}
+  <section id="sem-taxa" class="panel panel-wide">
+    <h2 class="section-title">Sem taxa informada</h2>
+    <p class="lede">Estas dívidas não entram na escada: sem a taxa não dá para saber onde o próximo
+      real rende mais, e chutar seria o painel decidindo o que não sabe. A taxa está no extrato ou
+      na fatura.</p>
+    <div class="table-scroll">
+    <table class="data-table">
+      <caption class="sr-only">Dívidas sem taxa informada, do maior saldo para o menor.</caption>
+      <thead><tr><th scope="col">Dívida</th><th scope="col" class="col-num">Saldo</th><th scope="col">Taxa ao mês</th></tr></thead>
+      <tbody>
+        {% for step in without_rate %}
+        <tr data-degrau="{{ step['id'] }}" data-saldo="{{ step['balance_cents'] }}">
+          <td>{{ step['name'] }}<span class="cell-key">{{ kind_labels.get(step['kind'], step['kind']) }}</span></td>
+          <td class="cifra col-num">{{ step['balance_cents']|brl }}</td>
+          <td>
+            <form method="post" action="{{ rate_action }}" class="stack-tight">
+              <input type="hidden" name="degrau" value="{{ step['id'] }}">
+              <label class="sr-only" for="taxa-{{ step['id'] }}">Taxa mensal de {{ step['name'] }}</label>
+              <input class="field" id="taxa-{{ step['id'] }}" name="taxa"
+                     inputmode="decimal" placeholder="0,00" value="">
+              <button class="button button-quiet" type="submit">Salvar</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {% endif %}
+  {% include "fragments/dividas_simulador.html" %}
+  {% if vehicle %}
+  {% include "fragments/dividas_duster.html" %}
+  {% endif %}
+  {% endif %}
+  <nav class="panel panel-wide stack" aria-label="Telas do painel">
+    <a class="button button-quiet" href="/">Voltar ao resumo</a>
+  </nav>
+</main>
+{% endblock %}

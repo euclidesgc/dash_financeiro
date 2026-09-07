@@ -1,0 +1,36 @@
+<section id="simulacao" class="panel panel-wide">
+  <h2 class="section-title">O que um aporte elimina</h2>
+  <p class="lede">Escolha o degrau e informe quanto entra. A resposta é em parcelas que somem e em
+    juros que deixam de ser pagos — nunca em adjetivo.</p>
+  <form method="post" action="{{ simulate_action }}" class="stack">
+    <label class="eyebrow" for="degrau">Dívida</label>
+    <select class="field" id="degrau" name="degrau">
+      {% for step in ladder + without_rate %}
+      <option value="{{ step['id'] }}">{{ step['name'] }}</option>
+      {% endfor %}
+    </select>
+    <label class="eyebrow" for="aporte">Aporte</label>
+    <input class="field" id="aporte" name="aporte" inputmode="decimal" placeholder="0,00">
+    <button class="button" type="submit">Simular</button>
+  </form>
+  {% if simulation %}
+  <div class="figures" data-simulacao="{{ simulation['debt_id'] }}">
+    <div class="stack-tight">
+      <p class="eyebrow">Parcelas eliminadas</p>
+      <p class="headline cifra" data-parcelas="{{ simulation['instalments_removed'] }}">{{ simulation['instalments_removed'] }}</p>
+      <p class="lede">de {{ simulation['name'] }}{% if simulation['settles'] %} — o aporte quita a dívida{% endif %}.</p>
+    </div>
+    <div class="stack-tight">
+      <p class="eyebrow">Juros que deixam de ser pagos</p>
+      <p class="headline cifra positive" data-juros="{{ simulation['interest_saved_cents'] }}">{{ simulation['interest_saved_cents']|brl }}</p>
+    </div>
+    {% if simulation['leftover_cents'] %}
+    <div class="stack-tight">
+      <p class="eyebrow">Sobra do aporte</p>
+      <p class="figure cifra">{{ simulation['leftover_cents']|brl }}</p>
+      <p class="lede">Ponha no degrau seguinte.</p>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+</section>

@@ -1,0 +1,42 @@
+<section id="duster" class="panel panel-wide">
+  <h2 class="section-title">A decisão do carro</h2>
+  <p class="lede">O que já dá para afirmar: o CDC vale
+    <span class="cifra">{{ vehicle['balance_cents']|brl }}</span> hoje, custa
+    <span class="cifra">{{ vehicle['monthly_rate_bp']|taxa }}</span> ao mês, e a parcela de
+    <span class="cifra">{{ vehicle['payment_cents']|brl }}</span> é fluxo mensal preso.</p>
+  <p class="lede">Duas coisas o painel não tem como saber, e elas mudam a conta. Preencha quando
+    souber; até lá a tela não finge que sabe.</p>
+  <form method="post" action="{{ parameter_action }}" class="stack">
+    <input type="hidden" name="nome" value="quitacao">
+    <label class="eyebrow" for="quitacao">Saldo de quitação antecipada, informado pelo banco</label>
+    <input class="field" id="quitacao" name="valor" inputmode="decimal" placeholder="0,00"
+           value="{% if settlement_cents %}{{ settlement_cents|numero }}{% endif %}">
+    <button class="button button-quiet" type="submit">Salvar</button>
+  </form>
+  {% if settlement_cents %}
+  <div class="figures">
+    <div class="stack-tight">
+      <p class="eyebrow">Saldo de quitação</p>
+      <p class="figure cifra" data-quitacao="{{ settlement_cents }}">{{ settlement_cents|brl }}</p>
+    </div>
+    <div class="stack-tight">
+      <p class="eyebrow">{% if discount_cents >= 0 %}Desconto da quitação{% else %}Ágio da quitação{% endif %}</p>
+      <p class="headline cifra {% if discount_cents >= 0 %}positive{% else %}negative{% endif %}" data-desconto="{{ discount_cents }}">{{ discount_cents|brl }}</p>
+      <p class="lede">Contra o valor presente das parcelas que faltam.
+        {% if discount_cents < 0 %}O banco está cobrando <strong>acima</strong> do que o
+        cronograma vale: quitar assim custa mais do que seguir pagando.{% endif %}</p>
+    </div>
+  </div>
+  {% endif %}
+  <form method="post" action="{{ parameter_action }}" class="stack">
+    <input type="hidden" name="nome" value="transporte">
+    <label class="eyebrow" for="transporte">Custo mensal de transporte sem o carro</label>
+    <input class="field" id="transporte" name="valor" inputmode="decimal" placeholder="0,00"
+           value="{% if transport_cents %}{{ transport_cents|numero }}{% endif %}">
+    <button class="button button-quiet" type="submit">Salvar</button>
+  </form>
+  {% if transport_cents %}
+  <p class="lede">Com transporte a <span class="cifra">{{ transport_cents|brl }}</span> por mês, o
+    fluxo líquido liberado ao vender é a parcela menos esse custo.</p>
+  {% endif %}
+</section>
