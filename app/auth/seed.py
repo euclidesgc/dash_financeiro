@@ -37,7 +37,7 @@ def main() -> int:
     if not config.login:
         missing.append("LOGIN")
     if not config.password:
-        missing.append("PASSORD or PASSWORD")
+        missing.append("PASSWORD")
     if missing:
         for name in missing:
             print(f"missing environment variable: {name}", file=sys.stderr, flush=True)

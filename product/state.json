@@ -33,7 +33,9 @@
           "verdict_file": "product/items/001-base-e-login/05-veredictos/fase-1.md",
           "validated_sha": "b0557682e358d05bf5f4ce3c1ca5fcf3b6dc64d3",
           "pr": null,
-          "blocked_on": [],
+          "blocked_on": [
+            "D-003"
+          ],
           "verdict_at": "2026-09-06T00:58:03Z",
           "validated_trees": {
             ".": "9af4b94a905ba74e44eaf5c4ecd413db83172c9c"
@@ -93,6 +95,12 @@
           "ratificada_por": "humano",
           "reconciliada_at": "2026-09-06T02:07:59Z",
           "ratificacao_humana_at": "2026-09-07T14:19:07Z"
+        },
+        "D-003": {
+          "status": "PENDENTE",
+          "kind": "normal",
+          "phase": 1,
+          "detected_at": "2026-09-07T16:45:01Z"
         }
       },
       "criteria_exception": null

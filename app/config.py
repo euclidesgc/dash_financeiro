@@ -61,11 +61,8 @@ def load_config(env: Mapping[str, str] | None = None) -> Config:
     env = _environment(env)
     return Config(
         login=_first(env, "LOGIN"),
-        password=_first(env, "PASSWORD", "PASSORD"),
-        # Both spellings on purpose: the typo is the one already written in the
-        # owner's environment, and renaming a variable in someone else's .env is
-        # not this program's business (regra 11, contorno externo).
-        gemini_api_key=_first(env, "GEMINI_API_KEY", "GEMIMI_API_KEY"),
+        password=_first(env, "PASSWORD"),
+        gemini_api_key=_first(env, "GEMINI_API_KEY"),
         db_path=_first(env, "DASH_DB_PATH") or DEFAULT_DB_PATH,
         session_secret=_first(env, "SESSION_SECRET"),
         key_path=_first(env, "DASH_KEY_PATH") or DEFAULT_KEY_PATH,

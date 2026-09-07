@@ -11,24 +11,16 @@ from app.config import (
 )
 
 
-def test_typo_spellings_are_accepted():
-    config = load_config({"LOGIN": "teste", "PASSORD": "abc123", "GEMIMI_API_KEY": "k-1"})
+def test_the_correct_spellings_are_read():
+    config = load_config({"LOGIN": "teste", "PASSWORD": "abc123", "GEMINI_API_KEY": "k-1"})
 
     assert (config.login, config.password, config.gemini_api_key) == ("teste", "abc123", "k-1")
 
 
-def test_correct_spellings_win_over_typos():
-    config = load_config(
-        {
-            "LOGIN": "teste",
-            "PASSORD": "abc123",
-            "PASSWORD": "xyz789",
-            "GEMIMI_API_KEY": "k-1",
-            "GEMINI_API_KEY": "k-2",
-        }
-    )
+def test_the_typo_spellings_are_not_read():
+    config = load_config({"LOGIN": "teste", "PASSORD": "abc123", "GEMIMI_API_KEY": "k-1"})
 
-    assert (config.password, config.gemini_api_key) == ("xyz789", "k-2")
+    assert (config.password, config.gemini_api_key) == (None, None)
 
 
 def test_missing_credentials_are_none():
@@ -51,10 +43,8 @@ def test_db_path_defaults_to_the_project_database():
 def test_process_environment_beats_the_env_file(monkeypatch):
     monkeypatch.setenv("DASH_ENV_FILE", "/dev/null")
     monkeypatch.setenv("LOGIN", "teste")
-    monkeypatch.setenv("PASSORD", "abc123")
-    monkeypatch.setenv("GEMIMI_API_KEY", "k-1")
-    monkeypatch.delenv("PASSWORD", raising=False)
-    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.setenv("PASSWORD", "abc123")
+    monkeypatch.setenv("GEMINI_API_KEY", "k-1")
 
     config = load_config()
 

@@ -347,7 +347,7 @@ Cada fase toca no máximo duas famílias de prova.
 - Hash Argon2, cookie assinado HttpOnly + SameSite=Lax, sessão expira, e
   **rate-limit no POST de login** (5 tentativas / 15 min) — sem ele, Argon2 só
   encarece o ataque, não o impede.
-- `PLUGGY_CLIENT_ID`/`CLIENT_SECRET` e a chave do Gemini **só** em `.env`
+- `PLUGGY_CLIENT_ID`/`PLUGGY_CLIENT_SECRET` e a chave do Gemini **só** em `.env`
   (gitignorado, modo 600). Nunca no repositório, nunca no HTML, nunca em log.
 - O SQLite mora fora do controle de versão. `data/` e `*.sqlite` no
   `.gitignore` desde o commit inicial.
@@ -373,7 +373,7 @@ Todo critério é falsificável e se compara com número congelado em 05/09/2026
 7. Rodar o sync duas vezes seguidas: `sync_runs` ganha duas linhas e
    `SELECT count(*) FROM transactions` **não muda**.
 8. Derrubar e subir o processo: a contagem de transações permanece igual.
-9. Com `GEMIMI_API_KEY` ausente, a tela do plano ainda mostra os números
+9. Com `GEMINI_API_KEY` ausente, a tela do plano ainda mostra os números
    determinísticos e informa que a leitura da IA está indisponível — sem erro
    500.
 10. A linha do tempo mostra **três cenários** com datas distintas para o marco
