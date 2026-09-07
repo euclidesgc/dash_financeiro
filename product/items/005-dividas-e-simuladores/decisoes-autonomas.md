@@ -1,0 +1,10 @@
+# Decisões tomadas sem o humano — 005-dividas-e-simuladores
+
+| # | Estágio | Decidido | Alternativa descartada | Por quê |
+|---|---|---|---|---|
+| D1 | discovery | **Uma fase só**, motor e tela juntos | Duas fases, como no `004` | A tela é a única consumidora do motor, e o item anterior gastou quatro rodadas de validação em duas fases. Uma fase é uma validação, e o motor sem tela não entrega decisão nenhuma ao dono. |
+| D2 | discovery | O saldo do CDC é **calculado**, não copiado | Ler `R$ 39.176,36` do relatório de origem | O valor presente das 45 parcelas ainda não vencidas a 1,63% a.m. dá exatamente o número do relatório — reproduzi-lo por cálculo prova a conta e sobrevive à passagem do tempo, enquanto a constante congela em 05/09/2026. É também o que a lei manda o banco oferecer na quitação. |
+| D3 | discovery | Dívida **sem taxa fica fora da escada**, num bloco próprio | Chutar uma taxa; pôr no fim; pôr no topo | A escada existe para dizer onde o próximo real rende mais, e um degrau sem taxa não tem posição. Chutar seria o painel decidindo o que ele não sabe; esconder seria pior, porque cheque especial e cartão são justamente os dois mais caros. O bloco separado diz o que falta e como preencher. |
+| D4 | discovery | Cheque especial é **conta bancária com saldo negativo**, um degrau por conta | Um degrau só, somando as contas | As contas têm limites e taxas diferentes, e a taxa é campo por degrau. Somá-las obrigaria a uma taxa única que não existe. |
+| D5 | plan | A taxa é gravada em **pontos-base** (centésimos de ponto percentual), inteiro | Guardar float | Mesma razão do valor em centavos inteiros: `0.0352` em ponto flutuante não é `0,0352`, e taxa é o multiplicador de todo o resto da tela. |
+| D6 | plan | Sem os arquivos de `data/manual/`, a carga segue sem os dois degraus de contrato | Falhar a carga | `data/` está fora do controle de versão, e o painel precisa subir numa máquina que não tem os contratos. Falhar ali transformaria um dado ausente em app quebrado. |
