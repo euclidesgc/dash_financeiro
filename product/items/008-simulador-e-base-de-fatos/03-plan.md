@@ -56,6 +56,24 @@ DASH_KEY_PATH=/tmp/dash-008.key .venv/bin/python -m app`.
       "valor=35.000,00" --data-urlencode "validade=2026-08-01"` é executado
       *Então* a resposta é `200`, o bloco `id="fatos"` traz
       `data-fato="quitacao-cdc"`, `R$ 35.000,00` e a palavra `vencido`
+- [ ] `comportamental` — RF-14, RF-15, RF-16
+      *Dado* o servidor rodando e um cookie válido
+      *Quando* `POST /simulador` é feito com `mensal=5000.00`, depois com
+      `mensal=inf`, `mensal=nan`, `mensal=1e3` e `mensal=0,004`
+      *Então* as cinco respostas são `400`, **nenhuma** é `500`, e a primeira
+      traz a string `1.234,56` na mensagem de recusa
+- [ ] `comportamental` — RF-17, RF-19
+      *Dado* o servidor rodando e um cookie válido
+      *Quando* `POST /simulador/fato` é feito com `validade=banana` e depois com
+      `validade=2026-08-01` mais `data=2026-09-05`
+      *Então* a primeira é `400` e traz `Validade inválida`; a segunda é `200`,
+      marca o fato como `vencido`, e o formulário devolvido traz
+      `value="2026-09-05"` no campo `data`
+- [ ] `comando` — RF-18
+      `rtk proxy env DASH_ENV_FILE=/dev/null .venv/bin/python -m pytest -q
+      tests/test_whatif.py` sai com código 0, e o arquivo contém um teste que
+      afirma que um **prazo** de dois meses deixa o objetivo **mais distante** do
+      que o mesmo efeito sem prazo, e que um **valor único** o deixa mais próximo
 - [ ] `comportamental` — RF-13
       *Dado* o Chromium com `prefers-reduced-motion: reduce` emulado, sessão
       válida e `http://127.0.0.1:8000/simulador?data=2026-09-05` carregada

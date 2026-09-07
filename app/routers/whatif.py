@@ -14,6 +14,7 @@ from app.plan.whatif import (
     facts,
     impact,
     parse_move,
+    parse_validity,
     save,
     saved,
 )
@@ -70,25 +71,28 @@ def store_fact(
     rotulo: Annotated[str, Form()] = "",
     valor: Annotated[str, Form()] = "",
     validade: Annotated[str, Form()] = "",
+    data: Annotated[str, Form()] = "",
 ) -> Response:
+    today = _reference(data)
     conn = connect()
     try:
         try:
             move = parse_move(INCOME, valor, "", "")
+            until = parse_validity(validade)
         except InvalidScenarioError as refusal:
-            return _answer(request, conn, date.today(), notice=str(refusal), status_code=400)
+            return _answer(request, conn, today, notice=str(refusal), status_code=400)
         if not nome.strip():
             return _answer(
-                request, conn, date.today(), notice="O fato precisa de um nome.", status_code=400
+                request, conn, today, notice="O fato precisa de um nome.", status_code=400
             )
         conn.execute(
             "INSERT OR REPLACE INTO plan_facts "
             "(name, label, value_cents, unit, source, captured_at, valid_until) "
             "VALUES (?, ?, ?, 'centavos', 'humano', datetime('now'), ?)",
-            (nome.strip(), rotulo.strip() or nome.strip(), move.monthly_cents, validade or None),
+            (nome.strip(), rotulo.strip() or nome.strip(), move.monthly_cents, until),
         )
         conn.commit()
-        return _answer(request, conn, date.today())
+        return _answer(request, conn, today)
     finally:
         conn.close()
 

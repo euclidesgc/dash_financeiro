@@ -106,3 +106,50 @@ def test_a_fact_past_its_date_is_marked_stale(taxonomy_conn):
     found = {row["name"]: row["stale"] for row in facts(taxonomy_conn, today=date(2026, 9, 5))}
 
     assert found == {"q": True, "t": False}
+
+
+def test_a_value_with_a_dot_as_decimal_is_refused_and_not_read_as_thousands():
+    with pytest.raises(InvalidScenarioError) as refusal:
+        parse_move(INCOME, "5000.00", "", "")
+
+    assert "1.234,56" in str(refusal.value)
+
+
+def test_the_brazilian_forms_are_read_and_only_those():
+    assert parse_move(INCOME, "5.000,00", "", "").monthly_cents == 500000
+    assert parse_move(INCOME, "5000,00", "", "").monthly_cents == 500000
+    assert parse_move(INCOME, "5000", "", "").monthly_cents == 500000
+    for bad in ("inf", "nan", "Infinity", "1e3", "1_000", "5,001"):
+        with pytest.raises(InvalidScenarioError):
+            parse_move(INCOME, bad, "", "")
+
+
+def test_a_value_that_rounds_to_zero_is_refused():
+    with pytest.raises(InvalidScenarioError):
+        parse_move(INCOME, "0,00", "", "")
+
+
+def test_a_validity_that_is_not_a_date_is_refused():
+    from app.plan.whatif import parse_validity
+
+    assert parse_validity("") is None
+    assert parse_validity("2026-08-01") == "2026-08-01"
+    for bad in ("banana", "9999-99-99", "01/08/2026"):
+        with pytest.raises(InvalidScenarioError):
+            parse_validity(bad)
+
+
+def test_a_term_stops_the_effect_and_a_one_off_lands_once(taxonomy_conn):
+    conn = base(taxonomy_conn)
+    forever = impact(conn, move(INCOME, 200000), today=REFERENCE)
+    for_two = impact(
+        conn, Move(kind=INCOME, monthly_cents=200000, once_cents=0, months=2), today=REFERENCE
+    )
+    with_once = impact(
+        conn,
+        Move(kind=INCOME, monthly_cents=200000, once_cents=5000000, months=None),
+        today=REFERENCE,
+    )
+
+    assert for_two["after"]["months_to_objective"] > forever["after"]["months_to_objective"]
+    assert with_once["after"]["months_to_objective"] < forever["after"]["months_to_objective"]

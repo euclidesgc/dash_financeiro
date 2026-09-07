@@ -72,10 +72,14 @@ def simulate(
     *,
     today: date,
     extra_monthly_cents: int = 0,
+    extra_months: int | None = None,
+    extra_once_cents: int = 0,
 ) -> dict:
     # The extra is what the simulator of item 008 injects: the same engine
     # answers "where am I going" and "what would this change", so the two can
-    # never disagree.
+    # never disagree. A term makes the effect stop after that many months, and a
+    # one-off lands in the first month — both are fields of the form, and a field
+    # that changes nothing is a field that lies.
     steady = monthly_result_cents(conn, scenario, today=today) + extra_monthly_cents
     freed = released_by_month(conn, today=today) if scenario == OPTIMISTIC else []
     # Only the cash that is still ahead is taken out of the starting point: an
@@ -100,6 +104,11 @@ def simulate(
     result = base_result
     for month in range(1, HORIZON_MONTHS + 1):
         result += sum(amount for when, amount in freed if when == month)
+        if extra_months is not None and month > extra_months:
+            result -= extra_monthly_cents
+            extra_monthly_cents = 0
+        injected = extra_once_cents if month == 1 else 0
+        extra_once_cents = 0 if month == 1 else extra_once_cents
         if milestones["resultado"] is None and result >= 0:
             milestones["resultado"] = month
         if result <= 0:
@@ -109,7 +118,7 @@ def simulate(
             if any(when > month for when, _ in freed):
                 continue
             break
-        spare = result
+        spare = result + injected
         for index, balance in enumerate(owed):
             if balance <= 0:
                 continue

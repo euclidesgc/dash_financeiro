@@ -52,7 +52,7 @@
           dias: é a diferença entre chegar e não chegar.
           {%- elif answer['reachable_after'] and not answer['reachable_before'] %}
           Antes <strong>não havia</strong> data; com esta decisão, passa a haver — em
-          {{ answer['after']['months_to_objective'] }} meses. Não é uma diferença de dias: é a
+          {{ answer['after']['months_to_objective'] }} {{ 'mês' if answer['after']['months_to_objective'] == 1 else 'meses' }}. Não é uma diferença de dias: é a
           diferença entre nunca e uma data.
           {%- elif answer['after']['monthly_result_cents'] > 0 %}
           Não há data nem antes nem depois. O resultado mensal passa a ser
@@ -133,6 +133,7 @@
     </div>
     {% endif %}
     <form method="post" action="{{ fact_action }}" class="stack">
+      <input type="hidden" name="data" value="{{ reference }}">
       <label class="eyebrow" for="fato-nome">Nome curto</label>
       <input class="field" id="fato-nome" name="nome" placeholder="quitacao-cdc">
       <label class="eyebrow" for="fato-rotulo">Como aparece na tela</label>

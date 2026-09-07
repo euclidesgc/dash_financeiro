@@ -1,3 +1,4 @@
+import re
 import sqlite3
 from dataclasses import dataclass
 from datetime import date
@@ -30,7 +31,14 @@ def impact(conn: sqlite3.Connection, move: Move, *, today: date) -> dict:
     # The answer is in days because the unit of this product is days until the
     # objective. Reais are the input; the output is distance.
     before = simulate(conn, BASE, today=today)
-    after = simulate(conn, BASE, today=today, extra_monthly_cents=signed_monthly(move))
+    after = simulate(
+        conn,
+        BASE,
+        today=today,
+        extra_monthly_cents=signed_monthly(move),
+        extra_months=move.months,
+        extra_once_cents=move.once_cents if move.kind == INCOME else -move.once_cents,
+    )
     return {
         "before": before,
         "after": after,
@@ -50,6 +58,25 @@ def _days_between(before: int | None, after: int | None) -> int | None:
     return (after - before) * DAYS_IN_MONTH
 
 
+VALID_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def parse_validity(typed: str) -> str | None:
+    # Stored raw, the staleness of a fact was decided by comparing strings:
+    # "banana" is never less than a date, so a validity typed wrong left the fact
+    # looking fresh forever — which is exactly what the field exists to prevent.
+    cleaned = (typed or "").strip()
+    if not cleaned:
+        return None
+    if not VALID_DATE.match(cleaned):
+        raise InvalidScenarioError(f"Validade inválida: “{typed}”. Use AAAA-MM-DD.")
+    try:
+        date.fromisoformat(cleaned)
+    except ValueError:
+        raise InvalidScenarioError(f"Validade inválida: “{typed}”. Use AAAA-MM-DD.") from None
+    return cleaned
+
+
 def parse_move(kind: str, monthly: str, once: str, months: str) -> Move:
     if kind not in KINDS:
         raise InvalidScenarioError(f"Tipo desconhecido: “{kind}”. Use receita ou despesa.")
@@ -61,17 +88,25 @@ def parse_move(kind: str, monthly: str, once: str, months: str) -> Move:
     )
 
 
+_MONEY = re.compile(r"^\d{1,3}(\.\d{3})*(,\d{1,2})?$|^\d+(,\d{1,2})?$")
+
+
 def _cents(typed: str, field: str, *, allow_zero: bool = False) -> int:
-    cleaned = (typed or "").strip().replace("R$", "").replace(".", "").replace(",", ".")
+    # Read strictly in the Brazilian form. Stripping every dot as a thousands
+    # separator turned "5000.00" into five hundred thousand reais, accepted,
+    # displayed and stored without a word — on a screen that decides money
+    # (RF-14). Anything that is not the written form is refused by name.
+    cleaned = (typed or "").strip().replace("R$", "").replace(" ", "")
     if not cleaned and allow_zero:
         return 0
-    try:
-        value = float(cleaned)
-    except ValueError:
-        raise InvalidScenarioError(f"{field} inválido: “{typed}”.") from None
-    if value < 0 or (value == 0 and not allow_zero):
+    if not _MONEY.match(cleaned):
+        raise InvalidScenarioError(
+            f"{field} inválido: “{typed}”. Escreva na forma 1.234,56."
+        )
+    cents = round(float(cleaned.replace(".", "").replace(",", ".")) * 100)
+    if cents == 0 and not allow_zero:
         raise InvalidScenarioError(f"{field} precisa ser maior que zero.")
-    return round(value * 100)
+    return cents
 
 
 def _whole(typed: str) -> int | None:

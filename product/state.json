@@ -506,14 +506,14 @@
       "created_at": "2026-09-07T03:58:19Z",
       "approvals": {
         "brief": {
-          "at": "2026-09-07T04:02:06Z",
-          "sha": "64982078fe2bc7e0d02d24783fba0053847c9a77",
+          "at": "2026-09-07T04:13:24Z",
+          "sha": "fe375175b9698dd76f2cc149fdb1fee0ee84265e",
           "file": "product/items/008-simulador-e-base-de-fatos/01-brief.md",
           "por": "autonomo"
         },
         "plan": {
-          "at": "2026-09-07T04:02:06Z",
-          "sha": "7ccf8caabffe29d944d7ccfc5156669aabade383",
+          "at": "2026-09-07T04:13:24Z",
+          "sha": "37c7c986c2324501dab96458092c0cd795003b84",
           "file": "product/items/008-simulador-e-base-de-fatos/03-plan.md",
           "por": "autonomo"
         }
