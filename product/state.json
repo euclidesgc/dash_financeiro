@@ -667,7 +667,7 @@
     "014-taxa-sugerida-pelos-juros-cobrados": {
       "title": "A taxa sugerida pelos juros que ja foram cobrados, com a faixa a vista",
       "track": "rapida",
-      "stage": "execute",
+      "stage": "done",
       "stacks": [
         "python"
       ],
@@ -689,13 +689,18 @@
       "current_phase": 1,
       "phases": {
         "1": {
-          "status": "em_execucao",
+          "status": "aprovada",
           "reproved_count": 0,
-          "verdict": null,
-          "verdict_file": null,
-          "validated_sha": null,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/014-taxa-sugerida-pelos-juros-cobrados/05-veredictos/fase-1.md",
+          "validated_sha": "fd0ea0ebfb19569315e4b3dadaef9c295323d348",
           "pr": null,
-          "blocked_on": []
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T13:23:32Z",
+          "validated_trees": {
+            ".": "9107b9f9e1a082ea60150dd21acade64315262e9"
+          },
+          "criteria_sha": "383a0ea93483377c233a0dcaa7596894adfc9be585f5ed527200d828811821a7"
         }
       },
       "divergences": {},
