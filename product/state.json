@@ -625,7 +625,7 @@
     "013-objetivo-cenario-vazio-e-ponto-espurio": {
       "title": "A tela nomeia a lista vazia, e data recusada nao grava ponto",
       "track": "rapida",
-      "stage": "execute",
+      "stage": "done",
       "stacks": [
         "python"
       ],
@@ -647,13 +647,18 @@
       "current_phase": 1,
       "phases": {
         "1": {
-          "status": "em_execucao",
+          "status": "aprovada",
           "reproved_count": 0,
-          "verdict": null,
-          "verdict_file": null,
-          "validated_sha": null,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/013-objetivo-cenario-vazio-e-ponto-espurio/05-veredictos/fase-1.md",
+          "validated_sha": "a007336a9115f4ee19dbd41d4d65de77e76bda52",
           "pr": null,
-          "blocked_on": []
+          "blocked_on": [],
+          "verdict_at": "2026-09-07T12:45:07Z",
+          "validated_trees": {
+            ".": "ed693d010136f4dc871aec206511b5ba7e9ada1a"
+          },
+          "criteria_sha": "35f4dd0ec58822ed0ee8c7cd7c32b9bdf34547b4775b765ef4ab4d683fb418b2"
         }
       },
       "divergences": {},
