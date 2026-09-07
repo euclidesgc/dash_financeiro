@@ -13,8 +13,12 @@
         <a href="/regras">Regras</a> dizem como cada gasto é classificado.</p>
     </div>
     {% else %}
-    <p class="lede">Onde você está hoje, e para onde isto vai nos próximos {{ window_days }} dias
-      se nada mudar.</p>
+    {% if notice %}
+    <p class="notice" id="recusa" role="alert">{{ notice }} A tela responde pela data de hoje.</p>
+    {% endif %}
+    <p class="lede">Onde você está agora, e para onde isto vai nos próximos {{ window_days }} dias
+      se nada mudar.{% if not asked_today %} A posição é sempre a atual — o histórico dos saldos
+      não é guardado —, e a data pedida move só a projeção.{% endif %}</p>
     <div class="figures">
       <div class="stack-tight">
         <p class="eyebrow">Posição consolidada</p>

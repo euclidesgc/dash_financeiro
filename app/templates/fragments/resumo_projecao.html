@@ -4,15 +4,15 @@
     <p class="lede">A linha corre sobre a <strong>posição consolidada</strong> — contas e cartões
       juntos. Compra no cartão piora a posição no dia da compra, e o pagamento da fatura é
       transferência de dentro dela.</p>
-    <p class="lede">Cada dia soma três parcelas: o compromisso já datado,
+    <p class="lede">Cada dia soma o compromisso já datado,
       {% if forecast['income_day'] %}a renda esperada no dia {{ forecast['income_day'] }}{% else %}nenhuma renda, porque não há entrada observada no histórico{% endif %}
-      e o gasto sem data, diluído pelos dias do mês. Tudo é previsão do histórico, não data
-      contratual.</p>
+      e {% if forecast['variable_cents'] %}o gasto sem data, diluído pelos dias do mês{% else %}nenhum gasto sem data, porque não há mês completo de onde tirar a mediana{% endif %}.
+      Tudo é previsão do histórico, não data contratual.</p>
   </div>
   <div class="scale" aria-hidden="true"></div>
   <div class="figures">
     <div class="stack-tight">
-      <p class="eyebrow">Hoje</p>
+      <p class="eyebrow">Ponto de partida</p>
       <p class="figure cifra">{{ start['balance_cents']|brl }}</p>
       <p class="lede">{{ start['date']|dia }}</p>
     </div>
@@ -49,6 +49,9 @@
         <p class="calendar-sum cifra">{{ entry['balance_cents']|brl }}</p>
       </div>
       <ul class="calendar-entries">
+        {% if not (entry['income_cents'] or entry['due_cents'] or entry['variable_cents']) %}
+        <li class="calendar-entry"><span class="calendar-name">fim da janela, sem movimento previsto</span></li>
+        {% endif %}
         {% if entry['income_cents'] %}
         <li class="calendar-entry">
           <span class="calendar-name">renda esperada <span class="cell-key">previsto pelo histórico</span></span>

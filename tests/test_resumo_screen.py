@@ -203,3 +203,17 @@ def test_a_date_with_no_complete_month_behind_it_says_so(client):
     assert "de <span" not in _section(html, "mes")
     assert all(int(value) <= 0 for value in re.findall(r'data-variavel="(-?\d+)"', block))
     assert 'class="calendar-name">gasto sem data' not in block
+
+
+def test_a_date_it_cannot_read_is_said_out_loud(client):
+    html = client.get("/?data=banana").text
+
+    assert 'id="recusa"' in html
+    assert "A tela responde pela data de hoje." in html
+
+
+def test_a_reference_that_is_not_today_says_the_position_is_still_current(client):
+    html = client.get("/?data=2020-01-01").text
+
+    assert "A posição é sempre a atual" in html
+    assert "Ponto de partida" in _section(html, "projecao")

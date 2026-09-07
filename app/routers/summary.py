@@ -23,22 +23,25 @@ DATE_FIELD = "data"
 
 @router.get(SCREEN)
 def summary_screen(request: Request) -> Response:
+    today, notice = _reference(request.query_params.get(DATE_FIELD))
     conn = connect()
     try:
-        return TEMPLATES.TemplateResponse(
-            request, "resumo.html", _context(conn, _reference(request.query_params.get(DATE_FIELD)))
-        )
+        context = _context(conn, today)
+        context.update(notice=notice)
+        return TEMPLATES.TemplateResponse(request, "resumo.html", context)
     finally:
         conn.close()
 
 
-def _reference(asked: object) -> date:
+def _reference(asked: object) -> tuple[date, str | None]:
     # Reached by hand-typed URL as often as by its own links, so a date it cannot
-    # read falls back to today instead of a 500.
+    # read falls back to today instead of a 500 — and says so, because a screen
+    # that silently answers a different question than the one asked is worse
+    # than one that refuses.
     try:
-        return day(asked, DATE_FIELD)
-    except InvalidPeriodError:
-        return date.today()
+        return day(asked, DATE_FIELD), None
+    except InvalidPeriodError as refusal:
+        return date.today(), str(refusal)
 
 
 def _moving(days: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -65,6 +68,11 @@ def _context(conn: sqlite3.Connection, today: date) -> dict[str, Any]:
     month = monthly(conn, today=today)
     return {
         "reference": today.isoformat(),
+        # The balances are always the current ones: no history of them is kept,
+        # so the reference date moves the projection and never the position.
+        # Saying "hoje" over a date the owner typed would be the screen naming
+        # a day it is not describing.
+        "asked_today": today == date.today(),
         "position": positions(conn),
         "month": month,
         "window_days": WINDOW_DAYS,
