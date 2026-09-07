@@ -49,6 +49,8 @@ PR e commit já escritos.
 
 - [x] `014-taxa-sugerida-pelos-juros-cobrados` — O painel **sugere** a taxa mensal de cada conta em cheque especial, derivada dos juros que o banco já cobrou dividido pelo saldo médio dos **dias negativos**, reconstruído a partir do saldo atual. Na base de 05/09/2026: `itau` **4,22% ao mês** (faixa 2,10%–6,80%, 7 meses) e `CAIXA` **8,04%** (4 meses). Sugestão, nunca fato: o campo vem preenchido, a faixa aparece ao lado, e nada é gravado sem o dono salvar. **Cartão não recebe sugestão** — o saldo de um cartão é fatura, e fatura paga inteira não cobra juro; derivar dos encargos pequenos daria 0,06% ao mês, um número falso.
 
+- [x] `015-configuracao-e-nome-do-beneficiario` — Existe **uma** tela para o que só o humano sabe: `/configuracao` lista o catálogo em **fatos** (o que o mundo informa) e **metas** (o que o dono decide), diz qual número cada valor move, e grava. `plan_facts` é o armazém único e `plan_parameters` deixou de existir — o mesmo fato tinha dois nomes, e por isso o painel perguntava para sempre o que já tinha sido respondido. Existe **um** leitor de valor digitado, com uma gramática por unidade: `/dividas` lia `5000.00` como R$ 500.000,00 em silêncio, no campo que decide a venda do carro. E o beneficiário ganhou nome de verdade: o que a Pluggy já manda alcança **404** lançamentos e **148** beneficiários sem o dono digitar nada, e os **30** maiores do gasto — que cobrem **55,5%** do dinheiro — ele batiza uma vez, resolvido na leitura, sem que nenhum total mude. A consulta de nome por CNPJ é **opt-in**: o produto é local por definição.
+
 ## Dívida técnica
 
 Bloco separado de propósito. Pendência de processo — portão, fluxo de CI,

@@ -715,7 +715,7 @@
     "015-configuracao-e-nome-do-beneficiario": {
       "title": "Area de configuracao: os valores que alimentam calculo e sugestao, e o nome real de cada beneficiario",
       "track": "rapida",
-      "stage": "execute",
+      "stage": "done",
       "stacks": [
         "python"
       ],
