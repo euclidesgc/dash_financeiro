@@ -127,3 +127,23 @@ def test_removing_one_offer_leaves_its_neighbour_on_the_screen(client):
     assert removed.status_code == 200
     assert 'data-proposta="Banco Sem Taxa"' not in removed.text
     assert 'data-proposta="Banco Teste"' in removed.text
+
+
+def test_a_term_with_more_digits_than_a_64_bit_integer_holds_is_refused_not_a_500(client):
+    refused = client.post(
+        OFFER,
+        data={
+            "nome": "Banco Estoura",
+            "taxa": "1",
+            "prazo": "9" * 20,
+            "liberado": "5.000,00",
+        },
+    )
+
+    assert refused.status_code == 400
+    assert "algarismos" in refused.text
+
+    conn = connect()
+    names = _names(conn)
+    conn.close()
+    assert "Banco Estoura" not in names

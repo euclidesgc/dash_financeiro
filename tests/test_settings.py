@@ -12,7 +12,7 @@ from app.migrate import SQL_FOLDER
 from app.migrations.runner import apply_migrations
 from app.settings import store
 from app.settings.catalog import CARD_RATE, MEDIAN, RESERVE, SETTLEMENT, TRANSPORT
-from app.settings.typed import InvalidValueError, parse_money, parse_months, parse_rate
+from app.settings.typed import MAX_DIGITS, InvalidValueError, parse_money, parse_months, parse_rate
 
 LOGIN = "teste"
 PASSWORD = "senha-teste-9k2"
@@ -225,6 +225,14 @@ def test_the_month_grammar_takes_whole_months_only():
             parse_months(typed)
 
 
+def test_the_month_grammar_caps_digits_but_still_takes_a_mortgage_term():
+    assert parse_months("420") == 420
+    assert parse_months("9" * MAX_DIGITS) == int("9" * MAX_DIGITS)
+
+    with pytest.raises(InvalidValueError):
+        parse_months("9" * (MAX_DIGITS + 1))
+
+
 @pytest.fixture()
 def client(tmp_path, monkeypatch):
     monkeypatch.setenv("DASH_ENV_FILE", "/dev/null")
@@ -285,3 +293,15 @@ def test_a_fact_in_months_is_never_shown_as_money(client):
 
     assert "6 meses" in screen
     assert "R$ 0,06" not in screen
+
+
+def test_the_goals_route_refuses_a_reserve_months_that_overflows_sqlite_not_a_500(client):
+    refused = client.post("/configuracao", data={"nome": RESERVE, "valor": "9" * 20})
+
+    assert refused.status_code == 400
+    assert "algarismos" in refused.text
+    conn = connect()
+    try:
+        assert store.value(conn, RESERVE) is None
+    finally:
+        conn.close()
