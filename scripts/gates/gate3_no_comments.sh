@@ -1,32 +1,33 @@
 #!/usr/bin/env bash
 #
-# G3 — comentário só para o porquê que o código não mostra.
+# G3 — comment only for the why that the code does not show.
 #
-# O que este gate persegue é o comentário que repete a linha seguinte, o
-# cabeçalho decorativo de seção e a nota de histórico ("antes era X",
-# "adicionado na fase 12") — para isso existe o git. Legibilidade se conquista
-# extraindo função ou variável com nome descritivo, não com prosa ao lado.
+# What this gate goes after is the comment that repeats the next line, the
+# decorative section header, and the history note ("used to be X", "added in
+# phase 12") — that is what git is for. Readability is earned by extracting a
+# function or a descriptively named variable, not by prose alongside it.
 #
-# Um comentário que começa por uma marca de justificativa passa: `motivo:`,
-# `por quê:`, `decisão:`, `contorno:`, `invariante:`, `limitação:` — ou o
-# equivalente em inglês, `reason:`, `why:`, `decision:`, `workaround:`,
-# `invariant:`, `constraint:`, `limitation:`. As duas línguas convivem: a
-# norma 16 pede inglês, mas a árvore ainda tem marca em português, e tirar as
-# duas de uma vez deixaria o portão vermelho no meio da migração (fase 2
-# converte o que sobrar). A marca é o custo de dizer que aquilo é uma razão, e
-# não uma descrição.
+# A comment that opens with a justification tag passes: `motivo:`, `por quê:`,
+# `decisão:`, `contorno:`, `invariante:`, `limitação:` — or the English
+# equivalent, `reason:`, `why:`, `decision:`, `workaround:`, `invariant:`,
+# `constraint:`, `limitation:`. The two languages coexist: norm 16 asks for
+# English, but the tree still carries Portuguese tags, and dropping both at
+# once would leave the gate red in the middle of the migration (phase 2
+# converts what is left). The tag is the toll for calling something a reason,
+# and not a description.
 #
-# O bloco de comentário que ABRE o arquivo — antes de qualquer linha de
-# código — é cabeçalho, e passa sem marca: reconhecido pela posição, não pelo
-# texto. Shebang e bloco de licença antes dele não fecham essa janela; a
-# primeira linha de código, sim. É a diferença entre documentar o arquivo e
-# narrar a linha seguinte.
+# The comment block that OPENS the file — before any line of code — is a
+# header, and it passes without a tag: recognised by position, not by text.
+# A shebang and a licence block before it do not close that window; the first
+# line of code does. It is the difference between documenting the file and
+# narrating the next line.
 #
-# Comentário de várias linhas conta como UM bloco: se a primeira linha carrega
-# a marca, a continuação passa junto. Justificativa raramente cabe em oitenta
-# colunas, e reprovar a segunda linha ensinaria a escrever justificativa ruim.
+# A multi-line comment counts as ONE block: if the first line carries the
+# tag, the continuation passes with it. Justification rarely fits in eighty
+# columns, and failing the second line would teach people to write bad
+# justification.
 #
-# Recebe a lista de arquivos por stdin. Imprime arquivo:linha:trecho.
+# Receives the file list over stdin. Prints file:line:snippet.
 
 set -uo pipefail
 
@@ -34,37 +35,39 @@ while IFS= read -r file || [ -n "$file" ]; do
   [ -f "$file" ] || continue
   awk -v arquivo="$file" '
     BEGIN {
-      # Alternância, não classe: o motor de regex do awk compara byte a byte, e
-      # uma classe como [ãa] espera UM byte onde "ã" ocupa dois — então as marcas
-      # acentuadas que a documentação acima manda usar nunca casavam.
+      # Reason: alternation, not a character class — the regex engine of awk
+      # compares byte by byte, and a class like [ãa] expects ONE byte where
+      # "ã" takes two, so the accented tags the documentation above tells you
+      # to use never matched.
       justificativa = "(por ?qu(ê|e)|motivo|decis(ã|a)o|contorno|workaround:|invariante|limita(ç|c)(ã|a)o|restri(ç|c)(ã|a)o|(reason|decision|why|invariant|constraint|limitation):|ignore:|gate[0-9]-ok|coverage:ignore)"
       diretiva = "(ignore_for_file|dart format|coverage:|@|https?:|eslint-|prettier-|ts-ignore|ts-expect-error|#!|#region|#endregion)"
       bloco_justificado = 0
-      # Invariante: enquanto nenhuma linha de código apareceu, o bloco que
-      # abre o arquivo é cabeçalho e passa por posição. Fecha na primeira
-      # linha de código.
+      # Invariant: as long as no line of code has appeared, the block that
+      # opens the file is a header and passes by position. It closes on the
+      # first line of code.
       sem_codigo_ainda = 1
     }
     {
       linha = $0
       sub(/^[[:space:]]+/, "", linha)
 
-      # Decisão: comentário vazio ("#" ou "//" sem texto) fecha o parágrafo e
-      # NÃO fecha a janela do cabeçalho. As duas metades foram pagas caro. Sem
-      # a segunda, o separador em branco que todo cabeçalho de script usa
-      # contava como código e fechava o cabeçalho na segunda linha do arquivo,
-      # porque `#[^!]` exige um segundo byte que um "#" sozinho não tem. Sem a
-      # primeira, uma marca em qualquer ponto do bloco contaminava todos os
-      # parágrafos seguintes: cabeçalho decorativo, nota de histórico e prosa
-      # sem marca nenhuma passavam por herdar justificativa alheia.
+      # Decision: an empty comment ("#" or "//" with no text) closes the
+      # paragraph and does NOT close the header window. Both halves cost
+      # dearly to learn. Without the second, the blank separator every script
+      # header uses counted as code and closed the header on the second line
+      # of the file, because `#[^!]` demands a second byte a lone "#" does not
+      # have. Without the first, a tag anywhere in the block contaminated
+      # every following paragraph: decorative header, history note, and prose
+      # with no tag at all passed by inheriting justification that belonged
+      # to another paragraph.
       if (linha ~ /^(\/\/\/?|#)[[:space:]]*$/) { bloco_justificado = 0; next }
 
       eh_shebang = (linha ~ /^#!/)
 
-      # Decisão: linha que não é comentário fecha o bloco corrente, mas
-      # shebang é a exceção — não é comentário e não é código, então não
-      # fecha a janela do cabeçalho, que é o caso que o item pede para não
-      # quebrar.
+      # Decision: a line that is not a comment closes the current block, but
+      # a shebang is the exception — it is neither comment nor code, so it
+      # does not close the header window, which is the case the item asks
+      # not to break.
       if (linha !~ /^(\/\/|\/\/\/|#[^!])/) {
         bloco_justificado = 0
         if (linha != "" && !eh_shebang) { sem_codigo_ainda = 0 }
@@ -75,15 +78,16 @@ while IFS= read -r file || [ -n "$file" ]; do
 
       if (linha ~ /gate3-ok/) { next }
 
-      # Invariante: a marca vale no começo do comentário, não em qualquer lugar
-      # da frase. Sem âncora, "não faço ideia do motivo disso funcionar" paga o
-      # pedágio que a marca existe para cobrar, e o portão vira enfeite.
+      # Invariant: the tag counts at the start of the comment, not anywhere in
+      # the sentence. Without an anchor, "no idea why this works" pays the
+      # toll the tag exists to charge, and the gate turns into decoration.
       texto = linha
       sub(/^(\/\/\/?|#)[[:space:]]*/, "", texto)
       if (tolower(texto) ~ ("^" justificativa)) { bloco_justificado = 1; next }
       if (linha ~ diretiva) { next }
 
-      # Continuação de um bloco cuja primeira linha declarou a razão.
+      # Reason: continuation of a block whose first line already declared the
+      # reason.
       if (bloco_justificado) { next }
 
       printf "%s:%d:%s\n", arquivo, NR, linha

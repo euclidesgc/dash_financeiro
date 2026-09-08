@@ -79,10 +79,11 @@ def fnmatch_any(path, patterns):
 
 def tracked_files():
     out = subprocess.run(["git", "ls-files"], cwd=root, capture_output=True, text=True)
-    # Fora de um repositório o comando sai diferente de zero e a lista vem
-    # vazia. O universo vazio percorria todo gate sem achar nada e imprimia
-    # "0 arquivo(s) considerados" com código 0: o portão não mediu e disse que
-    # estava limpo. Portão que não conseguiu medir reprova, nunca aprova.
+    # Reason: outside a repository the command exits non-zero and the list
+    # comes back empty. An empty universe walked every gate finding nothing
+    # and printed "0 file(s) considered" with exit code 0: the gate did not
+    # measure and said it was clean. A gate that failed to measure fails,
+    # never passes.
     if out.returncode != 0:
         return None
     return [line for line in out.stdout.splitlines() if line]
@@ -101,9 +102,10 @@ def configured_branches():
 
 
 def linhas_acrescentadas(base):
-    # Um portão em modo diff que julga o arquivo inteiro reprova todo comentário
-    # antigo de qualquer arquivo que alguém encoste — e um portão que acusa o que
-    # a mudança não fez é um portão que se desliga. O recorte é por linha nova.
+    # Reason: a diff-mode gate that judges the whole file fails every old
+    # comment of any file someone so much as touches — and a gate that
+    # accuses what the change did not do is a gate that gets switched off.
+    # The cutout is by new line.
     saida = subprocess.run(
         ["git", "diff", "--unified=0", "--diff-filter=ACMR", f"{base}...HEAD"],
         cwd=root, capture_output=True, text=True,
@@ -138,17 +140,19 @@ def changed_files():
     if base:
         ranges = [base]
     else:
-        # A branch local vem antes da remota: num repositório sem remote,
-        # `origin/develop` não resolve, a cascata cai em `HEAD~1` e um merge da
-        # branch de integração faz o diff acusar tudo o que ele trouxe — trabalho
-        # de outra fase julgado como se fosse desta.
+        # Reason: the local branch comes before the remote one — in a
+        # repository with no remote, `origin/develop` does not resolve, the
+        # cascade falls to `HEAD~1`, and a merge of the integration branch
+        # makes the diff accuse everything it brought in — another phase's
+        # work judged as if it were this one's.
         declaradas = [
             faixa
             for nome in configured_branches()
             for faixa in (f"origin/{nome}...HEAD", f"{nome}...HEAD")
         ]
-        # A cascata antiga fica no fim como último recurso, para o projeto que
-        # ainda não declarou nada continuar funcionando como funcionava.
+        # Reason: the old cascade stays at the end as a last resort, so a
+        # project that has not declared anything yet keeps working the way it
+        # used to.
         ranges = declaradas + ["origin/develop...HEAD", "origin/main...HEAD", "HEAD~1"]
     for candidate in ranges:
         out = subprocess.run(
@@ -207,17 +211,19 @@ for gate in gates:
         linhas_saida.append(f"  [{gate_id}] script ausente: {script} — gate não cobrado")
         continue
 
-    # Um portão pode declarar `"modo": "diff"` para cobrar só o que a mudança
-    # tocou. Serve para a regra que nasce depois do código: o projeto adota a
-    # convenção daqui para a frente e agenda a adoção retroativa como item, em
-    # vez de reprovar quinze itens já entregues ou desligar o portão.
+    # Reason: a gate can declare `"modo": "diff"` to cover only what the
+    # change touched. It serves the rule that is born after the code: the
+    # project adopts the convention from here on and schedules retroactive
+    # adoption as an item, instead of failing fifteen already-shipped items or
+    # switching the gate off.
     escopo_gate = universe
     recorte_linhas = None
     if gate.get("modo") == "diff" and not use_diff:
-        # `desde` fixa a fronteira de uma regra que nasce depois do código: o que
-        # foi escrito antes dela é item de roadmap, não dívida de quem escreve
-        # agora. Sem isso, a branch de integração compara contra produção e cobra
-        # a convenção de tudo o que já estava lá.
+        # Reason: `desde` fixes the boundary of a rule born after the code —
+        # what was written before it is a roadmap item, not debt for whoever
+        # writes now. Without it, the integration branch compares against
+        # production and charges the convention against everything already
+        # there.
         desde = gate.get("desde")
         if desde:
             escopo_gate = mudancas_desde(desde)
@@ -234,9 +240,10 @@ for gate in gates:
         linhas_saida.append(f"  [{gate_id}] modo diff: a mudança não tocou arquivo que ele cobra")
         continue
     if not alvos:
-        # Portão sem alvo é portão que não mediu, e ele saía calado com o
-        # veredicto verde da rodada — foi assim que G3, G4 e G7 passaram itens
-        # inteiros apontando para uma pasta que este projeto não tem.
+        # Reason: a gate with no target is a gate that did not measure, and it
+        # used to leave quietly with the round's green verdict — that is how
+        # G3, G4 and G7 once passed whole items pointing at a folder this
+        # project does not have.
         linhas_saida.append(
             f"  [{gate_id}] nenhum arquivo casou applies_to={gate.get('applies_to')} "
             f"sobre {len(universe)} arquivo(s) — o portão não mediu"
@@ -267,11 +274,11 @@ for gate in gates:
         arquivo = violacao.split(":", 1)[0]
         por_arquivo[arquivo] = por_arquivo.get(arquivo, 0) + 1
     if por_arquivo:
-        # Packs diferentes compartilham identificador de gate (G3 e G4 valem
-        # para os tres). Sobrescrever aqui apagaria a divida tolerada da outra
-        # frente, e o dev veria centenas de violacoes que ninguem introduziu.
-        # Os conjuntos de arquivos sao disjuntos: cada gate so ve o caminho da
-        # frente dele.
+        # Reason: different packs share a gate identifier (G3 and G4 apply to
+        # all three). Overwriting here would erase the debt tolerated by the
+        # other front, and the dev would see hundreds of violations nobody
+        # introduced. The file sets are disjoint: each gate only ever sees its
+        # own front's path.
         acumulado = resultados.setdefault(gate_id, {})
         for arquivo, contagem in por_arquivo.items():
             acumulado[arquivo] = max(acumulado.get(arquivo, 0), contagem)
