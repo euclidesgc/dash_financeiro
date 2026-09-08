@@ -1,8 +1,12 @@
 import re
 from datetime import date
+from pathlib import Path
+
+from pytest import MonkeyPatch
 
 from app.commitments import engine
 from app.debts.ladder import rebuild
+from app.financings import store as financings_store
 from app.plan.objective import reserve_target_cents, survival_floor_cents
 from app.plan.timeline import (
     BASE,
@@ -21,6 +25,7 @@ from tests.conftest import load, transaction
 
 REFERENCE = date(2026, 9, 5)
 MONTHS = ("2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08")
+MANUAL_FIXTURE = Path(__file__).resolve().parent / "data" / "manual"
 
 
 def prepare(conn, rows):
@@ -29,7 +34,12 @@ def prepare(conn, rows):
     classify.classify_all(conn)
     conn.commit()
     engine.recompute(conn, today=REFERENCE)
-    rebuild(conn, today=REFERENCE)
+    # rebuild() seeds the ladder from whatever DASH_MANUAL_DIR holds; left at
+    # its default, it reads the owner's own contracts and the ladder becomes
+    # whatever debt the owner happens to carry that day (RF-01, RF-02).
+    with MonkeyPatch.context() as manual:
+        manual.setenv(financings_store.MANUAL_DIR, str(MANUAL_FIXTURE))
+        rebuild(conn, today=REFERENCE)
     return conn
 
 

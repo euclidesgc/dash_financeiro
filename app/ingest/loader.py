@@ -155,9 +155,9 @@ def ingest(
         # re-raising means the sync failed, wrote nothing to sync_runs, and the
         # next screen goes on showing the last success with the face of fresh
         # data — the failure mode this whole item exists to kill (RF-17).
-        # sqlite3 names the violated constraint in the exception text (a foreign
-        # key, a unique index, a not-null column); the class name alone told
-        # nobody which one, and cost two wrong diagnoses in one run.
+        # Motivo: sqlite3 names the violated constraint in the exception text (a
+        # foreign key, a unique index, a not-null column); the class name alone
+        # told nobody which one, and cost two wrong diagnoses in one run.
         return _fail(
             conn,
             started=started,
