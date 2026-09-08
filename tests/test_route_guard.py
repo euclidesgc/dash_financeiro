@@ -1,3 +1,4 @@
+import ast
 from pathlib import Path
 
 import pytest
@@ -65,7 +66,14 @@ def test_the_login_form_is_the_open_door(client):
 
 ROUTERS_DIR = Path(__file__).resolve().parent.parent / "app" / "routers"
 
-CLOCK_CALL = "date.today()"
+_CLOCK_CALLS = {
+    "datetime.date.today",
+    "datetime.datetime.today",
+    "datetime.datetime.now",
+    "datetime.datetime.utcnow",
+}
+_TIMESTAMP_CLOCK_CALLS = {"datetime.date.fromtimestamp", "datetime.datetime.fromtimestamp"}
+_TIMESTAMP_SOURCES = {"time.time"}
 
 
 def _sources(root: Path) -> dict[str, str]:
@@ -86,8 +94,61 @@ def _tree(root: Path, files: dict[str, str]) -> Path:
     return root
 
 
+def _resolve_target(node: ast.expr, aliases: dict[str, str]) -> str | None:
+    if isinstance(node, ast.Name):
+        return aliases.get(node.id)
+    if isinstance(node, ast.Attribute):
+        base = _resolve_target(node.value, aliases)
+        return None if base is None else f"{base}.{node.attr}"
+    return None
+
+
+def _clock_aliases(tree: ast.AST) -> dict[str, str]:
+    aliases: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name in {"datetime", "time"}:
+                    aliases[alias.asname or alias.name] = alias.name
+        elif isinstance(node, ast.ImportFrom) and node.module in {"datetime", "time"}:
+            for alias in node.names:
+                aliases[alias.asname or alias.name] = f"{node.module}.{alias.name}"
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Assign):
+            continue
+        if len(node.targets) != 1 or not isinstance(node.targets[0], ast.Name):
+            continue
+        resolved = _resolve_target(node.value, aliases)
+        if resolved is not None:
+            aliases[node.targets[0].id] = resolved
+    return aliases
+
+
+def _reads_the_clock_through_a_timestamp(call: ast.Call, aliases: dict[str, str]) -> bool:
+    if not call.args:
+        return False
+    argument = call.args[0]
+    if not isinstance(argument, ast.Call):
+        return False
+    return _resolve_target(argument.func, aliases) in _TIMESTAMP_SOURCES
+
+
+def _calls_the_clock(text: str) -> bool:
+    tree = ast.parse(text)
+    aliases = _clock_aliases(tree)
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or not isinstance(node.func, (ast.Name, ast.Attribute)):
+            continue
+        target = _resolve_target(node.func, aliases)
+        if target in _CLOCK_CALLS:
+            return True
+        if target in _TIMESTAMP_CLOCK_CALLS and _reads_the_clock_through_a_timestamp(node, aliases):
+            return True
+    return False
+
+
 def _accused(sources: dict[str, str]) -> list[str]:
-    return sorted(name for name, text in sources.items() if CLOCK_CALL in text)
+    return sorted(name for name, text in sources.items() if _calls_the_clock(text))
 
 
 def test_no_router_resolves_the_screen_date_by_itself():
@@ -151,3 +212,121 @@ def test_a_cached_copy_is_not_a_router(tmp_path):
 
     assert sources.keys() == {"screen.py"}
     assert _accused(sources) == []
+
+
+def test_the_guard_recognizes_every_direct_clock_call(tmp_path):
+    modules = {
+        "date_today.py": "from datetime import date\ndate.today()\n",
+        "datetime_today.py": "from datetime import datetime\ndatetime.today()\n",
+        "datetime_now_date.py": "from datetime import datetime\ndatetime.now().date()\n",
+        "datetime_now.py": "from datetime import datetime\ndatetime.now()\n",
+    }
+    _tree(tmp_path, modules)
+
+    accused = _accused(_sources(tmp_path))
+
+    assert sorted(accused) == sorted(modules)
+    assert len(accused) == 4
+
+
+def test_the_guard_follows_an_import_alias(tmp_path):
+    modules = {
+        "alias_date.py": "from datetime import date as d\nd.today()\n",
+        "alias_module.py": "import datetime as dt\ndt.datetime.now()\n",
+    }
+    _tree(tmp_path, modules)
+
+    accused = _accused(_sources(tmp_path))
+
+    assert sorted(accused) == sorted(modules)
+
+
+def test_the_guard_ignores_a_comment_and_a_string_literal(tmp_path):
+    reader = (
+        "from app.routers.reference import screen_date\n"
+        "\n"
+        "# date.today() would be the wrong way to ask the clock\n"
+        'MESSAGE = "date.today() is not called here"\n'
+        "\n"
+        "\n"
+        "def screen(pedido):\n"
+        "    return screen_date(pedido).date\n"
+    )
+    _tree(tmp_path, {"cards/screen.py": reader})
+
+    sources = _sources(tmp_path)
+
+    assert "cards/screen.py" in sources
+    assert _accused(sources) == []
+
+
+def test_the_sweep_reaches_depth_and_excludes_the_cache(tmp_path):
+    clock = "from datetime import date\ndate.today()\n"
+    _tree(
+        tmp_path,
+        {
+            "cards/screen.py": clock,
+            "cards/detail/screen.py": clock,
+            "__pycache__/screen.py": clock,
+        },
+    )
+
+    accused = _accused(_sources(tmp_path))
+
+    assert accused == ["cards/detail/screen.py", "cards/screen.py"]
+
+
+def test_the_guard_catches_utcnow(tmp_path):
+    modules = {"utcnow.py": "from datetime import datetime\ndatetime.utcnow()\n"}
+    _tree(tmp_path, modules)
+
+    accused = _accused(_sources(tmp_path))
+
+    assert accused == ["utcnow.py"]
+
+
+def test_the_guard_catches_the_clock_read_through_a_timestamp(tmp_path):
+    modules = {
+        "via_timestamp.py": "import time\nfrom datetime import date\ndate.fromtimestamp(time.time())\n",
+    }
+    _tree(tmp_path, modules)
+
+    accused = _accused(_sources(tmp_path))
+
+    assert accused == ["via_timestamp.py"]
+
+
+def test_the_guard_does_not_accuse_fromtimestamp_of_a_fixed_value(tmp_path):
+    modules = {"fixed_timestamp.py": "from datetime import date\ndate.fromtimestamp(1699999999)\n"}
+    _tree(tmp_path, modules)
+
+    accused = _accused(_sources(tmp_path))
+
+    assert accused == []
+
+
+def test_the_guard_follows_a_name_bound_to_the_clock_function(tmp_path):
+    modules = {"bound_function.py": "from datetime import date\ntoday = date.today\ntoday()\n"}
+    _tree(tmp_path, modules)
+
+    accused = _accused(_sources(tmp_path))
+
+    assert accused == ["bound_function.py"]
+
+
+def test_the_guard_follows_a_name_reassigned_to_the_clock_module(tmp_path):
+    modules = {"bound_module.py": "from datetime import date\nd = date\nd.today()\n"}
+    _tree(tmp_path, modules)
+
+    accused = _accused(_sources(tmp_path))
+
+    assert accused == ["bound_module.py"]
+
+
+def test_the_guard_does_not_accuse_a_model_date_reassigned_to_a_plain_name(tmp_path):
+    modules = {"model_alias.py": "from app.models import date\nd = date\nd.today()\n"}
+    _tree(tmp_path, modules)
+
+    accused = _accused(_sources(tmp_path))
+
+    assert accused == []
