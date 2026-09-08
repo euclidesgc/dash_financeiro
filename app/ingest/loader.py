@@ -1,7 +1,9 @@
 import sqlite3
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import InvalidOperation
+from typing import Any
 
 from app.accounts import CREDIT
 from app.ingest.money import FractionalCentsError, to_cents
@@ -83,8 +85,8 @@ class IngestResult:
 def ingest(
     conn: sqlite3.Connection,
     *,
-    transactions: list[dict],
-    accounts: list[dict],
+    transactions: list[dict[str, Any]],
+    accounts: list[dict[str, Any]],
     source: str,
     now: datetime | None = None,
 ) -> IngestResult:
@@ -286,19 +288,23 @@ def _record_run(
     return int(written.lastrowid or 0)
 
 
-def _map(rows: list[dict], mapper) -> tuple[list[dict], list[Rejection]]:
-    mapped: list[dict] = []
+def _map(
+    rows: list[dict[str, Any]],
+    mapper: Callable[[int, dict[str, Any]], tuple[dict[str, Any] | None, Rejection | None]],
+) -> tuple[list[dict[str, Any]], list[Rejection]]:
+    mapped: list[dict[str, Any]] = []
     rejections: list[Rejection] = []
     for index, raw in enumerate(rows):
         row, rejection = mapper(index, raw)
         if rejection is not None:
             rejections.append(rejection)
         else:
+            assert row is not None
             mapped.append(row)
     return mapped, rejections
 
 
-def _account_row(index: int, raw: dict) -> tuple[dict | None, Rejection | None]:
+def _account_row(index: int, raw: dict[str, Any]) -> tuple[dict[str, Any] | None, Rejection | None]:
     label = str(raw.get("name") or "")
     if not raw.get("id"):
         return None, Rejection(index, "missing_account_id", label)
@@ -325,7 +331,7 @@ def _account_row(index: int, raw: dict) -> tuple[dict | None, Rejection | None]:
     }, None
 
 
-def _stale_consolidated(transactions: list[dict]) -> Rejection | None:
+def _stale_consolidated(transactions: list[dict[str, Any]]) -> Rejection | None:
     for index, raw in enumerate(transactions):
         missing = [key for key in _CONSOLIDATED_KEYS if key not in raw]
         if missing:
@@ -333,7 +339,9 @@ def _stale_consolidated(transactions: list[dict]) -> Rejection | None:
     return None
 
 
-def _transaction_row(index: int, raw: dict) -> tuple[dict | None, Rejection | None]:
+def _transaction_row(
+    index: int, raw: dict[str, Any]
+) -> tuple[dict[str, Any] | None, Rejection | None]:
     label = str(raw.get("descricao") or "")
     for field, reason in _REQUIRED_TRANSACTION_FIELDS:
         if not raw.get(field):

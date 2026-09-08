@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, cast
 
 from app.financings.money import RATE_SCALE
 from app.settings.typed import InvalidValueError
@@ -8,7 +8,7 @@ class UnknownRateError(ValueError):
     pass
 
 
-def simulate(debt: dict, extra_cents: int) -> dict[str, Any]:
+def simulate(debt: dict[str, Any], extra_cents: int) -> dict[str, Any]:
     if extra_cents <= 0:
         raise InvalidValueError("O aporte precisa ser maior que zero.")
     if not debt["monthly_rate_bp"]:
@@ -46,7 +46,7 @@ def simulate(debt: dict, extra_cents: int) -> dict[str, Any]:
 
 def _months_for(present: int, payment: int, rate: float) -> int:
     months = 0
-    owed = present
+    owed: float = present
     while owed > 0 and months < _CEILING:
         owed = owed * (1 + rate) - payment
         months += 1
@@ -56,14 +56,14 @@ def _months_for(present: int, payment: int, rate: float) -> int:
 _CEILING = 1200
 
 
-def _interest(debt: dict, balance: int, rate: float) -> int:
+def _interest(debt: dict[str, Any], balance: int, rate: float) -> int:
     if debt["term_months"] and debt["payment_cents"]:
-        return debt["term_months"] * abs(debt["payment_cents"]) - balance
+        return cast(int, debt["term_months"] * abs(debt["payment_cents"]) - balance)
     return round(balance * rate)
 
 
 def _answer(
-    debt: dict, applied: int, instalments: int, interest: int, leftover: int
+    debt: dict[str, Any], applied: int, instalments: int, interest: int, leftover: int
 ) -> dict[str, Any]:
     return {
         "debt_id": debt["id"],
