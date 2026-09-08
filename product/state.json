@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "active_item": "016-data-de-referencia-no-caminho-de-recusa",
+  "active_item": "027-configuracao-do-gemini",
   "items": {
     "001-base-e-login": {
       "title": "Base e login: schema, ingestão dos 1.942 lançamentos e acesso protegido",
@@ -814,6 +814,156 @@
           "criteria_sha": "3d6da0eadffb87952822a77a21005410653bf0ed37bb939171e31b021b17903e"
         }
       },
+      "divergences": {},
+      "criteria_exception": null
+    },
+    "020-varredura-de-rota-que-nao-desce-em-subpasta": {
+      "title": "O guarda de rota varre subpasta: rglob no lugar de glob, com teste que morde",
+      "track": "rapida",
+      "stage": "plan",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-08T00:16:21Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-08T00:23:27Z",
+          "sha": "618f8f2448c32b454b62551b69659c16db6a2202",
+          "file": "product/items/020-varredura-de-rota-que-nao-desce-em-subpasta/01-brief.md",
+          "por": "autonomo"
+        },
+        "plan": {
+          "at": null,
+          "sha": null
+        }
+      },
+      "current_phase": null,
+      "phases": {},
+      "divergences": {},
+      "criteria_exception": null
+    },
+    "022-mes-corrente-como-abertura-padrao": {
+      "title": "Toda tela abre no presente: /gastos do dia 01 ate a data de referencia, e aceita ?data=",
+      "track": "rapida",
+      "stage": "plan",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-08T00:16:21Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-08T00:23:27Z",
+          "sha": "73d400f4aa0a360246a29a549a336195ab458f76",
+          "file": "product/items/022-mes-corrente-como-abertura-padrao/01-brief.md",
+          "por": "autonomo"
+        },
+        "plan": {
+          "at": null,
+          "sha": null
+        }
+      },
+      "current_phase": null,
+      "phases": {},
+      "divergences": {},
+      "criteria_exception": null
+    },
+    "023-taxonomia-hierarquica-do-dono": {
+      "title": "A classificacao e arvore de duas alturas: grupo e, dentro dele, categoria",
+      "track": "rapida",
+      "stage": "plan",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-08T00:16:21Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-08T00:23:27Z",
+          "sha": "bbe3279c5fcad419d23cc90e581aecd06f36e1f3",
+          "file": "product/items/023-taxonomia-hierarquica-do-dono/01-brief.md",
+          "por": "autonomo"
+        },
+        "plan": {
+          "at": null,
+          "sha": null
+        }
+      },
+      "current_phase": null,
+      "phases": {},
+      "divergences": {},
+      "criteria_exception": null
+    },
+    "024-cartoes-como-entidade": {
+      "title": "O cartao e entidade com limite, taxa, fechamento e vencimento editaveis",
+      "track": "rapida",
+      "stage": "plan",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-08T00:16:21Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-08T00:23:27Z",
+          "sha": "0e6ea2ce010a7aa51293c0e3e6fc37ee8c1b499c",
+          "file": "product/items/024-cartoes-como-entidade/01-brief.md",
+          "por": "autonomo"
+        },
+        "plan": {
+          "at": null,
+          "sha": null
+        }
+      },
+      "current_phase": null,
+      "phases": {},
+      "divergences": {},
+      "criteria_exception": null
+    },
+    "025-financiamentos-na-tela": {
+      "title": "Os dois financiamentos saem do JSON a mao e passam a se editar na tela",
+      "track": "rapida",
+      "stage": "plan",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-08T00:16:21Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-08T00:23:27Z",
+          "sha": "8972ada010c3358840b1e557cd2f35d229bcc300",
+          "file": "product/items/025-financiamentos-na-tela/01-brief.md",
+          "por": "autonomo"
+        },
+        "plan": {
+          "at": null,
+          "sha": null
+        }
+      },
+      "current_phase": null,
+      "phases": {},
+      "divergences": {},
+      "criteria_exception": null
+    },
+    "027-configuracao-do-gemini": {
+      "title": "A integracao com o Gemini se configura na tela: chave e modelo",
+      "track": "rapida",
+      "stage": "plan",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-08T00:16:21Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-08T00:23:28Z",
+          "sha": "a05c4a37809d5ed3b52f7f9a76e3913f66ca31cf",
+          "file": "product/items/027-configuracao-do-gemini/01-brief.md",
+          "por": "autonomo"
+        },
+        "plan": {
+          "at": null,
+          "sha": null
+        }
+      },
+      "current_phase": null,
+      "phases": {},
       "divergences": {},
       "criteria_exception": null
     }
