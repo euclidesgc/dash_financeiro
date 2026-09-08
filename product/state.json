@@ -1234,13 +1234,18 @@
           "criteria_sha": "e7a79f4de6edc053eee7cf2d1cd1d96ac9c523a89c894a564f1fff6b24e5366d"
         },
         "2": {
-          "status": "em_execucao",
+          "status": "aprovada",
           "reproved_count": 0,
-          "verdict": null,
-          "verdict_file": null,
-          "validated_sha": null,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/019-reclassificacao-a-partir-do-lancamento/05-veredictos/fase-2.md",
+          "validated_sha": "8396dbcde66ca02f0b309be92590122315ee88cc",
           "pr": null,
-          "blocked_on": []
+          "blocked_on": [],
+          "verdict_at": "2026-09-08T08:34:53Z",
+          "validated_trees": {
+            ".": "a47d56e6c673a80478fce78a03ed3d3168385b92"
+          },
+          "criteria_sha": "2dc60b953cc383c54f07946f4ae651e41f172f8b80f106f1beec9430db1999e0"
         }
       },
       "divergences": {
