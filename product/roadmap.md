@@ -230,37 +230,39 @@ PR e commit já escritos.
   pedido, pedido aceito, pedido recusado), e o guarda de rota que aquele item
   deixou em pé já cobre a sexta chamada.
 
-- [-] `021-mascara-e-medida-dos-campos` — Todo campo de digitação declara o que
-  aceita e cabe no que aceita: campo de dinheiro chega ao servidor já na forma
-  que o leitor único exige, campo de texto tem teto de comprimento, e a largura
-  de cada um é proporcional ao que ele guarda. Hoje não existe **nenhum**
-  `maxlength`, `pattern`, `minlength` ou `required` em template nenhum, e
-  `.field-input` é `width: 100%` para todos: o aporte, de no máximo 12
-  algarismos, e a pergunta livre ao consultor, de 500 caracteres, têm a mesma
-  medida. Os 18 campos de digitação espalhados por sete telas carregam, no
-  máximo, `inputmode="decimal"` e `placeholder="0,00"` — dica de teclado, não
-  máscara. O item fecha o laço que o `015` abriu: lá a **leitura** ficou estrita
-  e `5000.00` deixou de virar R$ 500.000,00 em silêncio; aqui a **digitação**
-  passa a produzir o que o leitor aceita, em vez de devolver uma recusa que o
-  dono tem de decifrar. E acerta duas assimetrias que a varredura encontra: a
-  validade do fato em `/simulador` é texto cru com `placeholder="AAAA-MM-DD"`
-  enquanto `/gastos` usa `type="date"`; e o único teto de texto do projeto
-  inteiro é o `MAX_QUESTION = 500` de `app/routers/advisor.py` — o apelido do
-  beneficiário, o nome do cenário e a expressão regular da regra não têm nenhum,
-  no cliente nem no servidor.
-  **É item de varredura, e por isso vem depois do que ele varre.** Os campos de
-  `024`, `025` e `027` entram na conta: varrer uma vez ao fim custa menos que
-  varrer agora e de novo a cada tela nova.
-  **A escolha que o discovery fecha:** máscara ao digitar exige o primeiro
-  arquivo JavaScript próprio do projeto, que hoje só tem htmx e Chart.js por CDN
-  e um `<script>` embutido em `gastos.html`. Formatar ao sair do campo, ou não
-  formatar e apenas estreitar `inputmode`, teto e largura, são os caminhos sem
-  essa dívida. A largura sai dos tokens de medida do `017`, não de número novo.
-  **Depende de:** `015-configuracao-e-nome-do-beneficiario` — a máscara tem de
-  concordar com a gramática de `app/settings/typed.py`, e máscara que formata
-  para uma forma que o leitor recusa é pior que máscara nenhuma;
-  `017-navegacao-lateral-e-largura-de-monitor` — "tamanho adequado" se escreve
-  nos tokens de medida que ele criou.
+- [x] `021-mascara-e-medida-dos-campos` — Todo campo de digitação declara ao
+  navegador o que aceita — teto de comprimento, modo de teclado e, onde o
+  servidor recusa vazio, obrigatoriedade — e **tem largura proporcional ao que
+  guarda**. Eram **37** campos, não os 26 que o brief contou: cartões, propostas
+  e configuração da IA nasceram durante a corrida e entraram na conta. Nenhum
+  declarava nada.
+  **O teto é um número só, escrito num lugar só.** `app/settings/limits.py` é a
+  casa de todos eles, exposta ao template como global — antes, os três tetos que
+  existiam moravam em três arquivos com três nomes, e nenhum alcançava a tela,
+  porque template não importa módulo Python. Sem isso o campo e o servidor não
+  tinham como ser o mesmo número, que é o risco que o brief nomeia.
+  A largura **deriva** do teto em vez de repeti-lo: uma regra só na folha de
+  estilo solta o `width: 100%` de quem declarou teto, e o `size` do campo faz o
+  resto (D-001). O campo de aporte e a pergunta livre ao consultor deixaram de
+  ter a mesma medida — o exemplo com que o brief descrevia o defeito. E três
+  templates estilizavam o campo com a classe do invólucro em vez da do campo, que
+  é por que a régua nunca tinha efeito ali.
+  **Três frestas da gramática fecharam**, todas achadas por validadores desta
+  corrida: dígito arábico-índico e de largura cheia eram aceitos no campo que
+  decide a venda do carro — o número saía certo, e a surpresa era a aceitação;
+  taxa de exatamente 100% ao mês passava num financiamento imobiliário, e agora
+  cada tipo de dívida tem teto próprio; e nome com byte ilegível virava linha que
+  o dono não conseguia sobrescrever redigitando, porque o nome é a chave de
+  gravação. Quatro campos de texto que não tinham teto nenhum ganharam um.
+  **O risco central não se realizou:** prazo de 420 meses e valor de doze
+  algarismos continuam entrando inteiros, provado por HTTP de ponta a ponta — e o
+  pior caso formatado com separador de milhar cabe no teto declarado. Autorização
+  continua sendo do servidor: um `POST` que passa por cima do atributo do campo é
+  recusado com mensagem em português.
+  `scripts/campos-digitaveis.py` fica atrás como medidor, e foi **visto acusando**
+  antes de merecer confiança. Item de varredura que não deixa medidor volta a
+  zerar na próxima tela que alguém escrever — foi assim que 26 viraram 37.
+  Fechou com **741 testes**, lint, tipos e portões limpos.
 
 ## Dívida técnica
 
@@ -428,6 +430,19 @@ ao topo da fila é a régua local certa e o agregado errado.
   contínua, que roda sem `data/` nenhum, mede outra coisa que ninguém olhou. O
   item substitui a carga por dado de teste versionado, e faz a mensagem de erro
   de escrita nomear a restrição violada.
+
+- [x] `037-editar-um-financiamento-nao-desemeia-o-outro` — Gravar um
+  financiamento pela tela não faz o outro sumir da escada de dívidas. O guarda da
+  semeadura desistia quando a tabela tinha **qualquer** linha, e não quando tinha
+  a linha que ele ia escrever: o primeiro contrato que o dono salvasse pela tela
+  nova encerrava a importação, e a reconstrução seguinte nunca mais semeava o CDC
+  do veículo. **O degrau sumia da tela que decide qual dívida pagar primeiro, sem
+  uma palavra.** O guarda passou a ser por tipo de contrato — quem já está na
+  tabela continua ganhando do arquivo, que era a razão original; quem falta
+  continua vindo do disco. Achado pelo validador cego do item `021`, fora do
+  escopo daquela fase, reproduzido contra uma cópia da base real. O teste vizinho
+  afirmava o defeito — contava uma linha e chamava aquilo de certo — e passou a
+  dizer o que queria dizer.
 
 ## Validações de campo pendentes
 
