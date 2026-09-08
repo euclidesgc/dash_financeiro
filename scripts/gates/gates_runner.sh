@@ -100,12 +100,53 @@ def configured_branches():
     return [n for n in dict.fromkeys(n for n in nomes if n)]
 
 
+def linhas_acrescentadas(base):
+    # Um portão em modo diff que julga o arquivo inteiro reprova todo comentário
+    # antigo de qualquer arquivo que alguém encoste — e um portão que acusa o que
+    # a mudança não fez é um portão que se desliga. O recorte é por linha nova.
+    saida = subprocess.run(
+        ["git", "diff", "--unified=0", "--diff-filter=ACMR", f"{base}...HEAD"],
+        cwd=root, capture_output=True, text=True,
+    )
+    if saida.returncode != 0:
+        return None
+    por_arquivo, atual = {}, None
+    for linha in saida.stdout.splitlines():
+        if linha.startswith("+++ b/"):
+            atual = linha[6:]
+            por_arquivo.setdefault(atual, set())
+        elif linha.startswith("@@") and atual is not None:
+            cabeca = linha.split("+", 1)[1].split("@@")[0].strip()
+            inicio, _, quantas = cabeca.partition(",")
+            inicio, quantas = int(inicio), int(quantas or 1)
+            por_arquivo[atual].update(range(inicio, inicio + quantas))
+    return por_arquivo
+
+
+def mudancas_desde(base):
+    saida = subprocess.run(
+        ["git", "diff", "--name-only", "--diff-filter=ACMR", f"{base}...HEAD"],
+        cwd=root, capture_output=True, text=True,
+    )
+    if saida.returncode != 0:
+        return changed_files() or []
+    return [linha for linha in saida.stdout.splitlines() if linha]
+
+
 def changed_files():
     base = os.environ.get("HARNESS_DIFF_BASE", "")
     if base:
         ranges = [base]
     else:
-        declaradas = [f"origin/{nome}...HEAD" for nome in configured_branches()]
+        # A branch local vem antes da remota: num repositório sem remote,
+        # `origin/develop` não resolve, a cascata cai em `HEAD~1` e um merge da
+        # branch de integração faz o diff acusar tudo o que ele trouxe — trabalho
+        # de outra fase julgado como se fosse desta.
+        declaradas = [
+            faixa
+            for nome in configured_branches()
+            for faixa in (f"origin/{nome}...HEAD", f"{nome}...HEAD")
+        ]
         # A cascata antiga fica no fim como último recurso, para o projeto que
         # ainda não declarou nada continuar funcionando como funcionava.
         ranges = declaradas + ["origin/develop...HEAD", "origin/main...HEAD", "HEAD~1"]
@@ -171,8 +212,18 @@ for gate in gates:
     # convenção daqui para a frente e agenda a adoção retroativa como item, em
     # vez de reprovar quinze itens já entregues ou desligar o portão.
     escopo_gate = universe
+    recorte_linhas = None
     if gate.get("modo") == "diff" and not use_diff:
-        escopo_gate = changed_files() or []
+        # `desde` fixa a fronteira de uma regra que nasce depois do código: o que
+        # foi escrito antes dela é item de roadmap, não dívida de quem escreve
+        # agora. Sem isso, a branch de integração compara contra produção e cobra
+        # a convenção de tudo o que já estava lá.
+        desde = gate.get("desde")
+        if desde:
+            escopo_gate = mudancas_desde(desde)
+            recorte_linhas = linhas_acrescentadas(desde)
+        else:
+            escopo_gate = changed_files() or []
     alvos = [
         f for f in escopo_gate
         if fnmatch_any(f, gate.get("applies_to") or ["**"])
@@ -201,6 +252,15 @@ for gate in gates:
         text=True,
     )
     violacoes = [line for line in proc.stdout.splitlines() if line.strip()]
+    if recorte_linhas is not None:
+        mantidas = []
+        for violacao in violacoes:
+            arquivo, _, resto = violacao.partition(":")
+            numero, _, _ = resto.partition(":")
+            arquivo = arquivo.strip()
+            if not numero.isdigit() or int(numero) in recorte_linhas.get(arquivo, set()):
+                mantidas.append(violacao)
+        violacoes = mantidas
 
     por_arquivo = {}
     for violacao in violacoes:
