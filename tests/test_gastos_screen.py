@@ -1,4 +1,5 @@
 import re
+from datetime import date
 
 import pytest
 from fastapi.testclient import TestClient
@@ -113,7 +114,7 @@ def client(tmp_path, monkeypatch, window, vocabulary):
         yield opened
 
 
-def test_the_screen_opens_on_the_six_closed_months(client, window):
+def test_the_screen_opens_on_the_running_month(client, window):
     start, end = window
     page = client.get(SCREEN)
 
@@ -123,6 +124,7 @@ def test_the_screen_opens_on_the_six_closed_months(client, window):
     assert f'value="{start}"' in page.text
     assert f'value="{end}"' in page.text
     assert f"{ENTRIES} lançamentos" in page.text
+    assert date.fromisoformat(start).day == 1
 
 
 def test_the_five_axes_repartition_the_same_total(client):
@@ -318,5 +320,172 @@ def test_the_default_window_follows_the_reference_not_the_clock(tmp_path, monkey
         page = client.get(SCREEN)
 
     assert page.status_code == 200
-    assert "de 01/11/2025 a 30/04/2026" in page.text
-    assert "de 01/03/2026 a 31/08/2026" not in page.text
+    assert "de 01/05/2026 a 15/05/2026" in page.text
+    assert "de 01/11/2025 a 30/04/2026" not in page.text
+
+
+REFERENCE_TODAY = "2026-09-05"
+FLOOR_ENTRIES = (
+    ("t-aug-20", "2026-08-20", -111.00),
+    ("t-sep-01", "2026-09-01", -200.00),
+    ("t-sep-05", "2026-09-05", -30.00),
+    ("t-sep-06", "2026-09-06", -40.00),
+    ("t-sep-30", "2026-09-30", -62.00),
+    ("t-oct-02", "2026-10-02", -77.00),
+)
+
+
+def _paragraph(html: str, marker: str) -> str:
+    start = html.index(marker)
+    return html[start : html.index("</p>", start) + len("</p>")]
+
+
+@pytest.fixture()
+def open_client(tmp_path, monkeypatch, vocabulary):
+    monkeypatch.setenv("DASH_ENV_FILE", "/dev/null")
+    monkeypatch.setenv("DASH_DB_PATH", str(tmp_path / "dash.sqlite"))
+    monkeypatch.setenv("SESSION_SECRET", "chave-de-teste")
+    monkeypatch.setenv("DASH_TODAY", REFERENCE_TODAY)
+    app = create_app()
+    conn = connect()
+    seed_user(conn, LOGIN, PASSWORD)
+    load(
+        conn,
+        [
+            transaction(pid, when, amount, categoria=vocabulary["floor_category"])
+            for pid, when, amount in FLOOR_ENTRIES
+        ],
+    )
+    seed_taxonomy(conn)
+    classify_all(conn)
+    conn.commit()
+    conn.close()
+    with TestClient(app, follow_redirects=False) as opened:
+        opened.post("/login", data={"login": LOGIN, "senha": PASSWORD})
+        yield opened
+
+
+def test_the_screen_opens_from_the_first_of_the_month_to_the_reference_date(open_client):
+    page = open_client.get(SCREEN)
+
+    assert page.status_code == 200
+    assert 'value="2026-09-01"' in page.text
+    assert 'value="2026-09-05"' in page.text
+    assert "2 lançamentos de 01/09/2026 a 05/09/2026" in page.text
+    assert "−R$ 230,00" in page.text
+    assert 'id="recusa"' not in page.text
+
+
+def test_an_accepted_date_moves_the_whole_window(open_client):
+    page = open_client.get(SCREEN, params={"data": "2026-08-20"})
+
+    assert page.status_code == 200
+    assert 'value="2026-08-01"' in page.text
+    assert 'value="2026-08-20"' in page.text
+    assert "1 lançamento de 01/08/2026 a 20/08/2026" in page.text
+    assert "−R$ 111,00" in page.text
+    assert '<input type="hidden" name="data" value="2026-08-20">' in page.text
+    assert 'id="recusa"' not in page.text
+
+
+def test_a_refused_date_falls_back_and_says_so(open_client):
+    page = open_client.get(SCREEN, params={"data": "banana"})
+
+    assert page.status_code == 200
+    assert 'id="recusa"' in page.text
+    assert "data inválida: data (banana)" in page.text
+    assert 'value="2026-09-01"' in page.text
+    assert 'value="2026-09-05"' in page.text
+
+
+def test_explicit_dates_win_over_the_default_and_an_unreadable_one_falls_back(open_client):
+    explicit = open_client.get(SCREEN, params={"inicio": "2026-08-01", "fim": "2026-08-31"})
+    unreadable = open_client.get(SCREEN, params={"inicio": "ontem", "fim": "2026-08-31"})
+
+    assert explicit.status_code == 200
+    assert "1 lançamento de 01/08/2026 a 31/08/2026" in explicit.text
+    assert "−R$ 111,00" in explicit.text
+    assert unreadable.status_code == 200
+    assert 'value="2026-09-01"' in unreadable.text
+    assert 'value="2026-09-05"' in unreadable.text
+
+
+def test_what_is_already_posted_ahead_of_the_reference_is_named_apart(open_client):
+    page = open_client.get(SCREEN)
+    block = _paragraph(page.text, 'id="posterior"')
+
+    assert page.status_code == 200
+    assert "2 lançamento" in block
+    assert "−R$ 102,00" in block
+    assert "05/09/2026" in block
+    assert "77,00" not in block
+    assert "2 lançamentos de 01/09/2026 a 05/09/2026" in page.text
+    assert "−R$ 230,00" in page.text
+
+
+def test_a_window_that_already_reaches_the_ahead_entries_sums_them_instead(open_client):
+    page = open_client.get(SCREEN, params={"inicio": "2026-09-01", "fim": "2026-09-30"})
+
+    assert page.status_code == 200
+    assert 'id="posterior"' not in page.text
+    assert "4 lançamentos de 01/09/2026 a 30/09/2026" in page.text
+    assert "−R$ 332,00" in page.text
+
+
+def test_a_window_touching_two_months_prints_the_period_total_not_an_average(open_client):
+    page = open_client.get(SCREEN, params={"inicio": "2026-08-20", "fim": "2026-09-05"})
+    block = page.text[page.text.index('id="cruzamentos"') : page.text.index('id="residuo"')]
+
+    assert page.status_code == 200
+    assert "No período" in block
+    assert "−R$ 341,00" in block
+    assert "Média mensal" not in block
+    assert "−R$ 170,50" not in block
+
+
+def test_a_window_of_whole_months_keeps_naming_it_a_monthly_average(open_client):
+    page = open_client.get(SCREEN, params={"inicio": "2026-03-01", "fim": "2026-08-31"})
+    block = page.text[page.text.index('id="cruzamentos"') : page.text.index('id="residuo"')]
+
+    assert page.status_code == 200
+    assert "Média mensal" in block
+    assert "−R$ 18,50" in block
+
+
+def test_a_window_of_past_closed_months_names_no_ahead_entries(open_client):
+    page = open_client.get(SCREEN, params={"inicio": "2026-03-01", "fim": "2026-08-31"})
+
+    assert page.status_code == 200
+    assert 'id="posterior"' not in page.text
+    assert "2 lançamentos de 01/09/2026 a 05/09/2026" not in page.text
+
+
+def test_the_default_window_still_names_what_posts_ahead(open_client):
+    page = open_client.get(SCREEN)
+
+    assert page.status_code == 200
+    assert 'id="posterior"' in page.text
+
+
+def test_the_running_months_last_bar_says_it_has_not_closed(open_client):
+    page = open_client.get(SCREEN)
+
+    assert page.status_code == 200
+    assert "ainda não fechou" in page.text
+
+
+def test_a_window_of_past_closed_months_last_bar_stays_silent(open_client):
+    page = open_client.get(SCREEN, params={"inicio": "2026-03-01", "fim": "2026-08-31"})
+
+    assert page.status_code == 200
+    assert "ainda não fechou" not in page.text
+
+
+def test_a_partial_window_prints_its_total_once_not_twice(open_client, vocabulary):
+    page = open_client.get(SCREEN, params={"inicio": "2026-08-20", "fim": "2026-09-05"})
+    label_at = page.text.index(vocabulary["floor"]["label"])
+    summary = page.text[label_at : page.text.index("</div>", label_at)]
+
+    assert page.status_code == 200
+    assert summary.count("−R$ 341,00") == 1
+    assert "No período" in summary
