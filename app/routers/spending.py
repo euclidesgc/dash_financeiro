@@ -1,14 +1,14 @@
 import sqlite3
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Form
 from starlette.requests import Request
 from starlette.responses import Response
 
 from app.db import connect
 from app.payees.names import labels as payee_labels
 from app.queries.ahead import Ahead, posted_ahead
-from app.queries.axes import AXES, PAYEE_AXIS, aggregate, transactions_of
+from app.queries.axes import AXES, ESSENTIALITY_AXIS, PAYEE_AXIS, aggregate, transactions_of
 from app.queries.crossings import crossing
 from app.queries.period import (
     InvalidPeriodError,
@@ -17,10 +17,13 @@ from app.queries.period import (
     default_period,
     month_end,
 )
+from app.queries.reach import category_reach, holders, payee_reach
 from app.queries.series import monthly_series
 from app.queries.spending import SPENDING, total_spending_cents
 from app.routers.reference import DATE_FIELD, Reference, screen_date
+from app.routers.rules import form_text
 from app.taxonomy.classify import residue
+from app.taxonomy.rules import Correction, RuleError, correct_payee
 from app.taxonomy.seed import category_labels
 
 from .render import TEMPLATES
@@ -31,9 +34,17 @@ SCREEN = "/gastos"
 TABLE = f"{SCREEN}/tabela"
 PANEL = f"{SCREEN}/painel"
 DETAIL = f"{SCREEN}/detalhe"
+CORRECTION = f"{SCREEN}/correcao"
 
 CANDIDATES = 5
 MONTH_LENGTH = 7
+
+CORRECTION_DONE_MESSAGE = "{entries} lançamento{plural} recolocado{plural} em {group}."
+CORRECTION_HELD_MESSAGE = (
+    "0 dos {previsto} lançamentos previstos foram movidos: a regra {match_value} "
+    "ainda segura {payee}."
+)
+CORRECTION_MISSING_TARGET_MESSAGE = "Nenhum lançamento selecionado para corrigir."
 
 # The category key stays the raw name the source sends, because that is what
 # matches it again on the next sync; the reading label is data next to it.
@@ -47,6 +58,13 @@ _CANDIDATES = (
     f"FROM transactions WHERE {SPENDING} AND nature = ? AND essentiality = ? "
     "AND date >= ? AND date <= ? GROUP BY category ORDER BY amount_cents LIMIT ?"
 )
+_TARGET = (
+    "SELECT id, payee, category, group_id, nature, essentiality FROM transactions WHERE id = ?"
+)
+_GROUPS = "SELECT id, name FROM category_groups ORDER BY position, name"
+_NATURES = "SELECT value FROM natures ORDER BY position"
+_TERMS = "SELECT value FROM essentialities ORDER BY position"
+_GROUP_NAME = "SELECT name FROM category_groups WHERE id = ?"
 
 
 @router.get(SCREEN)
@@ -58,7 +76,9 @@ def spending_screen(request: Request) -> Response:
         # chosen axis; on the payee axis the table's map is the resolved one, so
         # the table has the last word over the single `labels` the page renders.
         context = _panel_context(conn, start, end, reference)
-        context.update(_table_context(conn, axis, start, end, _key(request), reference))
+        context.update(
+            _table_context(conn, axis, start, end, _key(request), reference, _corrigir(request))
+        )
         context["notice"] = reference.notice
     finally:
         conn.close()
@@ -70,7 +90,9 @@ def spending_table(request: Request) -> Response:
     axis, start, end, reference = _selection(request)
     conn = connect()
     try:
-        context = _table_context(conn, axis, start, end, _key(request), reference)
+        context = _table_context(
+            conn, axis, start, end, _key(request), reference, _corrigir(request)
+        )
     finally:
         conn.close()
     return TEMPLATES.TemplateResponse(request, "fragments/gastos_tabela.html", context)
@@ -92,10 +114,71 @@ def spending_detail(request: Request) -> Response:
     axis, start, end, reference = _selection(request)
     conn = connect()
     try:
-        context = _detail_context(conn, axis, _key(request), start, end, reference)
+        context = _detail_context(
+            conn, axis, _key(request), start, end, reference, _corrigir(request)
+        )
     finally:
         conn.close()
     return TEMPLATES.TemplateResponse(request, "fragments/gastos_detalhe.html", context)
+
+
+@router.post(CORRECTION)
+def spending_correction(
+    request: Request,
+    grupo: Annotated[str, Form()] = "",
+    grupo_novo: Annotated[str, Form()] = "",
+    natureza: Annotated[str, Form()] = "",
+    # Contorno: bound by alias, not by name. The parameter reads whatever
+    # the form field named after ESSENTIALITY_AXIS carries, without
+    # spelling that field's name here as a literal.
+    term: Annotated[str, Form(alias=ESSENTIALITY_AXIS)] = "",
+) -> Response:
+    axis, start, end, reference = _selection(request)
+    key = _key(request)
+    corrigir = _corrigir(request)
+    conn = connect()
+    try:
+        target = _target(conn, corrigir)
+        payee = (target["payee"] or "") if target is not None else ""
+        new_group = form_text(grupo_novo).strip()
+        notice: str | None = None
+        result: Correction | None = None
+        if corrigir is None:
+            # Motivo: without a target there is no payee to look up, so
+            # calling correct_payee here would blame an "unknown payee" for a
+            # request that never named one.
+            notice = CORRECTION_MISSING_TARGET_MESSAGE
+        else:
+            try:
+                result = correct_payee(
+                    conn,
+                    payee=payee,
+                    group_id=_as_int(grupo),
+                    new_group=new_group,
+                    nature=form_text(natureza),
+                    essentiality=form_text(term),
+                )
+            except RuleError as refusal:
+                notice = str(refusal)
+        context = _panel_context(conn, start, end, reference)
+        context.update(
+            _table_context(
+                conn,
+                axis,
+                start,
+                end,
+                key,
+                reference,
+                corrigir,
+                correction_notice=notice,
+                correction_result=result,
+            )
+        )
+        context["notice"] = reference.notice
+        status_code = 400 if notice is not None else 200
+        return TEMPLATES.TemplateResponse(request, "gastos.html", context, status_code=status_code)
+    finally:
+        conn.close()
 
 
 def _selection(request: Request) -> tuple[str, str, str, Reference]:
@@ -118,6 +201,17 @@ def _key(request: Request) -> str | None:
     return request.query_params.get("chave") or None
 
 
+def _corrigir(request: Request) -> str | None:
+    return request.query_params.get("corrigir") or None
+
+
+def _as_int(value: str) -> int | None:
+    try:
+        return int(value)
+    except ValueError:
+        return None
+
+
 def _base(axis: str, start: str, end: str, reference: Reference) -> dict[str, Any]:
     return {
         "axes": AXES,
@@ -135,47 +229,145 @@ def _base(axis: str, start: str, end: str, reference: Reference) -> dict[str, An
 
 def _ahead(conn: sqlite3.Connection, reference: Reference, end: str) -> Ahead:
     reference_iso = reference.date.isoformat()
-    # A window whose end already reaches or passes the reference date already
-    # carries whatever the current month posted ahead of it in its own total,
-    # so naming it again here would say those entries are out of a total that
-    # already holds them. A window that ends in an earlier month has nothing
-    # to do with the reference's month at all, so naming it here would attach
-    # a foreign month's number to a total that never touched it.
+    # Motivo: a window whose end already reaches or passes the reference date
+    # already carries whatever the current month posted ahead of it in its own
+    # total, so naming it again here would say those entries are out of a
+    # total that already holds them. A window that ends in an earlier month
+    # has nothing to do with the reference's month at all, so naming it here
+    # would attach a foreign month's number to a total that never touched it.
     if end[:MONTH_LENGTH] != reference_iso[:MONTH_LENGTH] or end > reference_iso:
         return Ahead(0, 0)
     return posted_ahead(conn, after=reference_iso, until=month_end(reference.date).isoformat())
 
 
 def _table_context(
-    conn: sqlite3.Connection, axis: str, start: str, end: str, key: str | None, reference: Reference
+    conn: sqlite3.Connection,
+    axis: str,
+    start: str,
+    end: str,
+    key: str | None,
+    reference: Reference,
+    corrigir: str | None,
+    *,
+    correction_notice: str | None = None,
+    correction_result: Correction | None = None,
 ) -> dict[str, Any]:
     rows = aggregate(conn, axis=axis, start=start, end=end)
     context = _base(axis, start, end, reference)
     if axis == PAYEE_AXIS:
-        # Only the label. row['key'] is the label and the drill-down parameter
-        # at once, and replacing the rendered value would kill the opening of
-        # the list in silence (RF-28).
+        # Motivo: only the label. row['key'] is the label and the drill-down
+        # parameter at once, and replacing the rendered value would kill the
+        # opening of the list in silence (RF-28).
         context["labels"] = {**context["labels"], **payee_labels(conn)}
     context.update(
         rows=rows,
         total_cents=sum(row["amount_cents"] for row in rows),
         entries=sum(row["entries"] for row in rows),
-        detail=_detail_context(conn, axis, key, start, end, reference),
+        detail=_detail_context(
+            conn,
+            axis,
+            key,
+            start,
+            end,
+            reference,
+            corrigir,
+            correction_notice=correction_notice,
+            correction_result=correction_result,
+        ),
         ahead=_ahead(conn, reference, end),
     )
     return context
 
 
 def _detail_context(
-    conn: sqlite3.Connection, axis: str, key: str | None, start: str, end: str, reference: Reference
+    conn: sqlite3.Connection,
+    axis: str,
+    key: str | None,
+    start: str,
+    end: str,
+    reference: Reference,
+    corrigir: str | None,
+    *,
+    correction_notice: str | None = None,
+    correction_result: Correction | None = None,
 ) -> dict[str, Any]:
     context = _base(axis, start, end, reference)
+    context["correction"] = _correction_context(
+        conn, corrigir, notice=correction_notice, result=correction_result
+    )
     if key is None:
         context.update(key=None, rows=[], total_cents=0)
         return context
     rows = transactions_of(conn, axis=axis, key=key, start=start, end=end)
     context.update(key=key, rows=rows, total_cents=sum(row["amount_cents"] for row in rows))
     return context
+
+
+def _target(conn: sqlite3.Connection, corrigir: str | None) -> sqlite3.Row | None:
+    if not corrigir:
+        return None
+    target_id = _as_int(corrigir)
+    if target_id is None:
+        return None
+    return conn.execute(_TARGET, (target_id,)).fetchone()
+
+
+def _correction_context(
+    conn: sqlite3.Connection,
+    corrigir: str | None,
+    *,
+    notice: str | None,
+    result: Correction | None,
+) -> dict[str, Any] | None:
+    if corrigir is None:
+        # Motivo: a refusal built above (missing target) still needs a place
+        # to land; returning None here would carry the built notice into the
+        # template and then drop it, which is the bug this guards against.
+        return {"found": False, "notice": notice} if notice is not None else None
+    target = _target(conn, corrigir)
+    if target is None:
+        return {"found": False, "notice": notice}
+    payee = target["payee"] or ""
+    category = target["category"] or ""
+    return {
+        "found": True,
+        "id": target["id"],
+        "payee": payee,
+        "payee_reach": payee_reach(conn, payee),
+        "category_reach": category_reach(conn, category),
+        "groups": conn.execute(_GROUPS).fetchall(),
+        "natures": [row["value"] for row in conn.execute(_NATURES)],
+        "terms": [row["value"] for row in conn.execute(_TERMS)],
+        "current_group_id": target["group_id"],
+        "current_nature": target["nature"] or "",
+        "current_essentiality": target["essentiality"] or "",
+        "notice": notice,
+        "result": _result_context(conn, payee, result) if result is not None else None,
+    }
+
+
+def _result_context(conn: sqlite3.Connection, payee: str, result: Correction) -> dict[str, Any]:
+    preview = payee_reach(conn, payee)
+    if result.entries == 0 and preview["entries"] > 0:
+        holder = holders(conn, payee=payee, rule_id=result.rule_id)[0]
+        return {
+            "held": True,
+            "message": CORRECTION_HELD_MESSAGE.format(
+                previsto=preview["entries"], match_value=holder["match_value"], payee=payee
+            ),
+        }
+    plural = "" if result.entries == 1 else "s"
+    return {
+        "held": False,
+        "message": CORRECTION_DONE_MESSAGE.format(
+            entries=result.entries, plural=plural, group=_group_name(conn, result.group_id)
+        ),
+    }
+
+
+def _group_name(conn: sqlite3.Connection, group_id: int) -> str:
+    row = conn.execute(_GROUP_NAME, (group_id,)).fetchone()
+    return str(row["name"]) if row is not None else ""
 
 
 def _panel_context(

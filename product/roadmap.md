@@ -171,34 +171,27 @@ PR e commit já escritos.
   passou a plantar o par nos dois lados e a exigir conteúdo antes de comparar.
   **Depende de:** nada aberto. **Destrava:** `019`.
 
-- [-] `019-reclassificacao-a-partir-do-lancamento` — A correção de classificação
-  começa onde o erro aparece: no lançamento aberto em `/gastos`, o dono escolhe o
-  grupo, **cria grupo novo ali mesmo** se nenhum dos dez serve, e a tela diz antes
-  de gravar quantos lançamentos e quanto dinheiro a correção alcança — os do mesmo
-  beneficiário e os da mesma categoria de origem. Hoje isso só existe em `/regras`,
-  num vocabulário que não é o de quem olha o gasto: uma expressão regular sobre o
-  beneficiário, ou o nome cru que a Pluggy mandou. Escolher grupo arrasta natureza
-  e essencialidade junto, porque uma regra atribui os três de uma vez e nenhum
-  deles aceita nulo — e é o par natureza × essencialidade que monta a lista de
-  corte. A correção vira **regra**, nunca exceção de uma linha: `classify_all`
-  recalcula a base inteira a cada sincronização, então uma marca presa a um
-  lançamento é apagada na carga seguinte, em silêncio. O item também resolve a
-  palavra "categoria", que hoje nomeia três coisas — o texto cru da Pluggy (o eixo
-  `categoria`, 77 valores distintos), a tabela `categories` que só espelha esses
-  nomes, e `category_groups`, que a tela chama de `grupo` e é o único que a
-  classificação de fato usa.
-  **Medido na base de 05/09/2026:** o resíduo sem regra é **zero** — a tela que
-  existe para achar classificação faltando afirma que não falta nada — enquanto
-  **244 lançamentos e R$ 16.556,28**, 7,6% do gasto, estão no grupo de escape
-  `Outros` por regra explícita, com `mercadolivre` partido em três beneficiários
-  distintos que somam R$ 1.679,53.
-  **Depende de:** `023-taxonomia-hierarquica-do-dono` — escolher grupo passa a
-  ser escolher grupo **e** categoria, e construir a correção sobre o vocabulário
-  plano de hoje é construí-la duas vezes; `002-gastos-tres-eixos` — a correção nasce no drill-down dele e
-  usa a mesma tabela de regras; `012-sync-pos-carga-atomica` — a reclassificação
-  roda dentro do tratamento de erro da carga, e um segundo caminho de escrita
-  entra na mesma transação ou reintroduz o sucesso mentiroso que aquele item
-  fechou.
+- [x] `019-reclassificacao-a-partir-do-lancamento` — A correção de classificação
+  começa **onde o erro aparece**: no lançamento aberto em `/gastos`, o dono
+  escolhe o grupo, cria grupo novo ali mesmo, e a tela diz **antes de gravar**
+  quantos lançamentos e quanto dinheiro a correção alcança — pelo beneficiário e
+  pela categoria de origem. A correção vira **regra**, na mesma transação que
+  reclassifica a base: marca presa a um lançamento seria apagada na carga
+  seguinte, em silêncio.
+  **A promessa é que a tela nunca diga um número e faça outro**, e ela se sustenta
+  em duas frentes. A prévia e a gravação leem o **mesmo** gabarito de consulta,
+  com casamento exato sobre o beneficiário — `mercado livre` não alcança
+  `mercado livre pago`, provado por identidade de linha. E o número que aparece
+  depois de gravar é o alcance, nunca o contador da camada de baixo, que se move
+  também com transferência e estorno: o validador montou a base onde um conta
+  quatro e o outro conta dois, e a tela imprime dois.
+  Quando outra regra de precedência maior já segura o beneficiário, a gravação
+  alcança zero e a tela **nomeia a regra que segura**, com link para editá-la —
+  sem isso o dono clicaria em corrigir, receberia sucesso, e nada teria mudado.
+  A correção escolhe **grupo**, não categoria (`D-007`): dar categoria à regra
+  abriria um segundo jeito de decidir a categoria do mesmo lançamento,
+  competindo com a árvore do `023`.
+  **Depende de:** nada aberto.
 
 - [x] `022-mes-corrente-como-abertura-padrao` — Toda tela abre no presente. O
   período padrão de `/gastos` passa a ser **do dia 01 do mês corrente até a data

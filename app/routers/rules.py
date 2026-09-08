@@ -253,15 +253,15 @@ def _submitted(
 ) -> dict[str, str]:
     return {
         "rule_id": "" if rule_id is None else str(rule_id),
-        "match_kind": _text(match_kind),
-        "match_value": _text(match_value).strip(),
+        "match_kind": form_text(match_kind),
+        "match_value": form_text(match_value).strip(),
         "group_id": str(group_id),
-        "nature": _text(nature),
-        "essentiality": _text(essentiality),
+        "nature": form_text(nature),
+        "essentiality": form_text(essentiality),
     }
 
 
-def _text(raw: str) -> str:
+def form_text(raw: str) -> str:
     # Starlette reads an urlencoded field as latin-1 before percent-decoding it,
     # so a body carrying raw UTF-8 bytes arrives mojibake and every accented
     # term of the vocabulary is refused. Reading those bytes back as UTF-8 is

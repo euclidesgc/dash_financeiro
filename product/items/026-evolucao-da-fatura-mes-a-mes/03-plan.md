@@ -436,9 +436,9 @@ pintar uma coluna inteira de vermelho é o oposto de sinalizar.
       conferido nada. O comando reprova com código `1` e imprime a lista de
       classes que nenhuma das duas folhas declara
 - [ ] `comando` — RF-06
-      `rtk proxy git diff --name-only origin/develop...HEAD -- app/static/css`
+      `rtk proxy git diff --name-only develop...HEAD -- app/static/css`
       não imprime nenhuma linha, e
-      `rtk proxy git diff --name-only origin/develop...HEAD` imprime pelo menos
+      `rtk proxy git diff --name-only develop...HEAD` imprime pelo menos
       `app/templates/fragments/comprometido_fatura.html`. O segundo comando é o
       controle positivo do primeiro: sem ele, um ramo idêntico à base — ou um
       intervalo de revisões escrito errado — devolveria silêncio nos dois casos

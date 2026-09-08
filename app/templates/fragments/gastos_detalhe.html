@@ -18,7 +18,13 @@
         {% for row in rows %}
         <tr>
           <td class="col-date">{{ row['date']|dia }}</td>
-          <th scope="row" class="cell-name">{{ row['description'] }}</th>
+          <th scope="row" class="cell-name">
+            <a class="row-open"
+               href="{{ screen }}?eixo={{ axis|urlencode }}&amp;inicio={{ start }}&amp;fim={{ end }}&amp;chave={{ key|urlencode }}&amp;corrigir={{ row['id'] }}"
+               hx-get="{{ detail_url }}?chave={{ key|urlencode }}&amp;corrigir={{ row['id'] }}"
+               hx-include="#controles" hx-target="#detalhe" hx-swap="innerHTML"
+               aria-label="Corrigir a classificação de {{ row['description'] }}">{{ row['description'] }}</a>
+          </th>
           <td>{{ row['account'] }}</td>
           <td class="col-num"><span class="cifra">{{ row['amount_cents']|brl }}</span></td>
         </tr>
@@ -31,4 +37,7 @@
      hx-get="{{ detail_url }}" hx-include="#controles"
      hx-target="#detalhe" hx-swap="innerHTML">Fechar a lista</a>
 </div>
+{% endif %}
+{% if correction %}
+{% include "fragments/gastos_correcao.html" %}
 {% endif %}
