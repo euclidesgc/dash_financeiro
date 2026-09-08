@@ -18,6 +18,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import date, datetime
+from typing import Any, cast
 
 API = "https://api.pluggy.ai"
 ENV_PATH = "infra/local/.env"
@@ -29,8 +30,8 @@ CONNECTOR_MEU_PLUGGY = 200
 ESCRITA_PROIBIDA = ("/payments", "/payment-", "/transfers", "/smart-transfers", "/boletos")
 
 
-def carregar_env(path):
-    valores = {}
+def carregar_env(path: str) -> dict[str, str]:
+    valores: dict[str, str] = {}
     with open(path) as arquivo:
         for linha in arquivo:
             linha = linha.strip()
@@ -41,7 +42,7 @@ def carregar_env(path):
     return valores
 
 
-def autenticar():
+def autenticar() -> str:
     env = carregar_env(ENV_PATH)
     corpo = json.dumps(
         {
@@ -53,10 +54,13 @@ def autenticar():
         f"{API}/auth", data=corpo, headers={"Content-Type": "application/json"}, method="POST"
     )
     with urllib.request.urlopen(req, timeout=60) as resposta:
-        return json.loads(resposta.read())["apiKey"]
+        # Motivo: apiKey é sempre string no contrato da Pluggy; json.loads devolve Any.
+        return cast(str, json.loads(resposta.read())["apiKey"])
 
 
-def chamar(api_key, path, metodo="GET", corpo=None):
+def chamar(
+    api_key: str, path: str, metodo: str = "GET", corpo: dict[str, Any] | None = None
+) -> tuple[int, Any]:
     if metodo != "GET" and any(p in path for p in ESCRITA_PROIBIDA):
         raise SystemExit(f"BLOQUEADO: {metodo} {path} é endpoint de movimentação de dinheiro")
     if metodo == "DELETE":
@@ -77,7 +81,7 @@ def chamar(api_key, path, metodo="GET", corpo=None):
             return erro.code, {"raw": texto[:500]}
 
 
-def salvar(nome, conteudo, pagina=None):
+def salvar(nome: str, conteudo: Any, pagina: int | None = None) -> str:
     os.makedirs(RAW, exist_ok=True)
     hoje = date.today().isoformat()
     sufixo = f"_p{pagina}" if pagina is not None else ""
@@ -87,8 +91,8 @@ def salvar(nome, conteudo, pagina=None):
     return caminho
 
 
-def paginar(api_key, path, params):
-    resultados = []
+def paginar(api_key: str, path: str, params: dict[str, Any]) -> tuple[list[Any], int, Any]:
+    resultados: list[Any] = []
     pagina = 1
     while True:
         query = dict(params)
@@ -112,10 +116,10 @@ def paginar(api_key, path, params):
     return resultados, 200, None
 
 
-def paginar_cursor(api_key, path, params):
+def paginar_cursor(api_key: str, path: str, params: dict[str, Any]) -> tuple[list[Any], int, Any]:
     """GET /v2/* pagina por cursor: a resposta traz `next` como query string
     (`?accountId=...&after=...`), e `null` encerra."""
-    resultados = []
+    resultados: list[Any] = []
     sufixo = "?" + urllib.parse.urlencode(params)
     pagina = 1
     while True:
@@ -145,8 +149,8 @@ def paginar_cursor(api_key, path, params):
     return resultados, 200, None
 
 
-def itens_salvos():
-    ids = []
+def itens_salvos() -> list[str]:
+    ids: list[str] = []
     for caminho in (ITENS_FILE, ITEM_FILE):
         if os.path.exists(caminho):
             for linha in open(caminho):
@@ -159,7 +163,7 @@ def itens_salvos():
     return ids
 
 
-def registrar_item(item_id):
+def registrar_item(item_id: str) -> None:
     ids = itens_salvos()
     if item_id not in ids:
         ids.append(item_id)
@@ -167,7 +171,7 @@ def registrar_item(item_id):
         arquivo.write("\n".join(ids) + "\n")
 
 
-def cmd_criar_item(args):
+def cmd_criar_item(args: argparse.Namespace) -> None:
     if not args.confirmo:
         raise SystemExit("Criação de item exige --confirmo (autorização explícita do humano).")
     api_key = autenticar()
@@ -200,13 +204,15 @@ def cmd_criar_item(args):
         print("\nNao veio oauthUrl. Item bruto salvo em data/raw/.")
 
 
-def extrair_oauth_url(item):
+def extrair_oauth_url(item: dict[str, Any]) -> str | None:
     parametro = item.get("parameter") or {}
     if isinstance(parametro, dict):
         if parametro.get("name") in ("oauthUrl", "oauth"):
-            return parametro.get("data") or parametro.get("value")
+            # Motivo: "data"/"value" da Pluggy são sempre string ou ausentes;
+            # dict[str, Any] torna a leitura Any para o verificador.
+            return cast(str | None, parametro.get("data") or parametro.get("value"))
         if parametro.get("data", "").startswith("http"):
-            return parametro["data"]
+            return cast(str, parametro["data"])
     acao = item.get("userAction") or {}
     for chave in ("data", "url", "instructions"):
         valor = acao.get(chave)
@@ -215,7 +221,7 @@ def extrair_oauth_url(item):
     return None
 
 
-def cmd_status(args):
+def cmd_status(args: argparse.Namespace) -> None:
     api_key = autenticar()
     ids = [args.item] if args.item else itens_salvos()
     if not ids:
@@ -224,7 +230,7 @@ def cmd_status(args):
         status_de_um(api_key, item_id)
 
 
-def status_de_um(api_key, item_id):
+def status_de_um(api_key: str, item_id: str) -> None:
     status, item = chamar(api_key, f"/items/{item_id}")
     print(f"GET /items/{item_id} -> {status}")
     if status != 200:
@@ -242,12 +248,12 @@ def status_de_um(api_key, item_id):
         print(f"  AGUARDANDO AUTORIZACAO: {url}")
 
 
-def cmd_extrair(args):
+def cmd_extrair(args: argparse.Namespace) -> None:
     api_key = autenticar()
     ids = [args.item] if args.item else itens_salvos()
     if not ids:
         raise SystemExit(f"Sem itemId. Grave em {ITENS_FILE} ou passe --item.")
-    geral = []
+    geral: list[dict[str, Any]] = []
     for item_id in ids:
         print(f"\n########## item {item_id} ##########")
         geral.append(extrair_um(api_key, item_id, args))
@@ -257,8 +263,8 @@ def cmd_extrair(args):
     print(f"\n=== TOTAL: {len(geral)} itens, {total_contas} contas, {total_txs} transacoes ===")
 
 
-def extrair_um(api_key, item_id, args):
-    inventario = {
+def extrair_um(api_key: str, item_id: str, args: argparse.Namespace) -> dict[str, Any]:
+    inventario: dict[str, Any] = {
         "itemId": item_id,
         "extraidoEm": datetime.now().isoformat(),
         "contas": [],
@@ -336,7 +342,7 @@ def extrair_um(api_key, item_id, args):
     return inventario
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="cmd", required=True)
 

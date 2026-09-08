@@ -230,7 +230,7 @@ PR e commit já escritos.
   pedido, pedido aceito, pedido recusado), e o guarda de rota que aquele item
   deixou em pé já cobre a sexta chamada.
 
-- [ ] `021-mascara-e-medida-dos-campos` — Todo campo de digitação declara o que
+- [-] `021-mascara-e-medida-dos-campos` — Todo campo de digitação declara o que
   aceita e cabe no que aceita: campo de dinheiro chega ao servidor já na forma
   que o leitor único exige, campo de texto tem teto de comprimento, e a largura
   de cada um é proporcional ao que ele guarda. Hoje não existe **nenhum**
@@ -279,13 +279,29 @@ ao topo da fila é a régua local certa e o agregado errado.
   pacotes — enquanto foi `app tests`, as 35 violações de `financas` e `ingestao` ficaram
   invisíveis por itens inteiros.
 
-- [-] `018-tipagem-estrita-em-python` — `mypy --strict` roda sobre `app`,
-  `financas` e `ingestao`, e o portão de lint o inclui. Hoje `mypy` não é nem
-  dependência declarada: a skill `python-tipagem-estrita` do pack e a norma 35 do
-  `CLAUDE.md` cobram tipagem que nenhum comando verifica, e norma que nada mede
-  não governa. O item declara `mypy` no ambiente travado, mede quantos erros os
-  136 arquivos produzem e decide entre corrigir de uma vez ou tolerar uma
-  baseline decrescente — a medição vem antes da escolha, não depois.
+- [x] `018-tipagem-estrita-em-python` — `mypy --strict` roda sobre `app`,
+  `financas` e `ingestao`, e o portão de lint o cobra — junto do lint e do
+  formatador, não no lugar deles. A integração contínua chama o mesmo comando,
+  porque portão que só existe na máquina de quem rodou não é portão. A norma 35
+  deixou de cobrar tipagem que nenhum comando verificava.
+  A medição veio antes da escolha, como o item exigia: **202 erros em 36
+  arquivos**, três quartos deles em duas classes mecânicas — genérico sem
+  parâmetro e função sem anotação —, e a classe seguinte sumindo sozinha quando
+  o que se chama ganha tipo. Por isso a decisão foi corrigir todos, em duas
+  fases, e não tolerar uma baseline decrescente: número que só cai quando alguém
+  lembra reproduz com nome novo a norma que nada mede. Hoje são **109 fontes
+  limpas** e **dois** silenciamentos em toda a árvore, ambos no mesmo conflito
+  entre o stub do Starlette e a caixa do cookie que um teste fixa.
+  **Anotar não moveu dinheiro, e isso foi medido, não afirmado:** os validadores
+  cegos serviram o painel contra o código de antes e o de depois, sobre a mesma
+  cópia da base real, e compararam as telas **byte a byte** — quatro na fase 1,
+  oito na fase 2, todas idênticas. Os dois executáveis de `financas` e o
+  consolidador de `ingestao` produziram saída idêntica sobre os mesmos dados.
+  O portão foi **visto vermelho antes de merecer confiança**: o validador quebrou
+  um tipo de propósito e confirmou que ele reprova. Isso importa aqui porque os
+  portões arquiteturais deste projeto passaram quinze itens dizendo `limpos` sobre
+  a contagem do que tinham varrido, não do que tinham julgado — que era zero.
+  Fechou com **732 testes**, lint, tipos e portões limpos.
 
 - [x] `016-data-de-referencia-no-caminho-de-recusa` — Toda tela responde pela
   data de referência do processo, e existe **um** leitor dela

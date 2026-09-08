@@ -16,11 +16,11 @@ N = D["prazo_meses"]
 HOJE = date(2026, 9, 5)
 
 
-def valor_presente(parcelas, pmt, taxa):
+def valor_presente(parcelas: int, pmt: float, taxa: float) -> float:
     return pmt * (1 - (1 + taxa) ** -parcelas) / taxa
 
 
-def parcelas_vencidas():
+def parcelas_vencidas() -> int:
     ano, mes = 2025, 6
     vencidas = 0
     for _ in range(N):
@@ -33,7 +33,7 @@ def parcelas_vencidas():
     return vencidas
 
 
-def main():
+def main() -> None:
     print(f"contrato CCB {D['ccb']} — {D['garantia'][:38]}")
     print(
         f"principal R$ {D['principal']:,.2f} · {N}x R$ {PMT:,.2f} · "

@@ -71,8 +71,8 @@ Detalhe nas skills do harness.
 33. Junção e agregação em SQL, em `app/queries`; Pydantic só valida a resposta.
 34. Esquema muda por arquivo em `app/migrations`, aplicado por `app/migrate.py`.
     Não há Alembic, e SQLite é o banco em todo ambiente.
-35. `scripts/lint.sh` é `ruff check` e `ruff format --check` nos três pacotes.
-    `mypy --strict` ainda não roda: é item de roadmap.
+35. `scripts/lint.sh` é `ruff check`, `ruff format --check` e `mypy --strict`
+    nos três pacotes. O fluxo de integração contínua cobra o mesmo comando.
 
 Detalhe nas skills `python-*`; as de SQLAlchemy, Alembic e `BaseSettings`
 descrevem ferramenta que este projeto não usa.
