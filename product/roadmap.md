@@ -62,19 +62,22 @@ PR e commit já escritos.
   ao lado da própria tabela. Abaixo de `60rem` a barra deita no topo e rola dentro
   de si.
 
-- [-] `024-cartoes-como-entidade` — O cartão de crédito é uma entidade com os
+- [x] `024-cartoes-como-entidade` — O cartão de crédito é uma entidade com os
   dados que só o dono sabe: **limite, taxa mensal, dia de fechamento e dia de
-  vencimento**, editáveis na tela. Hoje não existe cartão nenhum no modelo —
-  `accounts` (`app/migrations/sql/001_schema.sql:17-25`) guarda `id`, `name`,
-  `type`, `subtype`, `institution` e `balance_cents`, e mais nada; a taxa vive em
-  `debts.monthly_rate_bp`, por dívida e não por conta, e o `014` registrou por
-  escrito que cartão **não** recebe taxa sugerida, porque fatura paga inteira não
-  cobra juro e derivar dos encargos daria 0,06% ao mês, um número falso.
-  A consequência medida está no roadmap desde o `005`: **R$ 16.744,62 de cartão
-  ficam fora da escada de dívida**, e o marco "dívidas caras zeradas" do objetivo
-  é calculado sem eles. Os quatro cartões são pré-cadastrados com os campos
-  vazios e o dono preenche — limite e taxa não se inferem do que a Pluggy manda,
-  e inventá-los seria pior que deixar em branco.
+  vencimento**, editáveis em `/configuracao`, um bloco por cartão. Os cartões
+  nascem cadastrados e vazios, derivados das contas de crédito da base, e
+  sobrevivem à sincronização: uma carga nova não apaga o que o dono informou.
+  **A taxa tem uma casa só**, e é dela que a escada de dívida lê — o campo de
+  `/dividas` escreve no mesmo lugar. Era o defeito que o `015` já tinha pago uma
+  vez, e o validador cego foi caçá-lo escrevendo pelos dois caminhos e lendo pelos
+  quatro: não discordam em estado nenhum. Ele achou o defeito reentrando por
+  outra porta — conta que deixava de ser cartão virava degrau de cheque especial
+  carregando a taxa do cartão morto, e a tela devolvia 12,50% para quem digitava
+  3,52% — e mais uma escrita forjada que transformava conta corrente em cartão.
+  Os dois fechados, com teste que reprova sem a correção.
+  **Com a taxa informada, os R$ 16.744,62 de cartão entram na escada** e param de
+  ficar fora do marco "dívidas caras zeradas" do objetivo. Informar a taxa de cada
+  cartão é a entrada que só a fatura dá — está nas validações de campo pendentes.
   **Depende de:** nada aberto. **Destrava:** `026` e `028`.
 
 - [-] `025-financiamentos-na-tela` — O financiamento do imóvel e o do veículo se
@@ -103,19 +106,26 @@ PR e commit já escritos.
   **Depende de:** `024-cartoes-como-entidade` — sem dia de fechamento e limite
   não há fatura a projetar, só uma soma de parcelas.
 
-- [-] `027-configuracao-do-gemini` — A integração com o Gemini se configura na
-  tela: **chave de API e escolha do modelo**. Hoje a chave só vem do ambiente
-  (`GEMINI_API_KEY`, `app/config.py:29,68`) e o modelo é constante no código
-  (`MODEL = "gemini-2.5-flash"`, `app/advisor/gemini.py:6`) — trocar de modelo
-  exige editar fonte, e `/consultor` só sabe dizer que a chave falta
-  (`app/templates/consultor.html:61`).
-  **A decisão que o discovery fecha, e ela é de segurança:** um campo de
-  formulário significa segredo gravado no SQLite, e a norma 14 diz que segredo
-  não entra no repositório. As opções são cifrar em repouso com chave derivada
-  fora do banco, manter a chave só no ambiente e configurar apenas o modelo na
-  tela, ou aceitar o texto puro num banco que já é local e não versionado — cada
-  uma com um custo diferente, e a escolha é do dono.
-  **Depende de:** nada aberto.
+- [x] `027-configuracao-do-gemini` — A integração com o Gemini se configura na
+  tela: **chave de API e escolha do modelo**, em `/configuracao`, a mesma tela do
+  resto do que só o humano sabe. O que está gravado vence o ambiente; o ambiente
+  vale quando não há nada gravado; e sem nenhum dos dois o painel segue como
+  sempre — os números determinísticos na tela e a leitura da IA declarada
+  indisponível.
+  **A decisão de segurança, tomada e justificada:** a chave mora **no SQLite
+  local**, sem cifragem em repouso. O banco está fora do versionamento, então a
+  norma 14 continua valendo por construção; cifrar exigiria uma chave de
+  derivação que teria de morar no ambiente — exatamente onde a chave de API já
+  morava —, o que move o segredo um arquivo para o lado sem mudar quem o lê.
+  **A chave nunca volta inteira:** o campo chega vazio, a tela mostra no máximo
+  os quatro últimos caracteres, e apagar é ato próprio — campo em branco troca o
+  modelo e preserva a chave. E ela viaja no cabeçalho `x-goog-api-key`, não na
+  query string (`D-004`), porque query string carrega segredo para registro de
+  servidor, proxy e histórico por construção. Chave que não pode ser valor de
+  cabeçalho é recusada no ato de gravar, com a tela de pé.
+  O validador cego varreu **37 rotas em quatro estados do provedor** — sucesso,
+  chave recusada, falha de rede e resposta ilegível — procurando a chave em corpo,
+  cabeçalho, cookie, URL de saída, log e tela: nenhum vazamento.
 
 - [ ] `028-consultor-comparativo-de-divida` — O consultor responde à pergunta que
   decide dinheiro: **é melhor ficar no cheque especial ou pegar um empréstimo, e
@@ -185,7 +195,7 @@ PR e commit já escritos.
   entra na mesma transação ou reintroduz o sucesso mentiroso que aquele item
   fechou.
 
-- [-] `022-mes-corrente-como-abertura-padrao` — Toda tela abre no presente. O
+- [x] `022-mes-corrente-como-abertura-padrao` — Toda tela abre no presente. O
   período padrão de `/gastos` passa a ser **do dia 01 do mês corrente até a data
   de referência**, e `/gastos` passa a aceitar `?data=` como as outras cinco
   telas, em vez de ser a única que chama o leitor e descarta o que foi pedido.

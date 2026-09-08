@@ -2,7 +2,6 @@ from datetime import date
 
 import pytest
 
-from app.debts import ladder as ladder_module
 from app.debts.ladder import (
     ladder,
     monthly_interest_cents,
@@ -10,6 +9,7 @@ from app.debts.ladder import (
     without_rate,
 )
 from app.debts.simulate import simulate
+from app.financings import store as financings_store
 from app.settings.typed import InvalidValueError, parse_money, parse_rate
 
 VEHICLE_BALANCE = 3917636
@@ -101,7 +101,7 @@ def test_the_monthly_interest_of_a_step_without_a_rate_is_zero():
 def test_a_missing_contract_folder_leaves_the_load_without_those_steps(
     taxonomy_conn, tmp_path, monkeypatch
 ):
-    monkeypatch.setenv(ladder_module.MANUAL_DIR, str(tmp_path / "vazio"))
+    monkeypatch.setenv(financings_store.MANUAL_DIR, str(tmp_path / "vazio"))
     taxonomy_conn.execute(
         "INSERT INTO accounts (id, name, type, subtype, institution, balance_cents, updated_at) "
         "VALUES ('a', 'Conta', 'BANK', 'CHECKING_ACCOUNT', 'X', -1000, '2026-09-05')"
@@ -114,7 +114,7 @@ def test_a_missing_contract_folder_leaves_the_load_without_those_steps(
 
 
 def test_a_rate_typed_by_the_owner_survives_the_reload(taxonomy_conn, tmp_path, monkeypatch):
-    monkeypatch.setenv(ladder_module.MANUAL_DIR, str(tmp_path / "vazio"))
+    monkeypatch.setenv(financings_store.MANUAL_DIR, str(tmp_path / "vazio"))
     taxonomy_conn.execute(
         "INSERT INTO accounts (id, name, type, subtype, institution, balance_cents, updated_at) "
         "VALUES ('a', 'Conta', 'BANK', 'CHECKING_ACCOUNT', 'X', -1000, '2026-09-05')"
@@ -136,7 +136,7 @@ def test_the_vehicle_step_is_built_by_the_loader_and_not_by_the_test(
 
     folder = tmp_path / "manual"
     folder.mkdir()
-    (folder / ladder_module.VEHICLE_FILE).write_text(
+    (folder / financings_store.VEHICLE_FILE).write_text(
         json.dumps(
             {
                 "prazo_meses": 60,
@@ -146,7 +146,7 @@ def test_the_vehicle_step_is_built_by_the_loader_and_not_by_the_test(
             }
         )
     )
-    monkeypatch.setenv(ladder_module.MANUAL_DIR, str(folder))
+    monkeypatch.setenv(financings_store.MANUAL_DIR, str(folder))
     rebuild(taxonomy_conn, today=date(2026, 9, 5))
     row = ladder(taxonomy_conn)[0]
 
