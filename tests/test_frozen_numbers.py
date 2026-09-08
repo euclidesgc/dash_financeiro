@@ -71,6 +71,8 @@ def scan(folder: Path, base: Path | None = None, numbers: tuple[str, ...] = FROZ
     found = []
     for extension in EXTENSIONS:
         for path in sorted(folder.rglob(f"*.{extension}")):
+            if "__pycache__" in path.relative_to(root).parts:
+                continue
             found.extend(_findings(path, root, expression))
     return found
 
