@@ -1399,7 +1399,7 @@
     "018-tipagem-estrita-em-python": {
       "title": "mypy --strict roda sobre os tres pacotes, e o portao de lint o inclui",
       "track": "rapida",
-      "stage": "execute",
+      "stage": "done",
       "stacks": [
         "python"
       ],
