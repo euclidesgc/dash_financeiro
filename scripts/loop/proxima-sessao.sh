@@ -44,14 +44,14 @@
 # existe, em vez de inventar um segundo caminho.
 set -uo pipefail
 
-# Teto por sessão de trabalho. Generoso de propósito: uma fase real leva
-# dezenas de minutos, e cortar cedo demais transforma trabalho bom em `wip`.
+# Reason: ceiling per work session. Generous on purpose — a real phase takes
+# tens of minutes, and cutting off too early turns good work into `wip`.
 TETO_SESSAO="${MOTOR_TETO_SESSAO:-3600}"
-# Teto para o que fala com a rede. Curto: se o GitHub não respondeu em meio
-# minuto, esperar mais não muda a resposta.
+# Reason: ceiling for whatever talks to the network. Short — if GitHub has
+# not answered in half a minute, waiting longer will not change the answer.
 TETO_REDE="${MOTOR_TETO_REDE:-30}"
-# Teto para a decisão, que é uma função pura sobre o estado e devia ser
-# instantânea. Passar disso é defeito, não lentidão.
+# Reason: ceiling for the decision, which is a pure function over the state
+# and should be instantaneous. Going past this is a defect, not slowness.
 TETO_DECISAO="${MOTOR_TETO_DECISAO:-60}"
 
 raiz="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -75,20 +75,19 @@ for ferramenta in node claude gh git timeout; do
   }
 done
 
-# A VERSÃO DO PLUGIN QUE VAI RODAR A NOITE INTEIRA
-#
-# `compose.py --update` copia os ativos do plugin para dentro do projeto e grava
-# a versão em `.harness/config.json`. Ele não decide qual plugin o Claude Code
-# vai carregar: isso é o que está instalado no cache. Rodar o update a partir de
-# um repositório de desenvolvimento deixa o projeto com os ativos da versão nova
-# e as skills, agents e o `state.py` da antiga — e a corrida passa a noite
-# inteira decidindo com um harness de duas versões atrás, sem nada acusar. Foi
-# medido: um projeto em 0.7.0 com o plugin em 0.2.1, redescobrindo defeitos que
-# a versão instalada já tinha corrigido.
-#
-# Diferença de versão é aviso quando alguém está olhando, e recusa aqui: uma
-# noite não rodada custa uma noite; uma noite rodada com o harness errado custa
-# a noite e o trabalho de descobrir o que nela foi decidido pelo motivo errado.
+# Reason: the plugin version that runs all night has to match the project's
+# own. `compose.py --update` copies the plugin's assets into the project and
+# records the version in `.harness/config.json` — it does not decide which
+# plugin Claude Code loads; that is whatever is installed in the cache.
+# Running the update from a development repository leaves the project with
+# the new version's assets and the previous skills, agents and `state.py` —
+# and the run spends the whole night deciding with a harness two versions
+# behind, with nothing to flag it. Measured: a project on 0.7.0 with the
+# plugin on 0.2.1, rediscovering defects the installed version had already
+# fixed. A version mismatch is a warning when someone is watching, and a
+# refusal here: a night not run costs one night; a night run with the wrong
+# harness costs the night plus the work of discovering what in it was decided
+# for the wrong reason.
 config="$raiz/.harness/config.json"
 if [ -f "$config" ] && [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "$CLAUDE_PLUGIN_ROOT/.claude-plugin/plugin.json" ]; then
   versao_projeto="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8")).get("harness_version",""))' "$config" 2>/dev/null)"
@@ -106,33 +105,33 @@ fi
 batimento="$raiz/.harness/runtime/motor-batimento"
 mkdir -p "$(dirname "$batimento")"
 
-# O hook de início de sessão exporta CLAUDE_PLUGIN_ROOT escrevendo no arquivo
-# apontado por CLAUDE_ENV_FILE, que o Claude Code carrega antes de cada Bash.
-# Sem essa variável definida, a exportação não tem para onde ir e todo comando
-# do prompt que use "$CLAUDE_PLUGIN_ROOT" falha com "can't open file
-# '/scripts/state/state.py'" — foi o que consumiu as duas primeiras tentativas
-# de cada sessão da primeira noite. Quem abre a sessão é este script, então é
-# ele quem prepara o canal.
+# Reason: the session-start hook exports CLAUDE_PLUGIN_ROOT by writing to the
+# file CLAUDE_ENV_FILE points at, which Claude Code loads before every Bash
+# call. Without this variable set, the export has nowhere to go and every
+# prompt command using "$CLAUDE_PLUGIN_ROOT" fails with "can't open file
+# '/scripts/state/state.py'" — that is what consumed the first two attempts
+# of every session on the first night. This script is what opens the
+# session, so it is the one that prepares the channel.
 export CLAUDE_ENV_FILE="${CLAUDE_ENV_FILE:-$raiz/.harness/runtime/sessao-env.sh}"
 : > "$CLAUDE_ENV_FILE"
 
-# Vigia externo lê o progresso com `cat`, nunca com `pgrep`: o padrão do pgrep
-# casa com o próprio comando que o executa, e enganou três verificações.
+# Reason: an external watcher reads progress with `cat`, never with `pgrep` —
+# pgrep's pattern matches the very command that runs it, and fooled three checks.
 marca() { printf '%s %s\n' "$(date -Iseconds)" "$1" > "$batimento"; }
 
-# O `wip` é uma rede para rodada que MORREU, e só para isso. A sujeira que ele
-# encontra na PARTIDA pode ser outra coisa: alguém editando, agora, na branch em
-# que parou. Comitá-la com mensagem de "rodada interrompida" apaga a autoria do
-# trabalho e o enterra sob um commit que ninguém vai procurar — aconteceu com a
-# correção deste mesmo arquivo, ainda não commitada, na primeira vez que o motor
-# foi exercitado com a árvore de uma pessoa aberta.
-#
-# A rede só é armada em branch de trabalho do harness: `<nnn-slug>/fase-N-…` ou
-# `<nnn-slug>/planejamento`. Em qualquer outra — inclusive uma `fix/…` ou
-# `docs/…` legítima —, a árvore suja é de gente, e o motor recusa em voz alta em
-# vez de decidir por ela. A lista negra anterior (`main`, `develop`, destacada)
-# não bastava: ela nomeava três lugares onde não comitar, quando o certo é
-# nomear os dois onde comitar.
+# Reason: `wip` is a safety net for a round that DIED, and only for that. The
+# mess it finds at STARTUP can be something else — someone editing, right
+# now, the branch where it stopped. Committing it with an "interrupted round"
+# message erases the authorship of that work and buries it under a commit
+# nobody will go looking for — it happened with the fix to this very file,
+# not yet committed, the first time the engine was run against a person's
+# open tree. The net is only armed on a harness work branch —
+# `<nnn-slug>/fase-N-…` or `<nnn-slug>/planejamento`. On any other — including
+# a legitimate `fix/…` or `docs/…` — the dirty tree belongs to a person, and
+# the engine refuses out loud instead of deciding for them. The previous
+# blocklist (`main`, `develop`, detached) was not enough: it named three
+# places not to commit, when the right approach is to name the two places
+# where committing is allowed.
 salva_meio_caminho() {
   [ -n "$(git status --porcelain)" ] || return 0
   local branch; branch="$(git branch --show-current)"
@@ -161,32 +160,28 @@ if [ "$seco" -eq 0 ] && [ -n "$(git status --porcelain)" ]; then
   }
 fi
 
-# QUANTAS RODADAS A MESMA FASE PODE CONSUMIR
-#
-# A escalada do estado cobre a fase REPROVADA duas vezes. Não cobre a fase que
-# nunca chega a ser julgada: uma fase grande demais fica `em_execucao`, a rodada
-# seguinte a retoma, e a corrida gasta a noite na mesma fase sem nenhum veredicto
-# — em silêncio, porque nada falhou. Medido: uma fase de 29 critérios consumiu
-# duas rodadas, a segunda estourando o teto de sessão com o trabalho a meio
-# caminho.
-#
-# Três é o teto porque a segunda retomada ainda é plausível — a primeira rodada
-# pode ter morrido cedo — e a terceira já diz outra coisa: a fase não cabe numa
-# sessão, e insistir é gastar a noite para descobrir isso de manhã. A causa é a
-# montante, no corte do plano, como toda escalada aqui.
+# Reason: how many rounds the same phase can consume. State escalation covers
+# the phase FAILED twice. It does not cover the phase that never gets judged
+# at all: a phase too big stays `em_execucao`, the next round resumes it, and
+# the run spends the night on the same phase with no verdict at all — silently,
+# because nothing failed. Measured: a phase of 29 criteria consumed two
+# rounds, the second blowing the session ceiling with work left half-done.
+# Three is the ceiling because a second resumption is still plausible — the
+# first round may have died early — and a third already says something else:
+# the phase does not fit a session, and insisting spends the night to find
+# that out in the morning. The cause is upstream, in how the plan was cut, as
+# with every escalation here.
 TETO_MESMA_FASE="${MOTOR_TETO_MESMA_FASE:-3}"
 
-# E QUANTAS O MESMO ITEM PODE CONSUMIR SEM VEREDICTO
-#
-# O teto acima conta a MESMA fase, e `repair-criteria` não é `phase`: um ciclo
-# `phase → repair → phase → repair` zera a contagem a cada alternância e passa
-# para sempre. O reparo é progresso real — o validador recusou um critério mal
-# formado e o bloco volta a quem o escreveu —, mas cinco rodadas alternando sem
-# nenhum veredicto dizem a mesma coisa que três na mesma fase: a fase não cabe,
-# e a causa é o corte do plano.
-#
-# Cinco, e não três, porque o reparo legítimo custa uma rodada e a fase seguinte
-# custa outra; quem quiser um item com dois reparos ainda cabe.
+# Reason: and how many the same item can consume with no verdict. The
+# ceiling above counts the SAME phase, and `repair-criteria` is not `phase` —
+# a `phase → repair → phase → repair` cycle zeroes the count on every
+# alternation and runs forever. The repair is real progress — the validator
+# rejected a malformed criterion and the block goes back to whoever wrote it
+# — but five rounds alternating with no verdict at all say the same thing as
+# three on the same phase: the phase does not fit, and the cause is how the
+# plan was cut. Five, not three, because a legitimate repair costs one round
+# and the following phase costs another; an item wanting two repairs still fits.
 TETO_MESMO_ITEM="${MOTOR_TETO_MESMO_ITEM:-5}"
 alvo_anterior=""
 repeticoes=0
@@ -200,19 +195,18 @@ while [ "$rodada" -lt "$ate" ]; do
   printf '\n═══ rodada %s de %s ═══\n' "$rodada" "$ate"
   marca "rodada $rodada: decidindo"
 
-  # A FAXINA VEM ANTES DA DECISÃO, PORQUE É ELA QUE DESTRAVA A BRANCH
-  #
-  # `gh stack` guarda cada pilha em `.git/gh-stack` e nada as remove quando elas
-  # cumprem o papel. Uma corrida cria uma por estágio e uma por fase, então na
-  # terceira o `gh stack add` da sessão recusa: "branch develop belongs to
-  # multiple stacks; use an interactive terminal to select one". Não há flag que
-  # escolha entre pilhas, `init` cria mais uma, e aqui não existe terminal
-  # interativo — a rodada morre sem branch. E o acúmulo piora sozinho a cada
-  # estágio que fecha.
-  #
-  # O script mede cada PR antes de largar, preserva a pilha da branch corrente e
-  # mexe só no rastreamento local. Ele não decide o que a sessão faz, então uma
-  # faxina que falha não para a rodada: ela avisa, e a sessão tenta assim mesmo.
+  # Reason: the cleanup runs before the decision, because it is what unblocks
+  # the branch. `gh stack` keeps each stack in `.git/gh-stack` and nothing
+  # removes them once they have served their purpose. A run creates one per
+  # stage and one per phase, so by the third the session's `gh stack add`
+  # refuses: "branch develop belongs to multiple stacks; use an interactive
+  # terminal to select one". There is no flag to choose between stacks, `init`
+  # creates yet another, and there is no interactive terminal here — the round
+  # dies with no branch. And the buildup gets worse on its own with every
+  # stage that closes. The script measures each PR before letting go,
+  # preserves the current branch's stack, and only touches local tracking. It
+  # does not decide what the session does, so a cleanup that fails does not
+  # stop the round: it warns, and the session tries anyway.
   if [ -f scripts/loop/larga-pilhas-mortas.mjs ]; then
     timeout "$TETO_REDE" node scripts/loop/larga-pilhas-mortas.mjs \
       || printf 'motor: a faxina de pilhas não concluiu; sigo, e `gh stack add` pode recusar por ambiguidade.\n' >&2
@@ -233,8 +227,8 @@ while [ "$rodada" -lt "$ate" ]; do
     exit 0
   fi
 
-  # O alvo é o par (item, fase): duas rodadas seguidas na mesma fase são
-  # retomada; a terceira é a fase não cabendo numa sessão.
+  # Reason: the target is the (item, phase) pair — two rounds in a row on the
+  # same phase are resumption; the third is the phase not fitting a session.
   alvo="$(printf '%s' "$decisao" | node -e 'let e="";process.stdin.on("data",d=>e+=d).on("end",()=>{const j=JSON.parse(e);process.stdout.write(j.action==="phase"?`${j.item}#${j.phase}`:"")})')"
   if [ -n "$alvo" ] && [ "$alvo" = "$alvo_anterior" ]; then
     repeticoes=$((repeticoes + 1))
@@ -243,10 +237,11 @@ while [ "$rodada" -lt "$ate" ]; do
   fi
   alvo_anterior="$alvo"
 
-  # O que se conta aqui é rodada consecutiva SEM QUE A FASE AVANCE. Uma fase
-  # nova é progresso de verdade — a anterior recebeu veredicto —, então zera.
-  # Um `repair-criteria` não avança nem retrocede: ele mantém a contagem, e é
-  # por isso que a alternância entre fase e reparo não escapa do teto.
+  # Reason: what gets counted here is a consecutive round WITH NO PHASE
+  # ADVANCING. A new phase is real progress — the previous one got a verdict
+  # — so it resets. A `repair-criteria` neither advances nor retreats: it
+  # holds the count, which is why alternating between phase and repair does
+  # not escape the ceiling.
   item_em_curso="$(printf '%s' "$decisao" | node -e 'let e="";process.stdin.on("data",d=>e+=d).on("end",()=>{const j=JSON.parse(e);process.stdout.write(["phase","repair-criteria"].includes(j.action)?(j.item??""):"")})')"
   if [ -z "$item_em_curso" ] || [ "$item_em_curso" != "$item_anterior" ]; then
     rodadas_do_item=1
@@ -315,19 +310,18 @@ while [ "$rodada" -lt "$ate" ]; do
 
   marca "rodada $rodada: empilhando o PR"
   if timeout "$TETO_REDE" gh stack view >/dev/null 2>&1; then
-    # O PR NASCE RASCUNHO, E O PORTÃO LOCAL É QUEM O PROMOVE
-    #
-    # `--auto` sem `--open` cria em rascunho, e é isso que se quer: nenhum job do
-    # CI roda em PR rascunho — os fluxos gerados têm a guarda, e
-    # `scripts/gates/rascunho.sh` a cobra —, então a iteração da noite não
-    # consome runner nenhum. Medido antes: ~6 execuções por PR e 189 num dia de
-    # corrida, porque cada push redisparava tudo e o run anterior seguia até o
-    # fim medindo um commit que ninguém ia mergear.
-    #
-    # Quem promove é este passo, e só depois de os portões locais passarem. A
-    # sessão já os rodou; rodar de novo aqui não é desconfiança dela — é a
-    # diferença entre o motor SABER que o que empilhou passa e ACREDITAR que
-    # passa. O rascunho que fica é a informação de que não passou, visível no PR.
+    # Reason: the PR is born a draft, and the local gate is what promotes it.
+    # `--auto` with no `--open` creates it as a draft, which is what is
+    # wanted: no CI job runs on a draft PR — the generated workflows carry the
+    # guard, and `scripts/gates/rascunho.sh` charges it — so the night's
+    # iteration burns no runner at all. Measured before: ~6 runs per PR and
+    # 189 in one run night, because every push re-triggered everything and
+    # the previous run kept going to the end measuring a commit nobody was
+    # going to merge. This step is what promotes it, and only after the local
+    # gates pass. The session already ran them; running them again here is
+    # not distrust of it — it is the difference between the engine KNOWING
+    # what it stacked passes and BELIEVING it passes. The draft that remains
+    # is the information that it did not pass, visible on the PR.
     if timeout "$TETO_REDE" gh stack submit --auto; then
       marca "rodada $rodada: medindo os portões antes de promover"
       if bash scripts/gates/gates_runner.sh --sem-artefatos >/dev/null 2>&1; then

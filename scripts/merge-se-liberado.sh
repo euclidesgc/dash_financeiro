@@ -29,11 +29,12 @@
 set -uo pipefail
 
 TETO="${MERGE_TETO_SEGUNDOS:-30}"
-# Teto de espera por verificação pendente. Separado do teto de rede: aquele mede
-# se o GitHub responde, este mede quanto se espera por um CI que ainda roda.
+# Reason: ceiling for waiting on a pending check. Separate from the network
+# ceiling — that one measures whether GitHub answers, this one measures how
+# long to wait for a CI that is still running.
 ESPERA="${MERGE_ESPERA_SEGUNDOS:-1200}"
-# De quanto em quanto se relê. Separado do teto para o teste poder medir o
-# veredicto sem esperar o intervalo de produção.
+# Reason: how often it re-reads. Separate from the ceiling so the test can
+# measure the verdict without waiting for the production interval.
 INTERVALO="${MERGE_INTERVALO_SEGUNDOS:-20}"
 
 pr="${1:-}"
@@ -52,14 +53,13 @@ nao_mediu() {
   exit 1
 }
 
-# O resultado sai em `$MEDIDO`, e não pelo stdout, porque `mede` precisa poder
-# encerrar o script quando não mede. Um `exit` dentro de `$( )` encerra só o
-# subshell da substituição: o script seguiria adiante com a variável vazia, que
-# é exatamente a leitura de vazio como resposta que esta reescrita existe para
-# acabar. Chamada direta, o `exit` vale.
+# Reason: the result comes out through `$MEDIDO`, not stdout, because `mede`
+# needs to be able to end the script when it fails to measure. An `exit`
+# inside `$( )` only ends the substitution's subshell — the script would
+# carry on with the variable empty, which is exactly the reading of empty as
+# an answer this rewrite exists to end. Called directly, the `exit` holds.
 MEDIDO=""
 
-# mede <descrição> <comando...>
 mede() {
   local desc="$1"; shift
   local err saida rc detalhe
@@ -72,9 +72,10 @@ mede() {
   MEDIDO="$saida"
 }
 
-# `gh pr checks` sai 1 quando há check vermelho e 8 quando há pendente: os dois
-# são medição bem-sucedida, e tratá-los como falha travaria todo PR legítimo.
-# Já 2 (PR inexistente) e qualquer erro de transporte são falta de medição.
+# Reason: `gh pr checks` exits 1 when there is a red check and 8 when there
+# is a pending one — both are a successful measurement, and treating them as
+# failure would lock out every legitimate PR. 2 (PR does not exist) and any
+# transport error are a failed measurement instead.
 mede_checks() {
   local err saida rc detalhe
   err="$(mktemp)"
@@ -89,27 +90,24 @@ mede_checks() {
   MEDIDO="$saida"
 }
 
-# POR QUE PENDENTE NÃO É VERDE
-# A primeira versão recusava só o check `fail`. Um PR cujas verificações ainda
-# rodam não tem nenhuma `fail` — tem quatro `pending` —, então ele passava, e o
-# merge acontecia antes de o CI dizer qualquer coisa. É a mesma forma de falha
-# que o cabeçalho deste arquivo descreve: a ausência de vermelho lida como
-# verde, quando o certo era ler como *ainda não medido*. Numa noite de trinta
-# merges, isso é trinta merges sem CI.
-#
-# Espera até $ESPERA segundos e recusa o que continuar pendente. Recusar de
-# imediato travaria todo PR legítimo, porque o CI sempre começa pendente.
-# VAZIO E PENDENTE SÃO A MESMA COISA: NÃO TERMINOU DE MEDIR
-#
-# A lista vazia tem duas leituras — "este repositório não tem CI" e "as suítes
-# ainda não apareceram" —, e logo depois de um push é sempre a segunda: o GitHub
-# leva segundos para registrar os checks. Recusar na primeira leitura vazia é
-# recusar todo PR recém-empurrado, o que aconteceu com um force-push desta
-# madrugada, seis segundos antes de as quatro suítes aparecerem.
-#
-# As duas esperam pelo mesmo motivo e pelo mesmo tempo. O que as separa é o que
-# a espera revela: quem tinha CI mostra as suítes, quem não tinha continua vazio
-# até o teto — e aí a recusa é sobre um fato, não sobre um instante.
+# Reason: pending is not green, because the first version only refused a
+# `fail` check. A PR whose checks are still running has no `fail` at all — it
+# has four `pending` — so it passed, and the merge happened before CI said
+# anything at all. It is the same shape of failure this file's header
+# describes: the absence of red read as green, when the right reading was
+# *not yet measured*. On a night of thirty merges, that is thirty merges with
+# no CI. It waits up to $ESPERA seconds and refuses whatever is still
+# pending. Refusing immediately would lock out every legitimate PR, because
+# CI always starts pending. Empty and pending are the same thing: measurement
+# did not finish. The empty list has two readings — "this repository has no
+# CI" and "the suites have not shown up yet" — and right after a push it is
+# always the second: GitHub takes seconds to register the checks. Refusing on
+# the first empty reading refuses every freshly pushed PR, which happened
+# with a force-push this very morning, six seconds before the four suites
+# appeared. Both wait for the same reason and the same length of time. What
+# tells them apart is what the wait reveals: whoever had CI shows the suites,
+# whoever did not stays empty until the ceiling — and then the refusal is
+# about a fact, not about a moment.
 espera_checks() {
   local alvo="$1" inicio agora pendentes vazio
   inicio="$(date +%s)"
@@ -122,8 +120,9 @@ espera_checks() {
 
     agora="$(date +%s)"
     if [ "$((agora - inicio))" -ge "$ESPERA" ]; then
-      # A lista vazia depois do teto é julgada fora daqui, junto com a saída de
-      # `MERGE_SEM_CI`: aqui só se decide que a espera acabou.
+      # Reason: the empty list after the ceiling is judged outside here,
+      # together with the `MERGE_SEM_CI` output — here it only decides that
+      # the wait is over.
       [ "$vazio" -eq 1 ] && return 0
       printf 'RECUSADO: o PR #%s ainda tem verificação pendente depois de %ss:\n' "$alvo" "$ESPERA" >&2
       printf '%s\n' "$pendentes" | sed 's/^/  /' >&2
@@ -150,22 +149,21 @@ if [ -n "$bloqueios" ]; then
   exit 1
 fi
 
-# A CAUSA MAIS COMUM DE "NENHUMA VERIFICAÇÃO" NUMA PILHA
-#
-# Um fluxo de `pull_request` roda sobre o **merge commit** que o GitHub calcula
-# entre o head e a base. Quando esse merge não é calculável, o `refs/pull/N/merge`
-# não existe e **nenhum run nasce** — nem falha, nem fica pendente: não é criado.
-# `mergeable` fica `UNKNOWN` para sempre e o PR parece só "ainda sem CI".
-#
-# Numa pilha isso acontece sem ninguém tocar no PR de cima: basta a **base**
-# entrar em conflito — o trunk andou, e o PR de baixo ficou `DIRTY`. O topo perde
-# o CI em silêncio, o veredicto cego reprova o critério que depende do CI por não
-# conseguir medir, e a escalada aponta para o critério, que não tem culpa.
-#
-# Medido duas vezes na mesma corrida, em 04/09/2026, com a mesma forma.
-#
-# Esta função não decide nada: ela só diz o que mediu, quando a recusa já
-# aconteceu. Diagnóstico é barato; achar a causa a montante às três da manhã não.
+# Reason: this is the most common cause of "no checks" on a stack. A
+# `pull_request` workflow runs on the **merge commit** GitHub computes
+# between head and base. When that merge cannot be computed,
+# `refs/pull/N/merge` does not exist and **no run is ever created** — it
+# neither fails nor stays pending: it is simply not created. `mergeable`
+# stays `UNKNOWN` forever and the PR just looks "still without CI". On a
+# stack this happens without anyone touching the PR on top: it only takes
+# the **base** going into conflict — the trunk moved, and the PR below went
+# `DIRTY`. The top silently loses its CI, the blind verdict fails the
+# criterion that depends on CI for failing to measure, and the escalation
+# points at the criterion, which is not at fault. Measured twice in the same
+# run, on 2026-09-04, in the same shape. This function decides nothing: it
+# only reports what it measured, once the refusal has already happened.
+# Diagnosis is cheap; finding the upstream cause at three in the morning is
+# not.
 diagnostica_merge_ref() {
   local alvo="$1" base estado mergeavel linha
   linha="$(gh pr view "$alvo" --json baseRefName,mergeable,mergeStateStatus \
@@ -197,18 +195,16 @@ DIAG
 }
 
 espera_checks "$pr"
-# NENHUMA VERIFICAÇÃO NÃO É VERIFICAÇÃO VERDE
-#
-# `gh pr checks` devolve vazio quando o PR não tem suíte nenhuma, e a leitura
-# ingênua disso é "nenhum check vermelho". É a forma mais pura do defeito que
-# este script inteiro existe para matar. Aconteceu num projeto real: o Actions
-# parou de executar por cota, dois PRs foram para o encerramento sem nenhuma
-# suíte de `github-actions`, e nada no processo perguntou — o veredicto cego
-# mede critério, o `check` mede coerência, e a DoD global é "do CI", que é
-# justamente a parte que ninguém confere ter acontecido.
-#
-# `MERGE_SEM_CI=1` existe para o repositório que legitimamente não tem CI, e é
-# deliberado: quem o usa está declarando que sabe.
+# Reason: no check is not a green check. `gh pr checks` returns empty when
+# the PR has no suite at all, and the naive reading of that is "no red
+# check". It is the purest form of the defect this whole script exists to
+# kill. It happened on a real project: Actions stopped running because of a
+# quota, two PRs went to closing with no `github-actions` suite at all, and
+# nothing in the process asked — the blind verdict measures the criterion,
+# `check` measures coherence, and the global DoD is "from CI", which is
+# exactly the part nobody checks actually happened. `MERGE_SEM_CI=1` exists
+# for the repository that legitimately has no CI, and it is deliberate:
+# whoever uses it is declaring that they know.
 if [ -z "$(printf '%s' "$MEDIDO" | tr -d '[:space:]')" ]; then
   if [ "${MERGE_SEM_CI:-0}" = "1" ]; then
     printf 'aviso: o PR #%s não tem verificação nenhuma, e MERGE_SEM_CI=1 mandou seguir.\n' "$pr" >&2
@@ -230,13 +226,13 @@ if [ -n "$vermelhos" ]; then
   exit 1
 fi
 
-# POR QUE AS PRÉ-CONDIÇÕES SÃO MEDIDAS JUNTAS
-# `mergeStateStatus` responde o que o GitHub pensa da **branch** — conflito,
-# proteção, verificação. Ele diz `CLEAN` de um PR em rascunho e de um PR já
-# fechado, e o merge dos dois é recusado assim mesmo. Cada pré-condição que
-# ficasse de fora daqui custaria a mesma noite: a tranca imprime "liberado", o
-# `gh` responde `Pull Request is still a draft` e ninguém está lendo às três da
-# manhã. Elas são medidas juntas, numa chamada só, e cada recusa é nominal.
+# Reason: the preconditions are measured together because `mergeStateStatus`
+# answers what GitHub thinks of the **branch** — conflict, protection,
+# checks. It says `CLEAN` for a draft PR and for one already closed, and the
+# merge of either is refused all the same. Any precondition left out here
+# would cost the same night: the lock prints "released", `gh` answers `Pull
+# Request is still a draft`, and nobody is reading at three in the morning.
+# They are measured together, in a single call, and each refusal is named.
 mede "pré-condições de merge do PR #$pr" \
   gh pr view "$pr" --json isDraft,state,mergeStateStatus --jq '[.isDraft, .state, .mergeStateStatus] | @tsv'
 IFS="$(printf '\t')" read -r rascunho situacao estado <<PRECOND
@@ -271,25 +267,24 @@ esac
 
 printf 'PR #%s liberado: sem bloqueio, nenhuma verificação vermelha nem pendente, aberto, fora de rascunho, estado %s.\n' "$pr" "$estado"
 
-# PR que pertence a uma pilha não mergeia por `gh pr merge`: o GitHub exige a
-# via da pilha. `gh stack merge` é atômico — tudo até o PR escolhido entra
-# junto, ou nada entra —, e é por isso que a checagem acima precisa valer para
-# toda a pilha abaixo, não só para este PR.
+# Reason: a PR belonging to a stack does not merge through `gh pr merge` —
+# GitHub requires the stack path. `gh stack merge` is atomic — everything up
+# to the chosen PR goes in together, or nothing does — which is why the
+# check above needs to hold for the whole stack below, not just this PR. A
+# `gh stack view` that fails here means "this branch is not on a stack", not
+# "could not ask": the three measurements above already proved GitHub
+# answers. Without them, this line would be the silent bypass to a merge
+# that does not verify the stack.
 #
-# Um `gh stack view` que falha aqui significa "esta branch não está numa
-# pilha", e não "não consegui perguntar": as três medições acima já provaram
-# que o GitHub responde. Sem elas, esta linha seria o desvio silencioso para o
-# merge que não verifica a pilha.
-#
-# POR QUE ESTAR NUMA PILHA LOCAL NÃO BASTA
-# `gh stack view` responde pela pilha **local**, que existe a partir de uma
-# branch. A pilha do GitHub, que é quem o `gh stack merge` procura pelo número,
-# só nasce com dois PRs: o primeiro item de um roadmap, ou qualquer estágio de
-# documento sozinho, produz um PR único que o `gh stack merge` recusa dizendo
-# que ele "is not a stack number or a stacked pull request". A tranca então
-# media a coisa errada — perguntava "esta branch está numa pilha aqui?" quando
-# a decisão depende de "essa pilha existe lá?" — e o merge liberado não saía.
-# A contagem abaixo é a pergunta certa, e ela é impressa.
+# Reason: being on a local stack is not enough, because `gh stack view`
+# answers for the **local** stack, which exists starting from a branch.
+# GitHub's stack, which is what `gh stack merge` looks up by number, is only
+# born with two PRs: the first item of a roadmap, or any lone document stage,
+# produces a single PR that `gh stack merge` refuses, saying it "is not a
+# stack number or a stacked pull request". The lock was then measuring the
+# wrong thing — asking "is this branch on a stack here?" when the decision
+# depends on "does that stack exist there?" — and the released merge never
+# went through. The count below is the right question, and it gets printed.
 if timeout "$TETO" gh stack view --json >/dev/null 2>&1; then
   command -v jq >/dev/null 2>&1 || nao_mediu "a pilha respondeu, mas sem jq não há como contar os PRs abertos dela."
   mede "a pilha da branch atual" gh stack view --json
@@ -298,14 +293,15 @@ if timeout "$TETO" gh stack view --json >/dev/null 2>&1; then
     ''|*[!0-9]*) nao_mediu "a pilha da branch atual: o \`gh stack view --json\` respondeu, mas sem contagem de PR aberto." ;;
   esac
 
-  # A PILHA MEDIDA É A DA BRANCH CORRENTE, E O PR PODE NÃO SER DELA
-  # `gh stack view` só sabe responder pela branch em que se está. Quem mergeia
-  # um PR de fora da própria pilha — o caso de quem acompanha uma corrida e
-  # fecha um PR próprio sem sair da branch em que estava — mediria uma pilha
-  # que não tem nada a ver com o alvo, e iria pela via atômica sobre uma
-  # corrente que não o contém. Deu certo por acaso uma vez, com a contagem em
-  # 1; com a contagem em 2 o `gh stack merge` teria levado junto PRs que
-  # ninguém mandou mergear. A pergunta que faltava é se o alvo está na pilha.
+  # Reason: the stack measured is the current branch's, and the PR might not
+  # belong to it. `gh stack view` only knows how to answer for the branch you
+  # are on. Whoever merges a PR from outside their own stack — the case of
+  # someone following a run and closing their own PR without leaving the
+  # branch they were on — would measure a stack that has nothing to do with
+  # the target, and take the atomic path over a chain that does not contain
+  # it. It worked once by accident, with the count at 1; with the count at 2
+  # `gh stack merge` would have taken along PRs nobody asked to merge. The
+  # missing question was whether the target is on the stack.
   no_alvo="$(printf '%s' "$MEDIDO" | jq --arg pr "$pr" \
     '[.branches[] | select(.pr != null and (.pr.number|tostring) == $pr)] | length' 2>/dev/null)"
   case "$no_alvo" in
