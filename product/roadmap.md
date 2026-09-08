@@ -398,6 +398,21 @@ ao topo da fila é a régua local certa e o agregado errado.
   (`int | None`), registrado em vez de corrigido em silêncio, porque mudar a
   mensagem é mudança de comportamento fora do escopo daquela fase.
 
+- [ ] `036-a-suite-nao-depende-do-diretorio-de-dados-do-dono` — A suíte passa numa
+  árvore recém-clonada. Hoje não: `tests/test_sync.py` chama a sincronização sem
+  substituir a etapa de carga, então dois testes leem `data/processed/` e
+  `data/raw/` — diretórios do dono, que o `.gitignore` exclui de propósito. Numa
+  worktree onde `data/raw/` não foi copiado, os dois falham com violação de chave
+  estrangeira, e a mensagem que sobra (`erro de escrita: IntegrityError`) não diz
+  qual restrição nem qual linha, então o defeito parece do código que está sendo
+  julgado. Descoberto quando uma worktree foi reconstruída sem esse diretório e a
+  falha foi atribuída, por duas vezes e por dois julgadores diferentes, a mudança
+  de código que não tinha nada a ver. **Um teste que só passa na máquina onde os
+  dados do dono estão completos não é portão, é coincidência** — e a integração
+  contínua, que roda sem `data/` nenhum, mede outra coisa que ninguém olhou. O
+  item substitui a carga por dado de teste versionado, e faz a mensagem de erro
+  de escrita nomear a restrição violada.
+
 ## Validações de campo pendentes
 
 O que só o hardware, o aparelho real ou o navegador real provam. Não vira tipo

@@ -61,7 +61,10 @@ def run(
             return _answer(request, conn, today, notice=str(refusal), status_code=400)
         answer = impact(conn, move, today=today)
         if nome.strip():
-            save(conn, nome, move)
+            try:
+                save(conn, nome, move)
+            except InvalidValueError as refusal:
+                return _answer(request, conn, today, notice=str(refusal), status_code=400)
         return _answer(request, conn, today, answer=answer)
     finally:
         conn.close()

@@ -1,8 +1,17 @@
 from datetime import date
 from typing import Any
 
-from app.financings import KINDS, MORTGAGE
-from app.settings.typed import InvalidValueError, parse_money, parse_months, parse_rate
+from app.financings import KINDS, MORTGAGE, VEHICLE
+from app.settings.limits import MORTGAGE_MAX_RATE_BP, VEHICLE_MAX_RATE_BP
+from app.settings.typed import (
+    CENTS_IN_UNIT,
+    InvalidValueError,
+    parse_money,
+    parse_months,
+    parse_rate,
+)
+
+_RATE_CEILINGS = {MORTGAGE: MORTGAGE_MAX_RATE_BP, VEHICLE: VEHICLE_MAX_RATE_BP}
 
 
 def parse_due_date(typed: str, field: str = "Primeiro vencimento") -> date:
@@ -21,6 +30,12 @@ def read_form(kind: str, typed: dict[str, str]) -> dict[str, Any]:
         raise InvalidValueError("Taxa mensal é obrigatória.")
     if rate == 0:
         raise InvalidValueError("Taxa mensal precisa ser maior que zero.")
+    ceiling = _RATE_CEILINGS[kind]
+    if rate > ceiling:
+        raise InvalidValueError(
+            f"Taxa mensal fora da faixa: “{typed.get('taxa', '')}”. Use no máximo "
+            f"{ceiling / CENTS_IN_UNIT:g}% ao mês."
+        )
     term = parse_months(typed.get("prazo", ""), "Prazo em meses")
     if term is None:
         raise InvalidValueError("Prazo em meses é obrigatório.")

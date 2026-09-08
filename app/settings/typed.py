@@ -2,16 +2,16 @@ import math
 import re
 
 from app.settings.catalog import BASIS_POINTS, CENTS, MONTHS
+from app.settings.limits import MAX_DIGITS
 
-# A ceiling, not a nicety: past three hundred digits float() returns inf and
-# round(inf) raises, which is a 500 on a money field. Twelve digits is more money
-# than this panel will ever be asked about.
-MAX_DIGITS = 12
 CENTS_IN_UNIT = 100
 MAX_RATE_BP = 100 * CENTS_IN_UNIT
 
-_MONEY = re.compile(r"^\d{1,3}(\.\d{3})*(,\d{1,2})?$|^\d+(,\d{1,2})?$")
-_WHOLE = re.compile(r"^\d+$")
+# Motivo: bare \d matches every Unicode decimal digit, and an arabic-indic or
+# fullwidth digit was reading as a correct number in a field that decides a car
+# sale — the defect was acceptance, not the arithmetic. re.ASCII closes it.
+_MONEY = re.compile(r"^\d{1,3}(\.\d{3})*(,\d{1,2})?$|^\d+(,\d{1,2})?$", re.ASCII)
+_WHOLE = re.compile(r"^\d+$", re.ASCII)
 
 
 class InvalidValueError(ValueError):

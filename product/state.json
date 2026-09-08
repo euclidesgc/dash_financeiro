@@ -1362,7 +1362,7 @@
     "021-mascara-e-medida-dos-campos": {
       "title": "Todo campo declara o que aceita e cabe no que aceita",
       "track": "rapida",
-      "stage": "discovery",
+      "stage": "execute",
       "stacks": [
         "python"
       ],
@@ -1381,8 +1381,18 @@
           "por": "autonomo"
         }
       },
-      "current_phase": null,
-      "phases": {},
+      "current_phase": 2,
+      "phases": {
+        "2": {
+          "status": "em_execucao",
+          "reproved_count": 0,
+          "verdict": null,
+          "verdict_file": null,
+          "validated_sha": null,
+          "pr": null,
+          "blocked_on": []
+        }
+      },
       "divergences": {},
       "criteria_exception": null
     },
