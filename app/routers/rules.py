@@ -57,9 +57,10 @@ _RESIDUE = (
     f"FROM transactions WHERE rule_id IS NULL AND {SPENDING}"
 )
 
-# A rule is not bound to a period, so neither is what is missing one: the two
-# readings of the same loose money — the category it carries and the payee it
-# paid — are the two shapes a rule can take, and the money orders them.
+# Reason: a rule is not bound to a period, so neither is what is missing
+# one — the two readings of the same loose money — the category it carries
+# and the payee it paid — are the two shapes a rule can take, and the money
+# orders them.
 _CANDIDATES = (
     "SELECT ? AS kind, category AS value, count(*) AS entries, "
     "sum(amount_cents) AS amount_cents FROM transactions "
@@ -212,8 +213,8 @@ def _context(conn: sqlite3.Connection, form: dict[str, str]) -> dict[str, Any]:
 def _refused(form: dict[str, str]) -> str | None:
     if form["match_kind"] not in dict(KINDS):
         return UNKNOWN_KIND_MESSAGE.format(value=form["match_kind"])
-    # An empty expression compiles and matches every description: the write
-    # would succeed and drag the whole base under a single rule.
+    # Reason: an empty expression compiles and matches every description —
+    # the write would succeed and drag the whole base under a single rule.
     if not form["match_value"]:
         return EMPTY_MATCH_MESSAGE
     if _number(form["group_id"]) is None:
@@ -262,10 +263,11 @@ def _submitted(
 
 
 def form_text(raw: str) -> str:
-    # Starlette reads an urlencoded field as latin-1 before percent-decoding it,
-    # so a body carrying raw UTF-8 bytes arrives mojibake and every accented
-    # term of the vocabulary is refused. Reading those bytes back as UTF-8 is
-    # exact when it succeeds and leaves the value untouched when it does not.
+    # Reason: Starlette reads an urlencoded field as latin-1 before
+    # percent-decoding it, so a body carrying raw UTF-8 bytes arrives
+    # mojibake and every accented term of the vocabulary is refused. Reading
+    # those bytes back as UTF-8 is exact when it succeeds and leaves the
+    # value untouched when it does not.
     try:
         return raw.encode("latin-1").decode("utf-8")
     except UnicodeError:

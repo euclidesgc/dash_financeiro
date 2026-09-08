@@ -15,9 +15,10 @@ TRANSPORT = "transporte-sem-carro"
 RESERVE = "reserva-meses"
 MEDIAN = "mediana-meses"
 
-# The defaults the code used as constants before there was a place to inform
-# them. They live here because a default and the value that replaces it are the
-# same number seen from two sides, and two homes is how they drift apart.
+# Reason: these are the defaults the code used as constants before there was
+# a place to inform them. They live here because a default and the value
+# that replaces it are the same number seen from two sides, and two homes is
+# how they drift apart.
 RESERVE_MONTHS = 6
 MEDIAN_MONTHS = 6
 
@@ -25,9 +26,10 @@ DEBTS_SCREEN = "/dividas"
 SIMULATOR_SCREEN = "/simulador"
 SETTINGS_SCREEN = "/configuracao"
 
-# The order is the order of how much the answer moves the projection, and it is
-# the order the advisor asks in: a rate decides where the next real goes, and a
-# payoff balance decides a thirty-nine thousand real question.
+# Reason: the order is the order of how much the answer moves the
+# projection, and it is the order the advisor asks in — a rate decides where
+# the next real goes, and a payoff balance decides a thirty-nine thousand
+# real question.
 CATALOG = (
     {
         "name": CARD_RATE,
@@ -43,9 +45,9 @@ CATALOG = (
         "screen": DEBTS_SCREEN,
         "moves": "a ordem da escada de dívida, e com ela onde o próximo real rende mais",
         "default": None,
-        # One rate per debt, in debts.monthly_rate_bp: it is not a name → value
-        # line, and copying it into the store would create a second answer to the
-        # same question (RF-08).
+        # Reason: one rate per debt, in debts.monthly_rate_bp — it is not a
+        # name → value line, and copying it into the store would create a
+        # second answer to the same question (RF-08).
         "stored": False,
     },
     {
