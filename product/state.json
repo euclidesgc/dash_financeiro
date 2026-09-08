@@ -1362,7 +1362,7 @@
     "021-mascara-e-medida-dos-campos": {
       "title": "Todo campo declara o que aceita e cabe no que aceita",
       "track": "rapida",
-      "stage": "execute",
+      "stage": "done",
       "stacks": [
         "python"
       ],
