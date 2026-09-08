@@ -6,21 +6,26 @@
       "script": "scripts/gates/gate3_no_comments.sh",
       "escape": "gate3-ok",
       "applies_to": [
-        "src/**"
+        "app/**",
+        "financas/**",
+        "ingestao/**"
       ],
       "exempt": [
         "**/tests/**",
         "**/migrations/**"
       ],
-      "cobra": "comentário que descreve mecânica em vez de justificar decisão",
-      "pack": "python"
+      "cobra": "comentário que descreve mecânica em vez de justificar decisão. Em modo diff enquanto a convenção da marca não é adotada na árvore inteira — 562 comentários em 60 arquivos, medidos em 08/09/2026.",
+      "pack": "python",
+      "modo": "diff"
     },
     {
       "id": "G4",
       "script": "scripts/gates/gate4_no_todo.sh",
       "escape": null,
       "applies_to": [
-        "src/**",
+        "app/**",
+        "financas/**",
+        "ingestao/**",
         "tests/**"
       ],
       "exempt": [],
@@ -32,7 +37,9 @@
       "script": "scripts/gates/gate7_layer_boundary.sh",
       "escape": "gate7-ok",
       "applies_to": [
-        "src/**"
+        "app/**",
+        "financas/**",
+        "ingestao/**"
       ],
       "exempt": [
         "**/tests/**"

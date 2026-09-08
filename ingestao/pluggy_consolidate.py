@@ -180,7 +180,7 @@ def main():
                 "instituicao": instituicao_da_conta(conta),
                 "descricao": (t.get("description") or "").strip(),
                 "descricao_raw": (t.get("descriptionRaw") or "").strip(),
-                # merchant chega como None, não ausente, em 1556 dos 1942
+                # Motivo: merchant chega como None, não ausente, em 1556 dos 1942
                 # lançamentos: t.get("merchant", {}) levantaria AttributeError em
                 # 80% da base. String vazia é ausência, não valor — businessName vem
                 # vazia em 48 lançamentos que têm nome fantasia.
