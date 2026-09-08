@@ -54,7 +54,7 @@ def autenticar() -> str:
         f"{API}/auth", data=corpo, headers={"Content-Type": "application/json"}, method="POST"
     )
     with urllib.request.urlopen(req, timeout=60) as resposta:
-        # apiKey é sempre string no contrato da Pluggy; json.loads devolve Any.
+        # Motivo: apiKey é sempre string no contrato da Pluggy; json.loads devolve Any.
         return cast(str, json.loads(resposta.read())["apiKey"])
 
 
@@ -208,8 +208,8 @@ def extrair_oauth_url(item: dict[str, Any]) -> str | None:
     parametro = item.get("parameter") or {}
     if isinstance(parametro, dict):
         if parametro.get("name") in ("oauthUrl", "oauth"):
-            # "data"/"value" da Pluggy são sempre string ou ausentes; dict[str, Any]
-            # torna a leitura Any para o verificador.
+            # Motivo: "data"/"value" da Pluggy são sempre string ou ausentes;
+            # dict[str, Any] torna a leitura Any para o verificador.
             return cast(str | None, parametro.get("data") or parametro.get("value"))
         if parametro.get("data", "").startswith("http"):
             return cast(str, parametro["data"])
