@@ -67,9 +67,9 @@ def transactions_of(
     column = _key(axis)
     check_period(start, end)
     return conn.execute(
-        "SELECT t.date AS date, t.description AS description, "
+        "SELECT t.id AS id, t.date AS date, t.description AS description, "
         "coalesce(a.name, a.institution, t.account_id) AS account, "
-        "t.amount_cents AS amount_cents "
+        "t.amount_cents AS amount_cents, t.payee AS payee "
         f"{_FROM} LEFT JOIN accounts AS a ON a.id = t.account_id "
         f"{_WINDOW} AND {column} = ? ORDER BY t.date, t.id",
         (start, end, key),

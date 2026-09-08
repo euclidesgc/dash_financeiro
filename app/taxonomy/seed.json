@@ -78,7 +78,9 @@
     "invalid_nature": "natureza inválida: {value}",
     "invalid_essentiality": "essencialidade inválida: {value}",
     "invalid_expression": "expressão inválida: {value}",
-    "unknown_rule": "regra inválida: {value}"
+    "unknown_rule": "regra inválida: {value}",
+    "unknown_payee": "beneficiário desconhecido: {value}",
+    "duplicate_group": "já existe um grupo com esse nome: {value}"
   },
   "crossings": [
     {
