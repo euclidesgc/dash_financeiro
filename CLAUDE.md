@@ -18,6 +18,11 @@ Frentes: api em `.` (python).
 8. Reconciliação de doc no mesmo PR da mudança.
 9. Uma fase é um PR. Pilha é `gh stack`, nunca `--base` à mão.
 10. "Pronto" é build verde com testes passando.
+36. **Frentes paralelas rodam em worktree, uma por fase**, e a worktree morre no
+    merge — nem branch nem diretório sobrevivem. Traga `develop` para dentro
+    **antes** de validar: o validador julga o que vai entrar. Item de varredura
+    mescla por último, e item que liga um portão, depois dele. Skill
+    `frentes-paralelas`.
 
 ## Código
 
@@ -53,8 +58,13 @@ Frentes: api em `.` (python).
 18. Saída de comando se estreita na origem, não por camada que resume.
 19. Antes de dar por pronto: `bash scripts/lint.sh` e
     `bash scripts/gates/gates_runner.sh`. Portão que não conseguiu medir
-    reprova, nunca aprova.
+    reprova, nunca aprova, e **portão novo se prova pela reprovação**: quebre de
+    propósito o que ele julga, veja-o sair vermelho, desfaça.
 20. Erro repetido pela segunda vez vira causa raiz, não terceiro remendo.
+37. **Tela se verifica em lote**, por `bash scripts/capturas-em-lote.sh`: uma
+    subida, um login, o cookie reusado. Um servidor por tela não é só lento — o
+    limitador de tentativas fecha a porta na sexta, e a captura fotografa a tela
+    de login sem ninguém perceber.
 21. `/harness:doctor` diagnostica ambiente, hooks e estado.
 
 Detalhe nas skills do harness.
