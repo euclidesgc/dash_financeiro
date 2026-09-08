@@ -20,13 +20,13 @@ def seed_user(conn: sqlite3.Connection, login: str, password: str) -> None:
         conn.execute(INSERT_USER, (login, hash_password(password), created_at))
         conn.commit()
         return
-    # Argon2id salts every hash, so the stored text always differs from a fresh
-    # one: only the password itself says whether anything changed. Seeding the
-    # same password again must not log the panel out.
+    # Reason: Argon2id salts every hash, so the stored text always differs
+    # from a fresh one — only the password itself says whether anything
+    # changed. Seeding the same password again must not log the panel out.
     if verify_password(password, row[0]):
         return
-    # A password changed on suspicion of a leak has to take the cookie that may
-    # have leaked with it down as well.
+    # Reason: a password changed on suspicion of a leak has to take the
+    # cookie that may have leaked with it down as well.
     conn.execute(ROTATE_PASSWORD, (hash_password(password), login))
     conn.commit()
 

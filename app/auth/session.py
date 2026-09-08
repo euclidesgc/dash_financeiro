@@ -32,8 +32,8 @@ def read_cookie(
         payload = _signer(secret, now).unsign(raw.encode(), max_age=MAX_AGE_SECONDS)
     except BadSignature:
         return None
-    # A cookie minted before the epoch existed carries no separator, and no
-    # logout can reach it: it is refused instead of trusted.
+    # Reason: a cookie minted before the epoch existed carries no separator,
+    # and no logout can reach it — it is refused instead of trusted.
     login, separator, carried = bytes(payload).decode().rpartition(SEPARATOR)
     if not separator or not carried.isdigit():
         return None

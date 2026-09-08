@@ -1,10 +1,11 @@
 import sqlite3
 
-# Money moved between the owner's own accounts, and money given back, never
-# left the house: counting it as spending makes the total report an outflow
-# that never happened (invariant 25). Every spending query reads this one
-# string — repeated per query, it gets forgotten in one of them, and the panel
-# then lies on a single axis, which is the most expensive way to be wrong.
+# Reason: money moved between the owner's own accounts, and money given
+# back, never left the house — counting it as spending makes the total
+# report an outflow that never happened (invariant 25). Every spending query
+# reads this one string — repeated per query, it gets forgotten in one of
+# them, and the panel then lies on a single axis, which is the most
+# expensive way to be wrong.
 SPENDING = "amount_cents < 0 AND is_transfer = 0 AND is_refund = 0 AND refunded_by IS NULL"
 
 _TOTAL_SPENDING = f"SELECT coalesce(sum(amount_cents), 0) FROM transactions WHERE {SPENDING}"

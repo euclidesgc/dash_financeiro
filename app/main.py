@@ -44,9 +44,9 @@ def _stylesheet(name: str) -> str:
 def create_app() -> FastAPI:
     run_migrations()
     app = FastAPI()
-    # The stylesheet travels inside the document instead of over a /static route:
-    # every registered route demands a session, and the login page needs its own
-    # styling before any session exists.
+    # Reason: the stylesheet travels inside the document instead of over a
+    # /static route — every registered route demands a session, and the login
+    # page needs its own styling before any session exists.
     TEMPLATES.env.globals["tokens_css"] = _stylesheet("tokens.css")
     TEMPLATES.env.globals["app_css"] = _stylesheet("app.css")
     TEMPLATES.env.globals["screens"] = marked

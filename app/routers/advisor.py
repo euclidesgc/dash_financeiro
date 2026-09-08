@@ -129,9 +129,9 @@ def _context(conn: sqlite3.Connection, today: date) -> dict[str, Any]:
         "comparison": numbers["comparison"],
         "question": next_question(conn, today=today),
         "pending": pending(conn, today=today),
-        # "Nothing to ask because everything is answered" and "nothing to ask
-        # because you postponed everything" are different states, and only one of
-        # them means the projection is running on fact.
+        # Reason: "nothing to ask because everything is answered" and
+        # "nothing to ask because you postponed everything" are different
+        # states, and only one of them means the projection is running on fact.
         "postponed": postponed(conn) if not next_question(conn, today=today) else 0,
         "action": SCREEN,
         "dismiss_action": DISMISS,

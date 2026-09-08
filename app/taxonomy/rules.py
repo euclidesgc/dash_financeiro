@@ -218,8 +218,9 @@ def delete_rule(conn: sqlite3.Connection, rule_id: int) -> int:
 
 
 def _write(conn: sqlite3.Connection, statement: str, params: tuple[object, ...]) -> int:
-    # The write and the reclassification it triggers share one SQL transaction:
-    # a half reclassified base keeps adding up and starts lying (RF-14).
+    # Reason: the write and the reclassification it triggers share one SQL
+    # transaction — a half reclassified base keeps adding up and starts
+    # lying (RF-14).
     try:
         conn.execute(statement, params)
         reclassified = classify.classify_all(conn)

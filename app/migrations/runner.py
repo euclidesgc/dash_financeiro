@@ -48,8 +48,8 @@ def _statements(script: str) -> list[str]:
 
 
 def apply_migrations(conn: sqlite3.Connection, folder: Path) -> list[str]:
-    # executescript commits whatever is open before running, so the DDL is fed
-    # statement by statement inside an explicit transaction instead.
+    # Reason: executescript commits whatever is open before running, so the
+    # DDL is fed statement by statement inside an explicit transaction instead.
     previous_isolation = conn.isolation_level
     conn.isolation_level = None
     try:

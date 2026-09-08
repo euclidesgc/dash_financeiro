@@ -23,9 +23,10 @@ _UPDATE_SET = (
     "balance_cents = excluded.balance_cents, payment_cents = excluded.payment_cents, "
     "first_due_date = excluded.first_due_date"
 )
-# A true UPDATE on conflict, not INSERT OR REPLACE: the latter deletes and
-# reinserts the row, which moves it to the end of the table and reshuffles
-# every id the ladder assigns by insertion order on the next rebuild.
+# Reason: a true UPDATE on conflict, not INSERT OR REPLACE — the latter
+# deletes and reinserts the row, which moves it to the end of the table and
+# reshuffles every id the ladder assigns by insertion order on the next
+# rebuild.
 _UPSERT = (
     f"INSERT INTO financings ({_COLUMNS}) VALUES ({_VALUES}) "
     f"ON CONFLICT (kind) DO UPDATE SET {_UPDATE_SET}"
@@ -69,9 +70,9 @@ def seed_from_manual(conn: sqlite3.Connection) -> int:
 
 
 def _read(name: str) -> dict[str, Any] | None:
-    # data/ lives outside version control, so the panel has to boot on a
-    # machine that never received the contracts. A missing file is a missing
-    # financing, never a broken load (RF-04).
+    # Reason: data/ lives outside version control, so the panel has to boot
+    # on a machine that never received the contracts. A missing file is a
+    # missing financing, never a broken load (RF-04).
     path = manual_dir() / name
     if not path.is_file():
         return None

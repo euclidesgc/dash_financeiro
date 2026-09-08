@@ -24,9 +24,10 @@ def monthly_series(
 
 
 def _labels(last: date, months: int) -> list[str]:
-    # A GROUP BY over the transactions returns only the months that have a row,
-    # and an invisible hole in a time series lies about the trend (RF-28): the
-    # points are generated here and the aggregate is filled into them.
+    # Reason: a GROUP BY over the transactions returns only the months that
+    # have a row, and an invisible hole in a time series lies about the trend
+    # (RF-28) — the points are generated here and the aggregate is filled
+    # into them.
     total = last.year * 12 + last.month - 1
     return [
         f"{(total - step) // 12:04d}-{(total - step) % 12 + 1:02d}"
