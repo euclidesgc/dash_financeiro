@@ -338,7 +338,7 @@
     {
       "match_kind": "category",
       "match_value": "Insurance",
-      "group": "Saúde",
+      "group": "Transporte",
       "nature": "fixa",
       "essentiality": "importante"
     },
@@ -352,7 +352,7 @@
     {
       "match_kind": "category",
       "match_value": "Internet",
-      "group": "Assinaturas",
+      "group": "Moradia",
       "nature": "fixa",
       "essentiality": "essencial"
     },
