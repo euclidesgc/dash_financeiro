@@ -1245,7 +1245,7 @@
     "028-consultor-comparativo-de-divida": {
       "title": "Cheque especial ou emprestimo: a comparacao e codigo deterministico, e o modelo so explica",
       "track": "rapida",
-      "stage": "plan",
+      "stage": "execute",
       "stacks": [
         "python"
       ],
@@ -1258,12 +1258,24 @@
           "por": "autonomo"
         },
         "plan": {
-          "at": null,
-          "sha": null
+          "at": "2026-09-08T08:15:55Z",
+          "sha": "9a0e4f385257d9c159efa193f317a210e7026470",
+          "file": "product/items/028-consultor-comparativo-de-divida/03-plan.md",
+          "por": "autonomo"
         }
       },
-      "current_phase": null,
-      "phases": {},
+      "current_phase": 1,
+      "phases": {
+        "1": {
+          "status": "em_execucao",
+          "reproved_count": 0,
+          "verdict": null,
+          "verdict_file": null,
+          "validated_sha": null,
+          "pr": null,
+          "blocked_on": []
+        }
+      },
       "divergences": {},
       "criteria_exception": null
     },
@@ -1292,13 +1304,18 @@
       "current_phase": 1,
       "phases": {
         "1": {
-          "status": "em_execucao",
+          "status": "aprovada",
           "reproved_count": 0,
-          "verdict": null,
-          "verdict_file": null,
-          "validated_sha": null,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/029-o-guarda-reconhece-uma-forma-so-de-perguntar-as-horas/05-veredictos/fase-1.md",
+          "validated_sha": "3eaa2d0326bb71602171ac565e8d07d7c2b15b26",
           "pr": null,
-          "blocked_on": []
+          "blocked_on": [],
+          "verdict_at": "2026-09-08T08:10:42Z",
+          "validated_trees": {
+            ".": "5fc6472de3747a7eda7896401ae33d74687eb5f8"
+          },
+          "criteria_sha": "29efcbec19f8f11e0125082aabe72ab5bbcee188bb28b81326d1c3cb3cba6db9"
         }
       },
       "divergences": {},
