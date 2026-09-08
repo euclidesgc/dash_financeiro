@@ -27,11 +27,12 @@ def objective_screen(request: Request) -> Response:
     conn = connect()
     try:
         runs = every_scenario(conn, today=today)
-        # Every accepted reading writes a snapshot, because "in March you
-        # projected 30 months, today you project 24" needs a March to compare
-        # against, and nobody remembers to press a button for that. A refused
-        # date does not: a typo in the URL would inject a point that cannot be
-        # told apart from a real reading afterwards (RF-02).
+        # Reason: every accepted reading writes a snapshot, because "in
+        # March you projected 30 months, today you project 24" needs a March
+        # to compare against, and nobody remembers to press a button for
+        # that. A refused date does not: a typo in the URL would inject a
+        # point that cannot be told apart from a real reading afterwards
+        # (RF-02).
         if reference.notice is None:
             record(conn, runs, today=today)
         context = _context(conn, runs, today)
@@ -53,9 +54,9 @@ def _context(conn: sqlite3.Connection, runs: list[dict[str, Any]], today: date) 
         "levers": gained,
         "history": history(conn),
         "reachable": any(run["months_to_objective"] is not None for run in runs),
-        # A lever the owner has not pulled yet renders as R$ 0,00 under a label
-        # promising an act, and the screen used to leave the reader to guess why.
-        # It names the empty list instead (RF-01).
+        # Reason: a lever the owner has not pulled yet renders as R$ 0,00
+        # under a label promising an act, and the screen used to leave the
+        # reader to guess why. It names the empty list instead (RF-01).
         "empty_levers": [
             name
             for name, value in (
@@ -64,13 +65,15 @@ def _context(conn: sqlite3.Connection, runs: list[dict[str, Any]], today: date) 
             )
             if not value
         ],
-        # base == conservador only when both lists are empty: base adds both
-        # levers, conservador adds neither. Saying it over one empty list would
-        # contradict the two different numbers in the table beside it.
+        # Reason: base == conservador only when both lists are empty — base
+        # adds both levers, conservador adds neither. Saying it over one
+        # empty list would contradict the two different numbers in the
+        # table beside it.
         "base_equals_conservative": not gained["dismissed"] and not gained["cut"],
-        # The ladder of the objective only sees debts with a rate. Six of them
-        # have none, and they are not small: leaving them out in silence would
-        # make the milestone true over a fraction of the real debt (RF-18).
+        # Reason: the ladder of the objective only sees debts with a rate.
+        # Six of them have none, and they are not small — leaving them out
+        # in silence would make the milestone true over a fraction of the
+        # real debt (RF-18).
         "unrated": without_rate(conn),
         "unrated_cents": sum(row["balance_cents"] for row in without_rate(conn)),
     }
