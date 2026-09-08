@@ -1182,7 +1182,7 @@
     },
     "019-reclassificacao-a-partir-do-lancamento": {
       "title": "A correcao de classificacao comeca no lancamento, e diz quanto ela alcanca antes de gravar",
-      "track": "rapida",
+      "track": "completa",
       "stage": "plan",
       "stacks": [
         "python"
@@ -1202,21 +1202,32 @@
       },
       "current_phase": null,
       "phases": {},
-      "divergences": {},
+      "divergences": {
+        "D-007": {
+          "status": "APROVADA",
+          "kind": "normal",
+          "phase": 1,
+          "detected_at": "2026-09-08T04:34:43Z",
+          "aprovada_at": "2026-09-08T04:34:43Z",
+          "ratificada_por": "autonomo"
+        }
+      },
       "criteria_exception": null
     },
     "028-consultor-comparativo-de-divida": {
       "title": "Cheque especial ou emprestimo: a comparacao e codigo deterministico, e o modelo so explica",
       "track": "rapida",
-      "stage": "discovery",
+      "stage": "plan",
       "stacks": [
         "python"
       ],
       "created_at": "2026-09-08T03:52:11Z",
       "approvals": {
         "brief": {
-          "at": null,
-          "sha": null
+          "at": "2026-09-08T04:35:50Z",
+          "sha": "8428d4bd5f0bcd2b8e67d84784b49ba3072b8e1e",
+          "file": "product/items/028-consultor-comparativo-de-divida/01-brief.md",
+          "por": "autonomo"
         },
         "plan": {
           "at": null,
