@@ -8,4 +8,5 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 .venv/bin/ruff check app financas ingestao tests
-exec .venv/bin/ruff format --check app financas ingestao tests
+.venv/bin/ruff format --check app financas ingestao tests
+exec .venv/bin/mypy --strict app financas ingestao

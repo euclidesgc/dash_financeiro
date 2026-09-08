@@ -59,7 +59,7 @@ jobs:
   qualidade:
     needs: guarda
     if: github.event.pull_request.draft != true && (needs.guarda.outputs.pronto == 'true')
-    name: Lint, formatação e testes
+    name: Lint, formatação, tipos e testes
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -86,6 +86,9 @@ jobs:
 
       - name: Formatação
         run: uv run ruff format --check app financas ingestao tests
+
+      - name: Tipos
+        run: uv run mypy --strict app financas ingestao
 
       # `uv run pytest` sai com código 5 quando NENHUM teste foi coletado, e 5
       # não é falha de teste — é ausência de teste. Um passo que só lê o código
