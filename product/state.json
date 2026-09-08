@@ -820,7 +820,7 @@
     "020-varredura-de-rota-que-nao-desce-em-subpasta": {
       "title": "O guarda de rota varre subpasta: rglob no lugar de glob, com teste que morde",
       "track": "rapida",
-      "stage": "execute",
+      "stage": "done",
       "stacks": [
         "python"
       ],
@@ -842,13 +842,18 @@
       "current_phase": 1,
       "phases": {
         "1": {
-          "status": "em_execucao",
+          "status": "aprovada",
           "reproved_count": 0,
-          "verdict": null,
-          "verdict_file": null,
-          "validated_sha": null,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/020-varredura-de-rota-que-nao-desce-em-subpasta/05-veredictos/fase-1.md",
+          "validated_sha": "8252b04ab2548faa57a433cd4259ca8eea4a8c88",
           "pr": null,
-          "blocked_on": []
+          "blocked_on": [],
+          "verdict_at": "2026-09-08T00:40:41Z",
+          "validated_trees": {
+            ".": "1ad59e073e5f0196b79c7de1621ece599023f17d"
+          },
+          "criteria_sha": "c7bebe63a82e68d4f1adf9d2839cd010a39fe877085817f7b728dfe649e85426"
         }
       },
       "divergences": {},

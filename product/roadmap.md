@@ -62,7 +62,7 @@ PR e commit já escritos.
   ao lado da própria tabela. Abaixo de `60rem` a barra deita no topo e rola dentro
   de si.
 
-- [ ] `024-cartoes-como-entidade` — O cartão de crédito é uma entidade com os
+- [-] `024-cartoes-como-entidade` — O cartão de crédito é uma entidade com os
   dados que só o dono sabe: **limite, taxa mensal, dia de fechamento e dia de
   vencimento**, editáveis na tela. Hoje não existe cartão nenhum no modelo —
   `accounts` (`app/migrations/sql/001_schema.sql:17-25`) guarda `id`, `name`,
@@ -77,7 +77,7 @@ PR e commit já escritos.
   e inventá-los seria pior que deixar em branco.
   **Depende de:** nada aberto. **Destrava:** `026` e `028`.
 
-- [ ] `025-financiamentos-na-tela` — O financiamento do imóvel e o do veículo se
+- [-] `025-financiamentos-na-tela` — O financiamento do imóvel e o do veículo se
   editam na tela, como todo o resto do que só o humano sabe. Hoje os dois moram
   em arquivo JSON escrito à mão e fora do versionamento —
   `data/manual/financiamento_caixa.json` e `cdc_safra_veiculo.json`, lidos por
@@ -103,7 +103,7 @@ PR e commit já escritos.
   **Depende de:** `024-cartoes-como-entidade` — sem dia de fechamento e limite
   não há fatura a projetar, só uma soma de parcelas.
 
-- [ ] `027-configuracao-do-gemini` — A integração com o Gemini se configura na
+- [-] `027-configuracao-do-gemini` — A integração com o Gemini se configura na
   tela: **chave de API e escolha do modelo**. Hoje a chave só vem do ambiente
   (`GEMINI_API_KEY`, `app/config.py:29,68`) e o modelo é constante no código
   (`MODEL = "gemini-2.5-flash"`, `app/advisor/gemini.py:6`) — trocar de modelo
@@ -135,7 +135,7 @@ PR e commit já escritos.
   **Depende de:** `024-cartoes-como-entidade` e `025-financiamentos-na-tela` — sem
   as taxas reais a comparação responde com confiança um número que não mediu.
 
-- [ ] `023-taxonomia-hierarquica-do-dono` — A classificação primária é uma
+- [-] `023-taxonomia-hierarquica-do-dono` — A classificação primária é uma
   **árvore de duas alturas que pertence ao dono**: grupo, e dentro dele
   categoria. Moradia contém financiamento ou aluguel, condomínio, energia, água,
   gás, internet e TV, reforma e manutenção, IPTU; Transporte contém financiamento
@@ -185,7 +185,7 @@ PR e commit já escritos.
   entra na mesma transação ou reintroduz o sucesso mentiroso que aquele item
   fechou.
 
-- [ ] `022-mes-corrente-como-abertura-padrao` — Toda tela abre no presente. O
+- [-] `022-mes-corrente-como-abertura-padrao` — Toda tela abre no presente. O
   período padrão de `/gastos` passa a ser **do dia 01 do mês corrente até a data
   de referência**, e `/gastos` passa a aceitar `?data=` como as outras cinco
   telas, em vez de ser a única que chama o leitor e descarta o que foi pedido.
@@ -287,7 +287,7 @@ ao topo da fila é a régua local certa e o agregado errado.
   sozinha, e ele tem teste do próprio dente. Fechou com **526 testes**, lint e
   portões limpos.
 
-- [ ] `020-varredura-de-rota-que-nao-desce-em-subpasta` — O guarda que impede uma
+- [-] `020-varredura-de-rota-que-nao-desce-em-subpasta` — O guarda que impede uma
   rota de resolver a data de tela por conta própria varre
   `app/routers/` com `glob("*.py")`, que não desce em subpasta, enquanto o
   critério de integração do `016` usa `grep -R`. Hoje os dois coincidem, porque
