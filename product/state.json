@@ -1199,7 +1199,7 @@
     "019-reclassificacao-a-partir-do-lancamento": {
       "title": "A correcao de classificacao comeca no lancamento, e diz quanto ela alcanca antes de gravar",
       "track": "completa",
-      "stage": "execute",
+      "stage": "done",
       "stacks": [
         "python"
       ],
