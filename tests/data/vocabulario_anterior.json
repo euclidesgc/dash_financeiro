@@ -6,58 +6,48 @@
       "is_fallback": false
     },
     {
-      "name": "Transporte",
+      "name": "Educação",
       "position": 2,
       "is_fallback": false
     },
     {
-      "name": "Alimentação",
+      "name": "Transporte",
       "position": 3,
       "is_fallback": false
     },
     {
-      "name": "Saúde",
+      "name": "Alimentação",
       "position": 4,
       "is_fallback": false
     },
     {
-      "name": "Educação",
+      "name": "Comer fora e lazer",
       "position": 5,
       "is_fallback": false
     },
     {
-      "name": "Assinaturas",
+      "name": "Saúde",
       "position": 6,
       "is_fallback": false
     },
     {
-      "name": "Pessoal",
+      "name": "Serviços e assinaturas",
       "position": 7,
       "is_fallback": false
     },
     {
-      "name": "Financeiro",
+      "name": "Dívidas e juros",
       "position": 8,
       "is_fallback": false
     },
     {
-      "name": "Dependentes",
+      "name": "Transferências",
       "position": 9,
       "is_fallback": false
     },
     {
-      "name": "Renda",
-      "position": 10,
-      "is_fallback": false
-    },
-    {
-      "name": "Não é gasto",
-      "position": 11,
-      "is_fallback": false
-    },
-    {
       "name": "Outros",
-      "position": 12,
+      "position": 10,
       "is_fallback": true
     }
   ],
@@ -100,49 +90,49 @@
     {
       "match_kind": "description",
       "match_value": "^pix adeildo pereira dos santos neto",
-      "group": "Pessoal",
+      "group": "Transferências",
       "nature": "variável",
       "essentiality": "importante"
     },
     {
       "match_kind": "description",
       "match_value": "^pix cristina maria gomes moitinho",
-      "group": "Pessoal",
+      "group": "Transferências",
       "nature": "variável",
       "essentiality": "importante"
     },
     {
       "match_kind": "description",
       "match_value": "^nevercode",
-      "group": "Assinaturas",
+      "group": "Serviços e assinaturas",
       "nature": "variável",
       "essentiality": "importante"
     },
     {
       "match_kind": "description",
       "match_value": "^replit",
-      "group": "Assinaturas",
+      "group": "Serviços e assinaturas",
       "nature": "variável",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Accomodation",
-      "group": "Pessoal",
+      "group": "Comer fora e lazer",
       "nature": "eventual",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Account fees",
-      "group": "Financeiro",
+      "group": "Serviços e assinaturas",
       "nature": "fixa",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Airport and airlines",
-      "group": "Pessoal",
+      "group": "Comer fora e lazer",
       "nature": "eventual",
       "essentiality": "importante"
     },
@@ -156,7 +146,7 @@
     {
       "match_kind": "category",
       "match_value": "Bank fees",
-      "group": "Financeiro",
+      "group": "Dívidas e juros",
       "nature": "fixa",
       "essentiality": "importante"
     },
@@ -177,35 +167,35 @@
     {
       "match_kind": "category",
       "match_value": "Cashback",
-      "group": "Renda",
+      "group": "Outros",
       "nature": "eventual",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Cinema, theater and concerts",
-      "group": "Pessoal",
+      "group": "Comer fora e lazer",
       "nature": "eventual",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Clothing",
-      "group": "Pessoal",
+      "group": "Outros",
       "nature": "variável",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Credit card fees",
-      "group": "Financeiro",
+      "group": "Dívidas e juros",
       "nature": "variável",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Credit card payment",
-      "group": "Financeiro",
+      "group": "Transferências",
       "nature": "variável",
       "essentiality": "importante"
     },
@@ -219,21 +209,21 @@
     {
       "match_kind": "category",
       "match_value": "Digital services",
-      "group": "Assinaturas",
+      "group": "Serviços e assinaturas",
       "nature": "fixa",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Donations",
-      "group": "Pessoal",
+      "group": "Outros",
       "nature": "eventual",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Eating out",
-      "group": "Alimentação",
+      "group": "Comer fora e lazer",
       "nature": "variável",
       "essentiality": "importante"
     },
@@ -261,21 +251,21 @@
     {
       "match_kind": "category",
       "match_value": "Electronics",
-      "group": "Pessoal",
+      "group": "Outros",
       "nature": "eventual",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Food delivery",
-      "group": "Alimentação",
+      "group": "Comer fora e lazer",
       "nature": "variável",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Gambling",
-      "group": "Pessoal",
+      "group": "Comer fora e lazer",
       "nature": "eventual",
       "essentiality": "importante"
     },
@@ -324,84 +314,84 @@
     {
       "match_kind": "category",
       "match_value": "Income",
-      "group": "Renda",
+      "group": "Outros",
       "nature": "eventual",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Income taxes",
-      "group": "Financeiro",
+      "group": "Dívidas e juros",
       "nature": "eventual",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Insurance",
-      "group": "Transporte",
+      "group": "Saúde",
       "nature": "fixa",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Interests charged",
-      "group": "Financeiro",
+      "group": "Dívidas e juros",
       "nature": "variável",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Internet",
-      "group": "Moradia",
+      "group": "Serviços e assinaturas",
       "nature": "fixa",
       "essentiality": "essencial"
     },
     {
       "match_kind": "category",
       "match_value": "Investments",
-      "group": "Financeiro",
+      "group": "Outros",
       "nature": "eventual",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Kids and toys",
-      "group": "Dependentes",
+      "group": "Outros",
       "nature": "variável",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Late payment and overdraft costs",
-      "group": "Financeiro",
+      "group": "Dívidas e juros",
       "nature": "eventual",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Leisure",
-      "group": "Pessoal",
+      "group": "Comer fora e lazer",
       "nature": "variável",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Loans and financing",
-      "group": "Financeiro",
+      "group": "Dívidas e juros",
       "nature": "fixa",
       "essentiality": "essencial"
     },
     {
       "match_kind": "category",
       "match_value": "Non-recurring income",
-      "group": "Renda",
+      "group": "Outros",
       "nature": "eventual",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Office supplies",
-      "group": "Pessoal",
+      "group": "Outros",
       "nature": "variável",
       "essentiality": "importante"
     },
@@ -415,7 +405,7 @@
     {
       "match_kind": "category",
       "match_value": "Online shopping",
-      "group": "Pessoal",
+      "group": "Outros",
       "nature": "variável",
       "essentiality": "importante"
     },
@@ -450,7 +440,7 @@
     {
       "match_kind": "category",
       "match_value": "Proceeds interests and dividends",
-      "group": "Renda",
+      "group": "Outros",
       "nature": "eventual",
       "essentiality": "importante"
     },
@@ -471,21 +461,21 @@
     {
       "match_kind": "category",
       "match_value": "Salary",
-      "group": "Renda",
+      "group": "Outros",
       "nature": "eventual",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Same person transfer",
-      "group": "Não é gasto",
+      "group": "Transferências",
       "nature": "variável",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Same person transfer - CASH",
-      "group": "Não é gasto",
+      "group": "Transferências",
       "nature": "variável",
       "essentiality": "importante"
     },
@@ -499,28 +489,28 @@
     {
       "match_kind": "category",
       "match_value": "Services",
-      "group": "Assinaturas",
+      "group": "Serviços e assinaturas",
       "nature": "variável",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Shopping",
-      "group": "Pessoal",
+      "group": "Outros",
       "nature": "variável",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Sports goods",
-      "group": "Pessoal",
+      "group": "Comer fora e lazer",
       "nature": "eventual",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Tax on financial operations",
-      "group": "Financeiro",
+      "group": "Dívidas e juros",
       "nature": "variável",
       "essentiality": "importante"
     },
@@ -534,28 +524,28 @@
     {
       "match_kind": "category",
       "match_value": "Telecom",
-      "group": "Assinaturas",
+      "group": "Serviços e assinaturas",
       "nature": "fixa",
       "essentiality": "essencial"
     },
     {
       "match_kind": "category",
       "match_value": "Telecommunications",
-      "group": "Assinaturas",
+      "group": "Serviços e assinaturas",
       "nature": "fixa",
       "essentiality": "essencial"
     },
     {
       "match_kind": "category",
       "match_value": "Third party transfer - PIX",
-      "group": "Pessoal",
+      "group": "Transferências",
       "nature": "variável",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Tickets",
-      "group": "Pessoal",
+      "group": "Comer fora e lazer",
       "nature": "eventual",
       "essentiality": "importante"
     },
@@ -576,49 +566,49 @@
     {
       "match_kind": "category",
       "match_value": "Transfer - Bank Slip",
-      "group": "Financeiro",
+      "group": "Transferências",
       "nature": "variável",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Transfer - Cash",
-      "group": "Não é gasto",
+      "group": "Transferências",
       "nature": "variável",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Transfer - Internal",
-      "group": "Não é gasto",
+      "group": "Transferências",
       "nature": "variável",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Transfer - PIX",
-      "group": "Financeiro",
+      "group": "Transferências",
       "nature": "variável",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Transfer - TED",
-      "group": "Financeiro",
+      "group": "Transferências",
       "nature": "variável",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Transfers",
-      "group": "Financeiro",
+      "group": "Transferências",
       "nature": "variável",
       "essentiality": "importante"
     },
     {
       "match_kind": "category",
       "match_value": "Travel",
-      "group": "Pessoal",
+      "group": "Comer fora e lazer",
       "nature": "eventual",
       "essentiality": "importante"
     },
