@@ -1156,9 +1156,23 @@
           "por": "autonomo"
         }
       },
-      "current_phase": 1,
+      "current_phase": 2,
       "phases": {
         "1": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/026-evolucao-da-fatura-mes-a-mes/05-veredictos/fase-1.md",
+          "validated_sha": "5b0f4990dcdb39e6b1ff9e9d1e29928b7cbe7e55",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-08T08:16:38Z",
+          "validated_trees": {
+            ".": "39282af521d32622a0136ab37f835b191a5f430e"
+          },
+          "criteria_sha": "f3488b4dc960149893d94d0b537304a48466e130bd068ba86b2f8f4315954512"
+        },
+        "2": {
           "status": "em_execucao",
           "reproved_count": 0,
           "verdict": null,
@@ -1245,7 +1259,7 @@
     "028-consultor-comparativo-de-divida": {
       "title": "Cheque especial ou emprestimo: a comparacao e codigo deterministico, e o modelo so explica",
       "track": "rapida",
-      "stage": "plan",
+      "stage": "execute",
       "stacks": [
         "python"
       ],
@@ -1258,19 +1272,31 @@
           "por": "autonomo"
         },
         "plan": {
-          "at": null,
-          "sha": null
+          "at": "2026-09-08T08:15:55Z",
+          "sha": "9a0e4f385257d9c159efa193f317a210e7026470",
+          "file": "product/items/028-consultor-comparativo-de-divida/03-plan.md",
+          "por": "autonomo"
         }
       },
-      "current_phase": null,
-      "phases": {},
+      "current_phase": 1,
+      "phases": {
+        "1": {
+          "status": "em_execucao",
+          "reproved_count": 0,
+          "verdict": null,
+          "verdict_file": null,
+          "validated_sha": null,
+          "pr": null,
+          "blocked_on": []
+        }
+      },
       "divergences": {},
       "criteria_exception": null
     },
     "029-o-guarda-reconhece-uma-forma-so-de-perguntar-as-horas": {
       "title": "O guarda de rota reconhece a chamada ao relogio pela arvore sintatica, nao por texto",
       "track": "rapida",
-      "stage": "execute",
+      "stage": "done",
       "stacks": [
         "python"
       ],
@@ -1292,13 +1318,18 @@
       "current_phase": 1,
       "phases": {
         "1": {
-          "status": "em_execucao",
+          "status": "aprovada",
           "reproved_count": 0,
-          "verdict": null,
-          "verdict_file": null,
-          "validated_sha": null,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/029-o-guarda-reconhece-uma-forma-so-de-perguntar-as-horas/05-veredictos/fase-1.md",
+          "validated_sha": "3eaa2d0326bb71602171ac565e8d07d7c2b15b26",
           "pr": null,
-          "blocked_on": []
+          "blocked_on": [],
+          "verdict_at": "2026-09-08T08:10:42Z",
+          "validated_trees": {
+            ".": "5fc6472de3747a7eda7896401ae33d74687eb5f8"
+          },
+          "criteria_sha": "29efcbec19f8f11e0125082aabe72ab5bbcee188bb28b81326d1c3cb3cba6db9"
         }
       },
       "divergences": {},
