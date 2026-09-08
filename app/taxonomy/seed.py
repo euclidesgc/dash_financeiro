@@ -16,6 +16,10 @@ def message(key: str, value: object, seed: dict[str, Any] | None = None) -> str:
     return (seed or load_seed())["messages"][key].format(value=value)
 
 
+def category_labels() -> dict[str, str]:
+    return {entry["name"]: entry["label"] for entry in load_seed()["categories"]}
+
+
 def seed_taxonomy(conn: sqlite3.Connection, seed: dict[str, Any] | None = None) -> None:
     # Reconciles instead of only inserting: the CLI is the one path that
     # carries a renamed vocabulary to a database the owner already seeded, and
@@ -66,12 +70,24 @@ def seed_taxonomy(conn: sqlite3.Connection, seed: dict[str, Any] | None = None) 
             for entry in data["rules"]
         ],
     )
+    # Written before the retired groups are deleted below: a category the
+    # owner's machine already carries under an old vocabulary can still be
+    # pointing at one of them, and app/db.py:27 blocks the delete while it does.
+    conn.executemany(
+        "INSERT INTO categories (name, group_id) VALUES (?, ?) "
+        "ON CONFLICT (name) DO UPDATE SET group_id = excluded.group_id",
+        [(entry["name"], groups[entry["group"]]) for entry in data["categories"]],
+    )
     declared_names = [entry["name"] for entry in data["groups"]]
     declared_ids = [groups[name] for name in declared_names]
     fallback_id = next(groups[entry["name"]] for entry in data["groups"] if entry["is_fallback"])
     placeholders = ", ".join("?" for _ in declared_ids)
     conn.execute(
         f"UPDATE category_rules SET group_id = ? WHERE group_id NOT IN ({placeholders})",
+        (fallback_id, *declared_ids),
+    )
+    conn.execute(
+        f"UPDATE categories SET group_id = ? WHERE group_id NOT IN ({placeholders})",
         (fallback_id, *declared_ids),
     )
     conn.execute(
@@ -107,13 +123,14 @@ def main() -> int:
         counts = conn.execute(
             "SELECT (SELECT count(*) FROM category_groups), (SELECT count(*) FROM natures), "
             "(SELECT count(*) FROM essentialities), (SELECT count(*) FROM crossings), "
-            "(SELECT count(*) FROM category_rules)"
+            "(SELECT count(*) FROM category_rules), (SELECT count(*) FROM categories)"
         ).fetchone()
     finally:
         conn.close()
     print(
         f"taxonomy seeded: groups={counts[0]} natures={counts[1]} "
-        f"essentialities={counts[2]} crossings={counts[3]} rules={counts[4]}",
+        f"essentialities={counts[2]} crossings={counts[3]} rules={counts[4]} "
+        f"categories={counts[5]}",
         flush=True,
     )
     return 0

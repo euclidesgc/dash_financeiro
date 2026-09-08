@@ -12,7 +12,7 @@ from app.queries.period import default_period
 from app.queries.series import MONTHS
 from app.routers.reference import screen_date
 from app.taxonomy.classify import classify_all
-from app.taxonomy.seed import load_seed, seed_taxonomy
+from app.taxonomy.seed import category_labels, load_seed, seed_taxonomy
 from tests.conftest import ACCOUNT, load, transaction
 
 LOGIN = "teste"
@@ -158,7 +158,11 @@ def test_the_semantic_colour_marks_only_the_totals_that_ask_for_a_decision(clien
 
 def test_a_category_already_in_portuguese_shows_its_name_once(client, window):
     start, _ = window
-    key = next(name for name, label in load_seed()["category_labels"].items() if name == label)
+    key = next(
+        entrada["name"]
+        for entrada in load_seed()["categories"]
+        if entrada["name"] == entrada["label"]
+    )
     conn = connect()
     load(conn, [transaction("t-self", start, LOOSE_AMOUNT / 100, categoria=key)])
     classify_all(conn)
@@ -170,6 +174,16 @@ def test_a_category_already_in_portuguese_shows_its_name_once(client, window):
 
     assert row.count(f">{key}<") == 1
     assert "cell-key" not in row
+
+
+def test_a_category_whose_label_differs_from_its_name_shows_both(client, vocabulary):
+    key = vocabulary["floor_category"]
+    label = category_labels()[key]
+    table = client.get(TABLE, params={"eixo": CATEGORY})
+    row = next(part for part in table.text.split("<tr") if f">{label}<" in part)
+
+    assert f'<span class="cell-label">{label}</span>' in row
+    assert f'<span class="cell-key">{key}</span>' in row
 
 
 def test_an_open_row_sums_back_to_the_row_it_came_from(client, vocabulary):

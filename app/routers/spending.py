@@ -21,7 +21,7 @@ from app.queries.series import monthly_series
 from app.queries.spending import SPENDING, total_spending_cents
 from app.routers.reference import DATE_FIELD, Reference, screen_date
 from app.taxonomy.classify import residue
-from app.taxonomy.seed import load_seed
+from app.taxonomy.seed import category_labels
 
 from .render import TEMPLATES
 
@@ -37,7 +37,7 @@ MONTH_LENGTH = 7
 
 # The category key stays the raw name the source sends, because that is what
 # matches it again on the next sync; the reading label is data next to it.
-LABELS: dict[str, str] = load_seed().get("category_labels", {})
+LABELS: dict[str, str] = category_labels()
 
 _CROSSINGS = "SELECT slug, label, nature, essentiality FROM crossings ORDER BY position"
 _FALLBACK_TERM = "SELECT value FROM essentialities WHERE is_fallback = 1"

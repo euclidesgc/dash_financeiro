@@ -44,6 +44,7 @@ EXPECTED_MIGRATIONS = [
     "009_advisor.sql",
     "010_settings.sql",
     "011_payee_names.sql",
+    "012_taxonomy_tree.sql",
     "013_cards.sql",
     "014_financings.sql",
     "015_advisor_config.sql",
