@@ -2,7 +2,7 @@ import sqlite3
 from typing import Any
 
 from app.accounts import CREDIT
-from app.cards.catalog import ACTION, BY_NAME, FIELDS
+from app.cards.catalog import ACTION, BY_NAME, CLEAR_ACTION, FIELDS
 from app.cards.typed import parse
 from app.settings.typed import InvalidValueError
 
@@ -20,7 +20,7 @@ def reconcile(conn: sqlite3.Connection) -> int:
 
 
 def screen(conn: sqlite3.Connection) -> dict[str, Any]:
-    return {"action": ACTION, "cards": read(conn)}
+    return {"action": ACTION, "clear_action": CLEAR_ACTION, "cards": read(conn)}
 
 
 def read(conn: sqlite3.Connection) -> list[dict[str, Any]]:
@@ -58,14 +58,34 @@ def _refuse_unless_credit_account(conn: sqlite3.Connection, account_id: str) -> 
         raise InvalidValueError(f"Cartão não encontrado: “{account_id}”.")
 
 
-def write(conn: sqlite3.Connection, account_id: str, field: str, typed: str) -> int | None:
-    item = entry(field)
-    value = parse(item["unit"], typed, item["label"])
-    _refuse_unless_credit_account(conn, account_id)
+def _upsert(conn: sqlite3.Connection, account_id: str, column: str, value: int | None) -> None:
     conn.execute(
-        f"INSERT INTO cards (account_id, {item['column']}) VALUES (?, ?) "
-        f"ON CONFLICT(account_id) DO UPDATE SET {item['column']} = excluded.{item['column']}",
+        f"INSERT INTO cards (account_id, {column}) VALUES (?, ?) "
+        f"ON CONFLICT(account_id) DO UPDATE SET {column} = excluded.{column}",
         (account_id, value),
     )
     conn.commit()
-    return value
+
+
+def write(
+    conn: sqlite3.Connection, account_id: str, field: str, typed: str
+) -> tuple[int | None, bool]:
+    item = entry(field)
+    _refuse_unless_credit_account(conn, account_id)
+    # A blank field means "leave the stored value alone" (RF-01): the erase
+    # gesture is the only path that ever writes NULL from here on, so this
+    # function never turns silence into a loss.
+    if not (typed or "").strip():
+        return None, False
+    value = parse(item["unit"], typed, item["label"])
+    if value is None:
+        raise InvalidValueError(f"{item['label']} inválido: “{typed}”.")
+    _upsert(conn, account_id, item["column"], value)
+    return value, True
+
+
+def erase(conn: sqlite3.Connection, account_id: str, field: str) -> dict[str, Any]:
+    item = entry(field)
+    _refuse_unless_credit_account(conn, account_id)
+    _upsert(conn, account_id, item["column"], None)
+    return item

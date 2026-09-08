@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from app.auth.seed import seed_user
 from app.cards import store
 from app.cards import typed as cards_typed
-from app.cards.catalog import BY_NAME, CLOSING, DUE, FIELDS, LIMIT, RATE
+from app.cards.catalog import ACTION, BY_NAME, CLEAR_ACTION, CLOSING, DUE, FIELDS, LIMIT, RATE
 from app.db import connect
 from app.debts.ladder import ladder, rebuild, set_rate, without_rate
 from app.financings import store as financings_store
@@ -164,7 +164,7 @@ def test_every_credit_account_gets_a_card_and_keeps_it_through_a_reload(
     assert tuple(row) == (1200000, 1250, 3, 10)
 
 
-def test_the_ladder_reads_the_cards_rate_and_clears_it_back_to_without_rate(
+def test_the_ladder_reads_the_cards_rate_and_only_erase_clears_it_back_to_without_rate(
     taxonomy_conn, tmp_path, monkeypatch
 ):
     monkeypatch.setenv(financings_store.MANUAL_DIR, str(tmp_path / "vazio"))
@@ -186,7 +186,17 @@ def test_the_ladder_reads_the_cards_rate_and_clears_it_back_to_without_rate(
     assert [step["monthly_rate_bp"] for step in steps] == [1250, 352]
     assert without_rate(taxonomy_conn) == []
 
+    # set_rate reuses the cards writer, and a blank rate through it must obey
+    # the same rule as every other card field: RF-01, not a hidden clear.
+    set_rate(taxonomy_conn, checking_id, "3,52")
     store.write(taxonomy_conn, "acc-cartao-1", RATE, "")
+    steps = ladder(taxonomy_conn)
+
+    assert [step["name"] for step in steps] == ["Cartão Azul", "Conta corrente"]
+    assert [step["monthly_rate_bp"] for step in steps] == [1250, 352]
+    assert without_rate(taxonomy_conn) == []
+
+    store.erase(taxonomy_conn, "acc-cartao-1", RATE)
     steps = ladder(taxonomy_conn)
     missing = without_rate(taxonomy_conn)
 
@@ -455,3 +465,174 @@ def test_the_rate_written_through_dividas_lands_in_cards_and_the_simulation_sees
     )
     assert simulated.status_code == 200
     assert "Informe a taxa primeiro." not in simulated.text
+
+
+def test_write_returns_a_value_and_a_changed_flag_for_a_grammatically_valid_input(taxonomy_conn):
+    _accounts(taxonomy_conn, ("acc-cartao-1", "Cartão Azul", "CREDIT", -1674462))
+
+    value, changed = store.write(taxonomy_conn, "acc-cartao-1", LIMIT, "12.000,00")
+
+    assert (value, changed) == (1200000, True)
+
+
+def test_write_with_a_blank_typed_value_reports_unchanged_and_touches_nothing_vazio(
+    taxonomy_conn,
+):
+    _accounts(taxonomy_conn, ("acc-cartao-1", "Cartão Azul", "CREDIT", -1674462))
+    store.write(taxonomy_conn, "acc-cartao-1", LIMIT, "12.000,00")
+
+    value, changed = store.write(taxonomy_conn, "acc-cartao-1", LIMIT, "")
+
+    assert (value, changed) == (None, False)
+    assert (
+        taxonomy_conn.execute(
+            "SELECT limit_cents FROM cards WHERE account_id = 'acc-cartao-1'"
+        ).fetchone()[0]
+        == 1200000
+    )
+
+
+def test_write_with_only_whitespace_is_treated_the_same_as_blank_vazio(taxonomy_conn):
+    _accounts(taxonomy_conn, ("acc-cartao-1", "Cartão Azul", "CREDIT", -1674462))
+    store.write(taxonomy_conn, "acc-cartao-1", DUE, "10")
+
+    value, changed = store.write(taxonomy_conn, "acc-cartao-1", DUE, "   ")
+
+    assert (value, changed) == (None, False)
+    assert (
+        taxonomy_conn.execute(
+            "SELECT due_day FROM cards WHERE account_id = 'acc-cartao-1'"
+        ).fetchone()[0]
+        == 10
+    )
+
+
+def test_a_blank_write_still_refuses_an_unknown_account_before_reporting_unchanged_vazio(
+    taxonomy_conn,
+):
+    with pytest.raises(InvalidValueError) as refusal:
+        store.write(taxonomy_conn, "acc-inexistente", LIMIT, "")
+
+    assert "acc-inexistente" in str(refusal.value)
+
+
+def test_erase_clears_only_the_named_field_and_reports_it_apagar(taxonomy_conn):
+    _accounts(taxonomy_conn, ("acc-cartao-1", "Cartão Azul", "CREDIT", -1674462))
+    store.write(taxonomy_conn, "acc-cartao-1", LIMIT, "12.000,00")
+    store.write(taxonomy_conn, "acc-cartao-1", RATE, "12,5")
+    store.write(taxonomy_conn, "acc-cartao-1", CLOSING, "3")
+    store.write(taxonomy_conn, "acc-cartao-1", DUE, "10")
+
+    item = store.erase(taxonomy_conn, "acc-cartao-1", RATE)
+
+    assert item["name"] == RATE
+    row = taxonomy_conn.execute(
+        "SELECT limit_cents, monthly_rate_bp, closing_day, due_day FROM cards"
+    ).fetchone()
+    assert tuple(row) == (1200000, None, 3, 10)
+
+
+def test_erase_refuses_an_unknown_field_or_account_apagar(taxonomy_conn):
+    _accounts(taxonomy_conn, ("acc-cartao-1", "Cartão Azul", "CREDIT", -1674462))
+
+    with pytest.raises(InvalidValueError):
+        store.erase(taxonomy_conn, "acc-cartao-1", "bandeira")
+    with pytest.raises(InvalidValueError):
+        store.erase(taxonomy_conn, "acc-inexistente", LIMIT)
+
+
+_TYPED = {
+    LIMIT: ("12.000,00", 1200000, "15.000,00", 1500000),
+    RATE: ("12,5", 1250, "9,9", 990),
+    CLOSING: ("3", 3, "20", 20),
+    DUE: ("10", 10, "25", 25),
+}
+
+
+@pytest.mark.parametrize("field", [LIMIT, RATE, CLOSING, DUE])
+def test_a_blank_post_leaves_the_field_unchanged_and_a_new_value_still_overwrites_it_vazio(
+    client, tmp_path, field
+):
+    first_typed, first_value, second_typed, second_value = _TYPED[field]
+    column = BY_NAME[field]["column"]
+
+    saved = client.post(
+        ACTION, data={"cartao": "acc-cartao-1", "campo": field, "valor": first_typed}
+    )
+    assert saved.status_code == 200
+
+    blank = client.post(ACTION, data={"cartao": "acc-cartao-1", "campo": field, "valor": ""})
+    assert blank.status_code == 200
+    conn = connect(str(tmp_path / "dash.sqlite"))
+    try:
+        assert (
+            conn.execute(
+                f"SELECT {column} FROM cards WHERE account_id = 'acc-cartao-1'"
+            ).fetchone()[0]
+            == first_value
+        )
+    finally:
+        conn.close()
+
+    written = client.post(
+        ACTION, data={"cartao": "acc-cartao-1", "campo": field, "valor": second_typed}
+    )
+    assert written.status_code == 200
+    conn = connect(str(tmp_path / "dash.sqlite"))
+    try:
+        assert (
+            conn.execute(
+                f"SELECT {column} FROM cards WHERE account_id = 'acc-cartao-1'"
+            ).fetchone()[0]
+            == second_value
+        )
+    finally:
+        conn.close()
+
+
+def test_the_explicit_gesture_apagar_clears_only_the_field_it_names(client, tmp_path):
+    for field, typed in _TYPED.items():
+        client.post(ACTION, data={"cartao": "acc-cartao-1", "campo": field, "valor": typed[0]})
+
+    erased = client.post(CLEAR_ACTION, data={"cartao": "acc-cartao-1", "campo": CLOSING})
+
+    assert erased.status_code == 200
+    conn = connect(str(tmp_path / "dash.sqlite"))
+    try:
+        row = conn.execute(
+            "SELECT limit_cents, monthly_rate_bp, closing_day, due_day FROM cards "
+            "WHERE account_id = 'acc-cartao-1'"
+        ).fetchone()
+    finally:
+        conn.close()
+    assert tuple(row) == (1200000, 1250, None, 10)
+
+
+def test_the_response_names_the_field_that_changed_instead_of_a_bare_salvo(client, tmp_path):
+    client.post(ACTION, data={"cartao": "acc-cartao-1", "campo": CLOSING, "valor": "3"})
+    client.post(ACTION, data={"cartao": "acc-cartao-1", "campo": DUE, "valor": "10"})
+
+    changed = client.post(ACTION, data={"cartao": "acc-cartao-1", "campo": CLOSING, "valor": "20"})
+
+    assert changed.status_code == 200
+    assert "Dia do fechamento" in changed.text
+    assert BY_NAME[CLOSING]["label"] + " — valor salvo: 20." in changed.text
+    assert ">Salvo.<" not in changed.text
+
+
+def test_the_response_says_nothing_changed_when_the_field_arrives_blank(client, tmp_path):
+    client.post(ACTION, data={"cartao": "acc-cartao-1", "campo": CLOSING, "valor": "3"})
+
+    untouched = client.post(ACTION, data={"cartao": "acc-cartao-1", "campo": CLOSING, "valor": ""})
+
+    assert untouched.status_code == 200
+    assert "Dia do fechamento — em branco, valor mantido." in untouched.text
+
+
+def test_the_response_names_the_field_the_erase_gesture_cleared(client, tmp_path):
+    client.post(ACTION, data={"cartao": "acc-cartao-1", "campo": LIMIT, "valor": "12.000,00"})
+
+    erased = client.post(CLEAR_ACTION, data={"cartao": "acc-cartao-1", "campo": LIMIT})
+
+    assert erased.status_code == 200
+    assert "Limite — valor apagado." in erased.text

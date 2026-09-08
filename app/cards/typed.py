@@ -21,8 +21,9 @@ _READERS = {CENTS: parse_money, BASIS_POINTS: parse_rate, DAY: parse_day}
 
 
 def parse(unit: str, typed: str, field: str) -> int | None:
-    if not (typed or "").strip():
-        return None
+    # Blank is not this function's business: app.cards.store.write intercepts
+    # it before calling parse, because a blank field means "leave it as is"
+    # (RF-01), and that decision belongs to the writer, not to the reader.
     reader = _READERS.get(unit)
     if reader is None:
         raise InvalidValueError(f"Unidade desconhecida: “{unit}”.")

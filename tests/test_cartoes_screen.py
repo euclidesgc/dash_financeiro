@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 
 from app.advisor.gaps import pending
 from app.auth.seed import seed_user
-from app.cards.catalog import CLOSING, DUE, LIMIT, RATE
+from app.cards.catalog import BY_NAME, CLOSING, DUE, LIMIT, RATE
 from app.db import connect
 from app.debts.ladder import ladder, rebuild, set_rate, without_rate
 from app.financings import store as financings_store
@@ -18,6 +18,7 @@ PASSWORD = "senha-teste-9k2"
 
 SCREEN = "/configuracao"
 ACTION = f"{SCREEN}/cartao"
+CLEAR_ACTION = f"{ACTION}/apagar"
 DEBTS_SCREEN = "/dividas"
 DEBTS_RATE = f"{DEBTS_SCREEN}/taxa"
 
@@ -101,9 +102,10 @@ def test_writing_the_four_fields_lands_in_the_table_and_the_next_render(client, 
         for campo, valor in pairs
     ]
 
-    for response in responses:
+    for response, (campo, _) in zip(responses, pairs, strict=True):
         assert response.status_code == 200
-        assert "Salvo." in response.text
+        assert f"{BY_NAME[campo]['label']} — valor salvo:" in response.text
+        assert ">Salvo.<" not in response.text
 
     conn = connect(str(tmp_path / "dash.sqlite"))
     row = conn.execute(
@@ -122,7 +124,7 @@ def test_writing_the_four_fields_lands_in_the_table_and_the_next_render(client, 
     assert "12,50%" in last
 
 
-def test_the_section_declares_that_a_blank_field_clears_the_value(client, tmp_path):
+def test_the_section_declares_that_a_blank_field_does_not_alter_the_value(client, tmp_path):
     conn = connect(str(tmp_path / "dash.sqlite"))
     _accounts(conn, BLUE_CARD)
     rebuild(conn)
@@ -131,10 +133,11 @@ def test_the_section_declares_that_a_blank_field_clears_the_value(client, tmp_pa
     page = client.get(SCREEN).text
     cartoes = _section(page, 'id="cartoes"')
 
-    assert "apaga o valor" in cartoes
+    assert "não altera o valor guardado" in cartoes
+    assert "apaga o valor" not in cartoes
 
 
-def test_clearing_a_written_field_answers_cleared_instead_of_saved(client, tmp_path):
+def test_a_blank_post_keeps_the_value_and_only_the_erase_gesture_clears_it(client, tmp_path):
     conn = connect(str(tmp_path / "dash.sqlite"))
     _accounts(conn, BLUE_CARD)
     rebuild(conn)
@@ -144,12 +147,22 @@ def test_clearing_a_written_field_answers_cleared_instead_of_saved(client, tmp_p
         ACTION, data={"cartao": "acc-cartao-1", "campo": LIMIT, "valor": "12.000,00"}
     )
     assert written.status_code == 200
-    assert "Salvo." in written.text
+    assert "Limite — valor salvo:" in written.text
 
-    cleared = client.post(ACTION, data={"cartao": "acc-cartao-1", "campo": LIMIT, "valor": ""})
+    blank = client.post(ACTION, data={"cartao": "acc-cartao-1", "campo": LIMIT, "valor": ""})
+    assert blank.status_code == 200
+    assert "Limite — em branco, valor mantido." in blank.text
+
+    conn = connect(str(tmp_path / "dash.sqlite"))
+    kept = conn.execute(
+        "SELECT limit_cents FROM cards WHERE account_id = 'acc-cartao-1'"
+    ).fetchone()[0]
+    conn.close()
+    assert kept == 1200000
+
+    cleared = client.post(CLEAR_ACTION, data={"cartao": "acc-cartao-1", "campo": LIMIT})
     assert cleared.status_code == 200
-    assert "Apagado." in cleared.text
-    assert "Salvo." not in cleared.text
+    assert "Limite — valor apagado." in cleared.text
 
     conn = connect(str(tmp_path / "dash.sqlite"))
     value = conn.execute(
