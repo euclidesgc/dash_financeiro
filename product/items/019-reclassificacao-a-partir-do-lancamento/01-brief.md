@@ -46,8 +46,10 @@ mesma transação da reclassificação, e a tela seguinte já mostra os totais n
 
 ## Requisitos
 
-- **RF-01.** No lançamento aberto em `/gastos`, o dono escolhe grupo e categoria
-  da árvore, e a natureza e a essencialidade que vão junto.
+> Reconciliado em D-007.
+
+- **RF-01.** No lançamento aberto em `/gastos`, o dono escolhe o **grupo** da
+  árvore, e a natureza e a essencialidade que vão junto.
 - **RF-02.** Antes de gravar, a tela informa **quantos lançamentos e quanto
   dinheiro** a correção alcança pelo beneficiário do lançamento, e quantos pela
   categoria de origem. Os dois números são contagem exata, não estimativa.
@@ -57,19 +59,24 @@ mesma transação da reclassificação, e a tela seguinte já mostra os totais n
   existir na árvore como qualquer outro.
 - **RF-05.** Corrigir de novo o mesmo beneficiário **atualiza** a regra existente
   em vez de criar uma segunda que compete com ela.
-- **RF-06.** Depois de gravar, a tela mostra quantos lançamentos mudaram de fato —
-  e esse número pode ser menor que a prévia, quando outra regra já pegava parte
-  deles.
-- **RF-07.** Escolha inválida — grupo que não existe, categoria fora do grupo,
-  beneficiário desconhecido — é recusada com a tela de pé e mensagem em português,
-  nunca gravada e nunca 500.
+- **RF-06.** Depois de gravar, a tela mostra quantos lançamentos mudaram de fato.
+  O casamento é exato sobre o beneficiário, então uma regra de precedência maior
+  captura o beneficiário inteiro ou nenhuma linha dele: o número mudado é igual ao
+  da prévia, ou é **zero** — nunca uma fração dela —, e quando é zero a tela
+  **nomeia a regra** que está segurando o beneficiário.
+- **RF-07.** Escolha inválida — grupo que não existe, beneficiário desconhecido —
+  é recusada com a tela de pé e mensagem em português, nunca gravada e nunca 500.
 - **RF-08.** Nenhum total de gasto muda por causa da tela: o que muda os números é
   a regra gravada, e só ela.
 
 ## Riscos
 
+> Reconciliado em D-007.
+
 - **A prévia discordar do resultado.** É o risco central, e RF-06 é o que o trata:
-  a diferença é legítima e a tela a nomeia em vez de escondê-la.
+  o resultado só diverge da prévia quando cai para **zero** — nunca uma fração
+  dela —, e a tela nomeia a regra que está segurando o beneficiário em vez de
+  esconder a diferença.
 - **Duas regras competindo pelo mesmo beneficiário.** RF-05 é o que impede, e a
   verificação é comportamental: corrigir duas vezes deixa uma regra, não duas.
 - **A correção parecer não ter funcionado** quando outra regra de precedência

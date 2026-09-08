@@ -1144,8 +1144,8 @@
       "created_at": "2026-09-08T03:52:11Z",
       "approvals": {
         "brief": {
-          "at": "2026-09-08T03:53:05Z",
-          "sha": "70b923a44b8a6826483f2694ca75ec93548d2fcd",
+          "at": "2026-09-08T04:40:11Z",
+          "sha": "d840277a43dfa832cfa972173c7ef8aad482c9c7",
           "file": "product/items/026-evolucao-da-fatura-mes-a-mes/01-brief.md",
           "por": "autonomo"
         },
@@ -1170,12 +1170,13 @@
       },
       "divergences": {
         "D-006": {
-          "status": "APROVADA",
+          "status": "RECONCILIADA",
           "kind": "normal",
           "phase": 1,
           "detected_at": "2026-09-08T04:30:13Z",
           "aprovada_at": "2026-09-08T04:30:13Z",
-          "ratificada_por": "autonomo"
+          "ratificada_por": "autonomo",
+          "reconciliada_at": "2026-09-08T04:40:10Z"
         }
       },
       "criteria_exception": null
@@ -1190,8 +1191,8 @@
       "created_at": "2026-09-08T03:52:11Z",
       "approvals": {
         "brief": {
-          "at": "2026-09-08T04:00:19Z",
-          "sha": "b6c37334626f16356dd5902b0a92dd546020ee00",
+          "at": "2026-09-08T04:40:11Z",
+          "sha": "f7655246a5bf635043d65d35be53fe8cb457db0a",
           "file": "product/items/019-reclassificacao-a-partir-do-lancamento/01-brief.md",
           "por": "autonomo"
         },
@@ -1204,12 +1205,13 @@
       "phases": {},
       "divergences": {
         "D-007": {
-          "status": "APROVADA",
+          "status": "RECONCILIADA",
           "kind": "normal",
           "phase": 1,
           "detected_at": "2026-09-08T04:34:43Z",
           "aprovada_at": "2026-09-08T04:34:43Z",
-          "ratificada_por": "autonomo"
+          "ratificada_por": "autonomo",
+          "reconciliada_at": "2026-09-08T04:40:10Z"
         }
       },
       "criteria_exception": null

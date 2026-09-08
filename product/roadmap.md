@@ -134,7 +134,7 @@ PR e commit já escritos.
   chave recusada, falha de rede e resposta ilegível — procurando a chave em corpo,
   cabeçalho, cookie, URL de saída, log e tela: nenhum vazamento.
 
-- [ ] `028-consultor-comparativo-de-divida` — O consultor responde à pergunta que
+- [-] `028-consultor-comparativo-de-divida` — O consultor responde à pergunta que
   decide dinheiro: **é melhor ficar no cheque especial ou pegar um empréstimo, e
   qual proposta quita tudo mais barato**. Hoje `/consultor` explica o número e
   pergunta o fato que falta, mas não compara caminhos de dívida — e as taxas que
