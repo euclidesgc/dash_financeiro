@@ -1,0 +1,49 @@
+<section id="cartoes" class="panel panel-wide">
+  <div class="stack-tight">
+    <h2 class="section-title">Cartões</h2>
+    <p class="lede">Os quatro campos abaixo são o que a fonte não manda: limite, taxa mensal,
+      dia de fechamento e dia de vencimento. A taxa é o que põe o cartão na escada de dívida.</p>
+    <p class="lede">Deixar um campo em branco apaga o valor guardado nele.</p>
+  </div>
+  {% if cards['cards'] %}
+  <div class="settings">
+    {% for card in cards['cards'] %}
+    <article class="setting" data-cartao="{{ card['account_id'] }}">
+      <div class="setting-what">
+        <h3 class="setting-name">{{ card['name'] }}</h3>
+        <p class="lede">{{ card['institution'] }}</p>
+      </div>
+      <div class="setting-value">
+        <div class="settings">
+          {% for field in card['fields'] %}
+          <div class="stack-tight" data-campo="{{ field['name'] }}" data-valor="{{ field['value'] if field['value'] is not none else '' }}">
+            <p class="eyebrow">{{ field['label'] }}</p>
+            {% if field['value'] is not none %}
+            <p class="figure cifra setting-figure">{{ field['value']|unidade(field['unit']) }}</p>
+            {% else %}
+            <p class="figure setting-absent">Ausente</p>
+            {% endif %}
+            <form class="form" method="post" action="{{ cards['action'] }}">
+              <input type="hidden" name="cartao" value="{{ card['account_id'] }}">
+              <div class="field">
+                <label class="field-label sr-only" for="campo-{{ card['account_id'] }}-{{ field['name'] }}">{{ field['label'] }}</label>
+                <input class="field-input" id="campo-{{ card['account_id'] }}-{{ field['name'] }}" name="valor"
+                       inputmode="decimal" value="{{ field['value']|digitado(field['unit']) }}">
+              </div>
+              <button class="button button-quiet button-small" type="submit" name="campo"
+                      value="{{ field['name'] }}">Salvar</button>
+            </form>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty">
+    <p class="empty-title">Nenhum cartão na base.</p>
+    <p class="lede">Os cartões nascem das contas de crédito na sincronização seguinte.</p>
+  </div>
+  {% endif %}
+</section>

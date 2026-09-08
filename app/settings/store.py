@@ -62,9 +62,7 @@ def entry(name: str) -> dict:
     if item is None:
         raise InvalidValueError(f"Valor desconhecido: “{name}”.")
     if not item["stored"]:
-        raise InvalidValueError(
-            f"“{item['label']}” não é uma linha de valor: informe em {item['screen']}."
-        )
+        raise InvalidValueError(f"“{item['label']}” não é uma linha de valor: {item['help']}")
     return item
 
 

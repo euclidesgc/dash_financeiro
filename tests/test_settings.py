@@ -142,6 +142,17 @@ def test_the_rate_of_a_card_is_declared_but_never_a_row(conn):
     assert _facts(conn) == {}
 
 
+def test_the_refusal_also_names_the_cards_section_now_on_the_same_screen(conn):
+    with pytest.raises(InvalidValueError) as refusal:
+        store.write(conn, CARD_RATE, "3,52")
+
+    # The field now also lives in the Cartões section of /configuracao, the
+    # very screen answering this refusal — the message may not claim /dividas
+    # is the only place, and it borrows the catalogue's own "help" text, which
+    # already names both.
+    assert "Cartões desta tela" in str(refusal.value)
+
+
 def test_each_unit_is_read_by_its_own_grammar(conn):
     store.write(conn, SETTLEMENT, "35.000,00")
     store.write(conn, RESERVE, "3")

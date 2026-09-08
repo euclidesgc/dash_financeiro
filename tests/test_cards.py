@@ -320,6 +320,40 @@ def test_write_refuses_an_account_that_does_not_exist(taxonomy_conn):
     assert "acc-inexistente" in str(refusal.value)
 
 
+def test_write_refuses_an_account_that_is_not_a_credit_card(taxonomy_conn):
+    _accounts(taxonomy_conn, ("acc-corrente", "Conta corrente", "BANK", -100000))
+
+    with pytest.raises(InvalidValueError) as not_found:
+        store.write(taxonomy_conn, "acc-inexistente", LIMIT, "12.000,00")
+    with pytest.raises(InvalidValueError) as wrong_type:
+        store.write(taxonomy_conn, "acc-corrente", LIMIT, "12.000,00")
+
+    # Same refusal for "no such account" and "account exists but is not a
+    # credit card": the owner never learns that acc-corrente exists at all.
+    assert str(wrong_type.value) == str(not_found.value).replace("acc-inexistente", "acc-corrente")
+    assert (
+        taxonomy_conn.execute(
+            "SELECT COUNT(*) FROM cards WHERE account_id = 'acc-corrente'"
+        ).fetchone()[0]
+        == 0
+    )
+
+
+def test_read_never_shows_a_row_forged_for_a_non_credit_account(taxonomy_conn):
+    _accounts(taxonomy_conn, ("acc-corrente", "Conta corrente", "BANK", -100000))
+    # Stands in for the pre-fix bug: a row that reached `cards` for an account
+    # that is not of type CREDIT, by whatever path. The join in `read` is the
+    # last line of defence, independent of what let the row in.
+    taxonomy_conn.execute(
+        "INSERT INTO cards (account_id, limit_cents) VALUES ('acc-corrente', 500000)"
+    )
+    taxonomy_conn.commit()
+
+    cards = store.read(taxonomy_conn)
+
+    assert [card["account_id"] for card in cards] == []
+
+
 def test_the_four_fields_are_written_and_bad_grammar_is_refused_without_writing(taxonomy_conn):
     _accounts(taxonomy_conn, ("acc-cartao-1", "Cartão Azul", "CREDIT", -1674462))
     rebuild(taxonomy_conn)
