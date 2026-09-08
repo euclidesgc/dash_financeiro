@@ -2,10 +2,8 @@ import re
 
 from app.cards.catalog import DAY
 from app.settings.catalog import BASIS_POINTS, CENTS
+from app.settings.limits import MAX_DAY, MIN_DAY
 from app.settings.typed import InvalidValueError, parse_money, parse_rate
-
-MIN_DAY = 1
-MAX_DAY = 31
 
 _WHOLE = re.compile(r"^\d+$")
 
