@@ -8,6 +8,7 @@ from app.migrations.runner import apply_migrations
 
 EXPECTED_TABLES = [
     "accounts",
+    "advisor_config",
     "advisor_questions",
     "cards",
     "categories",
@@ -43,6 +44,7 @@ EXPECTED_MIGRATIONS = [
     "010_settings.sql",
     "011_payee_names.sql",
     "013_cards.sql",
+    "015_advisor_config.sql",
 ]
 
 TABLE_NAMES = (

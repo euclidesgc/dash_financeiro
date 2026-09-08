@@ -6,6 +6,7 @@ from fastapi import APIRouter, Form
 from starlette.requests import Request
 from starlette.responses import Response
 
+from app.advisor import config
 from app.advisor.context import as_text, lines, snapshot
 from app.advisor.gaps import (
     UnknownQuestionError,
@@ -15,7 +16,6 @@ from app.advisor.gaps import (
     postponed,
 )
 from app.advisor.gemini import AdvisorUnavailableError, ask
-from app.config import load_config
 from app.db import connect
 from app.routers.reference import screen_date
 
@@ -60,8 +60,9 @@ def consult(
                 status_code=400,
             )
         numbers = snapshot(conn, today=today)
+        setup = config.current(conn)
         try:
-            reading = ask(asked, as_text(numbers), api_key=load_config().gemini_api_key)
+            reading = ask(asked, as_text(numbers), api_key=setup.api_key, model=setup.model)
         except AdvisorUnavailableError as refusal:
             return _answer(request, conn, today, unavailable=str(refusal), asked=asked)
         return _answer(request, conn, today, reading=reading.text, asked=asked)
@@ -105,6 +106,7 @@ def _answer(
 
 def _context(conn: sqlite3.Connection, today: date) -> dict[str, Any]:
     numbers = snapshot(conn, today=today)
+    setup = config.current(conn)
     return {
         "reference": today.isoformat(),
         "numbers": numbers,
@@ -118,5 +120,5 @@ def _context(conn: sqlite3.Connection, today: date) -> dict[str, Any]:
         "postponed": postponed(conn) if not next_question(conn, today=today) else 0,
         "action": SCREEN,
         "dismiss_action": DISMISS,
-        "has_key": bool(load_config().gemini_api_key),
+        "has_key": bool(setup.api_key),
     }
