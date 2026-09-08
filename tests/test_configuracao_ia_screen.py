@@ -198,3 +198,20 @@ def test_the_key_travels_in_the_header_and_never_in_the_url(tmp_path, monkeypatc
     assert SCREEN_KEY not in str(call["url"])
     assert call.get("params") is None or SCREEN_KEY not in str(call.get("params"))
     assert "key=" not in str(call["url"])
+
+
+def test_a_key_with_control_characters_is_refused_with_the_whole_screen_and_writes_no_key(
+    tmp_path, monkeypatch
+):
+    app = _app(tmp_path, monkeypatch, gemini_key=ENV_KEY)
+    injected = "chave-INJETADA-7777\r\nX-Injetado: sim"
+    with TestClient(app, follow_redirects=False) as client:
+        _login(client)
+        refused = client.post(IA, data={"chave": injected, "modelo": "gemini-2.5-flash"})
+
+    assert refused.status_code == 400
+    assert 'id="ia"' in refused.text
+    assert 'id="beneficiarios"' in refused.text
+    assert 'id="recusa"' in refused.text
+    assert "INJETADA" not in refused.text
+    assert "Sem chave gravada aqui, o painel usa a do ambiente" in refused.text

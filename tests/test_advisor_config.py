@@ -90,3 +90,31 @@ def test_forget_returns_control_to_the_environment_without_touching_the_model(
     assert setup.api_key == ENV_KEY
     assert setup.origin == config.FROM_ENV
     assert setup.model == "gemini-2.5-pro"
+
+
+def test_a_key_with_control_characters_is_refused_and_writes_nothing(taxonomy_conn, monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    injected = "chave-INJETADA-7777\r\nX-Injetado: sim"
+
+    with pytest.raises(config.InvalidApiKeyError) as refusal:
+        config.save(taxonomy_conn, api_key=injected, model="gemini-2.5-pro")
+
+    assert "INJETADA" not in str(refusal.value)
+    assert "7777" not in str(refusal.value)
+    setup = config.current(taxonomy_conn)
+    assert setup.api_key is None
+    assert setup.model == config.DEFAULT_MODEL
+
+
+def test_a_key_with_non_ascii_characters_is_refused_and_writes_nothing(taxonomy_conn, monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    accented = "chave-com-acentuação-áéí"
+
+    with pytest.raises(config.InvalidApiKeyError) as refusal:
+        config.save(taxonomy_conn, api_key=accented, model="gemini-2.5-pro")
+
+    assert "acentuação" not in str(refusal.value)
+    assert "áéí" not in str(refusal.value)
+    setup = config.current(taxonomy_conn)
+    assert setup.api_key is None
+    assert setup.model == config.DEFAULT_MODEL

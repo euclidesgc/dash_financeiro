@@ -77,6 +77,14 @@ def ask(question: str, context: str, *, api_key: str | None, model: str) -> Read
         raise AdvisorUnavailableError(_said(_refused(failure.response.status_code))) from None
     except httpx.HTTPError:
         raise AdvisorUnavailableError(_said("não foi possível alcançar o modelo")) from None
+    except UnicodeEncodeError:
+        # A key sourced from the screen is refused at app.advisor.config.save
+        # before it ever reaches here; a key sourced from the environment is
+        # not, and httpx encodes a str header value as ascii, so a leftover
+        # accented byte lands here instead of on the wire.
+        raise AdvisorUnavailableError(
+            _said("a chave da IA tem um caractere que o cabeçalho HTTP não aceita")
+        ) from None
     except (KeyError, IndexError, ValueError, json.JSONDecodeError):
         raise AdvisorUnavailableError(_said("o modelo respondeu num formato inesperado")) from None
     if not text:

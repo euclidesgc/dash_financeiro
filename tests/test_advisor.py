@@ -227,3 +227,17 @@ def test_a_timeout_is_said_in_portuguese(monkeypatch):
         ask("e daí?", "contexto", api_key="chave", model="gemini-2.5-flash")
 
     assert "demorou demais" in str(refusal.value)
+
+
+def test_a_key_the_header_cannot_carry_blames_the_key_not_the_format(monkeypatch):
+    def explode(*args, **kwargs):
+        raise UnicodeEncodeError("ascii", "chave-com-acento-á", 18, 19, "ordinal not in range(128)")
+
+    monkeypatch.setattr(httpx, "post", explode)
+
+    with pytest.raises(AdvisorUnavailableError) as refusal:
+        ask("e daí?", "contexto", api_key="chave-com-acento-á", model="gemini-2.5-flash")
+
+    assert "cabeçalho HTTP" in str(refusal.value)
+    assert "formato inesperado" not in str(refusal.value)
+    assert "chave-com-acento-á" not in str(refusal.value)

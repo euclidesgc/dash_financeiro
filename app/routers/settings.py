@@ -127,7 +127,7 @@ def store_ia(
     try:
         try:
             advisor_config.save(conn, api_key=_text(chave), model=_text(modelo))
-        except advisor_config.UnknownModelError as refusal:
+        except (advisor_config.UnknownModelError, advisor_config.InvalidApiKeyError) as refusal:
             return _answer(request, conn, notice=str(refusal), status_code=400)
         return _answer(request, conn, done=SAVED)
     finally:
