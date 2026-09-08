@@ -10,6 +10,7 @@ from app.cards.store import screen
 from app.config import reference_date
 from app.db import connect
 from app.financings import store as financings_store
+from app.offers import store as offers_store
 from app.payees import names
 from app.payees.lookup import InvalidCnpjError, LookupUnavailableError, enabled, trade_name
 from app.projection.monthly import available_months
@@ -222,4 +223,5 @@ def _context(conn: sqlite3.Connection) -> dict[str, Any]:
         "origins": names.ORIGINS,
         "lookup_on": enabled(),
         "financings": financings_store.section(conn, today=reference_date()),
+        "offers": offers_store.section(conn),
     }
