@@ -108,8 +108,8 @@ def _context(conn: sqlite3.Connection, today: date) -> dict[str, Any]:
         "dismissed": [row for row in recurring if row["dismissed"]],
         "installments": live,
         "released": released_cash(conn, today=today),
-        # Decisão: a rota chama a leitura de domínio pronta, do mesmo jeito que já
-        # chama released_cash e calendar acima, sem montar junção nenhuma aqui.
+        # Motivo: the route calls a finished domain reading, the same way it already
+        # calls released_cash and calendar above, and builds no join of its own.
         "invoice": invoice_curve(conn, today=today),
         "calendar": calendar(conn, today=today),
         "window_start": first.isoformat(),
