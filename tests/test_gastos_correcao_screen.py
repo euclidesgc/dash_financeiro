@@ -350,6 +350,30 @@ def test_the_two_refusals_leave_no_rule_beside_the_positive_control(opened):
     conn.close()
 
 
+def test_a_correction_posted_without_a_target_still_shows_the_refusal(opened):
+    client, _target, pessoal = opened
+
+    response = client.post(
+        CORRECTION,
+        params={"eixo": "grupo", "inicio": "2026-09-01", "fim": "2026-09-05", "chave": "Outros"},
+        data={"grupo": str(pessoal), "natureza": "variável", "essencialidade": "supérfluo"},
+    )
+
+    assert response.status_code == 400
+    assert "Nenhum lançamento selecionado para corrigir." in _between(
+        response.text, "erro-correcao"
+    )
+
+    conn = connect()
+    assert (
+        conn.execute(
+            "SELECT count(*) FROM category_rules WHERE match_kind = 'description'"
+        ).fetchone()[0]
+        == 0
+    )
+    conn.close()
+
+
 def test_the_payee_that_only_shares_a_prefix_stays_where_it_was(opened):
     client, target, pessoal = opened
 

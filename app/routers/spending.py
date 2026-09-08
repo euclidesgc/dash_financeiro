@@ -44,6 +44,7 @@ CORRECTION_HELD_MESSAGE = (
     "0 dos {previsto} lançamentos previstos foram movidos: a regra {match_value} "
     "ainda segura {payee}."
 )
+CORRECTION_MISSING_TARGET_MESSAGE = "Nenhum lançamento selecionado para corrigir."
 
 # The category key stays the raw name the source sends, because that is what
 # matches it again on the next sync; the reading label is data next to it.
@@ -142,17 +143,23 @@ def spending_correction(
         new_group = form_text(grupo_novo).strip()
         notice: str | None = None
         result: Correction | None = None
-        try:
-            result = correct_payee(
-                conn,
-                payee=payee,
-                group_id=_as_int(grupo),
-                new_group=new_group,
-                nature=form_text(natureza),
-                essentiality=form_text(term),
-            )
-        except RuleError as refusal:
-            notice = str(refusal)
+        if corrigir is None:
+            # Motivo: without a target there is no payee to look up, so
+            # calling correct_payee here would blame an "unknown payee" for a
+            # request that never named one.
+            notice = CORRECTION_MISSING_TARGET_MESSAGE
+        else:
+            try:
+                result = correct_payee(
+                    conn,
+                    payee=payee,
+                    group_id=_as_int(grupo),
+                    new_group=new_group,
+                    nature=form_text(natureza),
+                    essentiality=form_text(term),
+                )
+            except RuleError as refusal:
+                notice = str(refusal)
         context = _panel_context(conn, start, end, reference)
         context.update(
             _table_context(
@@ -222,12 +229,12 @@ def _base(axis: str, start: str, end: str, reference: Reference) -> dict[str, An
 
 def _ahead(conn: sqlite3.Connection, reference: Reference, end: str) -> Ahead:
     reference_iso = reference.date.isoformat()
-    # A window whose end already reaches or passes the reference date already
-    # carries whatever the current month posted ahead of it in its own total,
-    # so naming it again here would say those entries are out of a total that
-    # already holds them. A window that ends in an earlier month has nothing
-    # to do with the reference's month at all, so naming it here would attach
-    # a foreign month's number to a total that never touched it.
+    # Motivo: a window whose end already reaches or passes the reference date
+    # already carries whatever the current month posted ahead of it in its own
+    # total, so naming it again here would say those entries are out of a
+    # total that already holds them. A window that ends in an earlier month
+    # has nothing to do with the reference's month at all, so naming it here
+    # would attach a foreign month's number to a total that never touched it.
     if end[:MONTH_LENGTH] != reference_iso[:MONTH_LENGTH] or end > reference_iso:
         return Ahead(0, 0)
     return posted_ahead(conn, after=reference_iso, until=month_end(reference.date).isoformat())
@@ -248,9 +255,9 @@ def _table_context(
     rows = aggregate(conn, axis=axis, start=start, end=end)
     context = _base(axis, start, end, reference)
     if axis == PAYEE_AXIS:
-        # Only the label. row['key'] is the label and the drill-down parameter
-        # at once, and replacing the rendered value would kill the opening of
-        # the list in silence (RF-28).
+        # Motivo: only the label. row['key'] is the label and the drill-down
+        # parameter at once, and replacing the rendered value would kill the
+        # opening of the list in silence (RF-28).
         context["labels"] = {**context["labels"], **payee_labels(conn)}
     context.update(
         rows=rows,
@@ -313,7 +320,10 @@ def _correction_context(
     result: Correction | None,
 ) -> dict[str, Any] | None:
     if corrigir is None:
-        return None
+        # Motivo: a refusal built above (missing target) still needs a place
+        # to land; returning None here would carry the built notice into the
+        # template and then drop it, which is the bug this guards against.
+        return {"found": False, "notice": notice} if notice is not None else None
     target = _target(conn, corrigir)
     if target is None:
         return {"found": False, "notice": notice}
