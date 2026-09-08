@@ -26,7 +26,10 @@ while IFS= read -r file || [ -n "$file" ]; do
     *) continue ;;
   esac
 
-  grep -nE '(\bselect\(|\binsert\(|\bupdate\(|\bdelete\(|session\.(execute|scalar|scalars|add|delete|commit|rollback|refresh|flush)|create_async_engine|async_sessionmaker|\bsessionmaker\()' "$file" 2>/dev/null |
+  # `\bupdate\(` casa `context.update(...)`, que é método de dicionário e não
+  # construção de consulta: `\b` vale depois do ponto. As quatro construções do
+  # SQLAlchemy passam a exigir que nada de nome venha antes.
+  grep -nE '((^|[^.[:alnum:]_])(select|insert|update|delete)\(|session\.(execute|scalar|scalars|add|delete|commit|rollback|refresh|flush)|create_async_engine|async_sessionmaker|(^|[^.[:alnum:]_])sessionmaker\()' "$file" 2>/dev/null |
     while IFS=: read -r line content; do
       case "$content" in *"# gate7-ok"*) continue ;; esac
       printf '%s:%s:%s (router não monta consulta nem controla transação; passe pelo service)\n' \

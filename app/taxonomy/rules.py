@@ -1,6 +1,8 @@
 import re
 import sqlite3
+from dataclasses import dataclass
 
+from app.queries.reach import rule_reach
 from app.taxonomy import classify
 from app.taxonomy.seed import message
 
@@ -27,6 +29,103 @@ class UnknownRuleError(RuleError):
     def __init__(self, value: object) -> None:
         super().__init__(message("unknown_rule", value))
         self.value = value
+
+
+class UnknownPayeeError(RuleError):
+    def __init__(self, value: object) -> None:
+        super().__init__(message("unknown_payee", value))
+        self.value = value
+
+
+class DuplicateGroupError(RuleError):
+    def __init__(self, value: object) -> None:
+        super().__init__(message("duplicate_group", value))
+        self.value = value
+
+
+@dataclass(frozen=True)
+class Correction:
+    rule_id: int
+    created: bool
+    group_id: int
+    reclassified: int
+    entries: int
+    amount_cents: int
+
+
+def expression_for(payee: str) -> str:
+    return f"^{re.escape(payee)}$"
+
+
+def correct_payee(
+    conn: sqlite3.Connection,
+    *,
+    payee: str,
+    group_id: int | None,
+    new_group: str = "",
+    nature: str,
+    essentiality: str,
+) -> Correction:
+    if conn.execute("SELECT 1 FROM transactions WHERE payee = ?", (payee,)).fetchone() is None:
+        raise UnknownPayeeError(payee)
+    target_group = group_id
+    if new_group:
+        if (
+            conn.execute("SELECT 1 FROM category_groups WHERE name = ?", (new_group,)).fetchone()
+            is not None
+        ):
+            raise DuplicateGroupError(new_group)
+        top = conn.execute("SELECT coalesce(max(position), 0) FROM category_groups").fetchone()[0]
+        created_group = conn.execute(
+            "INSERT INTO category_groups (name, position, is_fallback) VALUES (?, ?, 0)",
+            (new_group, top + 1),
+        )
+        target_group = int(created_group.lastrowid or 0)
+    expression = expression_for(payee)
+    existing = conn.execute(
+        "SELECT id FROM category_rules WHERE match_kind = ? AND match_value = ?",
+        (classify.MATCH_DESCRIPTION, expression),
+    ).fetchone()
+    try:
+        if existing is None:
+            reclassified = create_rule(
+                conn,
+                match_kind=classify.MATCH_DESCRIPTION,
+                match_value=expression,
+                group_id=target_group,
+                nature=nature,
+                essentiality=essentiality,
+            )
+            created = True
+        else:
+            reclassified = update_rule(
+                conn,
+                existing["id"],
+                group_id=target_group,
+                nature=nature,
+                essentiality=essentiality,
+            )
+            created = False
+    except Exception:
+        # The group above, when created, is an uncommitted write on this same
+        # connection: without this rollback a refusal here would leave it
+        # standing, invisible to every other connection but this one — the one
+        # the screen redraws with.
+        conn.rollback()
+        raise
+    rule_id = conn.execute(
+        "SELECT id FROM category_rules WHERE match_kind = ? AND match_value = ?",
+        (classify.MATCH_DESCRIPTION, expression),
+    ).fetchone()["id"]
+    reach = rule_reach(conn, rule_id)
+    return Correction(
+        rule_id=rule_id,
+        created=created,
+        group_id=target_group,
+        reclassified=reclassified,
+        entries=reach["entries"],
+        amount_cents=reach["amount_cents"],
+    )
 
 
 def create_rule(

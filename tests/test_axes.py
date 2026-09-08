@@ -195,6 +195,22 @@ def test_the_open_list_carries_date_description_account_and_amount(conn):
     ]
 
 
+def test_the_open_row_also_carries_the_id_and_the_payee_it_can_be_corrected_by(conn):
+    opened = transactions_of(conn, axis=CATEGORY, key=COFFEE, start=START, end=END)
+    assert opened
+    for row in opened:
+        assert set(row.keys()) == {
+            "id",
+            "date",
+            "description",
+            "account",
+            "amount_cents",
+            "payee",
+        }
+        assert row["payee"] == normalize_description(BAKERY)
+        assert isinstance(row["id"], int)
+
+
 def test_the_open_list_sums_the_row_it_came_from_in_every_axis(conn):
     for axis in AXES:
         for row in aggregate(conn, axis=axis, start=START, end=END):

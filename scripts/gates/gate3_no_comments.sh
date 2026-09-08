@@ -23,7 +23,10 @@ while IFS= read -r file || [ -n "$file" ]; do
   [ -f "$file" ] || continue
   awk -v arquivo="$file" '
     BEGIN {
-      justificativa = "(por ?qu[êe]|motivo|decis[ãa]o|contorno|workaround|invariante|limita[çc][ãa]o|restri[çc][ãa]o|ignore:|gate[0-9]-ok|coverage:ignore)"
+      # Alternância, não classe: o motor de regex do awk compara byte a byte, e
+      # uma classe como [ãa] espera UM byte onde "ã" ocupa dois — então as marcas
+      # acentuadas que a documentação acima manda usar nunca casavam.
+      justificativa = "(por ?qu(ê|e)|motivo|decis(ã|a)o|contorno|workaround|invariante|limita(ç|c)(ã|a)o|restri(ç|c)(ã|a)o|ignore:|gate[0-9]-ok|coverage:ignore)"
       diretiva = "(ignore_for_file|dart format|coverage:|@|https?:|eslint-|prettier-|ts-ignore|ts-expect-error|#!|#region|#endregion)"
       bloco_justificado = 0
     }
