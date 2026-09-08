@@ -164,7 +164,7 @@ PR e commit já escritos.
   passou a plantar o par nos dois lados e a exigir conteúdo antes de comparar.
   **Depende de:** nada aberto. **Destrava:** `019`.
 
-- [ ] `019-reclassificacao-a-partir-do-lancamento` — A correção de classificação
+- [-] `019-reclassificacao-a-partir-do-lancamento` — A correção de classificação
   começa onde o erro aparece: no lançamento aberto em `/gastos`, o dono escolhe o
   grupo, **cria grupo novo ali mesmo** se nenhum dos dez serve, e a tela diz antes
   de gravar quantos lançamentos e quanto dinheiro a correção alcança — os do mesmo
