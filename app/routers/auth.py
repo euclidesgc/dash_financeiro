@@ -84,7 +84,7 @@ def submit_login(
         max_age=MAX_AGE_SECONDS,
         path="/",
         httponly=True,
-        samesite="Lax",
+        samesite="Lax",  # type: ignore[arg-type]  # wire casing "SameSite=Lax" is pinned by test_login.py; typeshed only accepts lowercase
     )
     return response
 
@@ -99,5 +99,10 @@ def logout(request: Request) -> Response:
         finally:
             conn.close()
     response = RedirectResponse("/login", status_code=302)
-    response.delete_cookie(COOKIE_NAME, path="/", httponly=True, samesite="Lax")
+    response.delete_cookie(
+        COOKIE_NAME,
+        path="/",
+        httponly=True,
+        samesite="Lax",  # type: ignore[arg-type]  # wire casing "SameSite=Lax" is pinned by test_login.py; typeshed only accepts lowercase
+    )
     return response
