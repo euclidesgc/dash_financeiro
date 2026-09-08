@@ -13,8 +13,8 @@ from app.db import connect
 
 from .render import TEMPLATES
 
-# One message for both causes, so the screen never tells an attacker which
-# logins exist.
+# Reason: one message for both causes, so the screen never tells an
+# attacker which logins exist.
 REJECTED_MESSAGE = "Login ou senha inválidos."
 THROTTLED_MESSAGE = "Muitas tentativas seguidas. Tente novamente mais tarde."
 
@@ -64,8 +64,8 @@ def submit_login(
         row = conn.execute(
             "SELECT password_hash, session_epoch FROM users WHERE login = ?", (login,)
         ).fetchone()
-        # The absent login pays for a verification too, so the answer time does
-        # not tell which logins exist.
+        # Reason: the absent login pays for a verification too, so the
+        # answer time does not tell which logins exist.
         if row is None:
             accepted = verify_absent_user(senha)
         else:

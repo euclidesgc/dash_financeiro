@@ -8,8 +8,8 @@ from app.auth.session import COOKIE_NAME, read_cookie
 from app.auth.users import session_epoch
 from app.db import connect
 
-# The login form is the only door that can be reached without a session:
-# guarding it too would turn the redirect of RF-26 into a loop.
+# Reason: the login form is the only door that can be reached without a
+# session — guarding it too would turn the redirect of RF-26 into a loop.
 PUBLIC_PATHS = frozenset({"/login"})
 JSON_PATHS = frozenset({"/health"})
 
@@ -19,8 +19,8 @@ def _answers_json(path: str) -> bool:
 
 
 def _stored_epoch(login: str) -> int | None:
-    # A SQLite connection cannot cross threads, so the request opens and closes
-    # its own instead of sharing one held by the app.
+    # Reason: a SQLite connection cannot cross threads, so the request opens
+    # and closes its own instead of sharing one held by the app.
     conn = connect()
     try:
         return session_epoch(conn, login)
