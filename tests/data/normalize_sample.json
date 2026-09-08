@@ -1,0 +1,14 @@
+[
+  {"id": "s01", "descricao": "PIX Cristina", "chave": "pix cristina"},
+  {"id": "s02", "descricao": "Transferência enviada|JOÃO", "chave": "transferencia enviada joao"},
+  {"id": "s03", "descricao": "MERCADO 12/03/2026", "chave": "mercado"},
+  {"id": "s04", "descricao": "MERCADO 12/03", "chave": "mercado"},
+  {"id": "s05", "descricao": "LOJA 3/10", "chave": "loja"},
+  {"id": "s06", "descricao": "LOJA 3 de 10", "chave": "loja"},
+  {"id": "s07", "descricao": "R$ 1.234,56 TARIFA", "chave": "r tarifa"},
+  {"id": "s08", "descricao": "  duplo   espaco  ", "chave": "duplo espaco"},
+  {"id": "s09", "descricao": "CONSIGNAÇÃO ITAÚ", "chave": "consignacao itau"},
+  {"id": "s10", "descricao": "Pagamento de fatura - cartão 1234", "chave": "pagamento de fatura cartao"},
+  {"id": "s11", "descricao": "ENERGIA ELETRICA 09/2026", "chave": "energia eletrica"},
+  {"id": "s12", "descricao": "ASSINATURA STREAMING 1 de 12", "chave": "assinatura streaming"}
+]

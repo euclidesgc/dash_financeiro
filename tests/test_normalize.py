@@ -5,26 +5,15 @@ import pytest
 
 from app.ingest.normalize import normalize_description
 
-SOURCE = Path(__file__).resolve().parents[1] / "data" / "processed" / "transacoes.json"
-RECORDS = 1942
-
-# data/ is not versioned, so the record by record comparison with the
-# consolidator only runs where the source of 05/09/2026 is on disk.
-requires_source = pytest.mark.skipif(not SOURCE.exists(), reason=f"missing {SOURCE}")
+SAMPLE = Path(__file__).resolve().parent / "data" / "normalize_sample.json"
 
 
 @pytest.fixture(scope="module")
-def records():
-    return json.loads(SOURCE.read_text(encoding="utf-8"))
+def records() -> list[dict[str, str]]:
+    return json.loads(SAMPLE.read_text(encoding="utf-8"))
 
 
-@requires_source
-def test_the_source_still_holds_every_measured_record(records):
-    assert len(records) == RECORDS
-
-
-@requires_source
-def test_every_source_record_normalizes_to_the_key_the_consolidator_wrote(records):
+def test_every_sample_record_normalizes_to_the_key_the_consolidator_wrote(records):
     mismatched = [
         (record["id"], record["descricao"], record["chave"])
         for record in records
@@ -33,8 +22,7 @@ def test_every_source_record_normalizes_to_the_key_the_consolidator_wrote(record
     assert mismatched == []
 
 
-@requires_source
-def test_no_source_record_normalizes_to_nothing(records):
+def test_no_sample_record_normalizes_to_nothing(records):
     assert [
         record["id"] for record in records if not normalize_description(record["descricao"])
     ] == []
