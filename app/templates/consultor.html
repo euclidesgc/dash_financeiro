@@ -57,10 +57,73 @@
     {% if unavailable %}
     <p class="notice" id="indisponivel" role="status">{{ unavailable }}</p>
     {% endif %}
+    {% if unchecked %}
+    <p class="notice" id="nao-conferido" role="status">{{ unchecked }}</p>
+    {% endif %}
     {% if not has_key %}
     <p class="lede">Sem chave da IA a leitura não roda. Informe a chave em
       <a href="/configuracao#ia">/configuracao</a> — os números abaixo continuam iguais: eles não
       dependem dela.</p>
+    {% endif %}
+  </section>
+  <section id="comparativo" class="panel panel-wide">
+    <h2 class="section-title">Continuar como está ou trocar de caminho</h2>
+    <p class="lede">Custo total até zerar, não recomendação de contratar: a comparação mostra o
+      número, a decisão de assinar é sua. Os dois lados usam o mesmo valor liberado e o mesmo prazo
+      da proposta — é a única base em que um cheque especial, que não tem cronograma próprio, tem
+      custo até zerar.</p>
+    {% if not comparison['step'] %}
+    <div class="empty">
+      <p class="empty-title">Nenhuma dívida com taxa medida.</p>
+      <p class="lede">Sem um degrau na escada não há "continuar como está" para comparar. Informe a
+        taxa em <a href="/dividas">Dívidas</a>.</p>
+    </div>
+    {% elif not comparison['rows'] %}
+    <div class="empty">
+      <p class="empty-title">Nenhuma proposta com taxa informada.</p>
+      <p class="lede">Informe uma proposta de empréstimo em
+        <a href="/configuracao#propostas">/configuracao</a> para comparar contra
+        {{ comparison['step']['name'] }}.</p>
+    </div>
+    {% else %}
+    <div class="table-scroll">
+      <table class="data-table">
+        <caption class="sr-only">Custo total até zerar, por proposta, contra continuar em
+          {{ comparison['step']['name'] }}.</caption>
+        <thead>
+          <tr><th scope="col">Proposta</th><th scope="col" class="col-num">Taxa ao mês</th>
+            <th scope="col" class="col-num">Prazo</th>
+            <th scope="col" class="col-num">Continuar em {{ comparison['step']['name'] }}</th>
+            <th scope="col" class="col-num">Custo da proposta</th>
+            <th scope="col" class="col-num">Diferença</th>
+            <th scope="col">Mais barato</th></tr>
+        </thead>
+        <tbody>
+          {% for row in comparison['rows'] %}
+          <tr data-proposta-comparada="{{ row['name'] }}">
+            <td>{{ row['name'] }}</td>
+            <td class="cifra col-num">{{ row['monthly_rate_bp']|taxa }}</td>
+            <td class="cifra col-num">{{ row['term_months'] }} meses</td>
+            <td class="cifra col-num">{{ row['stay_cents']|brl }}</td>
+            <td class="cifra col-num">{{ row['offer_cents']|brl }}</td>
+            <td class="cifra col-num">diferença de {{ row['difference_cents']|brl }}</td>
+            <td>{{ row['name'] if row['cheaper'] else comparison['step']['name'] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+    {% if comparison['without_rate'] %}
+    <p class="lede" id="propostas-fora">
+      {% if comparison['without_rate']|length == 1 %}
+      1 proposta ficou de fora da comparação, sem taxa informada: {{ comparison['without_rate'][0] }}.
+      {% else %}
+      {{ comparison['without_rate']|length }} propostas ficaram de fora da comparação, sem taxa
+      informada: {{ comparison['without_rate']|join(', ') }}.
+      {% endif %}
+      O painel não estima o que o banco não informou — informe a taxa em
+      <a href="/configuracao#propostas">/configuracao</a>.</p>
     {% endif %}
   </section>
   <section id="numeros" class="panel panel-wide">

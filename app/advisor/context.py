@@ -3,11 +3,13 @@ from datetime import date
 from typing import Any
 
 from app.commitments.live import totals as commitment_totals
+from app.offers.cost import comparison
 from app.plan.objective import reserve_target_cents
 from app.plan.timeline import BASE, simulate
 from app.projection.forecast import forecast
 from app.projection.position import positions
 from app.routers.render import brl
+from app.routers.render import rate as as_rate
 
 
 def snapshot(conn: sqlite3.Connection, *, today: date) -> dict[str, Any]:
@@ -25,6 +27,7 @@ def snapshot(conn: sqlite3.Connection, *, today: date) -> dict[str, Any]:
         "months_to_objective": plan["months_to_objective"],
         "worst_date": line["worst"]["date"],
         "worst_balance": line["worst"]["balance_cents"],
+        "comparison": comparison(conn),
     }
 
 
@@ -51,7 +54,37 @@ def lines(numbers: dict[str, Any]) -> list[dict[str, Any]]:
             "label": f"Pior ponto dos próximos 45 dias, em {numbers['worst_date']}",
             "value": brl(numbers["worst_balance"]),
         },
+        *[entry for row in numbers["comparison"]["rows"] for entry in _offer_lines(row)],
     ]
+
+
+def _offer_lines(row: dict[str, Any]) -> list[dict[str, Any]]:
+    # Decisão: a taxa e o prazo da proposta viajam dentro do rótulo, e não só no
+    # valor, porque a tela de /consultor mostra os dois na comparação — uma
+    # cifra visível na tela e ausente do contexto é uma cifra que a conferência
+    # de app.advisor.cited recusaria se o modelo a copiasse de lá. O rótulo
+    # nomeia a taxa como "desta proposta" para não sugerir que é a taxa de
+    # continuar como está, que é outro número.
+    term = row["term_months"]
+    when = f"{term} mês" if term == 1 else f"{term} meses"
+    tag = f"{row['name']} (proposta a {as_rate(row['monthly_rate_bp'])} ao mês, {when})"
+    entries = [
+        {"label": f"{tag} — custo desta proposta até zerar", "value": brl(row["offer_cents"])}
+    ]
+    if row["stay_cents"] is not None:
+        entries.append(
+            {
+                "label": f"{tag} — custo de continuar como está, no mesmo prazo e valor",
+                "value": brl(row["stay_cents"]),
+            }
+        )
+        entries.append(
+            {
+                "label": f"{tag} — diferença entre continuar e trocar",
+                "value": brl(row["difference_cents"]),
+            }
+        )
+    return entries
 
 
 def as_text(numbers: dict[str, Any]) -> str:
