@@ -36,7 +36,16 @@
       </tbody>
     </table>
   </div>
+  {% else %}
+  <div class="empty">
+    <p class="empty-title">Nenhum parcelamento em aberto.</p>
+    <p class="lede">Entra aqui a compra parcelada cuja última parcela caiu neste mês ou no
+      anterior, com o que falta pagar e o mês em que termina. Enquanto não houver nenhuma, nada
+      está preso ao caixa dos próximos meses.</p>
+  </div>
+  {% endif %}
 </section>
+{% if installments %}
 <section id="caixa-liberado" class="panel panel-wide released">
     <div class="stack-tight">
       <h3 class="section-title">Caixa liberado</h3>
@@ -65,13 +74,4 @@
     <p class="headline-small">Quando o último acabar,
       <span class="cifra positive">{{ released_cents|brl }}</span> por mês voltam ao caixa.</p>
 </section>
-  {# a section de parcelamentos ja fechou acima #}
-  {% else %}
-  <div class="empty">
-    <p class="empty-title">Nenhum parcelamento em aberto.</p>
-    <p class="lede">Entra aqui a compra parcelada cuja última parcela caiu neste mês ou no
-      anterior, com o que falta pagar e o mês em que termina. Enquanto não houver nenhuma, nada
-      está preso ao caixa dos próximos meses.</p>
-  </div>
-  {% endif %}
-</section>
+{% endif %}

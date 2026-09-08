@@ -99,19 +99,24 @@ PR e commit já escritos.
   taxa na dívida errada — a escrita passou a atualizar a linha no lugar (`D-005`).
   **Depende de:** nada aberto. **Destrava:** `028`.
 
-- [-] `026-evolucao-da-fatura-mes-a-mes` — O painel responde **como fica a fatura
-  do cartão mês a mês até zerar**, e não só quanto sai nos próximos 45 dias. O
-  motor de compromissos já sabe o que é preciso — `commitments` guarda
-  `installment_current`, `installment_total`, `installments_left` e `ends_month`
-  (`app/migrations/sql/004_commitments.sql:1-18`), e `released_cash`
-  (`app/commitments/live.py:62-68`) já soma o caixa que cada série libera ao
-  acabar. O que **não** existe é a série mensal fechada: hoje a previsão é uma
-  janela de 45 dias (`app/commitments/calendar.py:82-101`), e nenhuma consulta
-  soma "quanto ainda falta pagar" de uma compra parcelada. O item entrega a
-  curva por mês, com o mês em que cada parcelamento morre nomeado, para a decisão
-  de antecipar ou não ser tomada olhando a curva e não a intuição.
-  **Depende de:** `024-cartoes-como-entidade` — sem dia de fechamento e limite
-  não há fatura a projetar, só uma soma de parcelas.
+- [x] `026-evolucao-da-fatura-mes-a-mes` — O painel responde **como fica a fatura
+  do cartão mês a mês até zerar**, e não só quanto sai nos próximos 45 dias, com
+  o mês em que cada parcelamento morre nomeado e o quanto a fatura cai quando ele
+  morre. Para uma dívida feita de compras parceladas, 45 dias mostram uma fatura
+  parecida com a do mês passado e escondem que ela cai pela metade em abril
+  porque três parcelamentos acabam em março.
+  **O dia de fechamento decide de qual fatura a parcela faz parte; o dia de
+  vencimento decide em que mês essa fatura sai da conta**, e é esse o mês que a
+  curva nomeia (`D-006`) — a mesma língua do calendário de vencimentos ao lado.
+  Faltando um dos dois, a curva responde e **declara a premissa**.
+  O validador cego escreveu uma **terceira via inteiramente em SQL**, sem tocar na
+  aritmética julgada, e comparou o vetor mês a mês em quatro bases, inclusive
+  virada de ano: todas idênticas. Depois rodou cinco bases nas duas árvores e
+  provou que assinaturas, caixa liberado, calendário, dispensadas e todas as
+  manchetes saem **byte a byte iguais**. E mediu o HTML: a tela abria quatro
+  seções e fechava cinco sempre que havia parcelamento — agora abre e fecha o
+  mesmo número.
+  **Depende de:** nada aberto.
 
 - [x] `027-configuracao-do-gemini` — A integração com o Gemini se configura na
   tela: **chave de API e escolha do modelo**, em `/configuracao`, a mesma tela do
@@ -324,6 +329,49 @@ ao topo da fila é a régua local certa e o agregado errado.
   reprova sem a correção. O limite declarado é o rastreio de nome, não análise de
   fluxo: desempacotamento de tupla, atribuição múltipla e reatribuição
   condicional ficam de fora, e nenhum deles existe hoje em `app/routers/`.
+
+- [ ] `030-numeracao-de-migracao-sem-buraco` — O aplicador de esquema **recusa uma
+  migração numerada abaixo da maior já aplicada**, e a numeração não tem vão. Hoje
+  a sequência é `001`–`015` e `018`: `016` e `017` não existem, e vieram a existir
+  como número reservado por itens que fecharam fora de ordem. `run_migrations`
+  aplica em ordem lexical sobre a lista do diretório, então uma migração escrita
+  depois com número `016` entraria **antes** da `018` que já rodou na base do
+  dono — e ela rodaria contra um esquema que não é o que ela pressupõe. Nada
+  quebrou até agora porque nenhum buraco foi preenchido; a correção é o aplicador
+  passar a saber a maior já aplicada e recusar quem chega por baixo, em vez de a
+  ordem certa depender de ninguém reutilizar um número. Achado repetido por três
+  validadores independentes (itens `024`, `025` e `027`), o que pela norma 20 o
+  tira da categoria de remendo.
+
+- [ ] `031-adocao-retroativa-da-justificativa-de-comentario` — O portão que exige
+  que todo comentário diga um **porquê** — decisão, contorno externo, restrição de
+  plataforma, invariante — julga a árvore inteira, e não só as linhas acrescentadas
+  desde que ele foi ligado. Ele nasceu medindo `562` comentários em `60` arquivos,
+  escritos antes de a convenção existir, e por isso hoje mede só o diff a partir do
+  commit que o ligou. Um portão com recorte é um portão com prazo: ou a árvore
+  antiga se adapta, ou o recorte vira permanente e a norma 11 volta a valer só para
+  quem chegou depois. Este item passa a régua nos 562 e desliga o recorte.
+
+- [ ] `032-campo-vazio-nao-apaga-o-que-esta-gravado` — Deixar um campo em branco e
+  salvar **não** apaga o valor guardado. Hoje apaga, e responde `200 Salvo.` sem
+  dizer o que foi salvo: `app/cards/typed.py:26` devolve `None` para toda string em
+  branco antes de qualquer leitor rodar, e o gravador escreve `NULL`. O dono não
+  tem como distinguir "não mexi neste campo" de "quero apagar este campo", e a
+  única forma de descobrir que apagou é reparar que o número sumiu da tela. Vale
+  para o dia de fechamento e o de vencimento do cartão, que é onde o `NULL` muda o
+  mês de fatura de cada parcela.
+
+- [ ] `033-semear-taxonomia-deixa-o-banco-coerente-sozinho` — Semear a taxonomia
+  deixa o banco coerente sem depender de um segundo comando. Hoje
+  `seed_taxonomy` só reescreve o grupo dos lançamentos que apontavam para grupo que
+  sumiu; o lançamento cujo grupo sobreviveu mas cuja **regra** mudou de grupo fica
+  desatualizado até a classificação seguinte — 14 de 87 no cenário do validador. E
+  a migração `012_taxonomy_tree.sql` derruba e recria `categories` na subida, o que
+  na base do dono apaga as categorias já registradas. As duas coisas se recuperam
+  rodando a classificação na sequência, e é exatamente isso que a CLI encadeia —
+  então o defeito só aparece para quem roda `python -m app.taxonomy.seed` isolado.
+  O item fecha essa aresta: ou a semeadura classifica, ou ela recusa terminar
+  deixando o banco pela metade.
 
 ## Validações de campo pendentes
 
