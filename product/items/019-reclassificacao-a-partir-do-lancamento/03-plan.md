@@ -2,7 +2,8 @@
 
 **Item:** `019-reclassificacao-a-partir-do-lancamento` · **Trilha:** rápida ·
 **Fonte aprovada:** `01-brief.md`, RF-01 a RF-08 · **Terreno:** `00-discovery.md`
-(08/09/2026) · Duas fases, em sequência.
+(08/09/2026) · **Divergência aplicada:** `04-divergencias/D-007.md` · Duas fases,
+em sequência.
 
 > **Sobre os números deste plano.** Os do terreno vêm do brief aprovado, medidos
 > na base de 05/09/2026, e não são remedidos aqui. Os dos critérios são
@@ -12,11 +13,20 @@
 ## Objetivo
 
 Ao fim das duas fases a correção de classificação começa onde o erro aparece: no
-lançamento aberto no drill-down de `/gastos`, o dono escolhe grupo e categoria da
-árvore, cria grupo novo ali mesmo se nenhum servir, e a tela diz **antes de
-gravar** quantos lançamentos e quanto dinheiro a correção alcança. A correção
-vira regra sobre o beneficiário, escrita dentro da mesma transação que
-reclassifica a base, e a tela seguinte já mostra os totais novos.
+lançamento aberto no drill-down de `/gastos`, o dono escolhe o grupo da árvore —
+com a natureza e a essencialidade que vão junto —, cria grupo novo ali mesmo se
+nenhum servir, e a tela diz **antes de gravar** quantos lançamentos e quanto
+dinheiro a correção alcança. A correção vira regra sobre o beneficiário, escrita
+dentro da mesma transação que reclassifica a base, e a tela seguinte já mostra os
+totais novos.
+
+**O formulário não pergunta categoria**, e a decisão é a de
+`04-divergencias/D-007.md`. A categoria de um lançamento é a palavra que a
+**fonte** usa, resolvida pela árvore até um grupo; uma regra que também
+atribuísse categoria abriria um segundo jeito de decidir a categoria do mesmo
+lançamento, competindo com a árvore que o item `023` construiu. A categoria segue
+presente na correção como **medida, não como escolha**: a tela diz quanto a
+categoria de origem do lançamento alcança, que é o que RF-02 pede.
 
 A quebra é por **contrato, não por tela**. O item inteiro depende de uma
 igualdade: o conjunto que a prévia conta e o conjunto que a gravação alcança têm
@@ -39,19 +49,26 @@ nada sobre alcance.
 | `app/queries/` | `aggregate`, `transactions_of`, `crossing`, `residue`, `total_spending_cents` | a consulta de alcance, uma só, que prévia e resultado leem |
 | `app/routers/spending.py:169-178` (`_detail_context`) | monta a lista aberta e nada mais | o bloco de correção do lançamento pedido |
 
-Três fatos do código decidem o desenho e não se re-discutem:
+Quatro fatos do código decidem o desenho e não se re-discutem:
 
 - **A precedência é por id, e a primeira expressão que casa vence.**
   `app/taxonomy/classify.py:63-77` lê as regras com `ORDER BY id`, e `:51-60`
   percorre as expressões antes das categorias devolvendo a primeira que casa.
   Uma regra de descrição escrita agora nasce com o maior id, logo com a **menor**
   precedência entre as expressões — é daí que vem a diferença que RF-06 manda a
-  tela nomear. E como o casamento é exato, a expressão de id menor pega o
-  beneficiário inteiro ou não pega nenhuma linha dele: a diferença é `N → 0`,
-  nunca uma fração.
+  tela nomear. E como o casamento é exato, todas as linhas de um beneficiário
+  carregam a mesma string: a expressão de id menor pega o beneficiário **inteiro
+  ou nenhuma linha dele**. A diferença é `N → 0`, nunca uma fração.
 - **`payee` é sempre `[a-z ]*`.** Nada em `app/ingest/` escreve a coluna; quem a
   preenche é `app/taxonomy/classify.py:94-101`, com `normalize_description`, que
   derruba acento, dígito e pontuação (`app/ingest/normalize.py:14-23`).
+- **A regra atribui grupo, natureza e essencialidade — nunca categoria.**
+  `category_rules` (`app/migrations/sql/003_taxonomy.sql:25-33`) tem `group_id`,
+  `nature` e `essentiality`, e nenhuma coluna de categoria; quem põe categoria no
+  lançamento é `app/taxonomy/classify.py:94-101`, a partir do nome que a fonte
+  mandou. É por isso que o formulário não pergunta categoria: o campo não teria
+  onde ser gravado, e dar coluna de categoria à regra criaria um segundo dono
+  para uma decisão que já tem dona — a árvore.
 - **A semente não roda em operação normal.** `seed_taxonomy` só é chamada por
   `python -m app.taxonomy.seed`: nem `create_app` (`app/main.py:41-71`) nem a
   pós-carga da sincronização (`app/sync/__init__.py:101-104`) a invocam. Isso
@@ -66,14 +83,13 @@ Três fatos do código decidem o desenho e não se re-discutem:
 | Sobre o que a regra casa, em SQL e em regex | a prévia conta com `payee = ?` e a gravação casa com expressão; qualquer folga entre as duas é exatamente a mentira que RF-02 proíbe | `match_value` é `^` + `re.escape(payee)` + `$`. Casamento exato: o conjunto que o SQL conta e o que o regex pega são o mesmo, e `mercado livre pago` não entra em `mercado livre` |
 | O alcance é do período aberto ou de toda a base | regra não tem período — `app/routers/rules.py:53-72` já mede assim, sem janela | toda a base, e a tela diz `em toda a base` para não ser lida como o período |
 | Qual número a tela chama de "mudaram de fato" | `classify_all` devolve linhas cuja tupla mudou na base inteira, inclusive troca de regra sem troca de grupo: responde outra pergunta | o alcance da regra escrita, medido pelo mesmo gabarito da prévia |
+| Se o formulário pergunta a categoria | `category_rules` (`app/migrations/sql/003_taxonomy.sql:25-33`) não tem coluna de categoria e o não-escopo do brief proíbe mexer na árvore, então o campo só saberia ser recusado; e persistir a folha na regra abriria um segundo jeito de decidir a categoria do mesmo lançamento, competindo com a árvore | **não pergunta.** O dono escolhe grupo, natureza e essencialidade. A categoria entra só como número: o alcance da categoria de origem, que RF-02 pede. Ratificada em `04-divergencias/D-007.md` |
 | Onde mora a consulta de alcance | norma 33: junção e agregação em SQL, em `app/queries` | `app/queries/reach.py`, com um gabarito só |
 | Onde mora a escrita | `app/taxonomy/rules.py` já é o módulo de escrita de regra, e o `_write` dele já partilha a transação com `classify_all` — o que o item `012` fechou | `correct_payee` ali, reusando `_write` |
 | Onde mora a rota | a tela é `/gastos`, e norma 29 põe o router do domínio junto do domínio | `POST /gastos/correcao`, em `app/routers/spending.py` |
-| O que o campo de categoria faz | RF-01 pede que o dono escolha grupo **e** categoria; RF-07 manda recusar categoria fora do grupo; `category_rules` (`app/migrations/sql/003_taxonomy.sql:25-33`) não tem coluna de categoria e o não-escopo do brief proíbe mexer na árvore | o formulário carrega os dois, o servidor confere a coerência e recusa o par incoerente, e o que a regra grava é o **grupo**. A categoria não é persistida — lacuna registrada no retorno |
 | Migração | nada muda de esquema: `category_groups` já aceita linha nova, e a árvore é consumida como está | **nenhuma**. O número `017_` continua livre |
-| Nome dos campos do formulário | `/gastos` já fala pt-BR nos parâmetros (`eixo`, `inicio`, `fim`, `chave`, `data`), e norma 16 põe a interface em pt-BR | `grupo`, `grupo_novo`, `categoria`, `natureza`, `essencialidade`; o lançamento viaja em `corrigir`, como `chave` viaja hoje |
+| Nome dos campos do formulário | `/gastos` já fala pt-BR nos parâmetros (`eixo`, `inicio`, `fim`, `chave`, `data`), e norma 16 põe a interface em pt-BR | `grupo`, `grupo_novo`, `natureza`, `essencialidade`; o lançamento viaja em `corrigir`, como `chave` viaja hoje |
 | De onde vem o beneficiário da regra | um `payee` vindo do corpo deixaria gravar regra sobre coisa que o dono não viu | do lançamento apontado por `corrigir`, lido no servidor |
-| Select de categoria dependente do grupo por htmx | exigiria rota que devolve só um `<select>` e um segundo caminho de leitura da árvore; sem htmx a tela ficaria sem troca de grupo | não: um `<select>` de grupo e um de categoria com `<optgroup>` por grupo. A coerência é do servidor, que é onde RF-07 a cobra |
 | Corpo com UTF-8 cru | `app/routers/rules.py:264-272` já trata o mojibake do urlencoded, e `natureza`, `essencialidade` e nome de grupo novo carregam acento | o mesmo auxiliar, promovido a público, importado pela rota nova (norma 20) |
 | CSS novo | `app/static/css/` está fora do escopo declarado do item, e a linguagem visual é canônica em `product/00-linguagem-visual.md` | nenhuma regra nova: o bloco usa `.form`, `.field`, `.field-label`, `.field-input`, `.controls`, `.notice`, `.notices`, `.button`, `.button-quiet`, `.cifra`, `.lede`, `.section-title` e `.row-open`, que já existem |
 | Marca semântica na cifra nova | `tests/test_gastos_screen.py:148-156` fixa o conjunto exato de cifras com `negative`, e a linguagem visual reserva a cor ao número que pede decisão | nenhuma cifra do bloco novo leva `negative`; o sinal `−` colado ao número faz o trabalho |
@@ -166,7 +182,7 @@ transação que reclassifica a base.
       `app.queries.reach.holders`, chamada com `payee="mercado livre"` e com o
       `rule_id` que a correção devolveu, entrega exatamente uma linha, cujo
       `match_value` é `^mercado` — a regra de id menor continua pegando o
-      beneficiário <!-- RF-06 -->
+      beneficiário inteiro <!-- RF-06 -->
 - [ ] `comportamental` —
       *Dado* um banco temporário migrado por `app.migrate.run_migrations`,
       semeado por `seed_taxonomy(conn, narrowed(load_seed(), []))` — sem regra
@@ -217,23 +233,20 @@ transação que reclassifica a base.
       `transaction("t-ml-2", "2026-09-03", -50.00, descricao="Mercado Livre", categoria="Categoria da fonte")`
       e
       `transaction("t-mlp", "2026-09-04", -25.00, descricao="Mercado Livre Pago", categoria="Categoria da fonte")`,
-      com `classify_all(conn)` executado — é ele que registra `Categoria da
-      fonte` na tabela `categories` sob o grupo de escape —, e `PESSOAL` sendo o
-      valor de `SELECT id FROM category_groups WHERE name = 'Pessoal'`
-      *Quando* `app.taxonomy.rules.correct_payee` é chamada quatro vezes, todas
-      com `nature="variável"` e `essentiality="supérfluo"`: com
-      `payee="mercado livre"` e `group_id=9999`; com `payee="mercado livre"`,
-      `group_id=PESSOAL` e `category="Categoria da fonte"`; com
+      com `classify_all(conn)` executado, e `PESSOAL` sendo o valor de
+      `SELECT id FROM category_groups WHERE name = 'Pessoal'`
+      *Quando* `app.taxonomy.rules.correct_payee` é chamada três vezes, todas com
+      `nature="variável"` e `essentiality="supérfluo"`: com
+      `payee="mercado livre"` e `group_id=9999`; com
       `payee="beneficiario que nao existe"` e `group_id=PESSOAL`; e por fim com
       `payee="mercado livre"` e `group_id=PESSOAL`
-      *Então* as três primeiras levantam `app.taxonomy.rules.RuleError` com as
-      mensagens `grupo inválido: 9999`,
-      `categoria fora do grupo: Categoria da fonte` e
-      `beneficiário desconhecido: beneficiario que nao existe`; depois das três,
+      *Então* as duas primeiras levantam `app.taxonomy.rules.RuleError` com as
+      mensagens `grupo inválido: 9999` e
+      `beneficiário desconhecido: beneficiario que nao existe`; depois das duas,
       `SELECT count(*) FROM category_rules WHERE match_kind = 'description'`
       devolve `0` e `SELECT count(*) FROM category_groups` devolve o mesmo valor
-      que antes delas; e a quarta chamada responde sem levantar e leva essa mesma
-      contagem de regras a `1` — o controle positivo, sem o qual as duas
+      que antes delas; e a terceira chamada responde sem levantar e leva essa
+      mesma contagem de regras a `1` — o controle positivo, sem o qual as duas
       contagens passariam num banco vazio <!-- RF-07 -->
 - [ ] `comportamental` —
       *Dado* um banco temporário migrado por `app.migrate.run_migrations`,
@@ -294,23 +307,25 @@ transação que reclassifica a base.
       *Justificativa:* RF-02 e RF-06. A prévia e o resultado saírem de instruções
       diferentes é a única forma de o item mentir sem que ninguém perceba: dois
       textos de SQL divergem na primeira manutenção, e a tela passa a prometer um
-      número e entregar outro. `SPENDING` vem de `app.queries.spending` porque
-      transferência entre contas próprias e estorno não são gasto (invariante
-      25), e é repetindo o predicado que ele se perde numa das consultas. Norma
-      33: a agregação mora em `app/queries`.
+      número e entregar outro. `category_reach` existe porque RF-02 pede o
+      alcance da categoria de origem como **número**, não como escolha — a
+      categoria não é campo do formulário. `SPENDING` vem de
+      `app.queries.spending` porque transferência entre contas próprias e estorno
+      não são gasto (invariante 25), e é repetindo o predicado que ele se perde
+      numa das consultas. Norma 33: a agregação mora em `app/queries`.
 
-- [ ] **1.2 — Modificar `app/taxonomy/seed.json`: as quatro recusas novas.**
+- [ ] **1.2 — Modificar `app/taxonomy/seed.json`: as duas recusas novas.**
       Em `messages`, acrescentar `unknown_payee`
-      (`beneficiário desconhecido: {value}`), `invalid_category`
-      (`categoria inválida: {value}`), `category_outside_group`
-      (`categoria fora do grupo: {value}`) e `duplicate_group`
-      (`já existe um grupo com esse nome: {value}`).
+      (`beneficiário desconhecido: {value}`) e `duplicate_group`
+      (`já existe um grupo com esse nome: {value}`). `invalid_group`
+      (`grupo inválido: {value}`) já está no arquivo e é reusada como está.
       *Considerando:* nada antes.
       *Justificativa:* RF-07. As mensagens de recusa da taxonomia já moram aí e
       saem por `app.taxonomy.seed.message`; escrever a frase nova dentro do
       código faria a mesma tela dizer duas coisas para defeitos irmãos. Cada uma
       termina em `{value}` porque `tests/test_taxonomy_seed.py:90-92` percorre
-      todas as chaves e exige que a mensagem termine no valor recusado.
+      todas as chaves e exige que a mensagem termine no valor recusado — e quem
+      executa essa varredura é o `pytest` que o CI já roda, sem portão novo.
 
 - [ ] **1.3 — Modificar `app/taxonomy/rules.py`: a correção a partir do
       beneficiário.**
@@ -328,27 +343,29 @@ transação que reclassifica a base.
           amount_cents: int
 
       def correct_payee(conn, *, payee: str, group_id: int | None,
-                        new_group: str = "", category: str = "",
-                        nature: str, essentiality: str) -> Correction
+                        new_group: str = "", nature: str,
+                        essentiality: str) -> Correction
       ```
       Na ordem: recusa `payee` que não existe em `transactions`
       (`UnknownPayeeError`); com `new_group` não vazio, insere o grupo com
       `position` igual a `max(position) + 1` e `is_fallback` zero, recusando nome
-      já existente (`DuplicateGroupError`); com `category` não vazia, lê o
-      `group_id` dela em `categories` e recusa quando ela não existe ou pertence
-      a outro grupo (`CategoryOutsideGroupError`); procura a regra de
-      `match_kind` `description` com `match_value` igual a
-      `expression_for(payee)` e chama `update_rule` quando acha, `create_rule`
-      quando não. Toda recusa faz `conn.rollback()` antes de subir, para o
-      `INSERT` do grupo pendente não continuar visível na mesma conexão. O
-      alcance devolvido é `app.queries.reach.rule_reach` sobre a regra escrita.
+      já existente (`DuplicateGroupError`); procura a regra de `match_kind`
+      `description` com `match_value` igual a `expression_for(payee)` e chama
+      `update_rule` quando acha, `create_rule` quando não. Nenhum parâmetro de
+      categoria entra na assinatura. Toda recusa faz `conn.rollback()` antes de
+      subir, para o `INSERT` do grupo pendente não continuar visível na mesma
+      conexão. O alcance devolvido é `app.queries.reach.rule_reach` sobre a regra
+      escrita.
       *Considerando 1.1* (o alcance sai do gabarito) *e 1.2* (as frases).
       *Justificativa:* RF-03, RF-04, RF-05, RF-06, RF-07. O casamento exato é o
       que sustenta RF-02: `payee` é sempre `[a-z ]*`
       (`app/taxonomy/classify.py:94-101` com `app/ingest/normalize.py:14-23`),
       então `re.escape` não muda nada em uso normal e fecha a porta do dia em que
-      mudar. Reusar `create_rule` e `update_rule` é o que põe a escrita dentro do
-      `_write` que já partilha a transação com `classify_all`
+      mudar. A função não recebe categoria porque `category_rules`
+      (`app/migrations/sql/003_taxonomy.sql:25-33`) não tem onde guardá-la, e
+      atribuir categoria por regra competiria com a árvore, que é a dona dessa
+      decisão. Reusar `create_rule` e `update_rule` é o que põe a escrita dentro
+      do `_write` que já partilha a transação com `classify_all`
       (`app/taxonomy/rules.py:94-104`) — o "sucesso mentiroso" que o item `012`
       fechou volta por qualquer segundo caminho de escrita. O `rollback` na
       recusa existe porque o grupo é inserido antes da validação da regra, e a
@@ -371,15 +388,17 @@ transação que reclassifica a base.
       `holders` com e sem regra concorrente. Uma transferência e um estorno do
       mesmo beneficiário entram na base para provar que nenhum dos dois soma.
       *Considerando 1.1.*
-      *Justificativa:* RF-02, RF-06 e invariante 25. O par de prefixo é o que
-      separa casamento exato de casamento por começo — sem ele, uma regra
-      `^mercado livre` passa por todos os outros critérios e leva junto um
-      beneficiário que a prévia não contou.
+      *Justificativa:* RF-02, RF-06 e invariante 25. Quem executa é o `pytest`
+      que o CI já roda; nenhum portão novo entra em `scripts/gates/` e o
+      `gates_runner.sh` não é tocado. O par de prefixo é o que separa casamento
+      exato de casamento por começo — sem ele, uma regra `^mercado livre` passa
+      por todos os outros critérios e leva junto um beneficiário que a prévia não
+      contou.
 
 - [ ] **1.6 — Criar `tests/test_corrections.py` e ampliar `tests/test_axes.py`.**
       Em `tests/test_corrections.py`: a gravação com alcance igual à prévia; a
       regra concorrente de id menor; a segunda correção que atualiza em vez de
-      criar; o grupo novo com posição e escape; as três recusas com a quarta
+      criar; o grupo novo com posição e escape; as duas recusas com a terceira
       chamada válida ao lado; e a atomicidade, com `classify_all` substituída por
       `monkeypatch.setattr` por uma função que escreve metade e levanta — a mesma
       forma de `tests/test_rules_atomicity.py:35-40`. Em `tests/test_axes.py`: a
@@ -396,8 +415,9 @@ transação que reclassifica a base.
 ## Fase 2 — A correção dentro do lançamento aberto (api)
 
 **Objetivo da fase:** no drill-down de `/gastos` o dono abre um lançamento, lê
-quanto a correção alcança, escolhe grupo e categoria — ou cria grupo novo — e
-grava, com a tela dizendo em seguida quantos lançamentos mudaram de fato.
+quanto a correção alcança, escolhe o grupo — com a natureza e a essencialidade, ou
+criando grupo novo — e grava, com a tela dizendo em seguida quantos lançamentos
+mudaram de fato.
 
 **Critérios de aceite**
 
@@ -426,8 +446,10 @@ grava, com a tela dizendo em seguida quantos lançamentos mudaram de fato.
       na mesma execução, `GET /gastos?eixo=grupo&chave=Outros` e
       `GET /gastos?eixo=grupo&chave=Outros&corrigir=999999`
       *Então* a primeira responde `200` e contém `id="correcao"`, `name="grupo"`,
-      `name="categoria"`, `name="natureza"`, `name="essencialidade"`,
-      `name="grupo_novo"` e o texto `mercado livre`; no trecho entre
+      `name="natureza"`, `name="essencialidade"`, `name="grupo_novo"` e o texto
+      `mercado livre`, e **não** contém `name="categoria"` — os quatro nomes
+      achados na mesma resposta são o controle positivo da ausência, e a
+      categoria continua sendo decidida pela árvore; no trecho entre
       `id="alcance"` e o `</p>` seguinte estão `2 lançamento`, `−R$ 150,00` e
       `em toda a base`, e no trecho entre `id="alcance-categoria"` e o `</p>`
       seguinte estão `3 lançamento` e `−R$ 175,00`; a segunda responde `200` e
@@ -450,8 +472,8 @@ grava, com a tela dizendo em seguida quantos lançamentos mudaram de fato.
       `SELECT id FROM category_groups WHERE name = 'Pessoal'`
       *Quando*
       `POST /gastos/correcao?eixo=grupo&inicio=2026-09-01&fim=2026-09-05&chave=Outros&corrigir=<ALVO>`
-      é enviada com o corpo `grupo=<PESSOAL>`, `categoria` vazia, `grupo_novo`
-      vazio, `natureza=variável` e `essencialidade=supérfluo`
+      é enviada com o corpo `grupo=<PESSOAL>`, `grupo_novo` vazio,
+      `natureza=variável` e `essencialidade=supérfluo`
       *Então* a resposta é `200`; o trecho entre `id="resultado"` e o `</p>`
       seguinte contém `2 lançamento` e `Pessoal`;
       `SELECT count(*) FROM category_rules WHERE match_kind = 'description'`
@@ -521,23 +543,19 @@ grava, com a tela dizendo em seguida quantos lançamentos mudaram de fato.
       `transaction("t-ml-2", "2026-09-03", -50.00, descricao="Mercado Livre", categoria="Categoria da fonte")`
       e
       `transaction("t-mlp", "2026-09-04", -25.00, descricao="Mercado Livre Pago", categoria="Categoria da fonte")`
-      e classificada por `classify_all(conn)` — é ele que registra `Categoria da
-      fonte` na tabela `categories` sob o grupo de escape —, com `ALVO` sendo
+      e classificada, com `ALVO` sendo
       `SELECT id FROM transactions WHERE pluggy_id = 't-ml-1'` e `PESSOAL` sendo
       `SELECT id FROM category_groups WHERE name = 'Pessoal'`
-      *Quando* são enviadas, na mesma execução, quatro requisições para
+      *Quando* são enviadas, na mesma execução, três requisições para
       `POST /gastos/correcao?eixo=grupo&inicio=2026-09-01&fim=2026-09-05&chave=Outros`,
       todas com `natureza=variável` e `essencialidade=supérfluo`: uma com
-      `corrigir=<ALVO>` e `grupo=9999`; outra com `corrigir=<ALVO>`,
-      `grupo=<PESSOAL>` e `categoria=Categoria da fonte`; outra com
-      `corrigir=999999` e `grupo=<PESSOAL>`; e por fim uma com `corrigir=<ALVO>`
-      e `grupo=<PESSOAL>`
-      *Então* as três primeiras respondem `400`, cada uma trazendo
-      `id="erro-correcao"` com, na ordem, `grupo inválido: 9999`,
-      `categoria fora do grupo: Categoria da fonte` e
-      `beneficiário desconhecido`; depois das três,
+      `corrigir=<ALVO>` e `grupo=9999`; outra com `corrigir=999999` e
+      `grupo=<PESSOAL>`; e por fim uma com `corrigir=<ALVO>` e `grupo=<PESSOAL>`
+      *Então* as duas primeiras respondem `400`, cada uma trazendo
+      `id="erro-correcao"` com, na ordem, `grupo inválido: 9999` e
+      `beneficiário desconhecido`; depois das duas,
       `SELECT count(*) FROM category_rules WHERE match_kind = 'description'`
-      devolve `0`; e a quarta responde `200` e leva essa contagem a `1` — o
+      devolve `0`; e a terceira responde `200` e leva essa contagem a `1` — o
       controle positivo, que prova que a medição alcançava a tabela certa
       <!-- RF-07 -->
 - [ ] `comando` — `rtk proxy env DASH_ENV_FILE=/dev/null .venv/bin/python -m
@@ -650,34 +668,38 @@ grava, com a tela dizendo em seguida quantos lançamentos mudaram de fato.
       existente — antes do retorno curto de `key is None`, para a correção também
       abrir por URL digitada à mão. O contexto traz o lançamento, o beneficiário,
       o alcance por beneficiário (`payee_reach`) e por categoria de origem
-      (`category_reach`), os grupos, as categorias com o grupo de cada uma, as
-      naturezas, as essencialidades, o formulário e — quando houver — a recusa ou
-      o resultado. Nasce a rota `POST /gastos/correcao`, que lê `corrigir` da
-      query, tira o beneficiário do próprio lançamento, passa os campos por
-      `form_text`, chama `correct_payee`, responde a página inteira com
-      `status_code=200` no sucesso e `400` na recusa, e usa `holders` para nomear
-      a regra que continua segurando o beneficiário quando o alcance sai menor
-      que a prévia. As frases ficam em constantes de módulo, ao lado de
-      `CANDIDATES` e `MONTH_LENGTH`.
+      (`category_reach`), os grupos, as naturezas, as essencialidades, o
+      formulário e — quando houver — a recusa ou o resultado; a árvore de
+      categorias não é lida, porque o formulário não a pergunta. Nasce a rota
+      `POST /gastos/correcao`, que lê `corrigir` da query, tira o beneficiário do
+      próprio lançamento, passa os campos por `form_text`, chama `correct_payee`,
+      responde a página inteira com `status_code=200` no sucesso e `400` na
+      recusa, e usa `holders` para nomear a regra que continua segurando o
+      beneficiário quando o alcance sai `0` com a prévia acima de zero. As frases
+      ficam em constantes de módulo, ao lado de `CANDIDATES` e `MONTH_LENGTH`.
       *Considerando 1.1, 1.3, 1.4* e *2.1.*
       *Justificativa:* RF-01 a RF-08. O beneficiário sai do lançamento e nunca do
       corpo: um `payee` digitado por fora deixaria gravar regra sobre coisa que o
-      dono não viu. O POST responde a página inteira em vez de um fragmento
-      porque a escrita move a tabela, o painel e o total ao mesmo tempo, e porque
-      a tela precisa continuar respondendo sem htmx — é a mesma razão do botão de
-      submissão que `app/templates/gastos.html:44-47` já explica. A rota não monta
-      consulta (norma 30): alcance, agregação e vizinhança vêm de `app/queries`.
+      dono não viu. O alcance sai `0` ou sai inteiro, nunca uma fração — o
+      casamento é exato e todas as linhas do beneficiário carregam a mesma
+      string —, e é por isso que a frase do resultado tem de nomear a regra que
+      segura em vez de mostrar um número que parece defeito. O POST responde a
+      página inteira em vez de um fragmento porque a escrita move a tabela, o
+      painel e o total ao mesmo tempo, e porque a tela precisa continuar
+      respondendo sem htmx — é a mesma razão do botão de submissão que
+      `app/templates/gastos.html:44-47` já explica. A rota não monta consulta
+      (norma 30): alcance, agregação e vizinhança vêm de `app/queries`.
 
 - [ ] **2.3 — Criar `app/templates/fragments/gastos_correcao.html`.**
       Um `<form method="post">` cuja `action` carrega `eixo`, `inicio`, `fim`,
       `chave`, `data` e `corrigir` na própria query, e cujo corpo traz `grupo`,
-      `categoria` (com `<optgroup>` por grupo e uma primeira opção vazia),
-      `grupo_novo`, `natureza` e `essencialidade`. Acima do formulário, dois
-      parágrafos de alcance — `id="alcance"` e `id="alcance-categoria"` —, e
-      abaixo dele `id="resultado"` ou `id="erro-correcao"`, conforme a resposta.
-      Quando o lançamento pedido não existe, só a mensagem é renderizada. Os
-      campos `grupo`, `natureza` e `essencialidade` abrem já marcados no que o
-      lançamento carrega hoje.
+      `grupo_novo`, `natureza` e `essencialidade` — e nenhum campo de categoria.
+      Acima do formulário, dois parágrafos de alcance — `id="alcance"`, do
+      beneficiário, e `id="alcance-categoria"`, da categoria de origem, que é
+      informação e não escolha —, e abaixo dele `id="resultado"` ou
+      `id="erro-correcao"`, conforme a resposta. Quando o lançamento pedido não
+      existe, só a mensagem é renderizada. Os campos `grupo`, `natureza` e
+      `essencialidade` abrem já marcados no que o lançamento carrega hoje.
       *Considerando 2.2.*
       *Justificativa:* RF-01, RF-02, RF-04, RF-06, RF-07 e norma 27. A linguagem
       visual é `product/00-linguagem-visual.md`: rótulo em versalete, campo nunca
@@ -686,10 +708,10 @@ grava, com a tela dizendo em seguida quantos lançamentos mudaram de fato.
       bloco só usa classes que `app/static/css/app.css` já declara, porque a
       folha está fora do escopo do item. Nenhuma cifra do bloco leva `negative`:
       `tests/test_gastos_screen.py:148-156` fixa o conjunto exato de cifras
-      coloridas, e a régua reserva a cor ao número que pede decisão. O
-      `<optgroup>` é a árvore de duas alturas desenhada honestamente, e a
-      coerência entre grupo e categoria é conferida no servidor porque é lá que
-      RF-07 a cobra.
+      coloridas, e a régua reserva a cor ao número que pede decisão. A categoria
+      aparece só como o parágrafo de alcance: pedi-la no formulário criaria um
+      campo cujo único efeito seria poder ser recusado, e persistir a folha na
+      regra disputaria com a árvore a decisão que já é dela.
 
 - [ ] **2.4 — Modificar `app/templates/fragments/gastos_detalhe.html` e
       `app/templates/fragments/gastos_tabela.html`.**
@@ -710,11 +732,12 @@ grava, com a tela dizendo em seguida quantos lançamentos mudaram de fato.
       o que não passa por ali chega vazio.
 
 - [ ] **2.5 — Criar `tests/test_gastos_correcao_screen.py`.**
-      Abertura do bloco com os dois alcances e o total intacto; gravação com o
-      resultado, a regra e a repartição do eixo `grupo`; regra concorrente de id
-      menor com o resultado nomeando-a; grupo novo com corpo em bytes UTF-8
-      crus; as três recusas com a quarta requisição válida ao lado; o irmão de
-      prefixo que fica onde estava; e `/regras` listando a regra escrita daqui.
+      Abertura do bloco com os dois alcances, os campos presentes, a ausência de
+      campo de categoria e o total intacto; gravação com o resultado, a regra e a
+      repartição do eixo `grupo`; regra concorrente de id menor com o resultado
+      nomeando-a; grupo novo com corpo em bytes UTF-8 crus; as duas recusas com a
+      terceira requisição válida ao lado; o irmão de prefixo que fica onde
+      estava; e `/regras` listando a regra escrita daqui.
       *Considerando 2.2, 2.3* e *2.4.*
       *Justificativa:* RF-01 a RF-08. Quem executa é o `pytest` que o CI já roda;
       nenhum portão novo entra em `scripts/gates/` e o `gates_runner.sh` não é
@@ -749,14 +772,18 @@ em vez do trabalho dela.
 
 | Requisito | Fase | Critérios que o cobrem |
 |---|---|---|
-| RF-01 | 1, 2 | estrutural (`transactions_of` traz `id` e `payee`); estrutural (rota e fragmento novos); comportamental (o bloco aberto traz os quatro campos e o beneficiário); comportamental (grupo novo com corpo em UTF-8 cru); comando (a suíte da tela) |
-| RF-02 | 1, 2 | estrutural (gabarito único de consulta); comportamental (alcance por beneficiário, por irmão de prefixo e por categoria); comportamental (alcance da gravação igual à prévia); comportamental (os dois alcances na tela); integração (prévia igual nas duas execuções); integração (o irmão de prefixo não é arrastado) |
+| RF-01 | 1, 2 | estrutural (`transactions_of` traz `id` e `payee`); estrutural (rota e fragmento novos); comportamental (o bloco aberto traz grupo, grupo novo, natureza, essencialidade e o beneficiário, e nenhum campo de categoria); comportamental (grupo novo com corpo em UTF-8 cru); comando (a suíte da tela) |
+| RF-02 | 1, 2 | estrutural (gabarito único de consulta); comportamental (alcance por beneficiário, por irmão de prefixo e por categoria de origem); comportamental (alcance da gravação igual à prévia); comportamental (os dois alcances na tela); integração (prévia igual nas duas execuções); integração (o irmão de prefixo não é arrastado) |
 | RF-03 | 1, 2 | comportamental (a gravação e o alcance); comportamental (atomicidade com `classify_all` quebrada); comportamental (o POST grava e reparte); integração (o irmão de prefixo); integração (`/regras` lista a regra escrita daqui) |
 | RF-04 | 1, 2 | comportamental (grupo novo com posição e escape); comportamental (grupo novo pela tela, com acento) |
 | RF-05 | 1, 2 | comportamental (a segunda correção atualiza em vez de criar); integração (`/regras` mostra uma regra só) |
-| RF-06 | 1, 2 | estrutural (gabarito único); comportamental (regra concorrente de id menor e `holders`); comportamental (o resultado nomeia a regra que segura); integração (a diferença entre prévia e resultado tem nome) |
-| RF-07 | 1, 2 | comportamental (as três recusas com controle positivo, na função); comportamental (as três recusas com controle positivo, na tela) |
+| RF-06 | 1, 2 | estrutural (gabarito único); comportamental (regra concorrente de id menor, alcance `0` e `holders`); comportamental (o resultado diz `0 dos 2 lançamentos previstos` e nomeia a regra que segura); integração (a diferença entre prévia e resultado tem nome) |
+| RF-07 | 1, 2 | comportamental (as duas recusas com controle positivo, na função); comportamental (as duas recusas com controle positivo, na tela) |
 | RF-08 | 2 | comportamental (abrir a correção não move total nenhum); comportamental (o total do período segue igual depois da gravação, e só a repartição muda); comando (a suíte inteira) |
+
+A metade de RF-01 e de RF-07 que falava de categoria saiu por
+`04-divergencias/D-007.md`: o dono escolhe grupo, natureza e essencialidade, e
+não há par categoria×grupo para conferir.
 
 ## Pendências que viram item de roadmap
 
@@ -768,11 +795,6 @@ em vez do trabalho dela.
   voltarem para `Outros` em silêncio, que é exatamente o que este item existe
   para impedir. Separar o grupo do dono de um grupo de vocabulário aposentado
   exige marca no esquema, que é migração e requisito que o brief não pede.
-- **A categoria escolhida não é gravada em lugar nenhum.** RF-01 manda o dono
-  escolhê-la e RF-07 manda recusá-la quando não pertence ao grupo, mas
-  `category_rules` não tem coluna para ela e o não-escopo do brief proíbe mexer
-  na árvore. Registrar a folha escolhida na regra é migração e mudança de
-  contrato.
 - **A regra escrita aparece em `/regras` como expressão escapada.** O casamento
   exato é `^mercado\ livre$`, e a lista de regras imprime o `match_value` cru. É
   honesto e é o que a regra faz, mas é regex numa tela de que este item queria
@@ -783,8 +805,9 @@ em vez do trabalho dela.
 
 - **O bloco de correção em 375px de largura.** Ele não declara medida própria e
   reusa `.controls` e `.field`, que o item `017` já exercita, mas a composição
-  nova — dois `<select>`, um campo de texto e um botão dentro de `.detail-open`,
-  que por sua vez vive dentro de `.table-scroll` — só o navegador prova. Não há
-  critério tipado que a observe, e transformá-la em fase bloqueante travaria o
-  item por algo que nenhum agent enxerga. Vai para "Validações de campo
-  pendentes" do `roadmap.md` quando o item fechar.
+  nova — um `<select>`, um campo de texto, dois seletores de vocabulário e um
+  botão dentro de `.detail-open`, que por sua vez vive dentro de
+  `.table-scroll` — só o navegador prova. Não há critério tipado que a observe, e
+  transformá-la em fase bloqueante travaria o item por algo que nenhum agent
+  enxerga. Vai para "Validações de campo pendentes" do `roadmap.md` quando o item
+  fechar.

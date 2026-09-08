@@ -1184,7 +1184,7 @@
     "019-reclassificacao-a-partir-do-lancamento": {
       "title": "A correcao de classificacao comeca no lancamento, e diz quanto ela alcanca antes de gravar",
       "track": "completa",
-      "stage": "plan",
+      "stage": "execute",
       "stacks": [
         "python"
       ],
@@ -1197,12 +1197,24 @@
           "por": "autonomo"
         },
         "plan": {
-          "at": null,
-          "sha": null
+          "at": "2026-09-08T07:22:28Z",
+          "sha": "7c406e5f938e7faaae96e8537074812ab1b885a7",
+          "file": "product/items/019-reclassificacao-a-partir-do-lancamento/03-plan.md",
+          "por": "autonomo"
         }
       },
-      "current_phase": null,
-      "phases": {},
+      "current_phase": 1,
+      "phases": {
+        "1": {
+          "status": "em_execucao",
+          "reproved_count": 0,
+          "verdict": null,
+          "verdict_file": null,
+          "validated_sha": null,
+          "pr": null,
+          "blocked_on": []
+        }
+      },
       "divergences": {
         "D-007": {
           "status": "RECONCILIADA",
