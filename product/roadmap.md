@@ -62,6 +62,189 @@ PR e commit já escritos.
   ao lado da própria tabela. Abaixo de `60rem` a barra deita no topo e rola dentro
   de si.
 
+- [ ] `024-cartoes-como-entidade` — O cartão de crédito é uma entidade com os
+  dados que só o dono sabe: **limite, taxa mensal, dia de fechamento e dia de
+  vencimento**, editáveis na tela. Hoje não existe cartão nenhum no modelo —
+  `accounts` (`app/migrations/sql/001_schema.sql:17-25`) guarda `id`, `name`,
+  `type`, `subtype`, `institution` e `balance_cents`, e mais nada; a taxa vive em
+  `debts.monthly_rate_bp`, por dívida e não por conta, e o `014` registrou por
+  escrito que cartão **não** recebe taxa sugerida, porque fatura paga inteira não
+  cobra juro e derivar dos encargos daria 0,06% ao mês, um número falso.
+  A consequência medida está no roadmap desde o `005`: **R$ 16.744,62 de cartão
+  ficam fora da escada de dívida**, e o marco "dívidas caras zeradas" do objetivo
+  é calculado sem eles. Os quatro cartões são pré-cadastrados com os campos
+  vazios e o dono preenche — limite e taxa não se inferem do que a Pluggy manda,
+  e inventá-los seria pior que deixar em branco.
+  **Depende de:** nada aberto. **Destrava:** `026` e `028`.
+
+- [ ] `025-financiamentos-na-tela` — O financiamento do imóvel e o do veículo se
+  editam na tela, como todo o resto do que só o humano sabe. Hoje os dois moram
+  em arquivo JSON escrito à mão e fora do versionamento —
+  `data/manual/financiamento_caixa.json` e `cdc_safra_veiculo.json`, lidos por
+  `app/debts/ladder.py:22-23` —, o que contraria a norma 26 do projeto no lugar
+  em que ela mais importa: são as duas maiores dívidas do painel, e a do imóvel é
+  a que a escada existe para **não** amortizar antes da reserva. Os campos que já
+  existem no formato de hoje são saldo devedor, taxa mensal, prazo em meses e
+  valor da parcela; a tela os expõe com a mesma gramática de digitação do `015`,
+  e nenhum número muda de valor ao mudar de lugar.
+  **Depende de:** nada aberto. **Destrava:** `028`.
+
+- [ ] `026-evolucao-da-fatura-mes-a-mes` — O painel responde **como fica a fatura
+  do cartão mês a mês até zerar**, e não só quanto sai nos próximos 45 dias. O
+  motor de compromissos já sabe o que é preciso — `commitments` guarda
+  `installment_current`, `installment_total`, `installments_left` e `ends_month`
+  (`app/migrations/sql/004_commitments.sql:1-18`), e `released_cash`
+  (`app/commitments/live.py:62-68`) já soma o caixa que cada série libera ao
+  acabar. O que **não** existe é a série mensal fechada: hoje a previsão é uma
+  janela de 45 dias (`app/commitments/calendar.py:82-101`), e nenhuma consulta
+  soma "quanto ainda falta pagar" de uma compra parcelada. O item entrega a
+  curva por mês, com o mês em que cada parcelamento morre nomeado, para a decisão
+  de antecipar ou não ser tomada olhando a curva e não a intuição.
+  **Depende de:** `024-cartoes-como-entidade` — sem dia de fechamento e limite
+  não há fatura a projetar, só uma soma de parcelas.
+
+- [ ] `027-configuracao-do-gemini` — A integração com o Gemini se configura na
+  tela: **chave de API e escolha do modelo**. Hoje a chave só vem do ambiente
+  (`GEMINI_API_KEY`, `app/config.py:29,68`) e o modelo é constante no código
+  (`MODEL = "gemini-2.5-flash"`, `app/advisor/gemini.py:6`) — trocar de modelo
+  exige editar fonte, e `/consultor` só sabe dizer que a chave falta
+  (`app/templates/consultor.html:61`).
+  **A decisão que o discovery fecha, e ela é de segurança:** um campo de
+  formulário significa segredo gravado no SQLite, e a norma 14 diz que segredo
+  não entra no repositório. As opções são cifrar em repouso com chave derivada
+  fora do banco, manter a chave só no ambiente e configurar apenas o modelo na
+  tela, ou aceitar o texto puro num banco que já é local e não versionado — cada
+  uma com um custo diferente, e a escolha é do dono.
+  **Depende de:** nada aberto.
+
+- [ ] `028-consultor-comparativo-de-divida` — O consultor responde à pergunta que
+  decide dinheiro: **é melhor ficar no cheque especial ou pegar um empréstimo, e
+  qual proposta quita tudo mais barato**. Hoje `/consultor` explica o número e
+  pergunta o fato que falta, mas não compara caminhos de dívida — e as taxas que
+  a comparação exige só existem depois do `024` e do `025`.
+  **A restrição que desenha o item é a norma 23: quem calcula é função testada,
+  nunca o modelo.** A comparação é código determinístico — custo total de cada
+  caminho, mês a mês, até zerar — e o modelo lê o resultado e explica a escolha.
+  Se ele computasse "esse empréstimo te economiza R$ 3.400" e errasse por um
+  ponto percentual, o erro cairia na unidade central do produto e destruiria a
+  confiança em tudo o mais.
+  **Consequência prática para o dono:** nenhuma proposta de empréstimo está nos
+  dados de hoje. O item precisa de uma forma de **informar propostas** — taxa,
+  prazo, valor liberado, custo de contratação — para ter o que comparar contra o
+  cheque especial já medido.
+  **Depende de:** `024-cartoes-como-entidade` e `025-financiamentos-na-tela` — sem
+  as taxas reais a comparação responde com confiança um número que não mediu.
+
+- [ ] `023-taxonomia-hierarquica-do-dono` — A classificação primária é uma
+  **árvore de duas alturas que pertence ao dono**: grupo, e dentro dele
+  categoria. Moradia contém financiamento ou aluguel, condomínio, energia, água,
+  gás, internet e TV, reforma e manutenção, IPTU; Transporte contém financiamento
+  de veículo, combustível, manutenção, seguro, IPVA e licenciamento,
+  estacionamento e pedágio, aplicativo; e assim para Alimentação, Saúde,
+  Educação, Assinaturas, Pessoal, Financeiro, Dependentes, Renda, e o grupo
+  **Não é gasto**, que guarda transferência entre contas próprias e estorno e
+  existe porque sem ele o painel mente em R$ 20.272,00 (norma 25).
+  Hoje **não há hierarquia nenhuma**: `categories`
+  (`app/migrations/sql/001_schema.sql:20`) tem só `id` e `name`, sem chave
+  estrangeira para grupo, e guarda os nomes crus que a Pluggy manda — 77 rótulos
+  traduzidos em `app/taxonomy/seed.json`. `category_groups` são dez etiquetas
+  paralelas, aplicadas por regra. Grupo e categoria são dois campos lado a lado,
+  não pai e filho, e é essa forma que faz o vocabulário parecer preso à vida de
+  uma pessoa só: ele foi copiado de uma base, não desenhado.
+  O item redesenha a semente, dá à categoria o grupo a que ela pertence, e
+  remapeia as regras existentes — sem que nenhum total de gasto mude, porque a
+  classificação passa a ser da mesma transação por outro caminho.
+  **Depende de:** nada aberto. **Destrava:** `019`.
+
+- [ ] `019-reclassificacao-a-partir-do-lancamento` — A correção de classificação
+  começa onde o erro aparece: no lançamento aberto em `/gastos`, o dono escolhe o
+  grupo, **cria grupo novo ali mesmo** se nenhum dos dez serve, e a tela diz antes
+  de gravar quantos lançamentos e quanto dinheiro a correção alcança — os do mesmo
+  beneficiário e os da mesma categoria de origem. Hoje isso só existe em `/regras`,
+  num vocabulário que não é o de quem olha o gasto: uma expressão regular sobre o
+  beneficiário, ou o nome cru que a Pluggy mandou. Escolher grupo arrasta natureza
+  e essencialidade junto, porque uma regra atribui os três de uma vez e nenhum
+  deles aceita nulo — e é o par natureza × essencialidade que monta a lista de
+  corte. A correção vira **regra**, nunca exceção de uma linha: `classify_all`
+  recalcula a base inteira a cada sincronização, então uma marca presa a um
+  lançamento é apagada na carga seguinte, em silêncio. O item também resolve a
+  palavra "categoria", que hoje nomeia três coisas — o texto cru da Pluggy (o eixo
+  `categoria`, 77 valores distintos), a tabela `categories` que só espelha esses
+  nomes, e `category_groups`, que a tela chama de `grupo` e é o único que a
+  classificação de fato usa.
+  **Medido na base de 05/09/2026:** o resíduo sem regra é **zero** — a tela que
+  existe para achar classificação faltando afirma que não falta nada — enquanto
+  **244 lançamentos e R$ 16.556,28**, 7,6% do gasto, estão no grupo de escape
+  `Outros` por regra explícita, com `mercadolivre` partido em três beneficiários
+  distintos que somam R$ 1.679,53.
+  **Depende de:** `023-taxonomia-hierarquica-do-dono` — escolher grupo passa a
+  ser escolher grupo **e** categoria, e construir a correção sobre o vocabulário
+  plano de hoje é construí-la duas vezes; `002-gastos-tres-eixos` — a correção nasce no drill-down dele e
+  usa a mesma tabela de regras; `012-sync-pos-carga-atomica` — a reclassificação
+  roda dentro do tratamento de erro da carga, e um segundo caminho de escrita
+  entra na mesma transação ou reintroduz o sucesso mentiroso que aquele item
+  fechou.
+
+- [ ] `022-mes-corrente-como-abertura-padrao` — Toda tela abre no presente. O
+  período padrão de `/gastos` passa a ser **do dia 01 do mês corrente até a data
+  de referência**, e `/gastos` passa a aceitar `?data=` como as outras cinco
+  telas, em vez de ser a única que chama o leitor e descarta o que foi pedido.
+  Escolher outro período continua sendo do dono: o padrão é a abertura, não a
+  única janela.
+  Hoje `/gastos` abre nos **seis últimos meses fechados** e o mês corrente nunca
+  aparece na abertura — a janela termina no último dia do mês anterior. A decisão
+  é deliberada e está escrita em `app/queries/period.py`: a razão dada é que o
+  mês em curso abriria a tela sobre um punhado de dias. **O item derruba essa
+  decisão e paga o preço dela**, medido na base de 05/09/2026: a janela de hoje
+  mostra **732 lançamentos e R$ 103.772,33**; do dia 01 até 05, **7 lançamentos
+  e R$ 730,59**.
+  **Duas coisas que o discovery precisa resolver, porque a troca as expõe:**
+  primeiro, **cortar em "hoje" esconde mês corrente que já é conhecido** — 54
+  lançamentos e R$ 6.997,99 da base estão datados depois de 05/09, parcelas de
+  cartão que a Pluggy já postou, e só de setembro são R$ 1.614,45 no dia 08; o
+  mês inteiro é R$ 2.345,04 contra R$ 730,59 até hoje. Segundo, **a média mensal
+  do painel divide por meses inteiros** (`_months` de `app/queries/crossings.py`),
+  então uma janela de cinco dias imprime "média mensal" de cinco dias — e é a
+  média do cruzamento fixa × essencial que dimensiona a reserva do `007`, ainda
+  que `app/plan/objective.py` monte a própria janela e não consuma a de
+  `/gastos`.
+  **Depende de:** `016-data-de-referencia-no-caminho-de-recusa` — a abertura de
+  `/gastos` passa a sair do mesmo `screen_date`, com os mesmos três estados (sem
+  pedido, pedido aceito, pedido recusado), e o guarda de rota que aquele item
+  deixou em pé já cobre a sexta chamada.
+
+- [ ] `021-mascara-e-medida-dos-campos` — Todo campo de digitação declara o que
+  aceita e cabe no que aceita: campo de dinheiro chega ao servidor já na forma
+  que o leitor único exige, campo de texto tem teto de comprimento, e a largura
+  de cada um é proporcional ao que ele guarda. Hoje não existe **nenhum**
+  `maxlength`, `pattern`, `minlength` ou `required` em template nenhum, e
+  `.field-input` é `width: 100%` para todos: o aporte, de no máximo 12
+  algarismos, e a pergunta livre ao consultor, de 500 caracteres, têm a mesma
+  medida. Os 18 campos de digitação espalhados por sete telas carregam, no
+  máximo, `inputmode="decimal"` e `placeholder="0,00"` — dica de teclado, não
+  máscara. O item fecha o laço que o `015` abriu: lá a **leitura** ficou estrita
+  e `5000.00` deixou de virar R$ 500.000,00 em silêncio; aqui a **digitação**
+  passa a produzir o que o leitor aceita, em vez de devolver uma recusa que o
+  dono tem de decifrar. E acerta duas assimetrias que a varredura encontra: a
+  validade do fato em `/simulador` é texto cru com `placeholder="AAAA-MM-DD"`
+  enquanto `/gastos` usa `type="date"`; e o único teto de texto do projeto
+  inteiro é o `MAX_QUESTION = 500` de `app/routers/advisor.py` — o apelido do
+  beneficiário, o nome do cenário e a expressão regular da regra não têm nenhum,
+  no cliente nem no servidor.
+  **É item de varredura, e por isso vem depois do que ele varre.** Os campos de
+  `024`, `025` e `027` entram na conta: varrer uma vez ao fim custa menos que
+  varrer agora e de novo a cada tela nova.
+  **A escolha que o discovery fecha:** máscara ao digitar exige o primeiro
+  arquivo JavaScript próprio do projeto, que hoje só tem htmx e Chart.js por CDN
+  e um `<script>` embutido em `gastos.html`. Formatar ao sair do campo, ou não
+  formatar e apenas estreitar `inputmode`, teto e largura, são os caminhos sem
+  essa dívida. A largura sai dos tokens de medida do `017`, não de número novo.
+  **Depende de:** `015-configuracao-e-nome-do-beneficiario` — a máscara tem de
+  concordar com a gramática de `app/settings/typed.py`, e máscara que formata
+  para uma forma que o leitor recusa é pior que máscara nenhuma;
+  `017-navegacao-lateral-e-largura-de-monitor` — "tamanho adequado" se escreve
+  nos tokens de medida que ele criou.
+
 ## Dívida técnica
 
 Bloco separado de propósito. Pendência de processo — portão, fluxo de CI,
@@ -104,7 +287,7 @@ ao topo da fila é a régua local certa e o agregado errado.
   sozinha, e ele tem teste do próprio dente. Fechou com **526 testes**, lint e
   portões limpos.
 
-- [ ] `019-varredura-de-rota-que-nao-desce-em-subpasta` — O guarda que impede uma
+- [ ] `020-varredura-de-rota-que-nao-desce-em-subpasta` — O guarda que impede uma
   rota de resolver a data de tela por conta própria varre
   `app/routers/` com `glob("*.py")`, que não desce em subpasta, enquanto o
   critério de integração do `016` usa `grep -R`. Hoje os dois coincidem, porque
