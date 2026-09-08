@@ -7,7 +7,7 @@ from starlette.responses import Response
 from app.cards import store
 from app.cards.catalog import ACTION
 from app.db import connect
-from app.routers.settings import SAVED, _answer
+from app.routers.settings import SAVED, answer
 from app.settings.typed import InvalidValueError
 
 router = APIRouter()
@@ -25,7 +25,7 @@ def store_field(
         try:
             store.write(conn, cartao, campo, valor)
         except InvalidValueError as refusal:
-            return _answer(request, conn, notice=str(refusal), status_code=400)
-        return _answer(request, conn, done=SAVED)
+            return answer(request, conn, notice=str(refusal), status_code=400)
+        return answer(request, conn, done=SAVED)
     finally:
         conn.close()

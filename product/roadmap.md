@@ -103,19 +103,26 @@ PR e commit já escritos.
   **Depende de:** `024-cartoes-como-entidade` — sem dia de fechamento e limite
   não há fatura a projetar, só uma soma de parcelas.
 
-- [-] `027-configuracao-do-gemini` — A integração com o Gemini se configura na
-  tela: **chave de API e escolha do modelo**. Hoje a chave só vem do ambiente
-  (`GEMINI_API_KEY`, `app/config.py:29,68`) e o modelo é constante no código
-  (`MODEL = "gemini-2.5-flash"`, `app/advisor/gemini.py:6`) — trocar de modelo
-  exige editar fonte, e `/consultor` só sabe dizer que a chave falta
-  (`app/templates/consultor.html:61`).
-  **A decisão que o discovery fecha, e ela é de segurança:** um campo de
-  formulário significa segredo gravado no SQLite, e a norma 14 diz que segredo
-  não entra no repositório. As opções são cifrar em repouso com chave derivada
-  fora do banco, manter a chave só no ambiente e configurar apenas o modelo na
-  tela, ou aceitar o texto puro num banco que já é local e não versionado — cada
-  uma com um custo diferente, e a escolha é do dono.
-  **Depende de:** nada aberto.
+- [x] `027-configuracao-do-gemini` — A integração com o Gemini se configura na
+  tela: **chave de API e escolha do modelo**, em `/configuracao`, a mesma tela do
+  resto do que só o humano sabe. O que está gravado vence o ambiente; o ambiente
+  vale quando não há nada gravado; e sem nenhum dos dois o painel segue como
+  sempre — os números determinísticos na tela e a leitura da IA declarada
+  indisponível.
+  **A decisão de segurança, tomada e justificada:** a chave mora **no SQLite
+  local**, sem cifragem em repouso. O banco está fora do versionamento, então a
+  norma 14 continua valendo por construção; cifrar exigiria uma chave de
+  derivação que teria de morar no ambiente — exatamente onde a chave de API já
+  morava —, o que move o segredo um arquivo para o lado sem mudar quem o lê.
+  **A chave nunca volta inteira:** o campo chega vazio, a tela mostra no máximo
+  os quatro últimos caracteres, e apagar é ato próprio — campo em branco troca o
+  modelo e preserva a chave. E ela viaja no cabeçalho `x-goog-api-key`, não na
+  query string (`D-004`), porque query string carrega segredo para registro de
+  servidor, proxy e histórico por construção. Chave que não pode ser valor de
+  cabeçalho é recusada no ato de gravar, com a tela de pé.
+  O validador cego varreu **37 rotas em quatro estados do provedor** — sucesso,
+  chave recusada, falha de rede e resposta ilegível — procurando a chave em corpo,
+  cabeçalho, cookie, URL de saída, log e tela: nenhum vazamento.
 
 - [ ] `028-consultor-comparativo-de-divida` — O consultor responde à pergunta que
   decide dinheiro: **é melhor ficar no cheque especial ou pegar um empréstimo, e

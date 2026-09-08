@@ -1042,16 +1042,16 @@
     },
     "027-configuracao-do-gemini": {
       "title": "A integracao com o Gemini se configura na tela: chave e modelo",
-      "track": "rapida",
-      "stage": "execute",
+      "track": "completa",
+      "stage": "done",
       "stacks": [
         "python"
       ],
       "created_at": "2026-09-08T00:16:21Z",
       "approvals": {
         "brief": {
-          "at": "2026-09-08T00:23:28Z",
-          "sha": "a05c4a37809d5ed3b52f7f9a76e3913f66ca31cf",
+          "at": "2026-09-08T03:08:03Z",
+          "sha": "08677affcf015bad42a6a2e224f87c50af7661c6",
           "file": "product/items/027-configuracao-do-gemini/01-brief.md",
           "por": "autonomo"
         },
@@ -1065,23 +1065,31 @@
       "current_phase": 1,
       "phases": {
         "1": {
-          "status": "em_execucao",
+          "status": "aprovada",
           "reproved_count": 0,
-          "verdict": null,
-          "verdict_file": null,
-          "validated_sha": null,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/027-configuracao-do-gemini/05-veredictos/fase-1.md",
+          "validated_sha": "9c026b929e24d72ff4efa336f4c0e4f50480f7e3",
           "pr": null,
           "blocked_on": [
             "D-004"
-          ]
+          ],
+          "verdict_at": "2026-09-08T03:05:22Z",
+          "validated_trees": {
+            ".": "4d3aaa278456192ecd008b760b1c75580ed54a10"
+          },
+          "criteria_sha": "d596ca6d927fbce71e3d6e4252020719b1046d9bb7c8d229637e0df682e124d2"
         }
       },
       "divergences": {
         "D-004": {
-          "status": "PENDENTE",
+          "status": "RECONCILIADA",
           "kind": "normal",
           "phase": 1,
-          "detected_at": "2026-09-08T00:51:27Z"
+          "detected_at": "2026-09-08T00:51:27Z",
+          "aprovada_at": "2026-09-08T03:06:15Z",
+          "ratificada_por": "autonomo",
+          "reconciliada_at": "2026-09-08T03:07:56Z"
         }
       },
       "criteria_exception": null

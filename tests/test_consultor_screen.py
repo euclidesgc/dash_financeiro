@@ -45,3 +45,15 @@ def test_an_unreadable_date_is_refused_and_the_screen_still_answers_by_the_refer
     assert 'id="recusa"' in page.text
     assert "data inválida: data (banana)" in page.text
     assert f'<input type="hidden" name="data" value="{REFERENCE}">' in page.text
+
+
+def test_without_any_key_the_screen_points_to_the_configuration_screen(tmp_path, monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    app = _app(tmp_path, monkeypatch)
+    with TestClient(app, follow_redirects=False) as client:
+        client.post("/login", data={"login": LOGIN, "senha": PASSWORD})
+        page = client.get(SCREEN)
+
+    assert page.status_code == 200
+    assert "/configuracao" in page.text
+    assert "GEMINI_API_KEY" not in page.text

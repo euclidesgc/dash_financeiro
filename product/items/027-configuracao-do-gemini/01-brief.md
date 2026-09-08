@@ -29,14 +29,20 @@ inteira, nem registrada em log.
 
 ## Não-escopo
 
-- **A conversa com o provedor não muda.** Instrução, tempo limite, tradução de erro
-  para português e a regra de que a IA nunca calcula ficam como estão.
+> Reconciliado em D-004.
+
+- **A conversa com o provedor não muda, salvo o transporte da chave.** Instrução,
+  tempo limite, tradução de erro para português e a regra de que a IA nunca calcula
+  ficam como estão. A chave viaja para o provedor no cabeçalho da requisição, e não
+  na URL.
 - **Nenhuma outra credencial migra para a tela.** As da Pluggy e o segredo de sessão
   continuam no ambiente: são credencial de processo, não escolha de uso.
 - **Não há cifragem em repouso.** A decisão e a alternativa descartada estão em
   `00-discovery.md`.
 
 ## Requisitos
+
+> Reconciliado em D-004.
 
 - **RF-01.** Existe um leitor único da configuração da IA, e ele devolve a chave e o
   modelo em vigor. Nenhum outro módulo lê `GEMINI_API_KEY` nem a constante de modelo.
@@ -53,15 +59,18 @@ inteira, nem registrada em log.
   é recusado no ato da gravação, com mensagem em português dizendo o que fazer.
 - **RF-07.** A chave não é escrita em log, em mensagem de erro nem no texto de nenhuma
   tela — inclusive quando o provedor a recusa.
+- **RF-07b.** A chave viaja para o provedor no cabeçalho da requisição, e não na URL.
 - **RF-08.** Trocar chave ou modelo passa a valer na chamada seguinte, sem reiniciar o
   processo.
 
 ## Riscos
 
+> Reconciliado em D-004.
+
 - **Segredo em banco local.** É a decisão do item, e ela vale porque o banco está fora
   do versionamento e já guarda a vida financeira inteira do dono. O que não pode
-  acontecer é a chave vazar para onde ela não estava: resposta HTTP, log e captura de
-  tela. RF-05 e RF-07 são o que se verifica.
+  acontecer é a chave vazar para onde ela não estava: resposta HTTP, log, captura de
+  tela e URL da chamada ao provedor. RF-05, RF-07 e RF-07b são o que se verifica.
 - **A chave gravada silenciar o ambiente.** Se o dono gravar e depois esquecer, o
   ambiente deixa de valer sem aviso. Por isso RF-05 exige que a tela diga qual origem
   está em vigor.

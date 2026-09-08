@@ -8,8 +8,8 @@ from app.advisor.gaps import pending
 from app.auth.seed import seed_user
 from app.cards.catalog import CLOSING, DUE, LIMIT, RATE
 from app.db import connect
-from app.debts import ladder as ladder_module
 from app.debts.ladder import ladder, rebuild, set_rate, without_rate
+from app.financings import store as financings_store
 from app.main import create_app
 from app.settings.catalog import CARD_RATE
 
@@ -45,7 +45,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv("DASH_DB_PATH", str(tmp_path / "dash.sqlite"))
     monkeypatch.setenv("SESSION_SECRET", "chave-de-teste")
     monkeypatch.setenv("DASH_TODAY", TODAY.isoformat())
-    monkeypatch.setenv(ladder_module.MANUAL_DIR, str(tmp_path / "vazio"))
+    monkeypatch.setenv(financings_store.MANUAL_DIR, str(tmp_path / "vazio"))
     app = create_app()
     conn = connect()
     seed_user(conn, LOGIN, PASSWORD)

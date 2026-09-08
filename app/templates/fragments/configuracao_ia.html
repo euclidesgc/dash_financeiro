@@ -1,0 +1,39 @@
+<section id="ia" class="panel panel-wide">
+  <div class="stack-tight">
+    <h2 class="section-title">Leitura da IA</h2>
+    <p class="lede">A IA lê e explica; <strong>quem calcula é código testado</strong>. A chave
+      fica no banco desta máquina — fora do versionamento — e nunca volta inteira para esta
+      tela.</p>
+  </div>
+  <p class="eyebrow">Estado</p>
+  {% if ia['origin'] == 'ausente' %}
+  <p class="lede">Nenhuma chave guardada, e o ambiente também não tem uma.</p>
+  {% elif ia['origin'] == 'ambiente' %}
+  <p class="lede">Sem chave gravada aqui, o painel usa a do ambiente{% if ia['tail'] %}, terminada
+    em <code>{{ ia['tail'] }}</code>{% endif %}.</p>
+  {% else %}
+  <p class="lede">Há uma chave guardada nesta tela{% if ia['tail'] %}, terminada em
+    <code>{{ ia['tail'] }}</code>{% endif %}.</p>
+  {% endif %}
+  <form class="form" method="post" action="{{ ia_action }}">
+    <div class="field">
+      <label class="field-label" for="ia-chave">Chave da API</label>
+      <input class="field-input" id="ia-chave" name="chave" type="password" autocomplete="off">
+      <p class="lede">Deixar em branco não altera a chave guardada.</p>
+    </div>
+    <div class="field">
+      <label class="field-label" for="ia-modelo">Modelo</label>
+      <select class="field-input" id="ia-modelo" name="modelo">
+        {% for item in ia['models'] %}
+        <option value="{{ item }}"{% if item == ia['model'] %} selected{% endif %}>{{ item }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button class="button button-quiet button-small" type="submit">Salvar</button>
+  </form>
+  {% if ia['stored'] %}
+  <form class="form" method="post" action="{{ ia_forget_action }}">
+    <button class="button button-quiet button-small" type="submit">Apagar a chave guardada</button>
+  </form>
+  {% endif %}
+</section>
