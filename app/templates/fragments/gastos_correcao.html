@@ -1,0 +1,61 @@
+{% if correction.found %}
+<section id="correcao-bloco" class="panel panel-wide">
+  <h3 class="section-title">Corrigir a classificação de {{ correction.payee }}</h3>
+  <p class="lede" id="alcance">O beneficiário <strong>{{ correction.payee }}</strong> alcança
+    <span class="cifra">{{ correction.payee_reach['amount_cents']|brl }}</span> em
+    {{ correction.payee_reach['entries'] }} lançamento{% if correction.payee_reach['entries'] != 1 %}s{% endif %},
+    em toda a base.</p>
+  <p class="lede" id="alcance-categoria">A categoria de origem deste lançamento alcança
+    <span class="cifra">{{ correction.category_reach['amount_cents']|brl }}</span> em
+    {{ correction.category_reach['entries'] }} lançamento{% if correction.category_reach['entries'] != 1 %}s{% endif %}
+    — é medida, não é escolha: quem decide a categoria continua sendo a árvore.</p>
+  {% if correction.notice %}
+  <p class="notice" id="erro-correcao" role="alert">{{ correction.notice }}</p>
+  {% endif %}
+  {% if correction.result %}
+  <p class="notice notice-done" id="resultado" role="status">{{ correction.result.message }}
+    {% if correction.result.held %}<a href="/regras">Ver em /regras</a>{% endif %}</p>
+  {% endif %}
+  <form id="correcao" class="form" method="post"
+        action="{{ screen }}/correcao?eixo={{ axis|urlencode }}&amp;inicio={{ start }}&amp;fim={{ end }}&amp;chave={{ (key or '')|urlencode }}&amp;data={{ reference }}&amp;corrigir={{ correction.id }}">
+    <div class="controls">
+      <div class="field">
+        <label class="field-label" for="campo-correcao-grupo">Grupo</label>
+        <select class="field-input" id="campo-correcao-grupo" name="grupo">
+          {% for group in correction.groups %}
+          <option value="{{ group['id'] }}"{% if group['id'] == correction.current_group_id %} selected{% endif %}>{{ group['name'] }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label" for="campo-correcao-grupo-novo">Ou grupo novo</label>
+        <input class="field-input" id="campo-correcao-grupo-novo" name="grupo_novo" type="text"
+               autocapitalize="none" spellcheck="false">
+      </div>
+      <div class="field">
+        <label class="field-label" for="campo-correcao-natureza">Natureza</label>
+        <select class="field-input" id="campo-correcao-natureza" name="natureza">
+          {% for value in correction.natures %}
+          <option value="{{ value }}"{% if value == correction.current_nature %} selected{% endif %}>{{ value }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label" for="campo-correcao-essencialidade">Essencialidade</label>
+        <select class="field-input" id="campo-correcao-essencialidade" name="essencialidade">
+          {% for value in correction.terms %}
+          <option value="{{ value }}"{% if value == correction.current_essentiality %} selected{% endif %}>{{ value }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <p class="lede">A correção vira regra sobre o beneficiário e reclassifica toda a base na
+      hora. Preencher o grupo novo tem prioridade sobre o grupo escolhido acima.</p>
+    <button class="button" type="submit">Corrigir todos os lançamentos deste beneficiário</button>
+  </form>
+</section>
+{% elif correction.notice %}
+<p class="notice" id="erro-correcao" role="alert">{{ correction.notice }}</p>
+{% else %}
+<p class="notice" id="aviso-correcao" role="alert">Lançamento não encontrado. Abra outro pela lista acima.</p>
+{% endif %}

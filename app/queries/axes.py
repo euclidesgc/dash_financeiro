@@ -7,6 +7,7 @@ from app.queries.spending import SPENDING
 
 __all__ = (
     "AXES",
+    "ESSENTIALITY_AXIS",
     "PAYEE_AXIS",
     "InvalidPeriodError",
     "UnknownAxisError",
@@ -26,6 +27,12 @@ AXES: tuple[str, ...] = tuple(_COLUMNS)
 # Derived from the data, never spelled out: the axis names are interface
 # vocabulary and no file of app/ may carry one as a literal.
 PAYEE_AXIS = next(name for name, column in _COLUMNS.items() if column == "payee")
+
+# Decisão: same reason as PAYEE_AXIS. The correction form binds a field by
+# this exact name, and the name shares a prefix with one of the three
+# essentiality values — writing it out in the router would trip the very
+# guard this pattern satisfies.
+ESSENTIALITY_AXIS = next(name for name, column in _COLUMNS.items() if column == "essentiality")
 
 _UNKNOWN_AXIS = "eixo inválido: {value}. Eixos aceitos: {axes}"
 
