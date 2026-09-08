@@ -40,7 +40,7 @@ isolada, na árvore de hoje.
       seguinte **repõe** as categorias observadas. O controle positivo é que o
       teste falha se a classificação não rodar.
 - [ ] `comando` — RF-03
-      `rtk proxy env DASH_ENV_FILE=/dev/null .venv/bin/python -m pytest -q tests/test_classify.py tests/test_taxonomy.py`
+      `rtk proxy env DASH_ENV_FILE=/dev/null .venv/bin/python -m pytest -q tests/test_classify.py tests/test_taxonomy_tree.py tests/test_taxonomy_remap.py tests/test_taxonomy_integration.py`
       sai `0`, sem `failed` nem `error` — o caminho encadeado da linha de comando
       continua como estava.
 - [ ] `comportamental` — RF-04
