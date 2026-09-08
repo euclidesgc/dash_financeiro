@@ -350,6 +350,37 @@ def test_the_two_refusals_leave_no_rule_beside_the_positive_control(opened):
     conn.close()
 
 
+def test_a_correction_missing_the_grupo_field_is_refused_in_portuguese_and_writes_nothing(opened):
+    client, target, _pessoal = opened
+
+    response = client.post(
+        CORRECTION,
+        params={
+            "eixo": "grupo",
+            "inicio": "2026-09-01",
+            "fim": "2026-09-05",
+            "chave": "Outros",
+            "corrigir": target,
+        },
+        data={"grupo": "", "grupo_novo": "", "natureza": "variável", "essencialidade": "supérfluo"},
+    )
+
+    assert response.status_code == 400
+    notice = _between(response.text, "erro-correcao")
+    assert "None" not in notice
+    assert "escolha" in notice.lower()
+    assert "grupo" in notice.lower()
+
+    conn = connect()
+    assert (
+        conn.execute(
+            "SELECT count(*) FROM category_rules WHERE match_kind = 'description'"
+        ).fetchone()[0]
+        == 0
+    )
+    conn.close()
+
+
 def test_a_correction_posted_without_a_target_still_shows_the_refusal(opened):
     client, _target, pessoal = opened
 
