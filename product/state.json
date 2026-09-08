@@ -862,7 +862,7 @@
     "022-mes-corrente-como-abertura-padrao": {
       "title": "Toda tela abre no presente: /gastos do dia 01 ate a data de referencia, e aceita ?data=",
       "track": "rapida",
-      "stage": "execute",
+      "stage": "done",
       "stacks": [
         "python"
       ],
@@ -884,13 +884,18 @@
       "current_phase": 1,
       "phases": {
         "1": {
-          "status": "em_execucao",
+          "status": "aprovada",
           "reproved_count": 0,
-          "verdict": null,
-          "verdict_file": null,
-          "validated_sha": null,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/022-mes-corrente-como-abertura-padrao/05-veredictos/fase-1.md",
+          "validated_sha": "0d5d4ca26531a9f213354340b979d67f727d89cb",
           "pr": null,
-          "blocked_on": []
+          "blocked_on": [],
+          "verdict_at": "2026-09-08T02:43:58Z",
+          "validated_trees": {
+            ".": "48b3364b7188a9a7fbb1db6be3208eee61388f07"
+          },
+          "criteria_sha": "94eacc2bb755bf662dfa31a109aeb6632cd327ade619b5fbd5b49d92b7de172b"
         }
       },
       "divergences": {},
