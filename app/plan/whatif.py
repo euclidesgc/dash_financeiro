@@ -5,6 +5,7 @@ from datetime import date
 from typing import Any
 
 from app.plan.timeline import BASE, simulate
+from app.settings.limits import SCENARIO_NAME_MAX
 from app.settings.store import stored
 from app.settings.typed import InvalidValueError, parse_money, parse_months
 
@@ -92,6 +93,10 @@ def parse_move(kind: str, monthly: str, once: str, months: str) -> Move:
 def save(conn: sqlite3.Connection, name: str, move: Move) -> None:
     if not (name or "").strip():
         raise InvalidValueError("O cenário precisa de um nome.")
+    if len(name.strip()) > SCENARIO_NAME_MAX:
+        raise InvalidValueError(
+            f"Nome do cenário muito longo: no máximo {SCENARIO_NAME_MAX} caracteres."
+        )
     conn.execute(
         "INSERT OR REPLACE INTO scenarios "
         "(name, created_at, kind, monthly_cents, once_cents, months) "

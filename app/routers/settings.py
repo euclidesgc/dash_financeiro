@@ -84,7 +84,10 @@ def name_payee(
             return answer(request, conn, notice=UNKNOWN_PAYEE.format(payee=payee), status_code=400)
         given = text(nome).strip()
         if given:
-            names.name_it(conn, payee, given, names.OWNER)
+            try:
+                names.name_it(conn, payee, given, names.OWNER)
+            except InvalidValueError as refusal:
+                return answer(request, conn, notice=str(refusal), status_code=400)
             return answer(request, conn, done=NAMED)
         # An empty field is the owner deleting the nickname, and RF-24 says the
         # name then falls back to what was there before — never to the raw
