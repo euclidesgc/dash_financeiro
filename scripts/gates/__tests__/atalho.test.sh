@@ -11,8 +11,9 @@ raiz="$(cd "$(dirname "$0")/../../.." && pwd)"
 alvo="$raiz/scripts/gates/atalho.sh"
 falhas=0
 
-# Sem esta guarda, `bash <alvo inexistente>` sai 1 e **todo** caso que espera
-# recusa passa — o conjunto fica verde medindo a própria ausência.
+# Reason: without this guard, `bash <missing target>` exits 1 and **every**
+# case expecting a refusal passes — the whole suite goes green measuring its
+# own absence.
 if [ ! -f "$alvo" ]; then
   printf '::error::%s não existe — não há o que medir\n' "$alvo" >&2
   exit 2
@@ -20,16 +21,14 @@ fi
 
 ROADMAP='# Roadmap
 
-## Itens
-
 - [x] `001-esqueleto` — bootstrap
 - [-] `014-limite-de-taxa` — limitar requisições por conta
 - [ ] `015-perfil` — ver e editar os próprios dados
 '
 
-# projeto <conteúdo do arquivo de código> [conteúdo do roadmap | SEM_ROADMAP]
-# Monta um repositório git com o código e (quase sempre) o roadmap, e ecoa o
-# caminho. O `git add` é o que põe o arquivo no universo do `git ls-files`.
+# Reason: projeto <code file content> [roadmap content | SEM_ROADMAP] builds a
+# git repository with the code and (almost always) the roadmap, and echoes
+# the path. `git add` is what puts the file in `git ls-files`'s universe.
 projeto() {
   local codigo="$1" roadmap="${2:-$ROADMAP}" dir
   dir="$(mktemp -d)"
@@ -43,9 +42,10 @@ projeto() {
   printf '%s' "$dir"
 }
 
-# roda <diretório> — executa o portão como o projeto o executa.
-# `GITHUB_WORKSPACE` sai do ambiente de propósito: dentro do CI ele apontaria
-# para o repositório do harness, e o portão mediria a árvore errada em todo caso.
+# Reason: roda <directory> runs the gate the way the project runs it.
+# `GITHUB_WORKSPACE` is unset from the environment on purpose — inside CI it
+# would point at the harness's own repository, and the gate would measure
+# the wrong tree either way.
 roda() {
   ( cd "$1" && env -u GITHUB_WORKSPACE bash "$alvo" )
 }
@@ -109,9 +109,9 @@ contem "sem marcador, ele diz que varreu e não achou" "0 marcador(es)" "$LIMPO"
 contem "o roadmap ausente reprova por não medir, e diz isso" "não conseguiu medir" \
   "$COMPLETO" "SEM_ROADMAP"
 
-# O prefixo de comentário não é só de linguagem C: um projeto com Python, SQL
-# ou shell marca com `#` e com `--`, e um portão cego a eles aprova a dívida
-# inteira de meio repositório sem nunca acusar nada.
+# Reason: the comment prefix is not only C-family — a project with Python,
+# SQL or shell marks with `#` and with `--`, and a gate blind to them clears
+# half a repository's whole debt without ever flagging a thing.
 outro_prefixo() { # outro_prefixo <nome> <arquivo> <linha> <esperado>
   local nome="$1" arquivo="$2" linha="$3" esperado="$4" dir obtido
   dir="$(mktemp -d)"
@@ -137,9 +137,9 @@ outro_prefixo "marcador Python incompleto REPROVA" "tarefa.py" \
 outro_prefixo "marcador SQL completo aprova" "consulta.sql" \
   "-- atalho: sem índice. teto: 100k linhas. troca: índice composto quando passar. item: 015-perfil" 0
 
-# Documentação que EXPLICA a convenção não é dívida. Um portão que a conta
-# reprova o texto que ensina a regra, e o time aprende a apagar o exemplo em
-# vez de escrever o marcador.
+# Reason: documentation that EXPLAINS the convention is not debt. A gate
+# that counts it fails the very text that teaches the rule, and the team
+# learns to delete the example instead of writing the marker.
 md_ignorado() {
   local dir obtido
   dir="$(mktemp -d)"
@@ -148,8 +148,9 @@ md_ignorado() {
   printf '%s\n' "$ROADMAP" > "$dir/product/roadmap.md"
   printf '%s\n' 'Exemplo: `// atalho: trava global.` — sem teto de propósito.' \
     > "$dir/docs/convencao.md"
-  # Um arquivo de código limpo mantém o universo não-vazio: sem ele o portão
-  # reprovaria por não ter o que varrer, e o caso mediria outra coisa.
+  # Reason: a clean code file keeps the universe non-empty — without it the
+  # gate would fail for having nothing to sweep, and the case would measure
+  # something else entirely.
   mkdir -p "$dir/src"
   printf '%s\n' 'export const x = 1;' > "$dir/src/servico.ts"
   git -C "$dir" add -A >/dev/null 2>&1
@@ -165,8 +166,9 @@ md_ignorado() {
 }
 md_ignorado
 
-# Fora de um repositório git não há `git ls-files`, e varrer um universo que não
-# se conhece responde "nenhum marcador" para o caso em que nem se olhou.
+# Reason: outside a git repository there is no `git ls-files`, and sweeping a
+# universe it does not know answers "no marker" for the case where it never
+# even looked.
 fora_de_git() {
   local dir obtido saida
   dir="$(mktemp -d)"
