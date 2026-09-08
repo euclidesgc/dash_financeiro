@@ -116,10 +116,10 @@ def correct_payee(
             )
             created = False
     except Exception:
-        # Motivo: the group above, when created, is an uncommitted write on this same
-        # connection: without this rollback a refusal here would leave it
-        # standing, invisible to every other connection but this one — the one
-        # the screen redraws with.
+        # Reason: the group above, when created, is an uncommitted write on
+        # this same connection — without this rollback a refusal here would
+        # leave it standing, invisible to every other connection but this
+        # one — the one the screen redraws with.
         conn.rollback()
         raise
     rule_id = conn.execute(
@@ -127,9 +127,9 @@ def correct_payee(
         (classify.MATCH_DESCRIPTION, expression),
     ).fetchone()["id"]
     reach = rule_reach(conn, rule_id)
-    # Motivo: create_rule/update_rule already ran _validate above, and a None
-    # group_id never passes it — so reaching this point means target_group
-    # is real.
+    # Reason: create_rule/update_rule already ran _validate above, and a
+    # None group_id never passes it — so reaching this point means
+    # target_group is real.
     assert target_group is not None
     return Correction(
         rule_id=rule_id,

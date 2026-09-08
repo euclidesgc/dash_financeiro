@@ -12,8 +12,9 @@ MATCH_CATEGORY = "category"
 # residue the panel offers for correction (invariant 25).
 _SPENDING = "amount_cents < 0 AND is_transfer = 0 AND is_refund = 0 AND refunded_by IS NULL"
 
-# Motivo: a bare tuple has no field names, so the order is written here once —
-# rule_id (None only for the fallback), group_id, nature, essentiality.
+# Reason: a bare tuple has no field names, so the order is written here
+# once — rule_id (None only for the fallback), group_id, nature,
+# essentiality.
 _Target = tuple[int | None, int, str, str]
 
 

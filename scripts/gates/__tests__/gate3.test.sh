@@ -24,11 +24,11 @@ fi
 tmp="${TMPDIR:-/tmp}/gate3-test-$$"
 mkdir -p "$tmp"
 
-# Contorno: as fixtures abaixo escrevem comentário sem marca de propósito —
-# é o caso que o portão tem de acusar. Escritas como texto literal, essas
-# linhas também seriam um comentário sem marca DESTE arquivo de teste, e a
-# medição da árvore contaria o próprio teste como dívida. `h` faz o "#" só
-# nascer no arquivo gerado, nunca na fonte deste script.
+# Workaround: the fixtures below write an unmarked comment on purpose —
+# that is the case the gate has to flag. Written as literal text, those
+# lines would also be an unmarked comment of THIS test file, and measuring
+# the tree would count the test itself as debt. `h` makes the "#" only be
+# born in the generated file, never in this script's own source.
 h='#'
 
 marca_en="$tmp/marca_en.py"

@@ -6,9 +6,10 @@ from app.settings.limits import MAX_DIGITS, MAX_RATE_BP
 
 CENTS_IN_UNIT = 100
 
-# Motivo: bare \d matches every Unicode decimal digit, and an arabic-indic or
-# fullwidth digit was reading as a correct number in a field that decides a car
-# sale — the defect was acceptance, not the arithmetic. re.ASCII closes it.
+# Reason: bare \d matches every Unicode decimal digit, and an arabic-indic
+# or fullwidth digit was reading as a correct number in a field that
+# decides a car sale — the defect was acceptance, not the arithmetic.
+# re.ASCII closes it.
 _MONEY = re.compile(r"^\d{1,3}(\.\d{3})*(,\d{1,2})?$|^\d+(,\d{1,2})?$", re.ASCII)
 _WHOLE = re.compile(r"^\d+$", re.ASCII)
 
@@ -64,7 +65,7 @@ def parse_months(typed: str, field: str = "Prazo") -> int | None:
     cleaned = (typed or "").strip()
     if not cleaned:
         return None
-    # Motivo: SQLite's INTEGER column overflows past nineteen digits, and
+    # Reason: SQLite's INTEGER column overflows past nineteen digits, and
     # int() alone would pass a term straight through to that 500 — the same
     # failure parse_money already guards against, proven twice now: on the
     # offer's prazo and on the goal's reserve months.

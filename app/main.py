@@ -50,8 +50,8 @@ def create_app() -> FastAPI:
     TEMPLATES.env.globals["tokens_css"] = _stylesheet("tokens.css")
     TEMPLATES.env.globals["app_css"] = _stylesheet("app.css")
     TEMPLATES.env.globals["screens"] = marked
-    # Motivo: RF-03 pede o mesmo número dos dois lados — o template lê o teto
-    # daqui em vez de repeti-lo.
+    # Reason: RF-03 asks for the same number on both sides — the template
+    # reads the ceiling from here instead of repeating it.
     TEMPLATES.env.globals["limits"] = limits
     TEMPLATES.env.filters["brl"] = brl
     TEMPLATES.env.filters["dia"] = day

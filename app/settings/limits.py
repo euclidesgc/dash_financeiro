@@ -1,90 +1,93 @@
-# Decisão: a casa única dos tetos (RF-03). Cada dono que antes escrevia o
-# próprio número passa a importar daqui, e todo campo de texto sem teto ganha
-# um aqui.
+# Decision: the single home for ceilings (RF-03). Every owner that used to
+# write its own number now imports from here, and every text field with no
+# ceiling gets one here.
 
-# Motivo: passar de trezentos algarismos faz float() devolver inf, e round(inf)
-# levanta — um 500 num campo de dinheiro. Doze algarismos já é mais dinheiro do
-# que este painel jamais vai precisar somar.
+# Reason: past three hundred digits float() returns inf, and round(inf)
+# raises — a 500 on a money field. Twelve digits is already more money than
+# this panel will ever need to add up.
 MAX_DIGITS = 12
 
-# Motivo: nome digitado à mão numa proposta de crédito; a lista de propostas na
-# tela de configuração lê confortavelmente até esse tamanho.
+# Reason: a name typed by hand on a credit offer; the offers list on the
+# configuration screen reads comfortably up to this length.
 NAME_MAX = 60
 
-# Motivo: pergunta livre ao consultor; teto herdado do item 009, sem mudança de
-# valor.
+# Reason: a free-form question to the advisor; ceiling inherited from item
+# 009, with no change in value.
 MAX_QUESTION = 500
 
-# Motivo: apelido de beneficiário substitui o nome fantasia ou a razão social
-# na tela, e a maior razão social observada nesta base tem menos de cinquenta
-# caracteres — a mesma ordem de grandeza do nome de proposta cobre com folga.
+# Reason: a payee nickname replaces the trade name or legal name on the
+# screen, and the longest legal name observed in this base has under fifty
+# characters — the same order of magnitude as the offer name covers with
+# room to spare.
 PAYEE_ALIAS_MAX = 60
 
-# Motivo: nome de cenário é rótulo curto de uma linha de tabela, não uma
-# descrição — quarenta caracteres cabem uma frase como "Reduzir plano de
-# saúde" com sobra.
+# Reason: a scenario name is a short label on a table row, not a
+# description — forty characters fit a sentence like "Reduzir plano de
+# saúde" with room to spare.
 SCENARIO_NAME_MAX = 40
 
-# Motivo: expressão de regra é um regex escrito à mão, às vezes juntando mais
-# de um nome de beneficiário por alternância — duzentos caracteres cobrem
-# vários nomes escapados sem deixar a coluna sem teto nenhum.
+# Reason: a rule expression is a hand-written regex, sometimes joining more
+# than one payee name by alternation — two hundred characters cover several
+# escaped names without leaving the column with no ceiling at all.
 RULE_EXPRESSION_MAX = 200
 
-# Motivo: teto próprio por tipo de dívida, não os cem por cento ao mês do leitor
-# genérico. O imóvel real desta base corre a 0,72% e o CDC do veículo a 1,63%
-# (docs/plano.md, 05/09/2026); vinte por cento ao mês num financiamento
-# imobiliário já é agiotagem, não erro de digitação que o leitor deva deixar
-# passar.
+# Reason: its own ceiling per debt kind, not the generic reader's hundred
+# per cent a month. This base's real mortgage runs at 0.72% and the
+# vehicle's CDC at 1.63% (docs/plano.md, 2026-09-05); twenty per cent a
+# month on a mortgage is already loan-sharking, not a typo the reader
+# should let through.
 MORTGAGE_MAX_RATE_BP = 2000
 
-# Motivo: o CDC de veículo corre mais quente que o imobiliário num contrato de
-# crédito ruim, então o teto dele fica acima — e é número próprio, não o do
-# imóvel.
+# Reason: a vehicle CDC runs hotter than a mortgage on a bad credit
+# contract, so its ceiling sits above it — and it is its own number, not
+# the mortgage's.
 VEHICLE_MAX_RATE_BP = 4000
 
-# Motivo: o teto do leitor genérico de taxa (cem por cento ao mês) — o maior
-# dos três tetos de taxa do projeto. Movido de app/settings/typed.py: RF-03
-# pede uma casa só, e um teto que decide uma recusa não é diferente por ter
-# nascido antes do módulo que os reúne.
+# Reason: the generic rate reader's ceiling (a hundred per cent a month) —
+# the largest of the project's three rate ceilings. Moved from
+# app/settings/typed.py: RF-03 asks for a single home, and a ceiling that
+# decides a refusal is no different for having been born before the module
+# that gathers them.
 MAX_RATE_BP = 10_000
 
-# Motivo: dia do mês, para o fechamento e o vencimento do cartão. Movido de
-# app/cards/typed.py pela mesma razão do teto de taxa acima.
+# Reason: day of the month, for the card's closing and due date. Moved from
+# app/cards/typed.py for the same reason as the rate ceiling above.
 MIN_DAY = 1
 MAX_DAY = 31
 
-# Motivo: maxlength conta caracteres digitados, não algarismos. Dinheiro
-# aceita separador de milhar e vírgula decimal — a forma que a tela reexibe
-# um valor já guardado, por exemplo "999.999.999,99" — e o teto em
-# caracteres precisa caber essa forma inteira, sem cortar o último dígito.
-# No pior caso, com MAX_DIGITS algarismos divididos entre a parte inteira e
-# duas casas decimais, entram três pontos de milhar e a vírgula: MAX_DIGITS
-# mais quatro caracteres de pontuação.
+# Reason: maxlength counts typed characters, not digits. Money accepts a
+# thousands separator and a decimal comma — the form the screen redisplays
+# a stored value in, for example "999.999.999,99" — and the ceiling in
+# characters needs to fit that whole form, without cutting off the last
+# digit. In the worst case, with MAX_DIGITS digits split between the whole
+# part and two decimal places, three thousand-separator dots and the comma
+# come in: MAX_DIGITS plus four punctuation characters.
 MONEY_FIELD_MAXLENGTH = MAX_DIGITS + 4
 
-# Motivo: taxa é escrita como "XX,YY" por cento ao mês. MAX_RATE_BP — o
-# maior teto de taxa do projeto — é a forma mais longa: os algarismos
-# inteiros de cem por cento, a vírgula e duas casas decimais.
+# Reason: a rate is written as "XX,YY" per cent a month. MAX_RATE_BP — the
+# project's largest rate ceiling — is the longest form: the whole digits of
+# a hundred per cent, the comma and two decimal places.
 RATE_FIELD_MAXLENGTH = len(str(MAX_RATE_BP // 100)) + 3
 
-# Motivo: dia do mês vai de 1 a 31 — no máximo os algarismos de MAX_DAY, sem
-# pontuação.
+# Reason: day of the month runs from 1 to 31 — at most the digits of
+# MAX_DAY, with no punctuation.
 DAY_FIELD_MAXLENGTH = len(str(MAX_DAY))
 
-# Motivo: validade é digitada em AAAA-MM-DD — a única forma que
-# app/plan/whatif.py aceita (VALID_DATE) — sempre dez caracteres.
+# Reason: validity is typed as YYYY-MM-DD — the only form
+# app/plan/whatif.py accepts (VALID_DATE) — always ten characters.
 VALIDITY_FIELD_MAXLENGTH = 10
 
-# Motivo: login, senha e a chave da API não têm teto no servidor — Argon2id
-# aceita senha de qualquer tamanho, a tabela users não limita o login, e a
-# chave da IA só é recusada por caractere ilegível, nunca por tamanho. O
-# número aqui é só experiência de uso (norma 13): impede o campo de crescer
-# sem fim na tela, e não é cobrado em lugar nenhum do servidor — por isso o
-# teste de coerência não o cobre.
+# Reason: login, password and the API key have no ceiling on the server —
+# Argon2id accepts a password of any length, the users table does not limit
+# the login, and the AI key is only refused for an illegible character,
+# never for length. The number here is only user experience (norm 13): it
+# keeps the field from growing without end on the screen, and is not
+# charged anywhere on the server — which is why the coherence test does not
+# cover it.
 CREDENTIAL_FIELD_MAXLENGTH = 128
 
-# Motivo: nome de grupo de categoria também não tem teto no servidor — nasce
-# livre na correção de um lançamento. Mesma ordem de grandeza do nome de
-# cenário, mesma nota do teto de credencial acima: é UX, não é cobrado pelo
-# servidor.
+# Reason: a category group name also has no ceiling on the server — it is
+# born free while correcting an entry. Same order of magnitude as the
+# scenario name, same note as the credential ceiling above: it is UX, not
+# charged by the server.
 CATEGORY_GROUP_MAXLENGTH = 40

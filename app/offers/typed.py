@@ -9,9 +9,9 @@ _REPLACEMENT_CHAR = "�"
 
 
 def _has_illegible_byte(value: str) -> bool:
-    # Motivo: app/offers/store.py writes with ON CONFLICT (name) DO UPDATE — the
-    # name is the write key, and a byte the owner cannot retype is a row they
-    # cannot overwrite.
+    # Reason: app/offers/store.py writes with ON CONFLICT (name) DO
+    # UPDATE — the name is the write key, and a byte the owner cannot
+    # retype is a row they cannot overwrite.
     return _REPLACEMENT_CHAR in value or any(unicodedata.category(char) == "Cc" for char in value)
 
 

@@ -3,7 +3,7 @@ from typing import Any
 
 from app.accounts import CREDIT
 
-# Motivo (D-006): GROUP BY a.name before the join with the series is what
+# Reason: (D-006) GROUP BY a.name before the join with the series is what
 # stops two accounts with the same name from doubling the curve while the
 # total beside it stays right. c.due_day is left out on purpose: it is the
 # day the series was charged, not the day the invoice is due, and the two

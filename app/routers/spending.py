@@ -130,7 +130,7 @@ def spending_correction(
     grupo: Annotated[str, Form()] = "",
     grupo_novo: Annotated[str, Form()] = "",
     natureza: Annotated[str, Form()] = "",
-    # Contorno: bound by alias, not by name. The parameter reads whatever
+    # Workaround: bound by alias, not by name. The parameter reads whatever
     # the form field named after ESSENTIALITY_AXIS carries, without
     # spelling that field's name here as a literal.
     term: Annotated[str, Form(alias=ESSENTIALITY_AXIS)] = "",
@@ -146,7 +146,7 @@ def spending_correction(
         notice: str | None = None
         result: Correction | None = None
         if corrigir is None:
-            # Motivo: without a target there is no payee to look up, so
+            # Reason: without a target there is no payee to look up, so
             # calling correct_payee here would blame an "unknown payee" for a
             # request that never named one.
             notice = CORRECTION_MISSING_TARGET_MESSAGE
@@ -232,7 +232,7 @@ def _base(axis: str, start: str, end: str, reference: Reference) -> dict[str, An
 
 def _ahead(conn: sqlite3.Connection, reference: Reference, end: str) -> Ahead:
     reference_iso = reference.date.isoformat()
-    # Motivo: a window whose end already reaches or passes the reference date
+    # Reason: a window whose end already reaches or passes the reference date
     # already carries whatever the current month posted ahead of it in its own
     # total, so naming it again here would say those entries are out of a
     # total that already holds them. A window that ends in an earlier month
@@ -258,7 +258,7 @@ def _table_context(
     rows = aggregate(conn, axis=axis, start=start, end=end)
     context = _base(axis, start, end, reference)
     if axis == PAYEE_AXIS:
-        # Motivo: only the label. row['key'] is the label and the drill-down
+        # Reason: only the label. row['key'] is the label and the drill-down
         # parameter at once, and replacing the rendered value would kill the
         # opening of the list in silence (RF-28).
         context["labels"] = {**context["labels"], **payee_labels(conn)}
@@ -324,7 +324,7 @@ def _correction_context(
     result: Correction | None,
 ) -> dict[str, Any] | None:
     if corrigir is None:
-        # Motivo: a refusal built above (missing target) still needs a place
+        # Reason: a refusal built above (missing target) still needs a place
         # to land; returning None here would carry the built notice into the
         # template and then drop it, which is the bug this guards against.
         return {"found": False, "notice": notice} if notice is not None else None

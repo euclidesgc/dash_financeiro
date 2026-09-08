@@ -47,11 +47,12 @@ def read(conn: sqlite3.Connection, kind: str) -> dict[str, Any] | None:
 
 
 def seed_from_manual(conn: sqlite3.Connection) -> int:
-    # Decisão: o guarda é por tipo de contrato, não por a tabela estar vazia.
-    # Contando a tabela inteira, a primeira gravação de um financiamento pela
-    # tela dava a importação por encerrada e o outro contrato nunca mais era
-    # semeado — o degrau sumia da escada de dívidas sem uma palavra. Quem já
-    # está na tabela continua intocado, que é a razão original do guarda.
+    # Decision: the guard is by contract kind, not by the table being
+    # empty. Counting the whole table, the first write of a financing
+    # through the screen gave the import for finished and the other
+    # contract was never seeded again — its rung silently vanished from the
+    # debt ladder. Whatever is already in the table stays untouched, which
+    # is the guard's original reason.
     present = {row[0] for row in conn.execute("SELECT kind FROM financings")}
     seeded = 0
     for kind, path, to_row in (
