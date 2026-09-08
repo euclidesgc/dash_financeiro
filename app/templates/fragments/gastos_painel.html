@@ -7,6 +7,10 @@
       <h2 class="section-title">Evolução</h2>
       <p class="lede">Treze meses até {{ end[:7] }}. O gráfico é a leitura rápida; a tabela é o dado,
         e ela fica de pé mesmo quando o gráfico não carrega.</p>
+      {% if series_open %}
+      <p class="lede" id="mes-em-curso">O mês de {{ end[:7] }} ainda não fechou: a última barra soma
+        o mês inteiro, diferente do total do período acima, que para em {{ reference|dia }}.</p>
+      {% endif %}
     </div>
     <div id="grafico" class="chart" hidden><canvas class="chart-canvas"></canvas></div>
     <div class="table-scroll">
@@ -42,7 +46,11 @@
         <div class="stack-tight">
           <h3 class="crossing-label">{{ cross['label'] }}</h3>
           <p class="crossing-total cifra{% if cross['total_cents'] < 0 %} negative{% endif %}">{{ cross['total_cents']|brl }}</p>
+          {% if whole_months %}
           <p class="lede">Média mensal de <span class="cifra">{{ cross['monthly_average_cents']|brl }}</span>.</p>
+          {% else %}
+          <p class="lede">No período, sem divisão por mês.</p>
+          {% endif %}
         </div>
         {% if cross['rows'] %}
         <div class="table-scroll">

@@ -6,6 +6,12 @@
     <p class="eyebrow">Total do período</p>
     <p class="headline cifra{% if total_cents < 0 %} negative{% endif %}">{{ total_cents|brl }}</p>
     <p class="lede">{{ entries }} lançamento{% if entries != 1 %}s{% endif %} de {{ start|dia }} a {{ end|dia }}.</p>
+    {% if ahead['entries'] %}
+    <p class="lede" id="posterior">{{ ahead['entries'] }} lançamento{% if ahead['entries'] != 1 %}s{% endif %}
+      do mês já {% if ahead['entries'] != 1 %}estão{% else %}está{% endif %} postado{% if ahead['entries'] != 1 %}s{% endif %}
+      depois de {{ reference|dia }}, somando <span class="cifra">{{ ahead['amount_cents']|brl }}</span>,
+      fora deste total.</p>
+    {% endif %}
   </div>
   {% if rows %}
   <div class="table-scroll">
@@ -39,9 +45,9 @@
   {% else %}
   <div class="empty">
     <p class="empty-title">Nenhum gasto neste período.</p>
-    <p class="lede">Escolha outras datas nos campos acima, ou volte aos seis meses fechados
-      mais recentes, que é onde a tela abre.</p>
-    <a class="button button-quiet" href="{{ screen }}?eixo={{ axis|urlencode }}">Voltar aos seis meses fechados</a>
+    <p class="lede">Escolha outras datas nos campos acima, ou volte ao mês corrente,
+      que é onde a tela abre.</p>
+    <a class="button button-quiet" href="{{ screen }}?eixo={{ axis|urlencode }}">Voltar ao mês corrente</a>
   </div>
   {% endif %}
   <div id="detalhe" class="detail" aria-live="polite">
