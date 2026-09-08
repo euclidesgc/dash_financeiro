@@ -30,8 +30,9 @@ _INSERT = (
 
 def rebuild(conn: sqlite3.Connection, *, today: date | None = None) -> int:
     store.reconcile(conn)
-    # Wiped and rewritten, like the commitments: a half rebuilt ladder keeps
-    # adding up and starts lying about where the next real earns most.
+    # Reason: wiped and rewritten, like the commitments — a half rebuilt
+    # ladder keeps adding up and starts lying about where the next real
+    # earns most.
     rates = {
         (row["kind"], row["name"]): row["monthly_rate_bp"]
         for row in conn.execute("SELECT kind, name, monthly_rate_bp FROM debts")
@@ -45,10 +46,11 @@ def rebuild(conn: sqlite3.Connection, *, today: date | None = None) -> int:
                 row["kind"],
                 row["name"],
                 row["balance_cents"],
-                # A rate the owner typed only survives the reload when nothing
-                # recomputed one: a financing's rate always comes back from its
-                # own row, and only a step no source reproduces — an overdraft,
-                # a card — falls back to what was there.
+                # Reason: a rate the owner typed only survives the reload
+                # when nothing recomputed one — a financing's rate always
+                # comes back from its own row, and only a step no source
+                # reproduces — an overdraft, a card — falls back to what was
+                # there.
                 row["monthly_rate_bp"]
                 if row["monthly_rate_bp"] is not None
                 else rates.get((row["kind"], row["name"])),
@@ -65,8 +67,9 @@ def rebuild(conn: sqlite3.Connection, *, today: date | None = None) -> int:
 
 
 def _from_accounts(conn: sqlite3.Connection) -> list[dict[str, Any]]:
-    # One step per account, not one per kind: the accounts have different limits
-    # and different rates, and the rate is a field of the step.
+    # Reason: one step per account, not one per kind — the accounts have
+    # different limits and different rates, and the rate is a field of the
+    # step.
     found = conn.execute(
         "SELECT id, name, type, balance_cents FROM accounts "
         "WHERE balance_cents < 0 AND type IN (?, ?) ORDER BY balance_cents",
@@ -108,17 +111,18 @@ def _from_financings(conn: sqlite3.Connection, today: date) -> list[dict[str, An
             first_due = date.fromisoformat(row["first_due_date"])
             left = remaining_months(first_due, row["term_months"], today)
             if left <= 0:
-                # Every instalment due settles the contract: it is not a step
-                # with a balance of inverted sign (invariant 22).
+                # Reason: every instalment due settles the contract — it is
+                # not a step with a balance of inverted sign (invariant 22).
                 continue
             rows.append(
                 {
                     "kind": VEHICLE,
                     "name": NAMES[VEHICLE],
-                    # The balance of a Price loan is the present value of the
-                    # instalments not yet due, discounted at the contract rate:
-                    # it is what the law makes the bank offer on early
-                    # settlement, and copying a figure would freeze it.
+                    # Reason: the balance of a Price loan is the present
+                    # value of the instalments not yet due, discounted at
+                    # the contract rate — it is what the law makes the bank
+                    # offer on early settlement, and copying a figure would
+                    # freeze it.
                     "balance_cents": present_value_cents(
                         row["payment_cents"], row["monthly_rate_bp"], left
                     ),
@@ -143,9 +147,9 @@ def ladder(conn: sqlite3.Connection) -> list[dict[str, Any]]:
 
 
 def without_rate(conn: sqlite3.Connection) -> list[dict[str, Any]]:
-    # A step with no rate has no place on the ladder, and guessing one would be
-    # the panel deciding what it does not know. It is shown apart, saying what is
-    # missing (RF-08).
+    # Reason: a step with no rate has no place on the ladder, and guessing
+    # one would be the panel deciding what it does not know. It is shown
+    # apart, saying what is missing (RF-08).
     return [
         dict(row)
         for row in conn.execute(
@@ -170,8 +174,8 @@ def set_rate(conn: sqlite3.Connection, debt_id: int, typed: str) -> None:
     if found["kind"] == CARD and found["account_id"] is not None:
         store.write(conn, found["account_id"], RATE, typed)
         return
-    # A write that touches no row and answers 200 shows the owner a screen that
-    # reloads as if it had saved.
+    # Reason: a write that touches no row and answers 200 shows the owner a
+    # screen that reloads as if it had saved.
     changed = conn.execute(
         "UPDATE debts SET monthly_rate_bp = ? WHERE id = ?", (parse_rate(typed), debt_id)
     ).rowcount
