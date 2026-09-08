@@ -158,6 +158,28 @@ def test_a_migration_fora_de_ordem_names_both_versions_in_the_refusal(tmp_path, 
     assert "018" in str(excinfo.value)
 
 
+def test_a_version_narrower_than_three_digits_is_refused_at_the_door(tmp_path, conn):
+    # A ordem e o guarda comparam texto, e "9" ordena depois de "015": uma
+    # migração sem o zero à esquerda inverteria as duas coisas ao mesmo tempo.
+    folder = tmp_path / "sql"
+    folder.mkdir()
+    _write_sql(folder, "9_sem_zero.sql", "CREATE TABLE marker_9 (id INTEGER PRIMARY KEY);")
+
+    with pytest.raises(OutOfOrderMigrationError) as excinfo:
+        apply_migrations(conn, folder)
+
+    assert "9_sem_zero.sql" in str(excinfo.value)
+    assert conn.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 0
+
+
+def test_the_three_digit_form_the_project_uses_still_applies(tmp_path, conn):
+    folder = tmp_path / "sql"
+    folder.mkdir()
+    _write_sql(folder, "019_next.sql", "CREATE TABLE marker_019 (id INTEGER PRIMARY KEY);")
+
+    assert apply_migrations(conn, folder) == ["019_next.sql"]
+
+
 def test_the_refusal_da_ordem_leaves_schema_migrations_unchanged(tmp_path, conn):
     folder = tmp_path / "sql"
     folder.mkdir()

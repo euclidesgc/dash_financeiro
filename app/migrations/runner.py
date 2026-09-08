@@ -1,3 +1,4 @@
+import re
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
@@ -12,6 +13,9 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 
 class OutOfOrderMigrationError(RuntimeError):
     pass
+
+
+_VERSION = re.compile(r"[0-9]{3}")
 
 
 def _version_of(path: Path) -> str:
@@ -41,11 +45,20 @@ def apply_migrations(conn: sqlite3.Connection, folder: Path) -> list[str]:
         conn.execute(CONTROL_TABLE)
         known = {row[0] for row in conn.execute("SELECT version FROM schema_migrations")}
         highest_known = max(known, default=None)
-        pending = [
-            (path, _version_of(path))
-            for path in sorted(folder.glob("*.sql"))
-            if _version_of(path) not in known
-        ]
+        pending = []
+        for path in sorted(folder.glob("*.sql")):
+            version = _version_of(path)
+            # Decisão: a ordem e o guarda comparam a versão como texto, e texto
+            # só ordena como número enquanto todos tiverem a mesma largura —
+            # "9" vem depois de "015". Recusar a largura errada na porta é mais
+            # barato que descobrir a inversão numa base já migrada.
+            if not _VERSION.fullmatch(version):
+                raise OutOfOrderMigrationError(
+                    f"migração “{path.name}” não começa por três algarismos; "
+                    "renomeie para a forma 019_descricao.sql"
+                )
+            if version not in known:
+                pending.append((path, version))
         if highest_known is not None:
             for _, version in pending:
                 if version < highest_known:
