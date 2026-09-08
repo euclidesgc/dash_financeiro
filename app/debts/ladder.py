@@ -1,26 +1,16 @@
-import json
-import os
 import sqlite3
 from datetime import date
-from pathlib import Path
 
 from app.accounts import BANK, CREDIT
 from app.db import connect
+from app.financings import MORTGAGE, NAMES, VEHICLE
+from app.financings import store as financings_store
+from app.financings.math import present_value_cents, remaining_months
+from app.financings.money import RATE_SCALE
 from app.settings.typed import parse_rate
 
 OVERDRAFT = "overdraft"
 CARD = "card"
-MORTGAGE = "mortgage"
-VEHICLE = "vehicle"
-
-RATE_SCALE = 10000
-BASIS_POINTS = 100
-MONTHS_IN_YEAR = 12
-
-MANUAL_DIR = "DASH_MANUAL_DIR"
-DEFAULT_MANUAL = "data/manual"
-MORTGAGE_FILE = "financiamento_caixa.json"
-VEHICLE_FILE = "cdc_safra_veiculo.json"
 
 _COLUMNS = (
     "id, kind, name, balance_cents, monthly_rate_bp, term_months, payment_cents, source, account_id"
@@ -32,10 +22,6 @@ _INSERT = (
 )
 
 
-def manual_dir() -> Path:
-    return Path(os.environ.get(MANUAL_DIR) or DEFAULT_MANUAL)
-
-
 def rebuild(conn: sqlite3.Connection, *, today: date | None = None) -> int:
     # Wiped and rewritten, like the commitments: a half rebuilt ladder keeps
     # adding up and starts lying about where the next real earns most.
@@ -44,7 +30,7 @@ def rebuild(conn: sqlite3.Connection, *, today: date | None = None) -> int:
         for row in conn.execute("SELECT kind, name, monthly_rate_bp FROM debts")
     }
     conn.execute("DELETE FROM debts")
-    rows = _from_accounts(conn) + _from_contracts(today or date.today())
+    rows = _from_accounts(conn) + _from_financings(conn, today or date.today())
     conn.executemany(
         _INSERT,
         [
@@ -52,9 +38,13 @@ def rebuild(conn: sqlite3.Connection, *, today: date | None = None) -> int:
                 row["kind"],
                 row["name"],
                 row["balance_cents"],
-                # A rate the owner typed survives the reload: it is the one thing
-                # on this screen that no source can produce again.
-                rates.get((row["kind"], row["name"]), row["monthly_rate_bp"]),
+                # A rate the owner typed only survives the reload when nothing
+                # recomputed one: a financing's rate always comes back from its
+                # own row, and only a step no source reproduces — an overdraft,
+                # a card — falls back to what was there.
+                row["monthly_rate_bp"]
+                if row["monthly_rate_bp"] is not None
+                else rates.get((row["kind"], row["name"])),
                 row["term_months"],
                 row["payment_cents"],
                 row["source"],
@@ -90,75 +80,49 @@ def _from_accounts(conn: sqlite3.Connection) -> list[dict]:
     ]
 
 
-def _from_contracts(today: date) -> list[dict]:
+def _from_financings(conn: sqlite3.Connection, today: date) -> list[dict]:
+    financings_store.seed_from_manual(conn)
     rows = []
-    mortgage = _read(MORTGAGE_FILE)
-    if mortgage:
-        rows.append(_mortgage(mortgage))
-    vehicle = _read(VEHICLE_FILE)
-    if vehicle:
-        rows.append(_vehicle(vehicle, today))
+    for row in financings_store.read_all(conn):
+        if row["kind"] == MORTGAGE:
+            rows.append(
+                {
+                    "kind": MORTGAGE,
+                    "name": NAMES[MORTGAGE],
+                    "balance_cents": row["balance_cents"],
+                    "monthly_rate_bp": row["monthly_rate_bp"],
+                    "term_months": row["term_months"],
+                    "payment_cents": None,
+                    "source": "financings",
+                    "account_id": None,
+                }
+            )
+        elif row["kind"] == VEHICLE:
+            first_due = date.fromisoformat(row["first_due_date"])
+            left = remaining_months(first_due, row["term_months"], today)
+            if left <= 0:
+                # Every instalment due settles the contract: it is not a step
+                # with a balance of inverted sign (invariant 22).
+                continue
+            rows.append(
+                {
+                    "kind": VEHICLE,
+                    "name": NAMES[VEHICLE],
+                    # The balance of a Price loan is the present value of the
+                    # instalments not yet due, discounted at the contract rate:
+                    # it is what the law makes the bank offer on early
+                    # settlement, and copying a figure would freeze it.
+                    "balance_cents": present_value_cents(
+                        row["payment_cents"], row["monthly_rate_bp"], left
+                    ),
+                    "monthly_rate_bp": row["monthly_rate_bp"],
+                    "term_months": left,
+                    "payment_cents": row["payment_cents"],
+                    "source": "financings",
+                    "account_id": None,
+                }
+            )
     return rows
-
-
-def _read(name: str) -> dict | None:
-    # data/ lives outside version control, so the panel has to boot on a machine
-    # that never received the contracts. A missing file is a missing step, never
-    # a broken load (RF-05).
-    path = manual_dir() / name
-    if not path.is_file():
-        return None
-    return json.loads(path.read_text())
-
-
-def _mortgage(data: dict) -> dict:
-    yearly = data["juros_efetivos_aa_pct"] / 100
-    monthly = (1 + yearly) ** (1 / MONTHS_IN_YEAR) - 1
-    return {
-        "kind": MORTGAGE,
-        "name": "Financiamento imobiliário",
-        "balance_cents": -_cents(data["saldo_devedor"]),
-        "monthly_rate_bp": round(monthly * RATE_SCALE),
-        "term_months": data["prazo_restante_meses"],
-        "payment_cents": None,
-        "source": MORTGAGE_FILE,
-        "account_id": None,
-    }
-
-
-def _vehicle(data: dict, today: date) -> dict:
-    rate = data["juros_efetivo_mensal_pct"] / 100
-    payment = data["valor_parcela"]
-    left = data["prazo_meses"] - _paid(data, today)
-    return {
-        "kind": VEHICLE,
-        "name": "CDC do veículo",
-        # The balance of a Price loan is the present value of the instalments not
-        # yet due, discounted at the contract rate: it is what the law makes the
-        # bank offer on early settlement, and copying a figure would freeze it.
-        "balance_cents": -round(payment * (1 - (1 + rate) ** -left) / rate * BASIS_POINTS),
-        "monthly_rate_bp": round(rate * RATE_SCALE),
-        "term_months": left,
-        "payment_cents": -_cents(payment),
-        "source": VEHICLE_FILE,
-        "account_id": None,
-    }
-
-
-def _paid(data: dict, today: date) -> int:
-    first = date.fromisoformat(data["primeiro_vencimento"])
-    year, month, paid = first.year, first.month, 0
-    for _ in range(data["prazo_meses"]):
-        if date(year, month, first.day) <= today:
-            paid += 1
-        month += 1
-        if month > MONTHS_IN_YEAR:
-            month, year = 1, year + 1
-    return paid
-
-
-def _cents(value: float) -> int:
-    return round(value * BASIS_POINTS)
 
 
 def ladder(conn: sqlite3.Connection) -> list[dict]:

@@ -41,7 +41,7 @@ UNKNOWN_PAYEE = "Beneficiário desconhecido: “{payee}”."
 def settings_screen(request: Request) -> Response:
     conn = connect()
     try:
-        return _answer(request, conn)
+        return answer(request, conn)
     finally:
         conn.close()
 
@@ -55,11 +55,11 @@ def store_value(
     conn = connect()
     try:
         try:
-            _refuse_window_the_base_cannot_fill(conn, _text(nome), _text(valor))
-            store.write(conn, _text(nome), _text(valor))
+            _refuse_window_the_base_cannot_fill(conn, text(nome), text(valor))
+            store.write(conn, text(nome), text(valor))
         except InvalidValueError as refusal:
-            return _answer(request, conn, notice=str(refusal), status_code=400)
-        return _answer(request, conn, done=SAVED)
+            return answer(request, conn, notice=str(refusal), status_code=400)
+        return answer(request, conn, done=SAVED)
     finally:
         conn.close()
 
@@ -70,20 +70,20 @@ def name_payee(
     beneficiario: Annotated[str, Form()] = "",
     nome: Annotated[str, Form()] = "",
 ) -> Response:
-    payee = _text(beneficiario)
+    payee = text(beneficiario)
     conn = connect()
     try:
         if not _known(conn, payee):
-            return _answer(request, conn, notice=UNKNOWN_PAYEE.format(payee=payee), status_code=400)
-        given = _text(nome).strip()
+            return answer(request, conn, notice=UNKNOWN_PAYEE.format(payee=payee), status_code=400)
+        given = text(nome).strip()
         if given:
             names.name_it(conn, payee, given, names.OWNER)
-            return _answer(request, conn, done=NAMED)
+            return answer(request, conn, done=NAMED)
         # An empty field is the owner deleting the nickname, and RF-24 says the
         # name then falls back to what was there before — never to the raw
         # description, if a looked-up name is still stored.
         names.forget(conn, payee, names.OWNER)
-        return _answer(request, conn, done=FORGOTTEN)
+        return answer(request, conn, done=FORGOTTEN)
     finally:
         conn.close()
 
@@ -93,22 +93,22 @@ def look_up_cnpj(
     request: Request,
     beneficiario: Annotated[str, Form()] = "",
 ) -> Response:
-    payee = _text(beneficiario)
+    payee = text(beneficiario)
     conn = connect()
     try:
         if not enabled():
-            return _answer(request, conn, notice=LOOKUP_OFF)
+            return answer(request, conn, notice=LOOKUP_OFF)
         cnpj = _cnpj_of(conn, payee)
         if cnpj is None:
-            return _answer(request, conn, notice=NO_CNPJ)
+            return answer(request, conn, notice=NO_CNPJ)
         try:
             found = trade_name(cnpj)
         except (InvalidCnpjError, LookupUnavailableError) as refusal:
             # Degrades with 200 and says what happened in Portuguese, and the
             # name already there stays: the same ruler as the advisor of 009.
-            return _answer(request, conn, notice=str(refusal))
+            return answer(request, conn, notice=str(refusal))
         names.name_it(conn, payee, found, names.LOOKUP)
-        return _answer(request, conn, done=f"Nome consultado: {found}.")
+        return answer(request, conn, done=f"Nome consultado: {found}.")
     finally:
         conn.close()
 
@@ -142,7 +142,7 @@ def _refuse_window_the_base_cannot_fill(conn: sqlite3.Connection, name: str, typ
         )
 
 
-def _text(raw: str) -> str:
+def text(raw: str) -> str:
     # Starlette reads an urlencoded field as latin-1 before percent-decoding it,
     # so a body carrying raw UTF-8 bytes arrives mojibake and every accented
     # value is stored wrong. Reading those bytes back as UTF-8 is exact when it
@@ -153,7 +153,7 @@ def _text(raw: str) -> str:
         return raw
 
 
-def _answer(
+def answer(
     request: Request,
     conn: sqlite3.Connection,
     *,
