@@ -5,6 +5,7 @@ from fastapi import APIRouter, Form
 from starlette.requests import Request
 from starlette.responses import Response
 
+from app.advisor import config as advisor_config
 from app.config import reference_date
 from app.db import connect
 from app.payees import names
@@ -21,6 +22,8 @@ router = APIRouter()
 SCREEN = "/configuracao"
 PAYEE = f"{SCREEN}/beneficiario"
 CNPJ = f"{SCREEN}/cnpj"
+IA = f"{SCREEN}/ia"
+IA_FORGET = f"{IA}/esquecer"
 
 # How many payees the screen offers to name. A product decision, not a
 # measurement of this base: these cover more than half the money, and naming
@@ -32,6 +35,7 @@ PAYEES = 30
 SAVED = "Salvo."
 NAMED = "Nome guardado."
 FORGOTTEN = "Apelido apagado. O nome volta a ser o anterior."
+KEY_FORGOTTEN = "Chave apagada."
 LOOKUP_OFF = "A consulta por CNPJ está desligada. Ligue DASH_CNPJ_LOOKUP no ambiente para usá-la."
 NO_CNPJ = "Este beneficiário não tem CNPJ na base."
 UNKNOWN_PAYEE = "Beneficiário desconhecido: “{payee}”."
@@ -113,6 +117,33 @@ def look_up_cnpj(
         conn.close()
 
 
+@router.post(IA)
+def store_ia(
+    request: Request,
+    chave: Annotated[str, Form()] = "",
+    modelo: Annotated[str, Form()] = "",
+) -> Response:
+    conn = connect()
+    try:
+        try:
+            advisor_config.save(conn, api_key=_text(chave), model=_text(modelo))
+        except (advisor_config.UnknownModelError, advisor_config.InvalidApiKeyError) as refusal:
+            return _answer(request, conn, notice=str(refusal), status_code=400)
+        return _answer(request, conn, done=SAVED)
+    finally:
+        conn.close()
+
+
+@router.post(IA_FORGET)
+def forget_ia(request: Request) -> Response:
+    conn = connect()
+    try:
+        advisor_config.forget(conn)
+        return _answer(request, conn, done=KEY_FORGOTTEN)
+    finally:
+        conn.close()
+
+
 def _known(conn: sqlite3.Connection, payee: str) -> bool:
     found = conn.execute("SELECT 1 FROM transactions WHERE payee = ? LIMIT 1", (payee,)).fetchone()
     return found is not None
@@ -163,6 +194,9 @@ def answer(
 ) -> Response:
     context = _context(conn)
     context.update(notice=notice, done=done)
+    context["ia"] = advisor_config.view(conn)
+    context["ia_action"] = IA
+    context["ia_forget_action"] = IA_FORGET
     return TEMPLATES.TemplateResponse(
         request, "configuracao.html", context, status_code=status_code
     )

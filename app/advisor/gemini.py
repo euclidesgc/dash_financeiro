@@ -3,7 +3,6 @@ from dataclasses import dataclass
 
 import httpx
 
-MODEL = "gemini-2.5-flash"
 ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 TIMEOUT_SECONDS = 20
 
@@ -52,11 +51,11 @@ class Reading:
     model: str
 
 
-def ask(question: str, context: str, *, api_key: str | None) -> Reading:
+def ask(question: str, context: str, *, api_key: str | None, model: str) -> Reading:
     if not api_key:
         raise AdvisorUnavailableError(
-            "A leitura da IA está indisponível: falta a chave GEMINI_API_KEY no ambiente. "
-            "Os números da tela são os mesmos, e eles não dependem dela."
+            "A leitura da IA está indisponível: falta a chave da IA. Informe em "
+            "/configuracao. Os números da tela são os mesmos, e eles não dependem dela."
         )
     body = {
         "systemInstruction": {"parts": [{"text": INSTRUCTION}]},
@@ -64,8 +63,8 @@ def ask(question: str, context: str, *, api_key: str | None) -> Reading:
     }
     try:
         answer = httpx.post(
-            ENDPOINT.format(model=MODEL),
-            params={"key": api_key},
+            ENDPOINT.format(model=model),
+            headers={"x-goog-api-key": api_key},
             json=body,
             timeout=TIMEOUT_SECONDS,
         )
@@ -78,10 +77,18 @@ def ask(question: str, context: str, *, api_key: str | None) -> Reading:
         raise AdvisorUnavailableError(_said(_refused(failure.response.status_code))) from None
     except httpx.HTTPError:
         raise AdvisorUnavailableError(_said("não foi possível alcançar o modelo")) from None
+    except UnicodeEncodeError:
+        # A key sourced from the screen is refused at app.advisor.config.save
+        # before it ever reaches here; a key sourced from the environment is
+        # not, and httpx encodes a str header value as ascii, so a leftover
+        # accented byte lands here instead of on the wire.
+        raise AdvisorUnavailableError(
+            _said("a chave da IA tem um caractere que o cabeçalho HTTP não aceita")
+        ) from None
     except (KeyError, IndexError, ValueError, json.JSONDecodeError):
         raise AdvisorUnavailableError(_said("o modelo respondeu num formato inesperado")) from None
     if not text:
         raise AdvisorUnavailableError(
             "A leitura da IA voltou vazia. Os números da tela são os mesmos."
         )
-    return Reading(text=text, model=MODEL)
+    return Reading(text=text, model=model)

@@ -7,7 +7,7 @@ from app.taxonomy.seed import load_seed
 ROOT = Path(__file__).resolve().parents[1]
 APP = ROOT / "app"
 EXTENSIONS = ("py", "sql", "html")
-GROUPS = 10
+GROUPS = 12
 TERMS = 3
 NAMED_CATEGORIES = 76
 
@@ -27,6 +27,10 @@ def scan(folder: Path, terms: set[str], base: Path | None = None) -> list[str]:
     for extension in EXTENSIONS:
         for path in sorted(folder.rglob(f"*.{extension}")):
             for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+                # Interface copy lives in .html text; only a Jinja expression can
+                # decide by vocabulary name, so only {{ }} / {% %} lines are read.
+                if extension == "html" and "{{" not in line and "{%" not in line:
+                    continue
                 for term in sorted(terms):
                     if term in line:
                         found.append(f"{path.relative_to(root)}:{number}: {term}")
@@ -63,4 +67,16 @@ def test_the_scanner_reports_a_planted_term(tmp_path, terms):
 def test_the_scanner_ignores_a_file_of_data(tmp_path, terms):
     planted = sorted(terms)[0]
     (tmp_path / "leak.json").write_text(f'{{"name": "{planted}"}}\n', encoding="utf-8")
+    assert scan(tmp_path, terms) == []
+
+
+def test_the_scanner_reports_a_term_inside_a_jinja_expression(tmp_path, terms):
+    planted = sorted(terms)[0]
+    (tmp_path / "leak.html").write_text(f'<span>{{{{ "{planted}" }}}}</span>\n', encoding="utf-8")
+    assert scan(tmp_path, terms) == [f"leak.html:1: {planted}"]
+
+
+def test_the_scanner_ignores_a_term_in_running_html_text(tmp_path, terms):
+    planted = sorted(terms)[0]
+    (tmp_path / "leak.html").write_text(f"<h2>{planted}</h2>\n", encoding="utf-8")
     assert scan(tmp_path, terms) == []
