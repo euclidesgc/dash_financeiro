@@ -365,23 +365,15 @@ ao topo da fila é a régua local certa e o agregado errado.
   validadores independentes (itens `024`, `025` e `027`), o que pela norma 20 o
   tira da categoria de remendo.
 
-- [ ] `031-adocao-retroativa-da-justificativa-de-comentario` — O portão que exige
-  que todo comentário diga um **porquê** — decisão, contorno externo, restrição de
-  plataforma, invariante — julga a árvore inteira, e não só as linhas acrescentadas
-  desde que ele foi ligado. Ele nasceu medindo `562` comentários em `60` arquivos,
-  escritos antes de a convenção existir, e por isso hoje mede só o diff a partir do
-  commit que o ligou. Um portão com recorte é um portão com prazo: ou a árvore
-  antiga se adapta, ou o recorte vira permanente e a norma 11 volta a valer só para
-  quem chegou depois. Este item passa a régua nos 562 e desliga o recorte.
-
-- [ ] `032-campo-vazio-nao-apaga-o-que-esta-gravado` — Deixar um campo em branco e
-  salvar **não** apaga o valor guardado. Hoje apaga, e responde `200 Salvo.` sem
-  dizer o que foi salvo: `app/cards/typed.py:26` devolve `None` para toda string em
-  branco antes de qualquer leitor rodar, e o gravador escreve `NULL`. O dono não
-  tem como distinguir "não mexi neste campo" de "quero apagar este campo", e a
-  única forma de descobrir que apagou é reparar que o número sumiu da tela. Vale
-  para o dia de fechamento e o de vencimento do cartão, que é onde o `NULL` muda o
-  mês de fatura de cada parcela.
+- [ ] `032-o-campo-vazio-quer-dizer-a-mesma-coisa` — Campo vazio quer dizer "não
+  mexi" em toda tela do painel, e apagar um valor guardado é um gesto próprio.
+  Hoje **duas telas do mesmo painel dizem o oposto sobre o mesmo gesto**: a da IA
+  diz que deixar em branco não altera a chave guardada, a de cartões diz que
+  apaga o valor. O dono aprende um significado numa e o aplica na outra — e na de
+  cartões o engano é silencioso, porque a resposta é `200 Salvo.` sem dizer o que
+  foi salvo. Os campos em jogo são o dia de fechamento e o de vencimento, que
+  decidem em qual fatura cada parcela cai. O aviso na tela não conserta:
+  documenta a armadilha em vez de removê-la.
 
 - [ ] `033-semear-taxonomia-deixa-o-banco-coerente-sozinho` — Semear a taxonomia
   deixa o banco coerente sem depender de um segundo comando. Hoje
@@ -395,18 +387,25 @@ ao topo da fila é a régua local certa e o agregado errado.
   O item fecha essa aresta: ou a semeadura classifica, ou ela recusa terminar
   deixando o banco pela metade.
 
-- [ ] `034-a-justificativa-de-comentario-fala-uma-lingua-so` — A norma 16 pede
-  código em inglês e a norma 11 só aceita comentário que diga um porquê. O portão
-  que cobra a norma 11 reconhece a justificativa por palavra **em português** —
-  `motivo`, `decisão`, `contorno`, `invariante`, `limitação`, `restrição` — e não
-  reconhece nenhuma em inglês. Um comentário de decisão escrito na língua que a
-  norma 16 manda usar é reprovado pelo portão; um escrito em português passa e
-  viola a norma 16. Hoje as duas regras se contradizem, e o que decide qual delas
-  vale é o acaso de qual arquivo o portão alcança. Item de uma linha de correção
-  e uma decisão: ou o portão aprende inglês, ou a norma 16 abre exceção nomeada
-  para o marcador de justificativa.
+- [ ] `034-o-portao-de-comentario-fala-a-lingua-do-projeto` — O portão que cobra
+  comentário-com-porquê reconhece justificativa **na língua em que o projeto
+  escreve código**, distingue cabeçalho de arquivo de comentário ao lado de
+  código, e julga a árvore inteira sem recorte.
+  Hoje a norma 16 manda escrever em inglês e o portão só reconhece marca de
+  justificativa em português — então comentário escrito na língua certa é
+  reprovado, e comentário que passa viola a norma 16. Medido sobre a árvore
+  inteira: **1.129 linhas acusadas em 103 arquivos, que são 407 blocos** (`app`
+  187, `scripts` 174, `tests` 46), e a maior parte é justificativa legítima em
+  inglês, sem marca, mais cabeçalho de script — que documenta o contrato do
+  arquivo e não tem outro lugar onde morar.
+  **Absorve o antigo `031`**, que era a varredura retroativa: ela é a fase 2 deste
+  item, depois de o portão estar certo. Invertido, a varredura poria marca em
+  português em 407 blocos e a correção seguinte mandaria trocar todas. Norma 20 —
+  segunda ocorrência é causa raiz, não segundo remendo. O recorte por diff, que o
+  portão carrega desde que foi ligado, sai no fim: portão com recorte é portão com
+  prazo.
 
-- [ ] `035-a-recusa-diz-o-que-faltou-em-vez-de-dizer-none` — A recusa de correção
+- [ ] `035-a-recusa-diz-o-que-faltou` — A recusa de correção
   de classificação diz ao dono o que faltou. Hoje, quando ele não escolhe um
   grupo existente nem digita um novo, a validação recusa corretamente — nenhuma
   linha tem identificador nulo — mas a mensagem que chega à tela mostra
@@ -416,7 +415,7 @@ ao topo da fila é a régua local certa e o agregado errado.
   (`int | None`), registrado em vez de corrigido em silêncio, porque mudar a
   mensagem é mudança de comportamento fora do escopo daquela fase.
 
-- [ ] `036-a-suite-nao-depende-do-diretorio-de-dados-do-dono` — A suíte passa numa
+- [ ] `036-a-suite-nao-depende-do-diretorio-do-dono` — A suíte passa numa
   árvore recém-clonada. Hoje não: `tests/test_sync.py` chama a sincronização sem
   substituir a etapa de carga, então dois testes leem `data/processed/` e
   `data/raw/` — diretórios do dono, que o `.gitignore` exclui de propósito. Numa
