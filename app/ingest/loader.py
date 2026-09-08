@@ -8,8 +8,9 @@ from typing import Any
 from app.accounts import CREDIT
 from app.ingest.money import FractionalCentsError, to_cents
 
-# SQLite caps host parameters per statement, so the source is compared against
-# the database in chunks instead of one IN clause holding every identifier.
+# Reason: SQLite caps host parameters per statement, so the source is
+# compared against the database in chunks instead of one IN clause holding
+# every identifier.
 _ID_CHUNK = 500
 
 _ACCOUNT_COLUMNS = (
@@ -44,9 +45,10 @@ _TRANSACTION_COLUMNS = (
     "receiver_name",
 )
 
-# _upsert writes every column on conflict, so loading a consolidated file made
-# before these keys existed would blank the four columns in every row already
-# there and leave sync_runs saying ok. The load refuses instead.
+# Reason: _upsert writes every column on conflict, so loading a
+# consolidated file made before these keys existed would blank the four
+# columns in every row already there and leave sync_runs saying ok. The
+# load refuses instead.
 _CONSOLIDATED_KEYS = ("nome_fantasia", "razao_social", "cnpj", "recebedor")
 STALE_CONSOLIDATED = (
     "consolidado sem os campos de nome do beneficiário: rode "
@@ -76,9 +78,10 @@ class IngestResult:
     transactions_written: int
     accounts_accepted: int
     accounts_written: int
-    # The id of the row this run wrote in sync_runs. Whoever needs to correct
-    # that row later has to name it: targeting the largest id assumes nobody
-    # else writes in between, and that assumption has no owner.
+    # Reason: this is the id of the row this run wrote in sync_runs.
+    # Whoever needs to correct that row later has to name it — targeting the
+    # largest id assumes nobody else writes in between, and that assumption
+    # has no owner.
     run_id: int | None = None
 
 
@@ -125,9 +128,9 @@ def ingest(
         )
 
     try:
-        # Counted before the upsert: after it, everything is present, and
-        # "how many rows are there" is not the same question as "how many
-        # entered" (RF-01).
+        # Reason: counted before the upsert — after it, everything is
+        # present, and "how many rows are there" is not the same question
+        # as "how many entered" (RF-01).
         accounts_before = _count_present(
             conn, "accounts", "id", [row["id"] for row in account_rows]
         )
@@ -151,13 +154,14 @@ def ingest(
         accounts_written = accounts_present - accounts_before
         transactions_written = transactions_present - transactions_before
     except Exception as failure:
-        # The exception path has to leave a trace too. Rolling back and
-        # re-raising means the sync failed, wrote nothing to sync_runs, and the
-        # next screen goes on showing the last success with the face of fresh
-        # data — the failure mode this whole item exists to kill (RF-17).
-        # Motivo: sqlite3 names the violated constraint in the exception text (a
-        # foreign key, a unique index, a not-null column); the class name alone
-        # told nobody which one, and cost two wrong diagnoses in one run.
+        # Reason: the exception path has to leave a trace too. Rolling back
+        # and re-raising means the sync failed, wrote nothing to sync_runs,
+        # and the next screen goes on showing the last success with the
+        # face of fresh data — the failure mode this whole item exists to
+        # kill (RF-17). sqlite3 names the violated constraint in the
+        # exception text (a foreign key, a unique index, a not-null
+        # column); the class name alone told nobody which one, and cost two
+        # wrong diagnoses in one run.
         return _fail(
             conn,
             started=started,
@@ -231,8 +235,8 @@ def _fail(
     transactions_present: int = 0,
     accounts_present: int = 0,
 ) -> IngestResult:
-    # The failure row has to outlive the rollback it describes, so it is written
-    # after the rollback, in a transaction of its own.
+    # Reason: the failure row has to outlive the rollback it describes, so
+    # it is written after the rollback, in a transaction of its own.
     conn.rollback()
     run_id = _record_run(
         conn,
@@ -319,8 +323,9 @@ def _account_row(index: int, raw: dict[str, Any]) -> tuple[dict[str, Any] | None
         return None, Rejection(index, "fractional_cents", label)
     except InvalidOperation:
         return None, Rejection(index, "invalid_balance", label)
-    # Pluggy reports a card balance as a positive number, and a card balance is
-    # debt: negative is money leaving, in any kind of account (invariant 22).
+    # Reason: Pluggy reports a card balance as a positive number, and a card
+    # balance is debt — negative is money leaving, in any kind of account
+    # (invariant 22).
     if raw.get("type") == CREDIT:
         balance = -balance
     return {
@@ -352,8 +357,9 @@ def _transaction_row(
     if raw.get("valor") is None:
         return None, Rejection(index, "missing_amount", label)
     try:
-        # The consolidator already flipped the sign for credit cards; flipping it
-        # again here would turn a card purchase into income (invariant 22).
+        # Reason: the consolidator already flipped the sign for credit
+        # cards; flipping it again here would turn a card purchase into
+        # income (invariant 22).
         amount = to_cents(raw["valor"])
     except FractionalCentsError:
         return None, Rejection(index, "fractional_cents", label)
@@ -375,9 +381,10 @@ def _transaction_row(
         "is_refund": int(bool(raw.get("eh_estorno"))),
         "refunded_by": raw.get("estornada_por") or None,
         "is_cash_withdrawal": int(bool(raw.get("eh_saque"))),
-        # The empty string is absence, not a value: the Pluggy sends an empty
-        # businessName on entries that do have a trade name, and storing it
-        # would make every "is not null" count answer too high.
+        # Reason: the empty string is absence, not a value — the Pluggy
+        # sends an empty businessName on entries that do have a trade name,
+        # and storing it would make every "is not null" count answer too
+        # high.
         "merchant_name": raw.get("nome_fantasia") or None,
         "merchant_legal_name": raw.get("razao_social") or None,
         "merchant_cnpj": raw.get("cnpj") or None,
