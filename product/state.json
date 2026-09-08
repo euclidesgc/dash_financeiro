@@ -1203,9 +1203,23 @@
           "por": "autonomo"
         }
       },
-      "current_phase": 1,
+      "current_phase": 2,
       "phases": {
         "1": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/019-reclassificacao-a-partir-do-lancamento/05-veredictos/fase-1.md",
+          "validated_sha": "8b75a6c6cd9c3b20c8c3fe59438af0b036694b7a",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-08T07:41:23Z",
+          "validated_trees": {
+            ".": "2be007d657507e121d2a86d884f5ad7989f447ce"
+          },
+          "criteria_sha": "e7a79f4de6edc053eee7cf2d1cd1d96ac9c523a89c894a564f1fff6b24e5366d"
+        },
+        "2": {
           "status": "em_execucao",
           "reproved_count": 0,
           "verdict": null,
