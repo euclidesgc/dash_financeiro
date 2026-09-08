@@ -40,7 +40,8 @@ SERVIDOR=""
 encerra() {
   if [ -n "$SERVIDOR" ]; then
     kill "$SERVIDOR" 2>/dev/null || true
-    # Órfão segurando a porta faz a captura seguinte fotografar o painel anterior.
+    # Reason: an orphan holding the port makes the next capture photograph
+    # the previous panel.
     wait "$SERVIDOR" 2>/dev/null || true
   fi
   rm -rf -- "$TRABALHO"
@@ -54,10 +55,11 @@ export SESSION_SECRET="captura-em-lote"
 export LOGIN="dono"
 export PASSWORD="captura-em-lote"
 
-# Cópia da base real quando ela existe: a captura tem de mostrar o painel que o
-# dono vê, e uma base vazia fotografa telas sem número nenhum. A cópia é
-# temporária e some no fim — a base do dono não é aberta pelo servidor de
-# captura, então nada que a captura faça a alcança.
+# Reason: this copies the real base when it exists — the capture has to show
+# the panel the owner sees, and an empty base photographs screens with no
+# numbers at all. The copy is temporary and disappears at the end — the
+# owner's base is never opened by the capture server, so nothing the capture
+# does reaches it.
 [ -f data/dash.sqlite ] && cp data/dash.sqlite "$DASH_DB_PATH"
 
 .venv/bin/python -m app.migrate >"$TRABALHO/migracao.log" 2>&1
@@ -76,8 +78,8 @@ for _ in $(seq 1 60); do
 done
 [ "$pronto" = "1" ] || { echo "o painel não respondeu em /login"; cat "$TRABALHO/servidor.log"; exit 1; }
 
-# Um login por servidor: o limitador conta tentativa por IP, e num bind de
-# loopback todo cliente é o mesmo IP.
+# Reason: one login per server — the rate limiter counts attempts per IP,
+# and on a loopback bind every client is the same IP.
 COOKIE=$(curl -s -i -X POST "http://127.0.0.1:$PORTA/login" \
   -d "login=$LOGIN" -d "senha=$PASSWORD" \
   | grep -i '^set-cookie: dash_session=' | head -1 | sed 's/^[Ss]et-[Cc]ookie: //; s/;.*//')
