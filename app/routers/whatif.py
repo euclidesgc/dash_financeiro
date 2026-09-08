@@ -93,7 +93,7 @@ def _answer(
     today: date,
     *,
     notice: str | None = None,
-    answer: dict | None = None,
+    answer: dict[str, Any] | None = None,
     status_code: int = 200,
 ) -> Response:
     context = _context(conn, today)

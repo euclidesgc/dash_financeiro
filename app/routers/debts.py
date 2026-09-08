@@ -116,7 +116,7 @@ def _identifier(asked: str) -> int:
         raise DebtNotFoundError(NOT_FOUND) from None
 
 
-def _debt(conn: sqlite3.Connection, asked: str) -> dict | None:
+def _debt(conn: sqlite3.Connection, asked: str) -> dict[str, Any] | None:
     try:
         return step(conn, _identifier(asked))
     except DebtNotFoundError:
@@ -128,7 +128,7 @@ def _answer(
     conn: sqlite3.Connection,
     *,
     notice: str | None = None,
-    simulation: dict | None = None,
+    simulation: dict[str, Any] | None = None,
     status_code: int = 200,
 ) -> Response:
     context = _context(conn)

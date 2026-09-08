@@ -6,6 +6,7 @@ from app.queries.reach import rule_reach
 from app.taxonomy import classify
 from app.taxonomy.seed import message
 
+
 class RuleError(ValueError):
     pass
 
@@ -187,7 +188,14 @@ def update_rule(
         conn,
         "UPDATE category_rules SET match_kind = ?, match_value = ?, group_id = ?, "
         "nature = ?, essentiality = ? WHERE id = ?",
-        (final_match_kind, final_match_value, final_group_id, final_nature, final_essentiality, rule_id),
+        (
+            final_match_kind,
+            final_match_value,
+            final_group_id,
+            final_nature,
+            final_essentiality,
+            rule_id,
+        ),
     )
 
 
