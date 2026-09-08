@@ -5,6 +5,8 @@ from datetime import date
 from pathlib import Path
 
 from app.accounts import BANK, CREDIT
+from app.cards import store
+from app.cards.catalog import RATE
 from app.db import connect
 from app.settings.typed import parse_rate
 
@@ -22,8 +24,11 @@ DEFAULT_MANUAL = "data/manual"
 MORTGAGE_FILE = "financiamento_caixa.json"
 VEHICLE_FILE = "cdc_safra_veiculo.json"
 
-_COLUMNS = (
-    "id, kind, name, balance_cents, monthly_rate_bp, term_months, payment_cents, source, account_id"
+_STEPS = (
+    "SELECT d.id, d.kind, d.name, d.balance_cents, "
+    "COALESCE(c.monthly_rate_bp, d.monthly_rate_bp) AS monthly_rate_bp, "
+    "d.term_months, d.payment_cents, d.source, d.account_id "
+    "FROM debts d LEFT JOIN cards c ON c.account_id = d.account_id"
 )
 _INSERT = (
     "INSERT OR REPLACE INTO debts "
@@ -37,6 +42,7 @@ def manual_dir() -> Path:
 
 
 def rebuild(conn: sqlite3.Connection, *, today: date | None = None) -> int:
+    store.reconcile(conn)
     # Wiped and rewritten, like the commitments: a half rebuilt ladder keeps
     # adding up and starts lying about where the next real earns most.
     rates = {
@@ -165,7 +171,7 @@ def ladder(conn: sqlite3.Connection) -> list[dict]:
     return [
         dict(row)
         for row in conn.execute(
-            f"SELECT {_COLUMNS} FROM debts WHERE monthly_rate_bp IS NOT NULL "
+            f"SELECT * FROM ({_STEPS}) WHERE monthly_rate_bp IS NOT NULL "
             "ORDER BY monthly_rate_bp DESC, balance_cents"
         )
     ]
@@ -178,9 +184,14 @@ def without_rate(conn: sqlite3.Connection) -> list[dict]:
     return [
         dict(row)
         for row in conn.execute(
-            f"SELECT {_COLUMNS} FROM debts WHERE monthly_rate_bp IS NULL ORDER BY balance_cents"
+            f"SELECT * FROM ({_STEPS}) WHERE monthly_rate_bp IS NULL ORDER BY balance_cents"
         )
     ]
+
+
+def step(conn: sqlite3.Connection, debt_id: int) -> dict | None:
+    row = conn.execute(f"SELECT * FROM ({_STEPS}) WHERE id = ?", (debt_id,)).fetchone()
+    return dict(row) if row else None
 
 
 class DebtNotFoundError(LookupError):
@@ -188,6 +199,12 @@ class DebtNotFoundError(LookupError):
 
 
 def set_rate(conn: sqlite3.Connection, debt_id: int, typed: str) -> None:
+    found = conn.execute("SELECT kind, account_id FROM debts WHERE id = ?", (debt_id,)).fetchone()
+    if found is None:
+        raise DebtNotFoundError("Dívida não encontrada.")
+    if found["kind"] == CARD and found["account_id"] is not None:
+        store.write(conn, found["account_id"], RATE, typed)
+        return
     # A write that touches no row and answers 200 shows the owner a screen that
     # reloads as if it had saved.
     changed = conn.execute(
