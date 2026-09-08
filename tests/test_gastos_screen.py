@@ -450,3 +450,42 @@ def test_a_window_of_whole_months_keeps_naming_it_a_monthly_average(open_client)
     assert page.status_code == 200
     assert "Média mensal" in block
     assert "−R$ 18,50" in block
+
+
+def test_a_window_of_past_closed_months_names_no_ahead_entries(open_client):
+    page = open_client.get(SCREEN, params={"inicio": "2026-03-01", "fim": "2026-08-31"})
+
+    assert page.status_code == 200
+    assert 'id="posterior"' not in page.text
+    assert "2 lançamentos de 01/09/2026 a 05/09/2026" not in page.text
+
+
+def test_the_default_window_still_names_what_posts_ahead(open_client):
+    page = open_client.get(SCREEN)
+
+    assert page.status_code == 200
+    assert 'id="posterior"' in page.text
+
+
+def test_the_running_months_last_bar_says_it_has_not_closed(open_client):
+    page = open_client.get(SCREEN)
+
+    assert page.status_code == 200
+    assert "ainda não fechou" in page.text
+
+
+def test_a_window_of_past_closed_months_last_bar_stays_silent(open_client):
+    page = open_client.get(SCREEN, params={"inicio": "2026-03-01", "fim": "2026-08-31"})
+
+    assert page.status_code == 200
+    assert "ainda não fechou" not in page.text
+
+
+def test_a_partial_window_prints_its_total_once_not_twice(open_client, vocabulary):
+    page = open_client.get(SCREEN, params={"inicio": "2026-08-20", "fim": "2026-09-05"})
+    label_at = page.text.index(vocabulary["floor"]["label"])
+    summary = page.text[label_at : page.text.index("</div>", label_at)]
+
+    assert page.status_code == 200
+    assert summary.count("−R$ 341,00") == 1
+    assert "No período" in summary
