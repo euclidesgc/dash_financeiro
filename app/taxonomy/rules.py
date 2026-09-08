@@ -12,6 +12,16 @@ class RuleError(ValueError):
     pass
 
 
+MISSING_GROUP_MESSAGE = (
+    "Grupo ausente: escolha um grupo existente ou digite um nome para criar um novo."
+)
+
+
+class MissingGroupError(RuleError):
+    def __init__(self) -> None:
+        super().__init__(MISSING_GROUP_MESSAGE)
+
+
 class InvalidTermError(RuleError):
     def __init__(self, key: str, value: object) -> None:
         super().__init__(message(key, value))
@@ -231,6 +241,8 @@ def _validate(
 ) -> None:
     if len(match_value) > RULE_EXPRESSION_MAX:
         raise InvalidExpressionError(match_value)
+    if group_id is None:
+        raise MissingGroupError()
     if conn.execute("SELECT 1 FROM category_groups WHERE id = ?", (group_id,)).fetchone() is None:
         raise InvalidTermError("invalid_group", group_id)
     if conn.execute("SELECT 1 FROM natures WHERE value = ?", (nature,)).fetchone() is None:
