@@ -287,14 +287,30 @@ ao topo da fila é a régua local certa e o agregado errado.
   sozinha, e ele tem teste do próprio dente. Fechou com **526 testes**, lint e
   portões limpos.
 
-- [-] `020-varredura-de-rota-que-nao-desce-em-subpasta` — O guarda que impede uma
-  rota de resolver a data de tela por conta própria varre
-  `app/routers/` com `glob("*.py")`, que não desce em subpasta, enquanto o
-  critério de integração do `016` usa `grep -R`. Hoje os dois coincidem, porque
-  os 15 módulos estão todos no nível de cima. No dia em que nascer um subpacote
-  sob `app/routers/`, o guarda fica cego, verde e silencioso — a pior das três
-  combinações. Trocar por `rglob("*.py")` fecha a diferença, e o item existe
-  porque guarda que cala é pior que guarda que não existe: ninguém volta a olhar.
+- [x] `020-varredura-de-rota-que-nao-desce-em-subpasta` — O guarda que impede uma
+  rota de resolver a data de tela por conta própria **desce em subpasta**: a
+  enumeração é recursiva e chaveia cada módulo pelo caminho relativo, então dois
+  módulos de mesmo nome em subpacotes diferentes são duas medições e não uma —
+  chaveado por nome, o segundo apagava o primeiro, e qual deles sobrevivia
+  dependia da ordem de leitura do disco. O dente que prova o guarda deixou de ser
+  um dicionário escrito à mão, que nunca passava pela enumeração e por isso não
+  provava a enumeração, e passou a ser quatro testes sobre árvore que o próprio
+  teste escreve: subpasta acusada a um e a dois níveis, subpasta aceita quando
+  consome o leitor único, colisão de nome, e cópia dentro de `__pycache__`
+  ignorada. O validador cego provou por mutação que a recursão é o que sustenta o
+  teste — trocando `rglob` por `glob`, a acusação esvazia e a asserção cai.
+  Fechou com **530 testes**, e a mesma exclusão de cache foi aplicada ao caso
+  idêntico ao lado, em `tests/test_frozen_numbers.py`.
+
+- [ ] `029-o-guarda-reconhece-uma-forma-so-de-perguntar-as-horas` — O guarda de
+  rota procura o literal `date.today()`. `datetime.now().date()`,
+  `datetime.today()` e `from datetime import date as d` seguido de `d.today()`
+  passam caladas — é a mesma família de silêncio que o `020` fechou por
+  profundidade e que continua aberta por forma. O guarda passa a reconhecer a
+  chamada pela árvore sintática, não por texto, e o dente dele cresce para as
+  formas que hoje escapam. Achado pelo planejador do `020`, que não o resolveu
+  porque requisito nascido no plano é requisito que ninguém aprovou.
+  **Depende de:** nada aberto.
 
 ## Validações de campo pendentes
 
