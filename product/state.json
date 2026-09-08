@@ -1156,9 +1156,23 @@
           "por": "autonomo"
         }
       },
-      "current_phase": 1,
+      "current_phase": 2,
       "phases": {
         "1": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/026-evolucao-da-fatura-mes-a-mes/05-veredictos/fase-1.md",
+          "validated_sha": "5b0f4990dcdb39e6b1ff9e9d1e29928b7cbe7e55",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-08T08:16:38Z",
+          "validated_trees": {
+            ".": "39282af521d32622a0136ab37f835b191a5f430e"
+          },
+          "criteria_sha": "f3488b4dc960149893d94d0b537304a48466e130bd068ba86b2f8f4315954512"
+        },
+        "2": {
           "status": "em_execucao",
           "reproved_count": 0,
           "verdict": null,
