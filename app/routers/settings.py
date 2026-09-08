@@ -5,6 +5,7 @@ from fastapi import APIRouter, Form
 from starlette.requests import Request
 from starlette.responses import Response
 
+from app.cards.store import screen
 from app.config import reference_date
 from app.db import connect
 from app.payees import names
@@ -178,6 +179,7 @@ def _context(conn: sqlite3.Connection) -> dict[str, Any]:
         "facts": [item for item in reading if item["kind"] == FACT],
         "goals": [item for item in reading if item["kind"] == GOAL],
         "available_months": available_months(conn, today=reference_date()),
+        "cards": screen(conn),
         "payees": listed["payees"],
         "payees_total": listed["total_payees"],
         "payees_shown": PAYEES,

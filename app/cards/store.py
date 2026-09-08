@@ -1,7 +1,7 @@
 import sqlite3
 
 from app.accounts import CREDIT
-from app.cards.catalog import BY_NAME, FIELDS
+from app.cards.catalog import ACTION, BY_NAME, FIELDS
 from app.cards.typed import parse
 from app.settings.typed import InvalidValueError
 
@@ -15,6 +15,10 @@ _READ = (
 
 def reconcile(conn: sqlite3.Connection) -> int:
     return conn.execute(_RECONCILE, (CREDIT,)).rowcount
+
+
+def screen(conn: sqlite3.Connection) -> dict:
+    return {"action": ACTION, "cards": read(conn)}
 
 
 def read(conn: sqlite3.Connection) -> list[dict]:
