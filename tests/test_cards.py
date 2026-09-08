@@ -124,7 +124,11 @@ def test_the_migration_moves_a_typed_rate_from_debts_to_cards(tmp_path):
 
     applied = apply_migrations(conn, SQL_FOLDER)
 
-    assert applied == ["013_cards.sql"]
+    # Igualdade aqui congela a lista inteira de migrações: ela passa enquanto
+    # a 013 for a última e reprova o item seguinte que acrescentar a sua, por
+    # um motivo que não é dele.
+    assert "013_cards.sql" in applied
+    assert [name for name in applied if name.split("_", 1)[0] < BEFORE] == []
     assert [
         tuple(row) for row in conn.execute("SELECT account_id, monthly_rate_bp FROM cards")
     ] == [("acc-cartao-1", 900)]
