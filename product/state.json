@@ -974,7 +974,7 @@
     "027-configuracao-do-gemini": {
       "title": "A integracao com o Gemini se configura na tela: chave e modelo",
       "track": "rapida",
-      "stage": "plan",
+      "stage": "execute",
       "stacks": [
         "python"
       ],
@@ -987,13 +987,34 @@
           "por": "autonomo"
         },
         "plan": {
-          "at": null,
-          "sha": null
+          "at": "2026-09-08T00:51:27Z",
+          "sha": "77be629afb899693558b537577b97a9a325cdacf",
+          "file": "product/items/027-configuracao-do-gemini/03-plan.md",
+          "por": "autonomo"
         }
       },
-      "current_phase": null,
-      "phases": {},
-      "divergences": {},
+      "current_phase": 1,
+      "phases": {
+        "1": {
+          "status": "em_execucao",
+          "reproved_count": 0,
+          "verdict": null,
+          "verdict_file": null,
+          "validated_sha": null,
+          "pr": null,
+          "blocked_on": [
+            "D-004"
+          ]
+        }
+      },
+      "divergences": {
+        "D-004": {
+          "status": "PENDENTE",
+          "kind": "normal",
+          "phase": 1,
+          "detected_at": "2026-09-08T00:51:27Z"
+        }
+      },
       "criteria_exception": null
     }
   }
