@@ -1296,7 +1296,7 @@
     "029-o-guarda-reconhece-uma-forma-so-de-perguntar-as-horas": {
       "title": "O guarda de rota reconhece a chamada ao relogio pela arvore sintatica, nao por texto",
       "track": "rapida",
-      "stage": "execute",
+      "stage": "done",
       "stacks": [
         "python"
       ],
