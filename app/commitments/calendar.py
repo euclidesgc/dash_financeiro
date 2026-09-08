@@ -46,7 +46,7 @@ def calendar(conn: sqlite3.Connection, *, today: date | None = None) -> list[Day
     ]
 
 
-def _live_series(conn: sqlite3.Connection, today: date) -> list[dict]:
+def _live_series(conn: sqlite3.Connection, today: date) -> list[dict[str, Any]]:
     # A series that stopped being charged has no next due date to predict, and a
     # dismissed one is money the owner already took out of the total: both stay
     # off the prediction, and the screen says how many (RF-22 do 003).
@@ -57,7 +57,7 @@ def _live_series(conn: sqlite3.Connection, today: date) -> list[dict]:
 
 
 def _recorded_entries(
-    conn: sqlite3.Connection, first: date, last: date, series: list[dict]
+    conn: sqlite3.Connection, first: date, last: date, series: list[dict[str, Any]]
 ) -> list[Entry]:
     known = {_series_identity(row): row for row in series}
     entries = []
@@ -79,7 +79,7 @@ def _recorded_entries(
     return entries
 
 
-def _predicted_entries(series: list[dict], first: date, last: date) -> list[Entry]:
+def _predicted_entries(series: list[dict[str, Any]], first: date, last: date) -> list[Entry]:
     entries = []
     for row in series:
         identity = _series_identity(row)
@@ -123,7 +123,7 @@ def _remaining_predictions(predictions: list[Entry], recorded: list[Entry]) -> l
     return left
 
 
-def _charges(row: dict, month: str) -> bool:
+def _charges(row: dict[str, Any], month: str) -> bool:
     # An instalment stops at its last instalment, so the prediction runs only
     # over the months it still owes; a subscription has no end and is charged in
     # every month of the window.
@@ -131,7 +131,7 @@ def _charges(row: dict, month: str) -> bool:
         return False
     if row["kind"] != INSTALLMENT:
         return True
-    return row["last_seen_date"][:7] < month <= (row["ends_month"] or "")
+    return bool(row["last_seen_date"][:7] < month <= (row["ends_month"] or ""))
 
 
 def _months(first: date, last: date) -> list[date]:
@@ -142,13 +142,15 @@ def _months(first: date, last: date) -> list[date]:
     return months
 
 
-def _series_identity(row: dict) -> tuple[str, int, int]:
+def _series_identity(row: dict[str, Any]) -> tuple[str, int, int]:
     if row["kind"] == INSTALLMENT:
         return row["series_key"], row["installment_total"], abs(row["amount_cents"])
     return row["series_key"], 0, 0
 
 
-def _row_identity(row: sqlite3.Row, known: dict) -> tuple[str, int, int]:
+def _row_identity(
+    row: sqlite3.Row, known: dict[tuple[str, int, int], dict[str, Any]]
+) -> tuple[str, int, int]:
     # The same identity the engine grouped by, read from the raw line: matching a
     # recorded occurrence to its series by payee alone would let one open
     # purchase of a store silence the prediction of another (RF-23). The marker
