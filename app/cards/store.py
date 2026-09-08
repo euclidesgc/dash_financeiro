@@ -9,8 +9,9 @@ _RECONCILE = "INSERT OR IGNORE INTO cards (account_id) SELECT id FROM accounts W
 _READ = (
     "SELECT c.account_id, a.name, a.institution, a.balance_cents, "
     + ", ".join(f"c.{field['column']}" for field in FIELDS)
-    + " FROM cards c JOIN accounts a ON a.id = c.account_id ORDER BY c.account_id"
+    + " FROM cards c JOIN accounts a ON a.id = c.account_id WHERE a.type = ? ORDER BY c.account_id"
 )
+_ACCOUNT_TYPE = "SELECT type FROM accounts WHERE id = ?"
 
 
 def reconcile(conn: sqlite3.Connection) -> int:
@@ -22,7 +23,7 @@ def screen(conn: sqlite3.Connection) -> dict:
 
 
 def read(conn: sqlite3.Connection) -> list[dict]:
-    rows = conn.execute(_READ).fetchall()
+    rows = conn.execute(_READ, (CREDIT,)).fetchall()
     return [
         {
             "account_id": row["account_id"],
@@ -50,19 +51,20 @@ def entry(name: str) -> dict:
     return item
 
 
+def _refuse_unless_credit_account(conn: sqlite3.Connection, account_id: str) -> None:
+    row = conn.execute(_ACCOUNT_TYPE, (account_id,)).fetchone()
+    if row is None or row["type"] != CREDIT:
+        raise InvalidValueError(f"Cartão não encontrado: “{account_id}”.")
+
+
 def write(conn: sqlite3.Connection, account_id: str, field: str, typed: str) -> int | None:
     item = entry(field)
     value = parse(item["unit"], typed, item["label"])
-    try:
-        conn.execute(
-            f"INSERT INTO cards (account_id, {item['column']}) VALUES (?, ?) "
-            f"ON CONFLICT(account_id) DO UPDATE SET {item['column']} = excluded.{item['column']}",
-            (account_id, value),
-        )
-    except sqlite3.IntegrityError:
-        # The FK on cards.account_id is the check: an id that names no account
-        # fails here, and the owner sees the id back, not "FOREIGN KEY
-        # constraint failed".
-        raise InvalidValueError(f"Cartão não encontrado: “{account_id}”.") from None
+    _refuse_unless_credit_account(conn, account_id)
+    conn.execute(
+        f"INSERT INTO cards (account_id, {item['column']}) VALUES (?, ?) "
+        f"ON CONFLICT(account_id) DO UPDATE SET {item['column']} = excluded.{item['column']}",
+        (account_id, value),
+    )
     conn.commit()
     return value

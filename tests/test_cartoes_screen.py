@@ -122,6 +122,43 @@ def test_writing_the_four_fields_lands_in_the_table_and_the_next_render(client, 
     assert "12,50%" in last
 
 
+def test_the_section_declares_that_a_blank_field_clears_the_value(client, tmp_path):
+    conn = connect(str(tmp_path / "dash.sqlite"))
+    _accounts(conn, BLUE_CARD)
+    rebuild(conn)
+    conn.close()
+
+    page = client.get(SCREEN).text
+    cartoes = _section(page, 'id="cartoes"')
+
+    assert "apaga o valor" in cartoes
+
+
+def test_clearing_a_written_field_answers_cleared_instead_of_saved(client, tmp_path):
+    conn = connect(str(tmp_path / "dash.sqlite"))
+    _accounts(conn, BLUE_CARD)
+    rebuild(conn)
+    conn.close()
+
+    written = client.post(
+        ACTION, data={"cartao": "acc-cartao-1", "campo": LIMIT, "valor": "12.000,00"}
+    )
+    assert written.status_code == 200
+    assert "Salvo." in written.text
+
+    cleared = client.post(ACTION, data={"cartao": "acc-cartao-1", "campo": LIMIT, "valor": ""})
+    assert cleared.status_code == 200
+    assert "Apagado." in cleared.text
+    assert "Salvo." not in cleared.text
+
+    conn = connect(str(tmp_path / "dash.sqlite"))
+    value = conn.execute(
+        "SELECT limit_cents FROM cards WHERE account_id = 'acc-cartao-1'"
+    ).fetchone()[0]
+    conn.close()
+    assert value is None
+
+
 def test_bad_grammar_is_refused_with_the_screen_standing_and_writes_nothing(client, tmp_path):
     conn = connect(str(tmp_path / "dash.sqlite"))
     _accounts(conn, BLUE_CARD)

@@ -12,6 +12,8 @@ from app.settings.typed import InvalidValueError
 
 router = APIRouter()
 
+CLEARED = "Apagado."
+
 
 @router.post(ACTION)
 def store_field(
@@ -23,9 +25,9 @@ def store_field(
     conn = connect()
     try:
         try:
-            store.write(conn, cartao, campo, valor)
+            value = store.write(conn, cartao, campo, valor)
         except InvalidValueError as refusal:
             return answer(request, conn, notice=str(refusal), status_code=400)
-        return answer(request, conn, done=SAVED)
+        return answer(request, conn, done=SAVED if value is not None else CLEARED)
     finally:
         conn.close()
