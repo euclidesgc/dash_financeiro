@@ -12,9 +12,10 @@ def simulate(debt: dict[str, Any], extra_cents: int) -> dict[str, Any]:
     if extra_cents <= 0:
         raise InvalidValueError("O aporte precisa ser maior que zero.")
     if not debt["monthly_rate_bp"]:
-        # Answering R$ 0,00 here is not abstaining: it is the stronger claim that
-        # the money saves nothing. The screen already says two sections above
-        # that guessing a rate would be the panel deciding what it does not know.
+        # Reason: answering R$ 0,00 here is not abstaining — it is the
+        # stronger claim that the money saves nothing. The screen already
+        # says two sections above that guessing a rate would be the panel
+        # deciding what it does not know.
         raise UnknownRateError(
             f"Sem a taxa de {debt['name']}, não dá para dizer o que o aporte economiza. "
             "Informe a taxa primeiro."
@@ -30,15 +31,17 @@ def simulate(debt: dict[str, Any], extra_cents: int) -> dict[str, Any]:
             extra_cents - balance,
         )
     if not debt["term_months"] or not debt["payment_cents"] or rate <= 0:
-        # No term means no instalment to remove: an overdraft and a revolving
-        # card are charged for as long as the balance is there, so the only true
-        # answer is the interest the money stops costing every month (RF-17).
+        # Reason: no term means no instalment to remove — an overdraft and a
+        # revolving card are charged for as long as the balance is there, so
+        # the only true answer is the interest the money stops costing every
+        # month (RF-17).
         return _answer(debt, extra_cents, 0, round(extra_cents * rate), 0)
     payment = abs(debt["payment_cents"])
     left = debt["term_months"]
-    # The instalments that vanish are the last ones of the schedule, and each of
-    # them carries a different amount of interest: dividing the extra payment by
-    # the instalment would answer with a number that is never right.
+    # Reason: the instalments that vanish are the last ones of the schedule,
+    # and each of them carries a different amount of interest — dividing the
+    # extra payment by the instalment would answer with a number that is
+    # never right.
     remaining = _months_for(balance - extra_cents, payment, rate)
     removed = left - remaining
     return _answer(debt, extra_cents, removed, removed * payment - extra_cents, 0)
