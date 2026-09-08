@@ -116,8 +116,9 @@ def correct_payee(
         (classify.MATCH_DESCRIPTION, expression),
     ).fetchone()["id"]
     reach = rule_reach(conn, rule_id)
-    # create_rule/update_rule already ran _validate above: a None group_id
-    # never passes it, so reaching this point means target_group is real.
+    # Motivo: create_rule/update_rule already ran _validate above, and a None
+    # group_id never passes it — so reaching this point means target_group
+    # is real.
     assert target_group is not None
     return Correction(
         rule_id=rule_id,
