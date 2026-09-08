@@ -388,6 +388,16 @@ ao topo da fila é a régua local certa e o agregado errado.
   e uma decisão: ou o portão aprende inglês, ou a norma 16 abre exceção nomeada
   para o marcador de justificativa.
 
+- [ ] `035-a-recusa-diz-o-que-faltou-em-vez-de-dizer-none` — A recusa de correção
+  de classificação diz ao dono o que faltou. Hoje, quando ele não escolhe um
+  grupo existente nem digita um novo, a validação recusa corretamente — nenhuma
+  linha tem identificador nulo — mas a mensagem que chega à tela mostra
+  literalmente `None` no lugar do termo. Não move dinheiro e não é o caminho de
+  cálculo; é a mensagem que decide se o dono entende o que fazer em seguida ou
+  desiste. Achado do implementador do item `018` ao tornar o tipo honesto
+  (`int | None`), registrado em vez de corrigido em silêncio, porque mudar a
+  mensagem é mudança de comportamento fora do escopo daquela fase.
+
 ## Validações de campo pendentes
 
 O que só o hardware, o aparelho real ou o navegador real provam. Não vira tipo
