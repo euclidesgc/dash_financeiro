@@ -91,7 +91,7 @@ def seed_taxonomy(conn: sqlite3.Connection, seed: dict[str, Any] | None = None) 
         f"UPDATE categories SET group_id = ? WHERE group_id NOT IN ({placeholders})",
         (fallback_id, *declared_ids),
     )
-    # Not scoped to "group_id NOT IN declared_ids": a rule reassigned between
+    # Decision: not scoped to "group_id NOT IN declared_ids". A rule reassigned between
     # two groups that both survive the reconciliation leaves its transactions'
     # group_id inside the declared set, just pointing at the wrong member of
     # it, and that earlier scope let those rows pass untouched.
