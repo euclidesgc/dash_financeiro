@@ -42,7 +42,11 @@
         <div class="stack-tight">
           <h3 class="crossing-label">{{ cross['label'] }}</h3>
           <p class="crossing-total cifra{% if cross['total_cents'] < 0 %} negative{% endif %}">{{ cross['total_cents']|brl }}</p>
+          {% if whole_months %}
           <p class="lede">Média mensal de <span class="cifra">{{ cross['monthly_average_cents']|brl }}</span>.</p>
+          {% else %}
+          <p class="lede">No período, <span class="cifra">{{ cross['total_cents']|brl }}</span>.</p>
+          {% endif %}
         </div>
         {% if cross['rows'] %}
         <div class="table-scroll">
