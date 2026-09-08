@@ -22,6 +22,7 @@ EXPECTED_TABLES = [
     "financings",
     "login_attempts",
     "natures",
+    "offers",
     "payee_names",
     "plan_facts",
     "plan_snapshots",
@@ -48,6 +49,7 @@ EXPECTED_MIGRATIONS = [
     "013_cards.sql",
     "014_financings.sql",
     "015_advisor_config.sql",
+    "018_offers.sql",
 ]
 
 TABLE_NAMES = (

@@ -63,8 +63,15 @@ def parse_months(typed: str, field: str = "Prazo") -> int | None:
     cleaned = (typed or "").strip()
     if not cleaned:
         return None
-    if not _WHOLE.match(cleaned):
-        raise InvalidValueError(f"{field} inválido: “{typed}”. Use um número inteiro de meses.")
+    # Motivo: SQLite's INTEGER column overflows past nineteen digits, and
+    # int() alone would pass a term straight through to that 500 — the same
+    # failure parse_money already guards against, proven twice now: on the
+    # offer's prazo and on the goal's reserve months.
+    if not _WHOLE.match(cleaned) or len(cleaned) > MAX_DIGITS:
+        raise InvalidValueError(
+            f"{field} inválido: “{typed}”. Use um número inteiro de meses, "
+            f"com no máximo {MAX_DIGITS} algarismos."
+        )
     value = int(cleaned)
     if value <= 0:
         raise InvalidValueError(f"{field} precisa ser maior que zero.")
