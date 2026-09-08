@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "active_item": "027-configuracao-do-gemini",
+  "active_item": "020-varredura-de-rota-que-nao-desce-em-subpasta",
   "items": {
     "001-base-e-login": {
       "title": "Base e login: schema, ingestão dos 1.942 lançamentos e acesso protegido",
@@ -820,7 +820,7 @@
     "020-varredura-de-rota-que-nao-desce-em-subpasta": {
       "title": "O guarda de rota varre subpasta: rglob no lugar de glob, com teste que morde",
       "track": "rapida",
-      "stage": "plan",
+      "stage": "execute",
       "stacks": [
         "python"
       ],
@@ -833,12 +833,24 @@
           "por": "autonomo"
         },
         "plan": {
-          "at": null,
-          "sha": null
+          "at": "2026-09-08T00:32:36Z",
+          "sha": "e07ef1ad7f37e3fcf9f0495e93409a142f9fee0d",
+          "file": "product/items/020-varredura-de-rota-que-nao-desce-em-subpasta/03-plan.md",
+          "por": "autonomo"
         }
       },
-      "current_phase": null,
-      "phases": {},
+      "current_phase": 1,
+      "phases": {
+        "1": {
+          "status": "em_execucao",
+          "reproved_count": 0,
+          "verdict": null,
+          "verdict_file": null,
+          "validated_sha": null,
+          "pr": null,
+          "blocked_on": []
+        }
+      },
       "divergences": {},
       "criteria_exception": null
     },
