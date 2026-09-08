@@ -917,8 +917,8 @@
           "por": "autonomo"
         },
         "plan": {
-          "at": "2026-09-08T02:26:45Z",
-          "sha": "3414dc20a7852e909362a72b83beea7bf1575478",
+          "at": "2026-09-08T03:43:30Z",
+          "sha": "c24605f6a0ffcc6f881db44cad984f9e10f56807",
           "file": "product/items/023-taxonomia-hierarquica-do-dono/03-plan.md",
           "por": "autonomo"
         }
@@ -940,13 +940,14 @@
           "criteria_sha": "ba84df858e22889064f96af1ee83bd6aaa6979eefe3cae1e5e147ada6ea02bac"
         },
         "2": {
-          "status": "em_execucao",
+          "status": "criterio_invalido",
           "reproved_count": 0,
-          "verdict": null,
-          "verdict_file": null,
+          "verdict": "CRITERIO_INVALIDO",
+          "verdict_file": "product/items/023-taxonomia-hierarquica-do-dono/05-veredictos/fase-2-rodada-1.md",
           "validated_sha": null,
           "pr": null,
-          "blocked_on": []
+          "blocked_on": [],
+          "verdict_at": "2026-09-08T03:34:17Z"
         }
       },
       "divergences": {},
