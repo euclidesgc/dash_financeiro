@@ -1054,13 +1054,14 @@
           "criteria_sha": "bfddff27a2a3583a16728dac57eefb6c9c805e0c02f183ecd2e0aa87a63d6b5b"
         },
         "2": {
-          "status": "em_execucao",
+          "status": "criterio_invalido",
           "reproved_count": 0,
-          "verdict": null,
-          "verdict_file": null,
+          "verdict": "CRITERIO_INVALIDO",
+          "verdict_file": "product/items/025-financiamentos-na-tela/05-veredictos/fase-2-rodada-1.md",
           "validated_sha": null,
           "pr": null,
-          "blocked_on": []
+          "blocked_on": [],
+          "verdict_at": "2026-09-08T04:03:30Z"
         }
       },
       "divergences": {
@@ -1073,7 +1074,13 @@
           "ratificada_por": "autonomo"
         }
       },
-      "criteria_exception": null
+      "criteria_exception": {
+        "file": "product/items/025-financiamentos-na-tela/03-plan.md",
+        "agent": "plan-writer",
+        "phase": 2,
+        "opened_at": "2026-09-08T04:03:30Z",
+        "ttl_min": 30
+      }
     },
     "027-configuracao-do-gemini": {
       "title": "A integracao com o Gemini se configura na tela: chave e modelo",
