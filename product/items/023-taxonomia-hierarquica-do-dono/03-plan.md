@@ -379,18 +379,24 @@ dessa casa.
       app.taxonomy.seed import load_seed; seed = load_seed();
       print(len(seed['categories']), 'category_labels' in seed)"` imprime
       exatamente `77 False`;
-      (b) `rtk proxy grep -rn --exclude-dir=__pycache__ '"category_labels"' app
-      tests` não imprime nenhuma linha, e
+      (b) `rtk proxy grep -rn --exclude-dir=__pycache__
+      --exclude=vocabulario_anterior.json '"category_labels"' app tests` não
+      imprime nenhuma linha, e
       `rtk proxy grep -rl --exclude-dir=__pycache__ 'category_labels' app tests`
       imprime, entre outros, `app/taxonomy/seed.py`, `app/routers/spending.py` e
       `app/routers/rules.py`. A busca de (b) é pela chave **entre aspas**, que é
       a forma como a lista paralela é escrita no dado e lida no código; o
       identificador sem aspas é a função que a substitui, e a segunda busca
       existe para provar que a varredura alcançou arquivos — sem ela, caminho
-      errado e arquivo apagado dariam a mesma saída vazia. Hoje a primeira busca
-      de (b) imprime quatro linhas: `app/taxonomy/seed.json:651`,
-      `app/routers/spending.py:33`, `app/routers/rules.py:25` e
-      `tests/test_gastos_screen.py:159`
+      errado e arquivo apagado dariam a mesma saída vazia. As duas varrem as
+      mesmas raízes, e a única exclusão da primeira é o arquivo
+      `tests/data/vocabulario_anterior.json`, cópia congelada do vocabulário
+      anterior que os testes instalam como estado "antes" da comparação
+      numérica: não é semente, nenhum código o lê como semente, e apagar a chave
+      de lá adulteraria a prova em vez de cumprir o requisito. O que a primeira
+      busca cobra é a lista paralela como semente e como leitura de código:
+      `app/` inteira, `app/taxonomy/seed.json` incluído, e `tests/` inteira
+      menos esse único arquivo
 - [ ] `estrutural` — RF-01, RF-02
       Em `app/taxonomy/seed.json`, a chave `categories` traz exatamente 77
       entradas; cada entrada tem os campos `name`, `label` e `group`; nenhum

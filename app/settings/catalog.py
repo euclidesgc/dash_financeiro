@@ -32,8 +32,9 @@ CATALOG = (
         "label": "Taxa mensal dos cartões",
         "question": "a taxa mensal dos seus cartões",
         "help": (
-            "A taxa que o cartão cobra sobre o saldo rotativo. Cada cartão tem a sua, e por "
-            "isso ela é um campo por dívida na tela de dívidas, e não uma linha aqui."
+            "A taxa que o cartão cobra sobre o saldo rotativo. Cada cartão tem a sua, e se "
+            "edita tanto aqui, na seção Cartões desta tela, quanto em /dividas, ao lado do "
+            "degrau do cartão — as duas escrevem no mesmo lugar."
         ),
         "unit": BASIS_POINTS,
         "kind": FACT,

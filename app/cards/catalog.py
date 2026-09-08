@@ -1,5 +1,7 @@
 from app.settings.catalog import BASIS_POINTS, CENTS
 
+ACTION = "/configuracao/cartao"
+
 LIMIT = "limite"
 RATE = "taxa"
 CLOSING = "fechamento"

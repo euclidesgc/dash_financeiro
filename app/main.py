@@ -8,6 +8,7 @@ from app.migrate import run_migrations
 from app.routers import (
     advisor,
     auth,
+    cards,
     commitments,
     debts,
     financings,
@@ -57,6 +58,7 @@ def create_app() -> FastAPI:
     app.state.session_secret = resolve_session_secret()
     install_guard(app)
     app.include_router(auth.router)
+    app.include_router(cards.router)
     app.include_router(summary.router)
     app.include_router(spending.router)
     app.include_router(rules.router)

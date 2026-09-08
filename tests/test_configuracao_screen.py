@@ -71,6 +71,18 @@ def test_an_absent_value_says_what_the_panel_uses_meanwhile(client):
     assert "o painel usa 6 meses" in page
 
 
+def test_the_card_rate_edit_note_does_not_claim_dividas_is_the_only_place(client):
+    page = client.get(SCREEN).text
+    article = page.split('data-config="taxa-cartao"', 1)[1].split("</article>", 1)[0]
+
+    # The old prose claimed the card rate was "uma taxa por dívida" edited only
+    # at /dividas; the Cartões section on this very screen now edits it too,
+    # so the "where" note points back at the help text instead of repeating a
+    # claim that would go stale for any other non-value-line entry as well.
+    assert "uma taxa por dívida" not in article
+    assert "o texto ao lado já explica onde" in article
+
+
 def test_writing_moves_the_number_in_the_same_answer(client):
     written = client.post(SCREEN, data={"nome": SETTLEMENT, "valor": "35.000,00"})
 

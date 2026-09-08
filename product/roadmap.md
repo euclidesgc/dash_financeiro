@@ -62,19 +62,22 @@ PR e commit já escritos.
   ao lado da própria tabela. Abaixo de `60rem` a barra deita no topo e rola dentro
   de si.
 
-- [-] `024-cartoes-como-entidade` — O cartão de crédito é uma entidade com os
+- [x] `024-cartoes-como-entidade` — O cartão de crédito é uma entidade com os
   dados que só o dono sabe: **limite, taxa mensal, dia de fechamento e dia de
-  vencimento**, editáveis na tela. Hoje não existe cartão nenhum no modelo —
-  `accounts` (`app/migrations/sql/001_schema.sql:17-25`) guarda `id`, `name`,
-  `type`, `subtype`, `institution` e `balance_cents`, e mais nada; a taxa vive em
-  `debts.monthly_rate_bp`, por dívida e não por conta, e o `014` registrou por
-  escrito que cartão **não** recebe taxa sugerida, porque fatura paga inteira não
-  cobra juro e derivar dos encargos daria 0,06% ao mês, um número falso.
-  A consequência medida está no roadmap desde o `005`: **R$ 16.744,62 de cartão
-  ficam fora da escada de dívida**, e o marco "dívidas caras zeradas" do objetivo
-  é calculado sem eles. Os quatro cartões são pré-cadastrados com os campos
-  vazios e o dono preenche — limite e taxa não se inferem do que a Pluggy manda,
-  e inventá-los seria pior que deixar em branco.
+  vencimento**, editáveis em `/configuracao`, um bloco por cartão. Os cartões
+  nascem cadastrados e vazios, derivados das contas de crédito da base, e
+  sobrevivem à sincronização: uma carga nova não apaga o que o dono informou.
+  **A taxa tem uma casa só**, e é dela que a escada de dívida lê — o campo de
+  `/dividas` escreve no mesmo lugar. Era o defeito que o `015` já tinha pago uma
+  vez, e o validador cego foi caçá-lo escrevendo pelos dois caminhos e lendo pelos
+  quatro: não discordam em estado nenhum. Ele achou o defeito reentrando por
+  outra porta — conta que deixava de ser cartão virava degrau de cheque especial
+  carregando a taxa do cartão morto, e a tela devolvia 12,50% para quem digitava
+  3,52% — e mais uma escrita forjada que transformava conta corrente em cartão.
+  Os dois fechados, com teste que reprova sem a correção.
+  **Com a taxa informada, os R$ 16.744,62 de cartão entram na escada** e param de
+  ficar fora do marco "dívidas caras zeradas" do objetivo. Informar a taxa de cada
+  cartão é a entrada que só a fatura dá — está nas validações de campo pendentes.
   **Depende de:** nada aberto. **Destrava:** `026` e `028`.
 
 - [-] `025-financiamentos-na-tela` — O financiamento do imóvel e o do veículo se
