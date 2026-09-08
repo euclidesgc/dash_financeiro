@@ -84,9 +84,9 @@ def test_the_instruction_forbids_the_model_from_calculating():
 
 def test_without_a_key_the_advisor_says_the_numbers_do_not_depend_on_it():
     with pytest.raises(AdvisorUnavailableError) as refusal:
-        ask("e daí?", "contexto", api_key=None)
+        ask("e daí?", "contexto", api_key=None, model="gemini-2.5-flash")
 
-    assert "GEMINI_API_KEY" in str(refusal.value)
+    assert "/configuracao" in str(refusal.value)
     assert "não dependem dela" in str(refusal.value)
 
 
@@ -97,7 +97,7 @@ def test_a_network_failure_degrades_instead_of_breaking(monkeypatch):
     monkeypatch.setattr(httpx, "post", explode)
 
     with pytest.raises(AdvisorUnavailableError) as refusal:
-        ask("e daí?", "contexto", api_key="chave")
+        ask("e daí?", "contexto", api_key="chave", model="gemini-2.5-flash")
 
     assert "indisponível" in str(refusal.value)
 
@@ -113,7 +113,7 @@ def test_an_empty_answer_is_treated_as_unavailable(monkeypatch):
     monkeypatch.setattr(httpx, "post", lambda *a, **k: Answer())
 
     with pytest.raises(AdvisorUnavailableError):
-        ask("e daí?", "contexto", api_key="chave")
+        ask("e daí?", "contexto", api_key="chave", model="gemini-2.5-flash")
 
 
 def test_the_reading_comes_back_when_the_model_answers(monkeypatch):
@@ -127,7 +127,7 @@ def test_the_reading_comes_back_when_the_model_answers(monkeypatch):
             }
 
     monkeypatch.setattr(httpx, "post", lambda *a, **k: Answer())
-    found = ask("por quê?", "contexto", api_key="chave")
+    found = ask("por quê?", "contexto", api_key="chave", model="gemini-2.5-flash")
 
     assert found.text == "O pior ponto é em outubro."
     assert found.model
@@ -211,7 +211,7 @@ def test_the_refusal_of_the_provider_is_said_in_portuguese(monkeypatch):
     monkeypatch.setattr(httpx, "post", lambda *a, **k: Answer())
 
     with pytest.raises(AdvisorUnavailableError) as refusal:
-        ask("e daí?", "contexto", api_key="chave-errada")
+        ask("e daí?", "contexto", api_key="chave-errada", model="gemini-2.5-flash")
 
     assert "chave foi recusada" in str(refusal.value)
     assert "HTTPStatusError" not in str(refusal.value)
@@ -224,6 +224,6 @@ def test_a_timeout_is_said_in_portuguese(monkeypatch):
     monkeypatch.setattr(httpx, "post", slow)
 
     with pytest.raises(AdvisorUnavailableError) as refusal:
-        ask("e daí?", "contexto", api_key="chave")
+        ask("e daí?", "contexto", api_key="chave", model="gemini-2.5-flash")
 
     assert "demorou demais" in str(refusal.value)

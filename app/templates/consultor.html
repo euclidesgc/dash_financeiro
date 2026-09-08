@@ -58,8 +58,9 @@
     <p class="notice" id="indisponivel" role="status">{{ unavailable }}</p>
     {% endif %}
     {% if not has_key %}
-    <p class="lede">Sem <code>GEMINI_API_KEY</code> no ambiente a leitura da IA não roda. Os
-      números abaixo continuam iguais: eles não dependem dela.</p>
+    <p class="lede">Sem chave da IA a leitura não roda. Informe a chave em
+      <a href="/configuracao#ia">/configuracao</a> — os números abaixo continuam iguais: eles não
+      dependem dela.</p>
     {% endif %}
   </section>
   <section id="numeros" class="panel panel-wide">

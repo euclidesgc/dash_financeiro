@@ -3,7 +3,6 @@ from dataclasses import dataclass
 
 import httpx
 
-MODEL = "gemini-2.5-flash"
 ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 TIMEOUT_SECONDS = 20
 
@@ -52,11 +51,11 @@ class Reading:
     model: str
 
 
-def ask(question: str, context: str, *, api_key: str | None) -> Reading:
+def ask(question: str, context: str, *, api_key: str | None, model: str) -> Reading:
     if not api_key:
         raise AdvisorUnavailableError(
-            "A leitura da IA está indisponível: falta a chave GEMINI_API_KEY no ambiente. "
-            "Os números da tela são os mesmos, e eles não dependem dela."
+            "A leitura da IA está indisponível: falta a chave da IA. Informe em "
+            "/configuracao. Os números da tela são os mesmos, e eles não dependem dela."
         )
     body = {
         "systemInstruction": {"parts": [{"text": INSTRUCTION}]},
@@ -64,8 +63,8 @@ def ask(question: str, context: str, *, api_key: str | None) -> Reading:
     }
     try:
         answer = httpx.post(
-            ENDPOINT.format(model=MODEL),
-            params={"key": api_key},
+            ENDPOINT.format(model=model),
+            headers={"x-goog-api-key": api_key},
             json=body,
             timeout=TIMEOUT_SECONDS,
         )
@@ -84,4 +83,4 @@ def ask(question: str, context: str, *, api_key: str | None) -> Reading:
         raise AdvisorUnavailableError(
             "A leitura da IA voltou vazia. Os números da tela são os mesmos."
         )
-    return Reading(text=text, model=MODEL)
+    return Reading(text=text, model=model)
