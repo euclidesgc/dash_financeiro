@@ -956,7 +956,7 @@
     "024-cartoes-como-entidade": {
       "title": "O cartao e entidade com limite, taxa, fechamento e vencimento editaveis",
       "track": "rapida",
-      "stage": "execute",
+      "stage": "done",
       "stacks": [
         "python"
       ],
@@ -992,13 +992,18 @@
           "criteria_sha": "3ddc182789348e48bb7638a5abe8d370cd0cf8d7142da74d55f453d41f6eb599"
         },
         "2": {
-          "status": "em_execucao",
+          "status": "aprovada",
           "reproved_count": 0,
-          "verdict": null,
-          "verdict_file": null,
-          "validated_sha": null,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/024-cartoes-como-entidade/05-veredictos/fase-2.md",
+          "validated_sha": "0232877b011bd3c63a7cc0ca2f6bb3cdf891d2e3",
           "pr": null,
-          "blocked_on": []
+          "blocked_on": [],
+          "verdict_at": "2026-09-08T03:45:05Z",
+          "validated_trees": {
+            ".": "5b50d4cbb45c958b62fd162dae872725b182b7b1"
+          },
+          "criteria_sha": "e92b38ce906d9980ac78588a138cfd49fa7e7fa00d660c7481944cea0e759f68"
         }
       },
       "divergences": {},
