@@ -14,6 +14,7 @@ import re
 import unicodedata
 from collections import defaultdict
 from datetime import datetime
+from typing import Any
 
 RAW = "data/raw"
 PROC = "data/processed"
@@ -83,7 +84,7 @@ PADRAO_PAGTO_FATURA = re.compile(
 PADRAO_PARCELA = re.compile(r"(?<!\d)(\d{1,2})\s*(?:/|\s+de\s+)\s*(\d{1,2})(?!\d)")
 
 
-def normalizar(texto):
+def normalizar(texto: str | None) -> str:
     if not texto:
         return ""
     t = unicodedata.normalize("NFKD", texto)
@@ -96,8 +97,8 @@ def normalizar(texto):
     return t
 
 
-def carregar(padrao):
-    itens = []
+def carregar(padrao: str) -> list[dict[str, Any]]:
+    itens: list[dict[str, Any]] = []
     for caminho in sorted(glob.glob(os.path.join(RAW, padrao))):
         with open(caminho) as arquivo:
             corpo = json.load(arquivo)
@@ -110,8 +111,9 @@ def carregar(padrao):
     return itens
 
 
-def dedup(registros):
-    vistos, saida = set(), []
+def dedup(registros: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    vistos: set[Any] = set()
+    saida: list[dict[str, Any]] = []
     for r in registros:
         chave = r.get("id")
         if chave and chave in vistos:
@@ -122,7 +124,7 @@ def dedup(registros):
     return saida
 
 
-def inferir_categoria(descricao):
+def inferir_categoria(descricao: str | None) -> str:
     alvo = normalizar(descricao)
     for nome, padrao in REGRAS_CATEGORIA:
         if re.search(padrao, alvo):
@@ -130,7 +132,7 @@ def inferir_categoria(descricao):
     return "Não classificado"
 
 
-def instituicao_da_conta(conta):
+def instituicao_da_conta(conta: dict[str, Any]) -> str:
     for chave in ("marketingName", "institutionName", "name"):
         valor = conta.get(chave)
         if isinstance(valor, str) and valor.strip():
@@ -138,7 +140,9 @@ def instituicao_da_conta(conta):
     return "Desconhecida"
 
 
-def parcelas_da_transacao(transacao):
+def parcelas_da_transacao(
+    transacao: dict[str, Any],
+) -> tuple[int, int, str] | tuple[None, None, None]:
     meta = transacao.get("creditCardMetadata") or {}
     atual = meta.get("installmentNumber")
     total = meta.get("totalInstallments")
@@ -152,15 +156,15 @@ def parcelas_da_transacao(transacao):
     return None, None, None
 
 
-def main():
+def main() -> None:
     os.makedirs(PROC, exist_ok=True)
     contas = dedup(carregar("accounts_*.json"))
     transacoes = dedup(carregar("*transactions_*.json"))
     if not contas:
         raise SystemExit("Sem data/raw/accounts_*.json — rode a extração antes.")
 
-    indice_conta = {c["id"]: c for c in contas}
-    linhas = []
+    indice_conta: dict[Any, dict[str, Any]] = {c["id"]: c for c in contas}
+    linhas: list[dict[str, Any]] = []
     for t in transacoes:
         conta = indice_conta.get(t.get("accountId"), {})
         categoria_pluggy = (t.get("category") or "").strip()
@@ -258,12 +262,14 @@ def main():
     print(f"  parcelamentos detectados: {len(parcelamentos)}")
 
 
-def marcar_transferencias(linhas, indice_conta):
+def marcar_transferencias(
+    linhas: list[dict[str, Any]], indice_conta: dict[Any, dict[str, Any]]
+) -> None:
     for linha in linhas:
         linha["eh_transferencia"] = False
         linha["motivo_transferencia"] = ""
 
-    por_valor = defaultdict(list)
+    por_valor: defaultdict[Any, list[int]] = defaultdict(list)
     for i, linha in enumerate(linhas):
         if linha["valor"] is None:
             continue
@@ -311,7 +317,7 @@ def marcar_transferencias(linhas, indice_conta):
     netar_estornos(linhas)
 
 
-def marcar_por_categoria_pluggy(linhas):
+def marcar_por_categoria_pluggy(linhas: list[dict[str, Any]]) -> None:
     """A contraparte pode estar numa conta que não foi compartilhada; nesse caso o
     pareamento débito/crédito não acha par e a categoria da Pluggy é o único sinal."""
     for linha in linhas:
@@ -328,7 +334,7 @@ def marcar_por_categoria_pluggy(linhas):
             linha["motivo_transferencia"] = ""
 
 
-def netar_estornos(linhas):
+def netar_estornos(linhas: list[dict[str, Any]]) -> None:
     """ESTORNO devolve um débito lançado antes; os dois se anulam e nenhum é gasto."""
     for linha in linhas:
         linha["eh_estorno"] = False
@@ -353,8 +359,8 @@ def netar_estornos(linhas):
             estorno["estornada_por"] = original["id"]
 
 
-def detectar_recorrentes(linhas):
-    grupos = defaultdict(list)
+def detectar_recorrentes(linhas: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    grupos: defaultdict[Any, list[dict[str, Any]]] = defaultdict(list)
     for linha in linhas:
         if (
             linha["eh_transferencia"]
@@ -366,9 +372,9 @@ def detectar_recorrentes(linhas):
             continue
         grupos[linha["chave"]].append(linha)
 
-    recorrentes = []
+    recorrentes: list[dict[str, Any]] = []
     for chave, itens in grupos.items():
-        meses = defaultdict(list)
+        meses: defaultdict[str, list[Any]] = defaultdict(list)
         for linha in itens:
             meses[linha["data"][:7]].append(abs(linha["valor"]))
         if len(meses) < 3:
@@ -407,8 +413,8 @@ def detectar_recorrentes(linhas):
     return recorrentes
 
 
-def agrupar_parcelamentos(linhas):
-    grupos = defaultdict(list)
+def agrupar_parcelamentos(linhas: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    grupos: defaultdict[Any, list[dict[str, Any]]] = defaultdict(list)
     for linha in linhas:
         if linha["parcela_total"]:
             chave_grupo = (
@@ -417,7 +423,7 @@ def agrupar_parcelamentos(linhas):
                 round(abs(linha["valor"] or 0), 2),
             )
             grupos[chave_grupo].append(linha)
-    saida = []
+    saida: list[dict[str, Any]] = []
     for (_chave, total, valor), itens in grupos.items():
         vistas = sorted({i["parcela_atual"] for i in itens if i["parcela_atual"]})
         ultima = max(itens, key=lambda i: i["data"])
