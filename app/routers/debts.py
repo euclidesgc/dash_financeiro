@@ -14,6 +14,7 @@ from app.debts.ladder import (
     ladder,
     monthly_interest_cents,
     set_rate,
+    step,
     without_rate,
 )
 from app.debts.observed import observed_rates
@@ -117,10 +118,9 @@ def _identifier(asked: str) -> int:
 
 def _debt(conn: sqlite3.Connection, asked: str) -> dict | None:
     try:
-        found = conn.execute("SELECT * FROM debts WHERE id = ?", (_identifier(asked),)).fetchone()
+        return step(conn, _identifier(asked))
     except DebtNotFoundError:
         return None
-    return dict(found) if found else None
 
 
 def _answer(
