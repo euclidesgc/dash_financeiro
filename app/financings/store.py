@@ -17,7 +17,18 @@ VEHICLE_FILE = "cdc_safra_veiculo.json"
 _COLUMNS = "kind, monthly_rate_bp, term_months, balance_cents, payment_cents, first_due_date"
 _VALUES = ":kind, :monthly_rate_bp, :term_months, :balance_cents, :payment_cents, :first_due_date"
 _INSERT = f"INSERT OR IGNORE INTO financings ({_COLUMNS}) VALUES ({_VALUES})"
-_UPSERT = f"INSERT OR REPLACE INTO financings ({_COLUMNS}) VALUES ({_VALUES})"
+_UPDATE_SET = (
+    "monthly_rate_bp = excluded.monthly_rate_bp, term_months = excluded.term_months, "
+    "balance_cents = excluded.balance_cents, payment_cents = excluded.payment_cents, "
+    "first_due_date = excluded.first_due_date"
+)
+# A true UPDATE on conflict, not INSERT OR REPLACE: the latter deletes and
+# reinserts the row, which moves it to the end of the table and reshuffles
+# every id the ladder assigns by insertion order on the next rebuild.
+_UPSERT = (
+    f"INSERT INTO financings ({_COLUMNS}) VALUES ({_VALUES}) "
+    f"ON CONFLICT (kind) DO UPDATE SET {_UPDATE_SET}"
+)
 
 
 def manual_dir() -> Path:

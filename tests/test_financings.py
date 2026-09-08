@@ -276,3 +276,62 @@ def test_a_vehicle_row_missing_the_due_date_is_refused_by_the_schema(taxonomy_co
             "(kind, monthly_rate_bp, term_months, balance_cents, payment_cents, first_due_date) "
             "VALUES ('vehicle', 163, 60, NULL, -123533, NULL)"
         )
+
+
+def _debt_id(conn: sqlite3.Connection, kind: str) -> int:
+    return conn.execute("SELECT id FROM debts WHERE kind = ?", (kind,)).fetchone()[0]
+
+
+def test_writing_a_financing_keeps_the_debt_ids_stable(taxonomy_conn):
+    # INSERT OR REPLACE deletes and reinserts the conflicting row, moving it to
+    # the end of the table; ladder ids are assigned by insertion order, so a
+    # screen open before a write would keep pointing at the wrong debt id.
+    taxonomy_conn.execute(
+        "INSERT INTO financings "
+        "(kind, monthly_rate_bp, term_months, balance_cents, payment_cents, first_due_date) "
+        "VALUES ('mortgage', 72, 370, -23858518, NULL, NULL)"
+    )
+    taxonomy_conn.execute(
+        "INSERT INTO financings "
+        "(kind, monthly_rate_bp, term_months, balance_cents, payment_cents, first_due_date) "
+        "VALUES ('vehicle', 163, 60, NULL, -123533, '2025-06-11')"
+    )
+    taxonomy_conn.commit()
+    rebuild(taxonomy_conn, today=date(2026, 9, 5))
+
+    mortgage_id_before = _debt_id(taxonomy_conn, "mortgage")
+    vehicle_id_before = _debt_id(taxonomy_conn, "vehicle")
+
+    financings_store.write(
+        taxonomy_conn, "mortgage", {"saldo": "200.000,00", "taxa": "5,00", "prazo": "300"}
+    )
+    rebuild(taxonomy_conn, today=date(2026, 9, 5))
+
+    assert _debt_id(taxonomy_conn, "mortgage") == mortgage_id_before
+    assert _debt_id(taxonomy_conn, "vehicle") == vehicle_id_before
+
+
+def test_writing_a_financing_keeps_the_table_row_order(taxonomy_conn):
+    # read_all selects every column, so a full table scan reads rowid order,
+    # not the kind index order: this is the query rebuild actually runs.
+    taxonomy_conn.execute(
+        "INSERT INTO financings "
+        "(kind, monthly_rate_bp, term_months, balance_cents, payment_cents, first_due_date) "
+        "VALUES ('mortgage', 72, 370, -23858518, NULL, NULL)"
+    )
+    taxonomy_conn.execute(
+        "INSERT INTO financings "
+        "(kind, monthly_rate_bp, term_months, balance_cents, payment_cents, first_due_date) "
+        "VALUES ('vehicle', 163, 60, NULL, -123533, '2025-06-11')"
+    )
+    taxonomy_conn.commit()
+
+    before = [row["kind"] for row in financings_store.read_all(taxonomy_conn)]
+    assert before == ["mortgage", "vehicle"]
+
+    financings_store.write(
+        taxonomy_conn, "mortgage", {"saldo": "200.000,00", "taxa": "5,00", "prazo": "300"}
+    )
+
+    after = [row["kind"] for row in financings_store.read_all(taxonomy_conn)]
+    assert after == before
