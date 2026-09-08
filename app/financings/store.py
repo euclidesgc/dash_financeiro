@@ -46,20 +46,23 @@ def read(conn: sqlite3.Connection, kind: str) -> dict[str, Any] | None:
 
 
 def seed_from_manual(conn: sqlite3.Connection) -> int:
-    # A non-empty table is a machine that already imported: the disk is not
-    # opened again, and a contract removed after import cannot un-import.
-    count = conn.execute("SELECT COUNT(*) FROM financings").fetchone()[0]
-    if count > 0:
-        return 0
+    # Decisão: o guarda é por tipo de contrato, não por a tabela estar vazia.
+    # Contando a tabela inteira, a primeira gravação de um financiamento pela
+    # tela dava a importação por encerrada e o outro contrato nunca mais era
+    # semeado — o degrau sumia da escada de dívidas sem uma palavra. Quem já
+    # está na tabela continua intocado, que é a razão original do guarda.
+    present = {row[0] for row in conn.execute("SELECT kind FROM financings")}
     seeded = 0
-    mortgage = _read(MORTGAGE_FILE)
-    if mortgage:
-        conn.execute(_INSERT, _mortgage_row(mortgage))
-        seeded += 1
-    vehicle = _read(VEHICLE_FILE)
-    if vehicle:
-        conn.execute(_INSERT, _vehicle_row(vehicle))
-        seeded += 1
+    for kind, path, to_row in (
+        (MORTGAGE, MORTGAGE_FILE, _mortgage_row),
+        (VEHICLE, VEHICLE_FILE, _vehicle_row),
+    ):
+        if kind in present:
+            continue
+        contract = _read(path)
+        if contract:
+            conn.execute(_INSERT, to_row(contract))
+            seeded += 1
     if seeded:
         conn.commit()
     return seeded

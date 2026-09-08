@@ -118,17 +118,38 @@ def test_a_row_already_in_the_table_wins_over_the_files_on_disk(
     )
     taxonomy_conn.commit()
 
-    assert rebuild(taxonomy_conn, today=date(2026, 9, 5)) == 1
+    assert rebuild(taxonomy_conn, today=date(2026, 9, 5)) == 2
 
-    found = ladder(taxonomy_conn)
-    assert len(found) == 1
-    assert found[0]["kind"] == "mortgage"
-    assert found[0]["monthly_rate_bp"] == 1000
-    assert found[0]["term_months"] == 12
-    assert found[0]["balance_cents"] == -10000000
+    found = {row["kind"]: row for row in ladder(taxonomy_conn)}
+    assert found["mortgage"]["monthly_rate_bp"] == 1000
+    assert found["mortgage"]["term_months"] == 12
+    assert found["mortgage"]["balance_cents"] == -10000000
+    # A linha da tabela ganha do arquivo para o contrato dela — e só para ele.
+    # O veículo, que não estava na tabela, continua vindo do disco: contar a
+    # tabela inteira fazia o degrau dele sumir da escada em silêncio.
+    assert "vehicle" in found
 
     count = taxonomy_conn.execute("SELECT COUNT(*) FROM financings").fetchone()[0]
-    assert count == 1
+    assert count == 2
+
+
+def test_editing_one_financing_on_screen_does_not_unseed_the_other(
+    taxonomy_conn, tmp_path, monkeypatch
+):
+    folder = _write_manual(tmp_path)
+    monkeypatch.setenv(financings_store.MANUAL_DIR, str(folder))
+    # O dono abre a tela e grava o imóvel antes de qualquer reconstrução: é o
+    # caminho que a tela nova abriu, e era o que apagava o CDC do veículo.
+    financings_store.write(
+        taxonomy_conn,
+        "mortgage",
+        {"taxa": "0,72", "prazo": "300", "saldo": "300.000,00"},
+    )
+
+    rebuild(taxonomy_conn, today=date(2026, 9, 5))
+
+    kinds = {row["kind"] for row in ladder(taxonomy_conn)}
+    assert kinds == {"mortgage", "vehicle"}
 
 
 def test_a_machine_without_file_or_row_still_answers(taxonomy_conn, tmp_path, monkeypatch):
