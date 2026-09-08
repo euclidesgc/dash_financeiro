@@ -105,7 +105,15 @@ def changed_files():
     if base:
         ranges = [base]
     else:
-        declaradas = [f"origin/{nome}...HEAD" for nome in configured_branches()]
+        # A branch local vem antes da remota: num repositório sem remote,
+        # `origin/develop` não resolve, a cascata cai em `HEAD~1` e um merge da
+        # branch de integração faz o diff acusar tudo o que ele trouxe — trabalho
+        # de outra fase julgado como se fosse desta.
+        declaradas = [
+            faixa
+            for nome in configured_branches()
+            for faixa in (f"origin/{nome}...HEAD", f"{nome}...HEAD")
+        ]
         # A cascata antiga fica no fim como último recurso, para o projeto que
         # ainda não declarou nada continuar funcionando como funcionava.
         ranges = declaradas + ["origin/develop...HEAD", "origin/main...HEAD", "HEAD~1"]
