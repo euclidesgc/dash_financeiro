@@ -22,6 +22,23 @@ from tests.test_taxonomy_remap import (
 ALL_CATEGORIES = 77
 ALL_CATEGORIES_WITH_ONE_UNMATCHED = 78
 
+# Neither vocabulary declares a single rule in the variável x supérfluo pair:
+# only the owner marks supérfluo, editing a rule on the screen. Without planting
+# it on both sides, the crossing that names the cut list compares zero with zero,
+# and an equality between two empty crossings proves nothing at all.
+CUT_RULES = ("Account fees", "Accomodation")
+
+
+def mark_as_cut(conn) -> int:
+    changed = conn.execute(
+        "UPDATE category_rules SET nature = 'variável', essentiality = 'supérfluo' "
+        f"WHERE match_kind = 'category' AND match_value IN ({','.join('?' * len(CUT_RULES))})",
+        CUT_RULES,
+    ).rowcount
+    conn.commit()
+    return changed
+
+
 LOGIN = "teste-023"
 PASSWORD = "senha-teste-023-taxonomia"
 SCREEN = "/gastos"
@@ -42,12 +59,14 @@ def test_the_four_numbers_agree_with_all_migrations_applied_and_the_tree_seeded(
     before = new_conn(tmp_path, "integration-before")
     install_previous_vocabulary(before)
     load(before, build_base_transactions())
+    assert mark_as_cut(before) == len(CUT_RULES)
     classify_all(before)
     before.commit()
 
     after = new_conn(tmp_path, "integration-after")
     load(after, build_base_transactions())
     seed_taxonomy(after)
+    assert mark_as_cut(after) == len(CUT_RULES)
     classify_all(after)
     after.commit()
 
@@ -60,6 +79,10 @@ def test_the_four_numbers_agree_with_all_migrations_applied_and_the_tree_seeded(
     after_total, after_count, after_corte, after_piso = read_four_numbers(after)
 
     assert after_count > 0
+    # The cut list has to carry content on both sides, or the equality below is
+    # an equality between two empty crossings.
+    assert len(after_corte.rows) == len(CUT_RULES)
+    assert after_corte.total_cents < 0
     assert before_total == after_total
     assert before_count == after_count
     for before_crossing, after_crossing in ((before_corte, after_corte), (before_piso, after_piso)):
