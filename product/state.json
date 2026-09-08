@@ -923,9 +923,23 @@
           "por": "autonomo"
         }
       },
-      "current_phase": 1,
+      "current_phase": 2,
       "phases": {
         "1": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/023-taxonomia-hierarquica-do-dono/05-veredictos/fase-1.md",
+          "validated_sha": "0ec8ac4c61a59fe456120bb4e4b21916b25d2a05",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-08T02:57:22Z",
+          "validated_trees": {
+            ".": "d13c00ccbf51f6eda30b6f18cf06bdd3d45e65dc"
+          },
+          "criteria_sha": "ba84df858e22889064f96af1ee83bd6aaa6979eefe3cae1e5e147ada6ea02bac"
+        },
+        "2": {
           "status": "em_execucao",
           "reproved_count": 0,
           "verdict": null,
