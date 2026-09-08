@@ -3,6 +3,7 @@ import sqlite3
 from dataclasses import dataclass
 
 from app.queries.reach import rule_reach
+from app.settings.limits import RULE_EXPRESSION_MAX
 from app.taxonomy import classify
 from app.taxonomy.seed import message
 
@@ -212,6 +213,8 @@ def _validate(
     nature: str,
     essentiality: str,
 ) -> None:
+    if len(match_value) > RULE_EXPRESSION_MAX:
+        raise InvalidExpressionError(match_value)
     if conn.execute("SELECT 1 FROM category_groups WHERE id = ?", (group_id,)).fetchone() is None:
         raise InvalidTermError("invalid_group", group_id)
     if conn.execute("SELECT 1 FROM natures WHERE value = ?", (nature,)).fetchone() is None:
