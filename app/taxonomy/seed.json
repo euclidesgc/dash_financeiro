@@ -658,83 +658,391 @@
       "essentiality": "importante"
     }
   ],
-  "category_labels": {
-    "Accomodation": "Hospedagem",
-    "Account fees": "Tarifa de conta",
-    "Airport and airlines": "Passagem aérea",
-    "Automotive": "Automóvel",
-    "Bank fees": "Tarifa bancária",
-    "Bicycle": "Bicicleta",
-    "Bookstore": "Livraria",
-    "Cashback": "Cashback",
-    "Cinema, theater and concerts": "Cinema e shows",
-    "Clothing": "Roupas",
-    "Credit card fees": "Tarifa de cartão",
-    "Credit card payment": "Pagamento de cartão",
-    "Dentist": "Dentista",
-    "Digital services": "Serviços digitais",
-    "Donations": "Doações",
-    "Eating out": "Comer fora",
-    "Education": "Ensino",
-    "Educação": "Educação",
-    "Electricity": "Energia elétrica",
-    "Electronics": "Eletrônicos",
-    "Food delivery": "Delivery de comida",
-    "Gambling": "Apostas",
-    "Gas stations": "Posto de combustível",
-    "Groceries": "Supermercado",
-    "Healthcare": "Plano de saúde",
-    "Hospital clinics and labs": "Clínicas e exames",
-    "Houseware": "Utensílios de casa",
-    "Housing": "Casa",
-    "Income": "Receita",
-    "Income taxes": "Imposto de renda",
-    "Insurance": "Seguro",
-    "Interests charged": "Juros cobrados",
-    "Internet": "Internet",
-    "Investments": "Investimentos",
-    "Kids and toys": "Crianças e brinquedos",
-    "Late payment and overdraft costs": "Multa e cheque especial",
-    "Leisure": "Lazer",
-    "Loans and financing": "Empréstimo",
-    "Non-recurring income": "Receita não recorrente",
-    "Não classificado": "Sem categoria",
-    "Office supplies": "Material de escritório",
-    "Online Courses": "Cursos online",
-    "Online shopping": "Compra online",
-    "Optometry": "Óculos e lentes",
-    "Parking": "Estacionamento",
-    "Pet supplies and vet": "Pet e veterinário",
-    "Pharmacy": "Farmácia",
-    "Proceeds interests and dividends": "Juros e dividendos",
-    "Public transportation": "Ônibus e metrô",
-    "Real estate financing": "Financiamento imobiliário",
-    "Salary": "Salário",
-    "Same person transfer": "Transferência própria",
-    "Same person transfer - CASH": "Transferência própria em dinheiro",
-    "School": "Escola",
-    "Services": "Serviços",
-    "Shopping": "Compras",
-    "Sports goods": "Artigos esportivos",
-    "Tax on financial operations": "IOF",
-    "Taxi and ride-hailing": "Táxi e aplicativo",
-    "Telecom": "Telefonia",
-    "Telecommunications": "Telecomunicações",
-    "Third party transfer - PIX": "Pix para terceiro",
-    "Tickets": "Ingressos",
-    "Tolls and in vehicle payment": "Pedágio",
-    "Traffic tickets": "Multa de trânsito",
-    "Transfer - Bank Slip": "Boleto",
-    "Transfer - Cash": "Saque e depósito",
-    "Transfer - Internal": "Transferência interna",
-    "Transfer - PIX": "Pix",
-    "Transfer - TED": "TED",
-    "Transfers": "Transferência",
-    "Travel": "Viagem",
-    "University": "Faculdade",
-    "Vehicle maintenance": "Manutenção do veículo",
-    "Vehicle ownership taxes and fees": "IPVA e licenciamento",
-    "Water": "Água",
-    "Wellness and fitness": "Academia e bem-estar"
-  }
+  "categories": [
+    {
+      "name": "Accomodation",
+      "label": "Hospedagem",
+      "group": "Pessoal"
+    },
+    {
+      "name": "Account fees",
+      "label": "Tarifa de conta",
+      "group": "Financeiro"
+    },
+    {
+      "name": "Airport and airlines",
+      "label": "Passagem aérea",
+      "group": "Pessoal"
+    },
+    {
+      "name": "Automotive",
+      "label": "Automóvel",
+      "group": "Transporte"
+    },
+    {
+      "name": "Bank fees",
+      "label": "Tarifa bancária",
+      "group": "Financeiro"
+    },
+    {
+      "name": "Bicycle",
+      "label": "Bicicleta",
+      "group": "Transporte"
+    },
+    {
+      "name": "Bookstore",
+      "label": "Livraria",
+      "group": "Educação"
+    },
+    {
+      "name": "Cashback",
+      "label": "Cashback",
+      "group": "Renda"
+    },
+    {
+      "name": "Cinema, theater and concerts",
+      "label": "Cinema e shows",
+      "group": "Pessoal"
+    },
+    {
+      "name": "Clothing",
+      "label": "Roupas",
+      "group": "Pessoal"
+    },
+    {
+      "name": "Credit card fees",
+      "label": "Tarifa de cartão",
+      "group": "Financeiro"
+    },
+    {
+      "name": "Credit card payment",
+      "label": "Pagamento de cartão",
+      "group": "Financeiro"
+    },
+    {
+      "name": "Dentist",
+      "label": "Dentista",
+      "group": "Saúde"
+    },
+    {
+      "name": "Digital services",
+      "label": "Serviços digitais",
+      "group": "Assinaturas"
+    },
+    {
+      "name": "Donations",
+      "label": "Doações",
+      "group": "Pessoal"
+    },
+    {
+      "name": "Eating out",
+      "label": "Comer fora",
+      "group": "Alimentação"
+    },
+    {
+      "name": "Education",
+      "label": "Ensino",
+      "group": "Educação"
+    },
+    {
+      "name": "Educação",
+      "label": "Educação",
+      "group": "Educação"
+    },
+    {
+      "name": "Electricity",
+      "label": "Energia elétrica",
+      "group": "Moradia"
+    },
+    {
+      "name": "Electronics",
+      "label": "Eletrônicos",
+      "group": "Pessoal"
+    },
+    {
+      "name": "Food delivery",
+      "label": "Delivery de comida",
+      "group": "Alimentação"
+    },
+    {
+      "name": "Gambling",
+      "label": "Apostas",
+      "group": "Pessoal"
+    },
+    {
+      "name": "Gas stations",
+      "label": "Posto de combustível",
+      "group": "Transporte"
+    },
+    {
+      "name": "Groceries",
+      "label": "Supermercado",
+      "group": "Alimentação"
+    },
+    {
+      "name": "Healthcare",
+      "label": "Plano de saúde",
+      "group": "Saúde"
+    },
+    {
+      "name": "Hospital clinics and labs",
+      "label": "Clínicas e exames",
+      "group": "Saúde"
+    },
+    {
+      "name": "Houseware",
+      "label": "Utensílios de casa",
+      "group": "Moradia"
+    },
+    {
+      "name": "Housing",
+      "label": "Casa",
+      "group": "Moradia"
+    },
+    {
+      "name": "Income",
+      "label": "Receita",
+      "group": "Renda"
+    },
+    {
+      "name": "Income taxes",
+      "label": "Imposto de renda",
+      "group": "Financeiro"
+    },
+    {
+      "name": "Insurance",
+      "label": "Seguro",
+      "group": "Transporte"
+    },
+    {
+      "name": "Interests charged",
+      "label": "Juros cobrados",
+      "group": "Financeiro"
+    },
+    {
+      "name": "Internet",
+      "label": "Internet",
+      "group": "Moradia"
+    },
+    {
+      "name": "Investments",
+      "label": "Investimentos",
+      "group": "Financeiro"
+    },
+    {
+      "name": "Kids and toys",
+      "label": "Crianças e brinquedos",
+      "group": "Dependentes"
+    },
+    {
+      "name": "Late payment and overdraft costs",
+      "label": "Multa e cheque especial",
+      "group": "Financeiro"
+    },
+    {
+      "name": "Leisure",
+      "label": "Lazer",
+      "group": "Pessoal"
+    },
+    {
+      "name": "Loans and financing",
+      "label": "Empréstimo",
+      "group": "Financeiro"
+    },
+    {
+      "name": "Non-recurring income",
+      "label": "Receita não recorrente",
+      "group": "Renda"
+    },
+    {
+      "name": "Não classificado",
+      "label": "Sem categoria",
+      "group": "Outros"
+    },
+    {
+      "name": "Office supplies",
+      "label": "Material de escritório",
+      "group": "Pessoal"
+    },
+    {
+      "name": "Online Courses",
+      "label": "Cursos online",
+      "group": "Educação"
+    },
+    {
+      "name": "Online shopping",
+      "label": "Compra online",
+      "group": "Pessoal"
+    },
+    {
+      "name": "Optometry",
+      "label": "Óculos e lentes",
+      "group": "Saúde"
+    },
+    {
+      "name": "Parking",
+      "label": "Estacionamento",
+      "group": "Transporte"
+    },
+    {
+      "name": "Pet supplies and vet",
+      "label": "Pet e veterinário",
+      "group": "Saúde"
+    },
+    {
+      "name": "Pharmacy",
+      "label": "Farmácia",
+      "group": "Saúde"
+    },
+    {
+      "name": "Proceeds interests and dividends",
+      "label": "Juros e dividendos",
+      "group": "Renda"
+    },
+    {
+      "name": "Public transportation",
+      "label": "Ônibus e metrô",
+      "group": "Transporte"
+    },
+    {
+      "name": "Real estate financing",
+      "label": "Financiamento imobiliário",
+      "group": "Moradia"
+    },
+    {
+      "name": "Salary",
+      "label": "Salário",
+      "group": "Renda"
+    },
+    {
+      "name": "Same person transfer",
+      "label": "Transferência própria",
+      "group": "Não é gasto"
+    },
+    {
+      "name": "Same person transfer - CASH",
+      "label": "Transferência própria em dinheiro",
+      "group": "Não é gasto"
+    },
+    {
+      "name": "School",
+      "label": "Escola",
+      "group": "Educação"
+    },
+    {
+      "name": "Services",
+      "label": "Serviços",
+      "group": "Assinaturas"
+    },
+    {
+      "name": "Shopping",
+      "label": "Compras",
+      "group": "Pessoal"
+    },
+    {
+      "name": "Sports goods",
+      "label": "Artigos esportivos",
+      "group": "Pessoal"
+    },
+    {
+      "name": "Tax on financial operations",
+      "label": "IOF",
+      "group": "Financeiro"
+    },
+    {
+      "name": "Taxi and ride-hailing",
+      "label": "Táxi e aplicativo",
+      "group": "Transporte"
+    },
+    {
+      "name": "Telecom",
+      "label": "Telefonia",
+      "group": "Assinaturas"
+    },
+    {
+      "name": "Telecommunications",
+      "label": "Telecomunicações",
+      "group": "Assinaturas"
+    },
+    {
+      "name": "Third party transfer - PIX",
+      "label": "Pix para terceiro",
+      "group": "Pessoal"
+    },
+    {
+      "name": "Tickets",
+      "label": "Ingressos",
+      "group": "Pessoal"
+    },
+    {
+      "name": "Tolls and in vehicle payment",
+      "label": "Pedágio",
+      "group": "Transporte"
+    },
+    {
+      "name": "Traffic tickets",
+      "label": "Multa de trânsito",
+      "group": "Transporte"
+    },
+    {
+      "name": "Transfer - Bank Slip",
+      "label": "Boleto",
+      "group": "Financeiro"
+    },
+    {
+      "name": "Transfer - Cash",
+      "label": "Saque e depósito",
+      "group": "Não é gasto"
+    },
+    {
+      "name": "Transfer - Internal",
+      "label": "Transferência interna",
+      "group": "Não é gasto"
+    },
+    {
+      "name": "Transfer - PIX",
+      "label": "Pix",
+      "group": "Financeiro"
+    },
+    {
+      "name": "Transfer - TED",
+      "label": "TED",
+      "group": "Financeiro"
+    },
+    {
+      "name": "Transfers",
+      "label": "Transferência",
+      "group": "Financeiro"
+    },
+    {
+      "name": "Travel",
+      "label": "Viagem",
+      "group": "Pessoal"
+    },
+    {
+      "name": "University",
+      "label": "Faculdade",
+      "group": "Educação"
+    },
+    {
+      "name": "Vehicle maintenance",
+      "label": "Manutenção do veículo",
+      "group": "Transporte"
+    },
+    {
+      "name": "Vehicle ownership taxes and fees",
+      "label": "IPVA e licenciamento",
+      "group": "Transporte"
+    },
+    {
+      "name": "Water",
+      "label": "Água",
+      "group": "Moradia"
+    },
+    {
+      "name": "Wellness and fitness",
+      "label": "Academia e bem-estar",
+      "group": "Saúde"
+    }
+  ]
 }
