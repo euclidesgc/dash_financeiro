@@ -1,6 +1,6 @@
 import sqlite3
 from datetime import date
-from typing import Any
+from typing import Any, cast
 
 from app.accounts import BANK, CREDIT
 from app.cards import store
@@ -183,7 +183,7 @@ def set_rate(conn: sqlite3.Connection, debt_id: int, typed: str) -> None:
 def monthly_interest_cents(row: dict[str, Any]) -> int:
     if row["monthly_rate_bp"] is None:
         return 0
-    return -round(abs(row["balance_cents"]) * row["monthly_rate_bp"] / RATE_SCALE)
+    return cast(int, -round(abs(row["balance_cents"]) * row["monthly_rate_bp"] / RATE_SCALE))
 
 
 def main() -> int:

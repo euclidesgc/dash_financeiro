@@ -1,12 +1,13 @@
 import sqlite3
 from datetime import date
+from typing import Any, cast
 
 from app.debts.ladder import without_rate
 from app.plan.whatif import facts
 from app.settings.catalog import CARD_RATE, FACT, of_kind
 
 
-def wanted() -> tuple[dict, ...]:
+def wanted() -> tuple[dict[str, Any], ...]:
     # Read from the catalogue at every call, never copied: a second list here is
     # the same defect this item closed in the base, where one fact had one name
     # on the screen that wrote it and another on the screen that asked for it.
@@ -22,7 +23,7 @@ def wanted() -> tuple[dict, ...]:
     )
 
 
-def pending(conn: sqlite3.Connection, *, today: date) -> list[dict]:
+def pending(conn: sqlite3.Connection, *, today: date) -> list[dict[str, Any]]:
     known = {row["name"]: row for row in facts(conn, today=today)}
     marks = {row["name"]: dict(row) for row in conn.execute("SELECT * FROM advisor_questions")}
     open_questions = []
@@ -39,7 +40,7 @@ def pending(conn: sqlite3.Connection, *, today: date) -> list[dict]:
     return open_questions
 
 
-def next_question(conn: sqlite3.Connection, *, today: date) -> dict | None:
+def next_question(conn: sqlite3.Connection, *, today: date) -> dict[str, Any] | None:
     # One question, never a list: a panel that asks three things at once gets
     # none of them answered.
     found = pending(conn, today=today)
@@ -51,9 +52,12 @@ class UnknownQuestionError(LookupError):
 
 
 def postponed(conn: sqlite3.Connection) -> int:
-    return conn.execute(
-        "SELECT COUNT(*) FROM advisor_questions WHERE dismissed_at IS NOT NULL"
-    ).fetchone()[0]
+    return cast(
+        int,
+        conn.execute(
+            "SELECT COUNT(*) FROM advisor_questions WHERE dismissed_at IS NOT NULL"
+        ).fetchone()[0],
+    )
 
 
 def dismiss(conn: sqlite3.Connection, name: str) -> None:

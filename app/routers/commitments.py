@@ -90,7 +90,7 @@ def _answer(
     )
 
 
-def _labels(conn: sqlite3.Connection, rows: list[dict]) -> dict[str, str]:
+def _labels(conn: sqlite3.Connection, rows: list[dict[str, Any]]) -> dict[str, str]:
     # The reading name of a series is the description the source sent; a payee
     # the owner named, or one the Pluggy names, takes its place. Measured: the
     # 115 series keys of this base are payees that exist.
