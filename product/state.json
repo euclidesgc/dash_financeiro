@@ -1132,8 +1132,8 @@
     },
     "026-evolucao-da-fatura-mes-a-mes": {
       "title": "Como fica a fatura do cartao mes a mes ate zerar, com o mes em que cada parcelamento morre",
-      "track": "rapida",
-      "stage": "plan",
+      "track": "completa",
+      "stage": "execute",
       "stacks": [
         "python"
       ],
@@ -1146,13 +1146,34 @@
           "por": "autonomo"
         },
         "plan": {
-          "at": null,
-          "sha": null
+          "at": "2026-09-08T04:30:13Z",
+          "sha": "215f139904530b65043e82de124244b8c12d3dae",
+          "file": "product/items/026-evolucao-da-fatura-mes-a-mes/03-plan.md",
+          "por": "autonomo"
         }
       },
-      "current_phase": null,
-      "phases": {},
-      "divergences": {},
+      "current_phase": 1,
+      "phases": {
+        "1": {
+          "status": "em_execucao",
+          "reproved_count": 0,
+          "verdict": null,
+          "verdict_file": null,
+          "validated_sha": null,
+          "pr": null,
+          "blocked_on": []
+        }
+      },
+      "divergences": {
+        "D-006": {
+          "status": "APROVADA",
+          "kind": "normal",
+          "phase": 1,
+          "detected_at": "2026-09-08T04:30:13Z",
+          "aprovada_at": "2026-09-08T04:30:13Z",
+          "ratificada_por": "autonomo"
+        }
+      },
       "criteria_exception": null
     },
     "019-reclassificacao-a-partir-do-lancamento": {
