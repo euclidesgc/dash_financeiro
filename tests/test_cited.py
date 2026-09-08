@@ -16,8 +16,8 @@ def test_a_figure_absent_from_the_context_is_accused():
 
 
 def test_an_invented_figure_written_without_the_space_is_accused():
-    # A gramática anterior não reconhecia esta forma como cifra, e o que ela não
-    # reconhecia ela deixava passar: a guarda falhava aberta.
+    # Reason: the previous grammar did not recognise this form as a figure,
+    # and what it did not recognise it let through — the guard failed open.
     assert uncited("Você economiza R$987.654,32.", CONTEXT) == ["R$987.654,32"]
 
 

@@ -79,9 +79,9 @@ def _article(html: str, marker: str) -> str:
 
 
 def _rows(html: str, name: str) -> list[str]:
-    # Every tbody of the section, not the first: a screen that grows a second
-    # table inside the same section would keep passing a check that only ever
-    # looked at one of them.
+    # Reason: every tbody of the section, not the first — a screen that grows
+    # a second table inside the same section would keep passing a check that
+    # only ever looked at one of them.
     bodies = re.findall(r"<tbody>(.*?)</tbody>", _section(html, name), re.S)
     return [row for body in bodies for row in re.findall(r"<tr[^>]*>.*?</tr>", body, re.S)]
 

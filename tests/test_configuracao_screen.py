@@ -20,10 +20,11 @@ OBJECTIVE = f"/objetivo?data={REFERENCE.isoformat()}"
 CONFIG_ROW = re.compile(r'data-config="([^"]*)"')
 TARGET = re.compile(r'data-alvo="([-0-9]*)"')
 
-# The base carries six closed months, which is what makes a window of twelve a
-# refusal and a window of three a real change. The last month carries a second
-# fixed and essential expense: over uniform months the median window moves
-# nothing, and a test over uniform months would pass with the window ignored.
+# Reason: the base carries six closed months, which is what makes a window of
+# twelve a refusal and a window of three a real change. The last month carries
+# a second fixed and essential expense: over uniform months the median window
+# moves nothing, and a test over uniform months would pass with the window
+# ignored.
 MONTHS_IN_BASE = 6
 HALF = 3
 CROWDED = MONTHS[-1]
@@ -75,10 +76,11 @@ def test_the_card_rate_edit_note_does_not_claim_dividas_is_the_only_place(client
     page = client.get(SCREEN).text
     article = page.split('data-config="taxa-cartao"', 1)[1].split("</article>", 1)[0]
 
-    # The old prose claimed the card rate was "uma taxa por dívida" edited only
-    # at /dividas; the Cartões section on this very screen now edits it too,
-    # so the "where" note points back at the help text instead of repeating a
-    # claim that would go stale for any other non-value-line entry as well.
+    # Reason: the old prose claimed the card rate was "uma taxa por dívida"
+    # edited only at /dividas; the Cartões section on this very screen now
+    # edits it too, so the "where" note points back at the help text instead
+    # of repeating a claim that would go stale for any other non-value-line
+    # entry as well.
     assert "uma taxa por dívida" not in article
     assert "o texto ao lado já explica onde" in article
 

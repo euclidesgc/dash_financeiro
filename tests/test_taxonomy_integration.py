@@ -22,10 +22,10 @@ from tests.test_taxonomy_remap import (
 ALL_CATEGORIES = 77
 ALL_CATEGORIES_WITH_ONE_UNMATCHED = 78
 
-# Neither vocabulary declares a single rule in the variável x supérfluo pair:
-# only the owner marks supérfluo, editing a rule on the screen. Without planting
-# it on both sides, the crossing that names the cut list compares zero with zero,
-# and an equality between two empty crossings proves nothing at all.
+# Reason: neither vocabulary declares a single rule in the "variável"/"supérfluo"
+# pair — only the owner marks "supérfluo", editing a rule on the screen. Without
+# planting it on both sides, the crossing that names the cut list compares zero
+# with zero, and an equality between two empty crossings proves nothing at all.
 CUT_RULES = ("Account fees", "Accomodation")
 
 
@@ -70,8 +70,9 @@ def test_the_four_numbers_agree_with_all_migrations_applied_and_the_tree_seeded(
     classify_all(after)
     after.commit()
 
-    # The control positive: without it, the digit-by-digit equality below could
-    # pass by comparing a tree that was never actually seeded in this database.
+    # Reason: the control positive — without it, the digit-by-digit equality
+    # below could pass by comparing a tree that was never actually seeded in
+    # this database.
     categories_total = after.execute("SELECT count(*) FROM categories").fetchone()[0]
     assert categories_total == ALL_CATEGORIES_WITH_ONE_UNMATCHED
 
@@ -79,8 +80,8 @@ def test_the_four_numbers_agree_with_all_migrations_applied_and_the_tree_seeded(
     after_total, after_count, after_corte, after_piso = read_four_numbers(after)
 
     assert after_count > 0
-    # The cut list has to carry content on both sides, or the equality below is
-    # an equality between two empty crossings.
+    # Reason: the cut list has to carry content on both sides, or the equality
+    # below is an equality between two empty crossings.
     assert len(after_corte.rows) == len(CUT_RULES)
     assert after_corte.total_cents < 0
     assert before_total == after_total
@@ -114,8 +115,8 @@ def test_seed_taxonomy_repoints_categories_off_a_retiring_group_without_a_foreig
     seed_taxonomy(conn)
 
     assert conn.execute("SELECT count(*) FROM category_groups").fetchone()[0] == 12
-    # The control positive: without it, the absence of orphans below would pass
-    # over a categories table the seed never actually repopulated.
+    # Reason: the control positive — without it, the absence of orphans below
+    # would pass over a categories table the seed never actually repopulated.
     assert conn.execute("SELECT count(*) FROM categories").fetchone()[0] == ALL_CATEGORIES
     orphans = conn.execute(
         "SELECT count(*) FROM categories AS c LEFT JOIN category_groups AS g "

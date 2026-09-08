@@ -33,9 +33,10 @@ def _write_manual(tmp_path: Path) -> Path:
 
 
 def _reference_paid(data: dict, today: date) -> int:
-    # The oracle this item replaces: the exact arithmetic that used to live in
-    # app/debts/ladder.py, kept here so the table-backed ladder is proved
-    # against the file-backed one it supersedes, not against itself.
+    # Reason: this is the oracle this item replaces — the exact arithmetic
+    # that used to live in app/debts/ladder.py, kept here so the table-backed
+    # ladder is proved against the file-backed one it supersedes, not against
+    # itself.
     first = date.fromisoformat(data["primeiro_vencimento"])
     year, month, paid = first.year, first.month, 0
     for _ in range(data["prazo_meses"]):
@@ -124,9 +125,9 @@ def test_a_row_already_in_the_table_wins_over_the_files_on_disk(
     assert found["mortgage"]["monthly_rate_bp"] == 1000
     assert found["mortgage"]["term_months"] == 12
     assert found["mortgage"]["balance_cents"] == -10000000
-    # A linha da tabela ganha do arquivo para o contrato dela — e só para ele.
-    # O veículo, que não estava na tabela, continua vindo do disco: contar a
-    # tabela inteira fazia o degrau dele sumir da escada em silêncio.
+    # Reason: the table row wins over the file for its own contract — and only
+    # for it. The vehicle, which was not in the table, still comes from disk:
+    # counting the table alone made its rung silently vanish from the ladder.
     assert "vehicle" in found
 
     count = taxonomy_conn.execute("SELECT COUNT(*) FROM financings").fetchone()[0]
@@ -138,8 +139,9 @@ def test_editing_one_financing_on_screen_does_not_unseed_the_other(
 ):
     folder = _write_manual(tmp_path)
     monkeypatch.setenv(financings_store.MANUAL_DIR, str(folder))
-    # O dono abre a tela e grava o imóvel antes de qualquer reconstrução: é o
-    # caminho que a tela nova abriu, e era o que apagava o CDC do veículo.
+    # Reason: the owner opens the screen and saves the mortgage before any
+    # rebuild — the path the new screen opened, and the one that used to wipe
+    # out the vehicle's contract.
     financings_store.write(
         taxonomy_conn,
         "mortgage",
@@ -258,8 +260,9 @@ def test_a_contract_with_every_instalment_due_leaves_no_step(taxonomy_conn, tmp_
 
 
 def test_present_value_with_zero_rate_sums_the_remaining_instalments():
-    # A vehicle contract with no interest has no annuity factor to divide by:
-    # the present value of what is left is just the sum of the instalments.
+    # Reason: a vehicle contract with no interest has no annuity factor to
+    # divide by — the present value of what is left is just the sum of the
+    # instalments.
     assert present_value_cents(-123533, 0, 45) == -123533 * 45
 
 
@@ -304,9 +307,10 @@ def _debt_id(conn: sqlite3.Connection, kind: str) -> int:
 
 
 def test_writing_a_financing_keeps_the_debt_ids_stable(taxonomy_conn):
-    # INSERT OR REPLACE deletes and reinserts the conflicting row, moving it to
-    # the end of the table; ladder ids are assigned by insertion order, so a
-    # screen open before a write would keep pointing at the wrong debt id.
+    # Reason: INSERT OR REPLACE deletes and reinserts the conflicting row,
+    # moving it to the end of the table; ladder ids are assigned by insertion
+    # order, so a screen open before a write would keep pointing at the wrong
+    # debt id.
     taxonomy_conn.execute(
         "INSERT INTO financings "
         "(kind, monthly_rate_bp, term_months, balance_cents, payment_cents, first_due_date) "
@@ -333,8 +337,8 @@ def test_writing_a_financing_keeps_the_debt_ids_stable(taxonomy_conn):
 
 
 def test_writing_a_financing_keeps_the_table_row_order(taxonomy_conn):
-    # read_all selects every column, so a full table scan reads rowid order,
-    # not the kind index order: this is the query rebuild actually runs.
+    # Reason: read_all selects every column, so a full table scan reads rowid
+    # order, not the kind index order — this is the query rebuild actually runs.
     taxonomy_conn.execute(
         "INSERT INTO financings "
         "(kind, monthly_rate_bp, term_months, balance_cents, payment_cents, first_due_date) "

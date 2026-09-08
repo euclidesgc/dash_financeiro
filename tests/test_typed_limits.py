@@ -362,8 +362,9 @@ def test_coerencia_dos_campos_em_configuracao(campos_client):
     client, _target = campos_client
     page = client.get("/configuracao").text
 
-    # Fatos e metas: a mesma marcação atende dinheiro (quitação/transporte) e
-    # meses (reserva/mediana) — o teto e o inputmode seguem a unidade do item.
+    # Reason: facts and goals share the same markup for both money
+    # (settlement/transport) and months (reserve/median) — the ceiling and the
+    # inputmode follow the unit of the item.
     assert _maxlength_of(page, "campo-quitacao-cdc") == limits.MONEY_FIELD_MAXLENGTH
     assert _inputmode_of(page, "campo-quitacao-cdc") == "decimal"
     assert _maxlength_of(page, "campo-reserva-meses") == limits.MAX_DIGITS

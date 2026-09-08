@@ -86,9 +86,10 @@ def client(tmp_path, monkeypatch):
     seed_user(conn, LOGIN, PASSWORD)
     _insert(conn, MORTGAGE_ROW)
     _insert(conn, VEHICLE_ROW)
-    # A ladder already built once, as the daily rebuild already produces
-    # before any of these tests touch the screen: without it /dividas would
-    # start from an empty debts table, and no order would be there to change.
+    # Reason: a ladder already built once, as the daily rebuild already
+    # produces before any of these tests touch the screen — without it
+    # /dividas would start from an empty debts table, and no order would be
+    # there to change.
     rebuild(conn, today=REFERENCE)
     conn.close()
     with TestClient(app, follow_redirects=False) as opened:

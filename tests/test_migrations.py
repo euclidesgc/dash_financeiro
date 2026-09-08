@@ -164,8 +164,8 @@ def test_a_migration_fora_de_ordem_names_both_versions_in_the_refusal(tmp_path, 
 
 
 def test_a_version_narrower_than_three_digits_is_refused_at_the_door(tmp_path, conn):
-    # A ordem e o guarda comparam texto, e "9" ordena depois de "015": uma
-    # migração sem o zero à esquerda inverteria as duas coisas ao mesmo tempo.
+    # Reason: order and the guard both compare text, and "9" sorts after
+    # "015" — a migration missing the leading zero would invert both at once.
     folder = tmp_path / "sql"
     folder.mkdir()
     _write_sql(folder, "9_sem_zero.sql", "CREATE TABLE marker_9 (id INTEGER PRIMARY KEY);")
@@ -228,8 +228,9 @@ def test_a_fresh_base_applies_the_sixteen_real_migrations(tmp_path):
 
 
 def _base_que_pulou(conn, folder):
-    # Fiel ao que aconteceu na base do dono: ela migrou quando a 012 ainda não
-    # existia na pasta, e a 012 apareceu depois, entre versões já aplicadas.
+    # Reason: faithful to what happened on the owner's own base — it migrated
+    # while 012 did not yet exist in the folder, and 012 showed up later,
+    # between already-applied versions.
     _write_sql(folder, "010_a.sql", "CREATE TABLE marker_010 (id INTEGER PRIMARY KEY);")
     _write_sql(folder, "015_c.sql", "CREATE TABLE marker_015 (id INTEGER PRIMARY KEY);")
     apply_migrations(conn, folder)
@@ -251,8 +252,9 @@ def test_a_base_that_skipped_a_version_is_told_to_reconcile_not_to_renumber(tmp_
 
 
 def test_a_new_low_numbered_migration_on_a_base_with_no_gap_is_told_to_renumber(tmp_path, conn):
-    # Sem versão aplicada ABAIXO da que chega, não há vão: esta base é nova
-    # numa árvore que já tem números altos, e o conselho certo é renumerar.
+    # Reason: with no version applied BELOW the one arriving, there is no gap —
+    # this base is new to a tree that already has high numbers, and the right
+    # advice is to renumber.
     folder = tmp_path / "sql"
     folder.mkdir()
     _write_sql(folder, "015_c.sql", "CREATE TABLE marker_015 (id INTEGER PRIMARY KEY);")
@@ -282,7 +284,7 @@ def test_reconciling_a_version_that_does_not_fit_writes_nothing(tmp_path, conn):
     folder = tmp_path / "sql"
     folder.mkdir()
     _base_que_pulou(conn, folder)
-    # A 012 passa a colidir com uma tabela que a 010 já criou: não cabe.
+    # Reason: 012 now collides with a table 010 already created — it does not fit.
     _write_sql(folder, "012_pulada.sql", "CREATE TABLE marker_010 (id INTEGER PRIMARY KEY);")
 
     resultado = reconcile_skipped(conn, folder, "012")
@@ -293,9 +295,9 @@ def test_reconciling_a_version_that_does_not_fit_writes_nothing(tmp_path, conn):
 
 
 def test_reconciling_refuses_a_version_that_is_not_a_gap(tmp_path, conn):
-    # Sem versão registrada abaixo dela, a migração é nova e se renumera. Deixar
-    # a reconciliação aceitar este caso recria o vão que o guarda existe para
-    # fechar — o validador provou que a porta estava aberta.
+    # Reason: with no version recorded below it, the migration is new and
+    # renumbers itself. Letting reconciliation accept this case recreates the
+    # gap the guard exists to close — the validator proved the door was open.
     folder = tmp_path / "sql"
     folder.mkdir()
     _write_sql(folder, "020_alta.sql", "CREATE TABLE marker_020 (id INTEGER PRIMARY KEY);")

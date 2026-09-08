@@ -301,10 +301,11 @@ def test_the_screen_never_re_anchors_the_scroll_after_a_swap(client):
 
 
 def test_nothing_between_the_body_and_the_chart_refuses_to_shrink(client):
-    # The chart canvas keeps the width it was drawn at, and a grid item floors
-    # at the intrinsic width of its content: without these four declarations the
-    # panel never narrows and the body inherits a horizontal scroll that only
-    # appears when the window is resized, never when the page loads narrow.
+    # Reason: the chart canvas keeps the width it was drawn at, and a grid
+    # item floors at the intrinsic width of its content — without these four
+    # declarations the panel never narrows and the body inherits a horizontal
+    # scroll that only appears when the window is resized, never when the
+    # page loads narrow.
     page = client.get(SCREEN)
 
     for rule in SHRINKABLE:

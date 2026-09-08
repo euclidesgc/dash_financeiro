@@ -52,8 +52,8 @@ def test_every_category_rule_agrees_with_the_tree_it_points_at(taxonomy_conn):
     seed_taxonomy(taxonomy_conn)
 
     crossed = taxonomy_conn.execute(CROSSED_PAIRS).fetchone()[0]
-    # The control positive: without it, an empty join would let the absence of
-    # disagreement below pass by never comparing anything.
+    # Reason: the control positive — without it, an empty join would let the
+    # absence of disagreement below pass by never comparing anything.
     assert crossed == NAMED_CATEGORIES
 
     disagreements = [row["match_value"] for row in taxonomy_conn.execute(DISAGREEING_PAIRS)]

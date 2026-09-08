@@ -57,8 +57,9 @@ def test_the_open_screen_is_the_one_marked(client, screen):
 def test_the_login_has_no_rail(client):
     page = client.get("/login")
     assert page.status_code == 200
-    # The stylesheet travels inside the document, so the class name is in every
-    # page: what says the rail is absent is the element, not the word.
+    # Reason: the stylesheet travels inside the document, so the class name is
+    # in every page — what says the rail is absent is the element, not the
+    # word.
     assert 'aria-label="Telas do painel"' not in page.text
     assert not LINK.findall(page.text)
 
@@ -70,8 +71,9 @@ def test_a_screen_keeps_the_mark_inside_its_own_paths():
 
 
 def test_no_screen_route_is_missing_from_the_rail():
-    # A screen that exists and is not on the rail is a screen nobody reaches:
-    # the source of truth is the router that declares it, not this list.
+    # Reason: a screen that exists and is not on the rail is a screen nobody
+    # reaches — the source of truth is the router that declares it, not this
+    # list.
     declared = {
         module.SCREEN
         for module in (

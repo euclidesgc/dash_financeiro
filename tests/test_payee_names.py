@@ -92,7 +92,8 @@ def test_a_payee_named_by_the_owner_keeps_the_looked_up_name_underneath(conn):
 
     names.forget(conn, BUSINESS, OWNER)
 
-    # Not the legal name, and not the description: one level down, exactly.
+    # Reason: not the legal name, and not the description — one level down,
+    # exactly.
     assert _named(conn)[BUSINESS] == {"name": LOOKED_UP, "source": LOOKUP}
 
 
@@ -261,12 +262,12 @@ def test_the_payee_axis_shows_the_resolved_name_and_keeps_the_key(client):
         f"/gastos?eixo={PAYEE_AXIS}&inicio=2026-08-01&fim=2026-08-31&chave={quote(BUSINESS)}"
     ).text
 
-    # The label resolves and the key does not: row['key'] is the rendered name
-    # and the drill-down parameter at once, and the panel context used to
-    # overwrite the resolved map after the table had built it.
+    # Reason: the label resolves and the key does not — row['key'] is the
+    # rendered name and the drill-down parameter at once, and the panel context
+    # used to overwrite the resolved map after the table had built it.
     assert NICKNAME in page
     assert f"chave={quote(BUSINESS)}" in page
-    # The drill-down heading names the key the list was opened by.
+    # Reason: the drill-down heading names the key the list was opened by.
     assert f'<h3 class="section-title">{BUSINESS}' in page
 
 

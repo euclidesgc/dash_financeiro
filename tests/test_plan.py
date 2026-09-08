@@ -34,9 +34,9 @@ def prepare(conn, rows):
     classify.classify_all(conn)
     conn.commit()
     engine.recompute(conn, today=REFERENCE)
-    # rebuild() seeds the ladder from whatever DASH_MANUAL_DIR holds; left at
-    # its default, it reads the owner's own contracts and the ladder becomes
-    # whatever debt the owner happens to carry that day (RF-01, RF-02).
+    # Reason: rebuild() seeds the ladder from whatever DASH_MANUAL_DIR holds;
+    # left at its default, it reads the owner's own contracts and the ladder
+    # becomes whatever debt the owner happens to carry that day (RF-01, RF-02).
     with MonkeyPatch.context() as manual:
         manual.setenv(financings_store.MANUAL_DIR, str(MANUAL_FIXTURE))
         rebuild(conn, today=REFERENCE)
