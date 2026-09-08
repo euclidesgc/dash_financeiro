@@ -13,8 +13,8 @@ PLUGGY = "pluggy"
 LEGAL = "razao-social"
 DESCRIPTION = "descricao"
 
-# The origin travels with the value, and the screen reads this map instead of
-# guessing from the text (RF-22).
+# Reason: the origin travels with the value, and the screen reads this map
+# instead of guessing from the text (RF-22).
 ORIGINS = {
     OWNER: "apelido seu",
     PLUGGY: "nome fantasia da Pluggy",
@@ -23,9 +23,10 @@ ORIGINS = {
     DESCRIPTION: "descrição normalizada",
 }
 
-# MIN() over the group is deterministic and today changes nothing: not one of
-# the payees in this base carries two different values at any level. Without it
-# the answer would depend on the order SQLite happens to scan in.
+# Reason: MIN() over the group is deterministic and today changes nothing —
+# not one of the payees in this base carries two different values at any
+# level. Without it the answer would depend on the order SQLite happens to
+# scan in.
 _FROM_PLUGGY = """
 SELECT payee,
        MIN(merchant_name) AS merchant_name,
@@ -59,10 +60,11 @@ class UnknownSourceError(ValueError):
 
 
 def _chosen(payee: str, row: dict[str, Any], given: dict[str, str]) -> tuple[str, str]:
-    # Ordered by the quality of the name, not by the source: merchant.name
-    # answers "Apple", "Shopee", "outback", while receiver.name answers
-    # "IFOOD.COM AGENCIA DE RESTAURANTES ONLINE S.A." — both come from the
-    # Pluggy, and one is an answer while the other is a legal record.
+    # Reason: ordered by the quality of the name, not by the source —
+    # merchant.name answers "Apple", "Shopee", "outback", while
+    # receiver.name answers "IFOOD.COM AGENCIA DE RESTAURANTES ONLINE S.A."
+    # — both come from the Pluggy, and one is an answer while the other is a
+    # legal record.
     for name, origin in (
         (given.get(OWNER), OWNER),
         (row.get("merchant_name"), PLUGGY),
@@ -87,10 +89,10 @@ def display_name(conn: sqlite3.Connection) -> dict[str, dict[str, str]]:
 
 
 def labels(conn: sqlite3.Connection) -> dict[str, str]:
-    # Only the payees that reached a better name than the normalised
-    # description. A reading screen already shows the description it received,
-    # and overwriting it with the normalised key would be a worse label, not a
-    # resolved one.
+    # Reason: only the payees that reached a better name than the
+    # normalised description. A reading screen already shows the
+    # description it received, and overwriting it with the normalised key
+    # would be a worse label, not a resolved one.
     return {
         payee: found["name"]
         for payee, found in display_name(conn).items()
@@ -99,8 +101,9 @@ def labels(conn: sqlite3.Connection) -> dict[str, str]:
 
 
 def spending_by_payee(conn: sqlite3.Connection) -> list[dict[str, Any]]:
-    # All of history, and the project's single spending predicate: a name is not
-    # a property of a period, and a payee outside the window still needs one.
+    # Reason: all of history, and the project's single spending predicate —
+    # a name is not a property of a period, and a payee outside the window
+    # still needs one.
     return [dict(row) for row in conn.execute(_SPENDING_BY_PAYEE)]
 
 
@@ -122,8 +125,9 @@ def ranked(conn: sqlite3.Connection, limit: int) -> dict[str, Any]:
         "total_payees": len(every),
         "total_cents": total,
         "covered_cents": covered,
-        # Integer per mille, so the screen can say 55,5% without a float
-        # deciding what a percentage of this base is (invariante 22 in spirit).
+        # Reason: integer per mille, so the screen can say 55,5% without a
+        # float deciding what a percentage of this base is (invariant 22 in
+        # spirit).
         "covered_permille": round(covered * 1000 / total) if total else 0,
     }
 
