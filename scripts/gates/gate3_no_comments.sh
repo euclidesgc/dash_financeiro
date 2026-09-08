@@ -40,7 +40,7 @@ while IFS= read -r file || [ -n "$file" ]; do
       # "ã" takes two, so the accented tags the documentation above tells you
       # to use never matched.
       justificativa = "(por ?qu(ê|e)|motivo|decis(ã|a)o|contorno|workaround:|invariante|limita(ç|c)(ã|a)o|restri(ç|c)(ã|a)o|(reason|decision|why|invariant|constraint|limitation):|ignore:|gate[0-9]-ok|coverage:ignore)"
-      diretiva = "(ignore_for_file|dart format|coverage:|@|https?:|eslint-|prettier-|ts-ignore|ts-expect-error|#!|#region|#endregion)"
+      diretiva = "(ignore_for_file|dart format|coverage:|@|https?:|eslint-|prettier-|ts-ignore|ts-expect-error|shellcheck |#!|#region|#endregion)"
       bloco_justificado = 0
       # Invariant: as long as no line of code has appeared, the block that
       # opens the file is a header and passes by position. It closes on the

@@ -77,32 +77,33 @@ caso 'outro with, sem dest, ainda REPROVA' 1 'sem `dest`' "${CABECA}      - uses
           version: 10.20.0
 "
 
-# O CASO DO VAZIO: nenhuma referência não é defeito, e o portão diz o número.
+# Reason: the empty case — no reference is not a defect, and the gate states
+# the count.
 caso 'fluxo sem a ação nenhuma PASSA, e diz 0' 0 'medido: 0 referência(s)' "${CABECA}      - run: \"true\"
 "
 
-# O CASO DO ILEGÍVEL: não é "nenhuma referência", é medição impossível.
+# Reason: the unreadable case is not "no reference" — it is measurement
+# being impossible.
 caso 'YAML ilegível RECUSA, e não passa por vazio' 1 'não é YAML legível' 'name: X
 on: [push
 jobs: : :
 '
 
-# Uma referência boa não absolve a ruim que está ao lado.
+# Reason: a good reference does not absolve the bad one right next to it.
 caso 'uma boa e uma ruim no mesmo job REPROVA' 1 'sem `dest`' "${CABECA}      - uses: pnpm/action-setup@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
         with:
           dest: \${{ runner.temp }}/setup-pnpm
       - uses: pnpm/action-setup@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 "
 
-# SEM PyYAML O PORTÃO RECUSA, E NÃO EXPLODE
-#
-# Ter `python3` no PATH não é ter o módulo que o portão importa. Um `import` que
-# falta estoura traceback antes de qualquer recusa, e o que chega a quem lê é um
-# rastro de pilha. Pior: num runner com o Python do sistema o módulo costuma
-# existir, e num com `setup-python` limpo não — o mesmo portão passa numa
-# máquina e explode noutra, por um motivo que a mensagem não diz. Medido: foi
-# exatamente assim que este portão nasceu vermelho no CI e verde na máquina de
-# quem o escreveu.
+# Reason: with no PyYAML the gate refuses, and does not blow up. Having
+# `python3` on PATH is not having the module the gate imports. A missing
+# `import` throws a traceback before any refusal, and what reaches the
+# reader is a stack trace. Worse: on a runner with the system Python the
+# module usually exists, and on one with a clean `setup-python` it does not —
+# the same gate passes on one machine and blows up on another, for a reason
+# the message never names. Measured: this is exactly how this gate was born
+# red in CI and green on the machine of whoever wrote it.
 sem_pyyaml() {
   local casa saida obtido
   casa="$(mktemp -d)"
