@@ -1,3 +1,4 @@
+import ast
 from pathlib import Path
 
 import pytest
@@ -65,7 +66,7 @@ def test_the_login_form_is_the_open_door(client):
 
 ROUTERS_DIR = Path(__file__).resolve().parent.parent / "app" / "routers"
 
-CLOCK_CALL = "date.today()"
+_CLOCK_CALLS = {"datetime.date.today", "datetime.datetime.today", "datetime.datetime.now"}
 
 
 def _sources(root: Path) -> dict[str, str]:
@@ -86,8 +87,42 @@ def _tree(root: Path, files: dict[str, str]) -> Path:
     return root
 
 
+def _clock_aliases(tree: ast.AST) -> dict[str, str]:
+    aliases: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name == "datetime":
+                    aliases[alias.asname or alias.name] = "datetime"
+        elif isinstance(node, ast.ImportFrom) and node.module == "datetime":
+            for alias in node.names:
+                aliases[alias.asname or alias.name] = f"datetime.{alias.name}"
+    return aliases
+
+
+def _resolve_target(node: ast.expr, aliases: dict[str, str]) -> str | None:
+    if isinstance(node, ast.Name):
+        return aliases.get(node.id)
+    if isinstance(node, ast.Attribute):
+        base = _resolve_target(node.value, aliases)
+        return None if base is None else f"{base}.{node.attr}"
+    return None
+
+
+def _calls_the_clock(text: str) -> bool:
+    tree = ast.parse(text)
+    aliases = _clock_aliases(tree)
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+            continue
+        target = _resolve_target(node.func.value, aliases)
+        if target is not None and f"{target}.{node.func.attr}" in _CLOCK_CALLS:
+            return True
+    return False
+
+
 def _accused(sources: dict[str, str]) -> list[str]:
-    return sorted(name for name, text in sources.items() if CLOCK_CALL in text)
+    return sorted(name for name, text in sources.items() if _calls_the_clock(text))
 
 
 def test_no_router_resolves_the_screen_date_by_itself():
@@ -151,3 +186,65 @@ def test_a_cached_copy_is_not_a_router(tmp_path):
 
     assert sources.keys() == {"screen.py"}
     assert _accused(sources) == []
+
+
+def test_the_guard_recognizes_every_direct_clock_call(tmp_path):
+    modules = {
+        "date_today.py": "from datetime import date\ndate.today()\n",
+        "datetime_today.py": "from datetime import datetime\ndatetime.today()\n",
+        "datetime_now_date.py": "from datetime import datetime\ndatetime.now().date()\n",
+        "datetime_now.py": "from datetime import datetime\ndatetime.now()\n",
+    }
+    _tree(tmp_path, modules)
+
+    accused = _accused(_sources(tmp_path))
+
+    assert sorted(accused) == sorted(modules)
+    assert len(accused) == 4
+
+
+def test_the_guard_follows_an_import_alias(tmp_path):
+    modules = {
+        "alias_date.py": "from datetime import date as d\nd.today()\n",
+        "alias_module.py": "import datetime as dt\ndt.datetime.now()\n",
+    }
+    _tree(tmp_path, modules)
+
+    accused = _accused(_sources(tmp_path))
+
+    assert sorted(accused) == sorted(modules)
+
+
+def test_the_guard_ignores_a_comment_and_a_string_literal(tmp_path):
+    reader = (
+        "from app.routers.reference import screen_date\n"
+        "\n"
+        "# date.today() would be the wrong way to ask the clock\n"
+        'MESSAGE = "date.today() is not called here"\n'
+        "\n"
+        "\n"
+        "def screen(pedido):\n"
+        "    return screen_date(pedido).date\n"
+    )
+    _tree(tmp_path, {"cards/screen.py": reader})
+
+    sources = _sources(tmp_path)
+
+    assert "cards/screen.py" in sources
+    assert _accused(sources) == []
+
+
+def test_the_sweep_reaches_depth_and_excludes_the_cache(tmp_path):
+    clock = "from datetime import date\ndate.today()\n"
+    _tree(
+        tmp_path,
+        {
+            "cards/screen.py": clock,
+            "cards/detail/screen.py": clock,
+            "__pycache__/screen.py": clock,
+        },
+    )
+
+    accused = _accused(_sources(tmp_path))
+
+    assert accused == ["cards/detail/screen.py", "cards/screen.py"]
