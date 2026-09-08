@@ -974,9 +974,23 @@
           "por": "autonomo"
         }
       },
-      "current_phase": 1,
+      "current_phase": 2,
       "phases": {
         "1": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/024-cartoes-como-entidade/05-veredictos/fase-1.md",
+          "validated_sha": "da69a7d9cc872cdf1c62bd9069f74d0f3fa5fce2",
+          "pr": null,
+          "blocked_on": [],
+          "verdict_at": "2026-09-08T03:00:01Z",
+          "validated_trees": {
+            ".": "4e58ff420ae235f10403ed6c2881944eaed4f59e"
+          },
+          "criteria_sha": "3ddc182789348e48bb7638a5abe8d370cd0cf8d7142da74d55f453d41f6eb599"
+        },
+        "2": {
           "status": "em_execucao",
           "reproved_count": 0,
           "verdict": null,
