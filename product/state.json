@@ -1269,7 +1269,7 @@
     "028-consultor-comparativo-de-divida": {
       "title": "Cheque especial ou emprestimo: a comparacao e codigo deterministico, e o modelo so explica",
       "track": "rapida",
-      "stage": "execute",
+      "stage": "done",
       "stacks": [
         "python"
       ],

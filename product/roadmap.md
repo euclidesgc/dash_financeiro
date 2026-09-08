@@ -139,23 +139,27 @@ PR e commit já escritos.
   chave recusada, falha de rede e resposta ilegível — procurando a chave em corpo,
   cabeçalho, cookie, URL de saída, log e tela: nenhum vazamento.
 
-- [-] `028-consultor-comparativo-de-divida` — O consultor responde à pergunta que
+- [x] `028-consultor-comparativo-de-divida` — O consultor responde à pergunta que
   decide dinheiro: **é melhor ficar no cheque especial ou pegar um empréstimo, e
-  qual proposta quita tudo mais barato**. Hoje `/consultor` explica o número e
-  pergunta o fato que falta, mas não compara caminhos de dívida — e as taxas que
-  a comparação exige só existem depois do `024` e do `025`.
+  qual proposta quita tudo mais barato**. A proposta é entidade — nome, taxa,
+  prazo, valor liberado e custo de contratação, informados em `/configuracao` —
+  e a comparação põe lado a lado, por proposta, o custo de continuar como está e
+  o custo do caminho novo até zerar, com a diferença e qual dos dois é mais
+  barato. Proposta sem taxa fica de fora, e a tela diz quantas ficaram.
   **A restrição que desenha o item é a norma 23: quem calcula é função testada,
-  nunca o modelo.** A comparação é código determinístico — custo total de cada
-  caminho, mês a mês, até zerar — e o modelo lê o resultado e explica a escolha.
-  Se ele computasse "esse empréstimo te economiza R$ 3.400" e errasse por um
-  ponto percentual, o erro cairia na unidade central do produto e destruiria a
-  confiança em tudo o mais.
-  **Consequência prática para o dono:** nenhuma proposta de empréstimo está nos
-  dados de hoje. O item precisa de uma forma de **informar propostas** — taxa,
-  prazo, valor liberado, custo de contratação — para ter o que comparar contra o
-  cheque especial já medido.
-  **Depende de:** `024-cartoes-como-entidade` e `025-financiamentos-na-tela` — sem
-  as taxas reais a comparação responde com confiança um número que não mediu.
+  nunca o modelo.** A comparação é fórmula fechada em centavos inteiros, e o
+  modelo só **lê de volta** o que a função já calculou: uma cifra que ele escreve
+  e que não está no contexto enviado **descarta a leitura inteira**, e o dono vê
+  os números determinísticos com o aviso de que a leitura não foi conferida. Sem
+  chave de API a comparação continua de pé — ela nunca dependeu do modelo.
+  A guarda compara **pelo número, não pela escrita dele**: cada cifra é reduzida
+  a centavos antes de se procurar no contexto, então o modelo pode reformatar sem
+  derrubar leitura correta, e não pode inventar em formato nenhum. A primeira
+  versão da guarda falhava aberta — `R$987.654,32` sem o espaço e `R$ 202,4` com
+  uma casa decimal não eram reconhecidos como cifra, e o que ela não reconhecia
+  ela deixava passar. O validador cego provou os dois furos chamando a função
+  direto, e eles fecharam com onze testes de regressão.
+  Fechou com **717 testes**, lint e portões limpos.
 
 - [x] `023-taxonomia-hierarquica-do-dono` — A classificação primária é uma
   **árvore de duas alturas que pertence ao dono**: grupo, e dentro dele categoria,
@@ -275,7 +279,7 @@ ao topo da fila é a régua local certa e o agregado errado.
   pacotes — enquanto foi `app tests`, as 35 violações de `financas` e `ingestao` ficaram
   invisíveis por itens inteiros.
 
-- [ ] `018-tipagem-estrita-em-python` — `mypy --strict` roda sobre `app`,
+- [-] `018-tipagem-estrita-em-python` — `mypy --strict` roda sobre `app`,
   `financas` e `ingestao`, e o portão de lint o inclui. Hoje `mypy` não é nem
   dependência declarada: a skill `python-tipagem-estrita` do pack e a norma 35 do
   `CLAUDE.md` cobram tipagem que nenhum comando verifica, e norma que nada mede
@@ -372,6 +376,17 @@ ao topo da fila é a régua local certa e o agregado errado.
   então o defeito só aparece para quem roda `python -m app.taxonomy.seed` isolado.
   O item fecha essa aresta: ou a semeadura classifica, ou ela recusa terminar
   deixando o banco pela metade.
+
+- [ ] `034-a-justificativa-de-comentario-fala-uma-lingua-so` — A norma 16 pede
+  código em inglês e a norma 11 só aceita comentário que diga um porquê. O portão
+  que cobra a norma 11 reconhece a justificativa por palavra **em português** —
+  `motivo`, `decisão`, `contorno`, `invariante`, `limitação`, `restrição` — e não
+  reconhece nenhuma em inglês. Um comentário de decisão escrito na língua que a
+  norma 16 manda usar é reprovado pelo portão; um escrito em português passa e
+  viola a norma 16. Hoje as duas regras se contradizem, e o que decide qual delas
+  vale é o acaso de qual arquivo o portão alcança. Item de uma linha de correção
+  e uma decisão: ou o portão aprende inglês, ou a norma 16 abre exceção nomeada
+  para o marcador de justificativa.
 
 ## Validações de campo pendentes
 
