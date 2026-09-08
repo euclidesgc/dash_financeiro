@@ -1137,7 +1137,7 @@
     "026-evolucao-da-fatura-mes-a-mes": {
       "title": "Como fica a fatura do cartao mes a mes ate zerar, com o mes em que cada parcelamento morre",
       "track": "completa",
-      "stage": "execute",
+      "stage": "done",
       "stacks": [
         "python"
       ],
@@ -1173,14 +1173,18 @@
           "criteria_sha": "f3488b4dc960149893d94d0b537304a48466e130bd068ba86b2f8f4315954512"
         },
         "2": {
-          "status": "criterio_invalido",
+          "status": "aprovada",
           "reproved_count": 0,
-          "verdict": "CRITERIO_INVALIDO",
-          "verdict_file": "product/items/026-evolucao-da-fatura-mes-a-mes/05-veredictos/fase-2-rodada-1.md",
-          "validated_sha": null,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/026-evolucao-da-fatura-mes-a-mes/05-veredictos/fase-2-rodada-2.md",
+          "validated_sha": "862ae192380d4c6b34731bbb2c2b28c97fdec18d",
           "pr": null,
           "blocked_on": [],
-          "verdict_at": "2026-09-08T08:42:02Z"
+          "verdict_at": "2026-09-08T08:55:38Z",
+          "validated_trees": {
+            ".": "9259003d4a60f549f8675c940b8d845e0283f972"
+          },
+          "criteria_sha": "186c190ee743213a6878b24d2bfc964fba4af6d3da878a42df93ad645e46bd9e"
         }
       },
       "divergences": {
