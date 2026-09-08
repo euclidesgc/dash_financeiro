@@ -857,7 +857,7 @@
     "022-mes-corrente-como-abertura-padrao": {
       "title": "Toda tela abre no presente: /gastos do dia 01 ate a data de referencia, e aceita ?data=",
       "track": "rapida",
-      "stage": "plan",
+      "stage": "execute",
       "stacks": [
         "python"
       ],
@@ -870,12 +870,24 @@
           "por": "autonomo"
         },
         "plan": {
-          "at": null,
-          "sha": null
+          "at": "2026-09-08T00:38:18Z",
+          "sha": "dcabce2aae41aae655b95785f2cff04acbb3d627",
+          "file": "product/items/022-mes-corrente-como-abertura-padrao/03-plan.md",
+          "por": "autonomo"
         }
       },
-      "current_phase": null,
-      "phases": {},
+      "current_phase": 1,
+      "phases": {
+        "1": {
+          "status": "em_execucao",
+          "reproved_count": 0,
+          "verdict": null,
+          "verdict_file": null,
+          "validated_sha": null,
+          "pr": null,
+          "blocked_on": []
+        }
+      },
       "divergences": {},
       "criteria_exception": null
     },
