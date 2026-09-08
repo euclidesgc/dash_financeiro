@@ -15,13 +15,15 @@ TAXA_AM = (1 + TAXA_AA) ** (1 / 12) - 1
 ENCARGO_OBSERVADO = 2456.09
 
 
-def simular(saldo, meses, taxa, amortizacao_extra=0.0):
+def simular(
+    saldo: float, meses: int, taxa: float, amortizacao_extra: float = 0.0
+) -> dict[str, float]:
     """Amortização constante do contrato original; o aporte extra reduz o PRAZO,
     porque a parcela segue a mesma e o saldo acaba antes."""
     amortizacao = saldo / meses
     saldo -= amortizacao_extra
     juros_total = 0.0
-    parcelas = []
+    parcelas: list[float] = []
     while saldo > 0.005 and len(parcelas) < meses + 1:
         juros = saldo * taxa
         principal = min(amortizacao, saldo)
@@ -37,7 +39,7 @@ def simular(saldo, meses, taxa, amortizacao_extra=0.0):
     }
 
 
-def main():
+def main() -> None:
     print(f"saldo devedor      R$ {SALDO:>12,.2f}")
     print(f"prazo restante     {MESES} meses ({MESES / 12:.1f} anos)")
     print(f"juros efetivos     {DADOS['juros_efetivos_aa_pct']}% a.a. = {TAXA_AM * 100:.4f}% a.m.")

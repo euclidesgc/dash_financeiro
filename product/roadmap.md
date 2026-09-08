@@ -230,7 +230,7 @@ PR e commit já escritos.
   pedido, pedido aceito, pedido recusado), e o guarda de rota que aquele item
   deixou em pé já cobre a sexta chamada.
 
-- [ ] `021-mascara-e-medida-dos-campos` — Todo campo de digitação declara o que
+- [-] `021-mascara-e-medida-dos-campos` — Todo campo de digitação declara o que
   aceita e cabe no que aceita: campo de dinheiro chega ao servidor já na forma
   que o leitor único exige, campo de texto tem teto de comprimento, e a largura
   de cada um é proporcional ao que ele guarda. Hoje não existe **nenhum**
