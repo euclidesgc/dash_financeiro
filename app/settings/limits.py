@@ -29,3 +29,15 @@ SCENARIO_NAME_MAX = 40
 # de um nome de beneficiário por alternância — duzentos caracteres cobrem
 # vários nomes escapados sem deixar a coluna sem teto nenhum.
 RULE_EXPRESSION_MAX = 200
+
+# Motivo: teto próprio por tipo de dívida, não os cem por cento ao mês do leitor
+# genérico. O imóvel real desta base corre a 0,72% e o CDC do veículo a 1,63%
+# (docs/plano.md, 05/09/2026); vinte por cento ao mês num financiamento
+# imobiliário já é agiotagem, não erro de digitação que o leitor deva deixar
+# passar.
+MORTGAGE_MAX_RATE_BP = 2000
+
+# Motivo: o CDC de veículo corre mais quente que o imobiliário num contrato de
+# crédito ruim, então o teto dele fica acima — e é número próprio, não o do
+# imóvel.
+VEHICLE_MAX_RATE_BP = 4000

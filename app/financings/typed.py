@@ -1,6 +1,7 @@
 from datetime import date
 
 from app.financings import KINDS, MORTGAGE, VEHICLE
+from app.settings.limits import MORTGAGE_MAX_RATE_BP, VEHICLE_MAX_RATE_BP
 from app.settings.typed import (
     CENTS_IN_UNIT,
     InvalidValueError,
@@ -9,17 +10,6 @@ from app.settings.typed import (
     parse_rate,
 )
 
-# Motivo: own ceilings, not the generic reader's hundred per cent a month. The
-# base's real mortgage runs at 0.72% and its real vehicle CDC at 1.63%
-# (docs/plano.md, 05/09/2026), and the test harness already exercises a
-# mortgage at 5% as a plausible high rate; twenty per cent a month on a home
-# loan is loan-shark territory, not a typo the reader should let through, and
-# stays well above both.
-MORTGAGE_MAX_RATE_BP = 2000
-# Motivo: vehicle CDC runs hotter than a mortgage on a bad-credit contract, so
-# its own ceiling sits above the mortgage's; forty per cent a month is already
-# loan-shark territory too, and it is its own number, not the mortgage's.
-VEHICLE_MAX_RATE_BP = 4000
 _RATE_CEILINGS = {MORTGAGE: MORTGAGE_MAX_RATE_BP, VEHICLE: VEHICLE_MAX_RATE_BP}
 
 
