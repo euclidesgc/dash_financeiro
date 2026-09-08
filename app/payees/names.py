@@ -1,4 +1,5 @@
 import sqlite3
+from typing import Any
 
 from app.queries.spending import SPENDING
 
@@ -55,7 +56,7 @@ class UnknownSourceError(ValueError):
     pass
 
 
-def _chosen(payee: str, row: dict, given: dict[str, str]) -> tuple[str, str]:
+def _chosen(payee: str, row: dict[str, Any], given: dict[str, str]) -> tuple[str, str]:
     # Ordered by the quality of the name, not by the source: merchant.name
     # answers "Apple", "Shopee", "outback", while receiver.name answers
     # "IFOOD.COM AGENCIA DE RESTAURANTES ONLINE S.A." — both come from the
@@ -71,11 +72,11 @@ def _chosen(payee: str, row: dict, given: dict[str, str]) -> tuple[str, str]:
     return payee, DESCRIPTION
 
 
-def display_name(conn: sqlite3.Connection) -> dict[str, dict]:
+def display_name(conn: sqlite3.Connection) -> dict[str, dict[str, str]]:
     given: dict[str, dict[str, str]] = {}
     for row in conn.execute(_NAMES):
         given.setdefault(row["payee"], {})[row["source"]] = row["name"]
-    answer = {}
+    answer: dict[str, dict[str, str]] = {}
     for row in conn.execute(_FROM_PLUGGY):
         payee = row["payee"]
         name, origin = _chosen(payee, dict(row), given.get(payee, {}))
@@ -95,13 +96,13 @@ def labels(conn: sqlite3.Connection) -> dict[str, str]:
     }
 
 
-def spending_by_payee(conn: sqlite3.Connection) -> list[dict]:
+def spending_by_payee(conn: sqlite3.Connection) -> list[dict[str, Any]]:
     # All of history, and the project's single spending predicate: a name is not
     # a property of a period, and a payee outside the window still needs one.
     return [dict(row) for row in conn.execute(_SPENDING_BY_PAYEE)]
 
 
-def ranked(conn: sqlite3.Connection, limit: int) -> dict:
+def ranked(conn: sqlite3.Connection, limit: int) -> dict[str, Any]:
     every = spending_by_payee(conn)
     resolved = display_name(conn)
     total = sum(row["total_cents"] for row in every)
