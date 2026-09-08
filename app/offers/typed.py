@@ -1,5 +1,6 @@
 import unicodedata
 from datetime import date
+from typing import Any
 
 from app.settings.limits import NAME_MAX
 from app.settings.typed import InvalidValueError, parse_money, parse_months, parse_rate
@@ -14,7 +15,7 @@ def _has_illegible_byte(value: str) -> bool:
     return _REPLACEMENT_CHAR in value or any(unicodedata.category(char) == "Cc" for char in value)
 
 
-def read_form(typed: dict[str, str], *, today: date) -> dict:
+def read_form(typed: dict[str, str], *, today: date) -> dict[str, Any]:
     name = (typed.get("nome") or "").strip()
     if not name:
         raise InvalidValueError("Nome é obrigatório.")

@@ -1,5 +1,6 @@
 import sqlite3
 from datetime import date
+from typing import Any
 
 from app.settings.catalog import BY_NAME, CATALOG
 from app.settings.typed import InvalidValueError, parse
@@ -26,14 +27,14 @@ def _stale(valid_until: str | None, today: date) -> bool:
     return bool(valid_until and valid_until < today.isoformat())
 
 
-def stored(conn: sqlite3.Connection, *, today: date) -> list[dict]:
+def stored(conn: sqlite3.Connection, *, today: date) -> list[dict[str, Any]]:
     rows = [dict(row) for row in conn.execute(f"{_ALL} ORDER BY label")]
     for row in rows:
         row["stale"] = _stale(row["valid_until"], today)
     return rows
 
 
-def read(conn: sqlite3.Connection, *, today: date) -> list[dict]:
+def read(conn: sqlite3.Connection, *, today: date) -> list[dict[str, Any]]:
     known = {row["name"]: row for row in stored(conn, today=today)}
     answer = []
     for item in CATALOG:
@@ -55,7 +56,7 @@ def value(conn: sqlite3.Connection, name: str) -> int | None:
     return row["value"] if row else None
 
 
-def entry(name: str) -> dict:
+def entry(name: str) -> dict[str, Any]:
     # The same refusal as the classification rules of item 002: a name the
     # catalogue does not declare is named back to the owner, never written.
     item = BY_NAME.get(name)

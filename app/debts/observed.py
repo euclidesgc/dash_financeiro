@@ -1,6 +1,7 @@
 import sqlite3
 from calendar import monthrange
 from datetime import date, timedelta
+from typing import Any
 
 from app.accounts import BANK
 
@@ -36,7 +37,9 @@ MIN_NEGATIVE_SHARE = 0.5
 RATE_SCALE = 10000
 
 
-def daily_balances(conn: sqlite3.Connection, account_id: str, balance: int, today: date) -> dict:
+def daily_balances(
+    conn: sqlite3.Connection, account_id: str, balance: int, today: date
+) -> dict[str, int]:
     # Walked backwards from the balance the source reports: interest is charged
     # on the daily negative balance, and a monthly average hides the days the
     # account spent in the black.
@@ -44,7 +47,8 @@ def daily_balances(conn: sqlite3.Connection, account_id: str, balance: int, toda
     if not moves:
         return {}
     first = min(moves)
-    days, running, when = {}, balance, today
+    days: dict[str, int] = {}
+    running, when = balance, today
     while when.isoformat() >= first:
         days[when.isoformat()] = running
         running -= moves.get(when.isoformat(), 0)
@@ -52,8 +56,8 @@ def daily_balances(conn: sqlite3.Connection, account_id: str, balance: int, toda
     return days
 
 
-def observed_rates(conn: sqlite3.Connection, *, today: date) -> dict[str, dict]:
-    found = {}
+def observed_rates(conn: sqlite3.Connection, *, today: date) -> dict[str, dict[str, Any]]:
+    found: dict[str, dict[str, Any]] = {}
     for account in conn.execute(
         "SELECT id, name, balance_cents FROM accounts WHERE type = ? AND balance_cents < 0",
         (BANK,),
@@ -74,7 +78,7 @@ def observed_rates(conn: sqlite3.Connection, *, today: date) -> dict[str, dict]:
 
 
 def _monthly_rates(
-    conn: sqlite3.Connection, account_id: str, days: dict, today: date
+    conn: sqlite3.Connection, account_id: str, days: dict[str, int], today: date
 ) -> list[tuple[str, int]]:
     arrears = posts_in_arrears(conn, account_id)
     # The month in progress is left out: five days of balance under a whole

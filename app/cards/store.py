@@ -1,4 +1,5 @@
 import sqlite3
+from typing import Any
 
 from app.accounts import CREDIT
 from app.cards.catalog import ACTION, BY_NAME, FIELDS
@@ -18,11 +19,11 @@ def reconcile(conn: sqlite3.Connection) -> int:
     return conn.execute(_RECONCILE, (CREDIT,)).rowcount
 
 
-def screen(conn: sqlite3.Connection) -> dict:
+def screen(conn: sqlite3.Connection) -> dict[str, Any]:
     return {"action": ACTION, "cards": read(conn)}
 
 
-def read(conn: sqlite3.Connection) -> list[dict]:
+def read(conn: sqlite3.Connection) -> list[dict[str, Any]]:
     rows = conn.execute(_READ, (CREDIT,)).fetchall()
     return [
         {
@@ -44,7 +45,7 @@ def read(conn: sqlite3.Connection) -> list[dict]:
     ]
 
 
-def entry(name: str) -> dict:
+def entry(name: str) -> dict[str, Any]:
     item = BY_NAME.get(name)
     if item is None:
         raise InvalidValueError(f"Campo desconhecido: “{name}”.")

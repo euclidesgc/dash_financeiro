@@ -42,6 +42,8 @@ def main() -> int:
         for name in missing:
             print(f"missing environment variable: {name}", file=sys.stderr, flush=True)
         return 1
+    assert config.login
+    assert config.password
     conn = connect()
     try:
         seed_user(conn, config.login, config.password)

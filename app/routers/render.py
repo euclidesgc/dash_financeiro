@@ -16,8 +16,8 @@ MINUS = "−"
 CENTS_IN_REAL = 100
 
 
-def brl(cents: object) -> str:
-    value = int(cents or 0)
+def brl(cents: int | None) -> str:
+    value = cents or 0
     units, remainder = divmod(abs(value), CENTS_IN_REAL)
     grouped = f"{units:,}".replace(",", ".")
     return f"{MINUS if value < 0 else ''}R$ {grouped},{remainder:02d}"
@@ -37,20 +37,20 @@ def month(value: object) -> str:
         return str(value)
 
 
-def rate(basis_points: object) -> str:
+def rate(basis_points: int | None) -> str:
     if basis_points is None:
         return "—"
-    units, remainder = divmod(int(basis_points), CENTS_IN_REAL)
+    units, remainder = divmod(basis_points, CENTS_IN_REAL)
     return f"{units},{remainder:02d}%"
 
 
-def number(cents: object) -> str:
-    value = int(cents or 0)
+def number(cents: int | None) -> str:
+    value = cents or 0
     units, remainder = divmod(abs(value), CENTS_IN_REAL)
     return f"{units},{remainder:02d}"
 
 
-def unit_value(value: object, unit: str) -> str:
+def unit_value(value: int | None, unit: str) -> str:
     # A row of the store holds cents, basis points or months, and the unit is the
     # column that says which. Reading every row as money is how "6 meses" was
     # printed "R$ 0,06".
@@ -61,11 +61,11 @@ def unit_value(value: object, unit: str) -> str:
     if unit == BASIS_POINTS:
         return rate(value)
     if unit == MONTHS:
-        return f"{int(value)} {'mês' if int(value) == 1 else 'meses'}"
+        return f"{value} {'mês' if value == 1 else 'meses'}"
     return str(value)
 
 
-def unit_typed(value: object, unit: str) -> str:
+def unit_typed(value: int | None, unit: str) -> str:
     # What the owner types back into the field, in the grammar the reader of that
     # unit accepts — never the formatted figure, which no reader accepts.
     if value is None:
@@ -77,4 +77,4 @@ def unit_typed(value: object, unit: str) -> str:
         return brl(value).removeprefix(f"{MINUS}").removeprefix("R$ ")
     if unit == BASIS_POINTS:
         return rate(value).replace("%", "")
-    return str(int(value))
+    return str(value)

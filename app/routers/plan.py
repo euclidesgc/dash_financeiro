@@ -41,7 +41,7 @@ def objective_screen(request: Request) -> Response:
         conn.close()
 
 
-def _context(conn: sqlite3.Connection, runs: list[dict], today: date) -> dict[str, Any]:
+def _context(conn: sqlite3.Connection, runs: list[dict[str, Any]], today: date) -> dict[str, Any]:
     gained = levers(conn, today=today)
     return {
         "reference": today.isoformat(),

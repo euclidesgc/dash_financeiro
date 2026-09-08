@@ -1,5 +1,6 @@
 import sqlite3
 from datetime import date
+from typing import Any
 
 from app.commitments import series
 from app.commitments.live import live_floor
@@ -48,8 +49,8 @@ def recompute(conn: sqlite3.Connection, *, today: date | None = None) -> int:
 
 
 def recurring_after_precedence(
-    recurring: list[dict], installments: list[dict], floor: str
-) -> list[dict]:
+    recurring: list[dict[str, Any]], installments: list[dict[str, Any]], floor: str
+) -> list[dict[str, Any]]:
     # An instalment ends and a subscription does not, so a key that is both
     # counts once, as the instalment. The precedence looks only at the window,
     # never at what is still owed: in the month the last instalment falls the

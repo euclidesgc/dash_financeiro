@@ -76,11 +76,12 @@ def view(conn: sqlite3.Connection) -> dict[str, Any]:
     # Separate from current() on purpose: the screen receives a dict that never
     # held the key, instead of receiving the key and promising not to print it.
     setup = current(conn)
-    long_enough = setup.api_key is not None and len(setup.api_key) > MIN_TO_SHOW
     return {
         "stored": setup.origin == FROM_SCREEN,
         "origin": setup.origin,
-        "tail": setup.api_key[-TAIL:] if long_enough else None,
+        "tail": setup.api_key[-TAIL:]
+        if setup.api_key is not None and len(setup.api_key) > MIN_TO_SHOW
+        else None,
         "model": setup.model,
         "models": MODELS,
     }

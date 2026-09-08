@@ -1,12 +1,13 @@
 import sqlite3
 from datetime import date
+from typing import Any
 
 from app.commitments import INSTALLMENT
 from app.commitments.live import installments, live_floor
 from app.commitments.schedule import end_month
 from app.queries.invoices import card_series
 
-_SeriesEntry = tuple[str, dict]
+_SeriesEntry = tuple[str, dict[str, Any]]
 
 
 def invoice_month(when: str, closing_day: int | None) -> str:
@@ -20,12 +21,12 @@ def payment_month(when: str, closing_day: int | None, due_day: int | None) -> st
     # Motivo (D-006): closing_day decides which invoice a parcel belongs to;
     # due_day decides the month that invoice leaves the account. The offset is
     # constant per card, so it moves the whole curve and changes no sum.
-    known = closing_day is not None and due_day is not None
-    offset = 1 if known and due_day < closing_day else 0
-    return end_month(anchor, offset)
+    if closing_day is None or due_day is None:
+        return end_month(anchor, 0)
+    return end_month(anchor, 1 if due_day < closing_day else 0)
 
 
-def invoice_curve(conn: sqlite3.Connection, *, today: date | None = None) -> dict:
+def invoice_curve(conn: sqlite3.Connection, *, today: date | None = None) -> dict[str, Any]:
     reference = today or date.today()
     ref_month = f"{reference.year:04d}-{reference.month:02d}"
     floor = live_floor(today)
@@ -39,14 +40,14 @@ def invoice_curve(conn: sqlite3.Connection, *, today: date | None = None) -> dic
     }
 
 
-def _grouped(rows: list[dict]) -> dict[str, list[dict]]:
-    grouped: dict[str, list[dict]] = {}
+def _grouped(rows: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    grouped: dict[str, list[dict[str, Any]]] = {}
     for row in rows:
         grouped.setdefault(row["card_name"], []).append(row)
     return grouped
 
 
-def _card(name: str, rows: list[dict], ref_month: str) -> dict:
+def _card(name: str, rows: list[dict[str, Any]], ref_month: str) -> dict[str, Any]:
     closing_day, due_day = rows[0]["closing_day"], rows[0]["due_day"]
     entries = [_series(row, closing_day, due_day) for row in rows if row["series_key"] is not None]
     series = [entry for _, entry in entries]
@@ -62,7 +63,7 @@ def _card(name: str, rows: list[dict], ref_month: str) -> dict:
     }
 
 
-def _series(row: dict, closing_day: int | None, due_day: int | None) -> _SeriesEntry:
+def _series(row: dict[str, Any], closing_day: int | None, due_day: int | None) -> _SeriesEntry:
     anchor = payment_month(row["last_seen_date"], closing_day, due_day)
     last_invoice = end_month(anchor, row["installments_left"])
     amount_cents = row["amount_cents"]
@@ -77,7 +78,7 @@ def _series(row: dict, closing_day: int | None, due_day: int | None) -> _SeriesE
     }
 
 
-def _months(ref_month: str, entries: list[_SeriesEntry]) -> list[dict]:
+def _months(ref_month: str, entries: list[_SeriesEntry]) -> list[dict[str, Any]]:
     if not entries:
         return []
     last = max(entry["last_invoice"] for _, entry in entries)

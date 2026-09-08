@@ -3,6 +3,7 @@ import os
 import sqlite3
 from datetime import date
 from pathlib import Path
+from typing import Any, cast
 
 from app.financings import KINDS, MORTGAGE, NAMES, VEHICLE
 from app.financings.math import monthly_from_yearly_bp, present_value_cents, remaining_months
@@ -35,11 +36,11 @@ def manual_dir() -> Path:
     return Path(os.environ.get(MANUAL_DIR) or DEFAULT_MANUAL)
 
 
-def read_all(conn: sqlite3.Connection) -> list[dict]:
+def read_all(conn: sqlite3.Connection) -> list[dict[str, Any]]:
     return [dict(row) for row in conn.execute(f"SELECT {_COLUMNS} FROM financings")]
 
 
-def read(conn: sqlite3.Connection, kind: str) -> dict | None:
+def read(conn: sqlite3.Connection, kind: str) -> dict[str, Any] | None:
     row = conn.execute(f"SELECT {_COLUMNS} FROM financings WHERE kind = ?", (kind,)).fetchone()
     return dict(row) if row else None
 
@@ -64,17 +65,17 @@ def seed_from_manual(conn: sqlite3.Connection) -> int:
     return seeded
 
 
-def _read(name: str) -> dict | None:
+def _read(name: str) -> dict[str, Any] | None:
     # data/ lives outside version control, so the panel has to boot on a
     # machine that never received the contracts. A missing file is a missing
     # financing, never a broken load (RF-04).
     path = manual_dir() / name
     if not path.is_file():
         return None
-    return json.loads(path.read_text())
+    return cast(dict[str, Any], json.loads(path.read_text()))
 
 
-def _mortgage_row(data: dict) -> dict:
+def _mortgage_row(data: dict[str, Any]) -> dict[str, Any]:
     return {
         "kind": MORTGAGE,
         "monthly_rate_bp": monthly_from_yearly_bp(data["juros_efetivos_aa_pct"]),
@@ -85,7 +86,7 @@ def _mortgage_row(data: dict) -> dict:
     }
 
 
-def _vehicle_row(data: dict) -> dict:
+def _vehicle_row(data: dict[str, Any]) -> dict[str, Any]:
     return {
         "kind": VEHICLE,
         "monthly_rate_bp": round(data["juros_efetivo_mensal_pct"] * CENTS_IN_UNIT),
@@ -102,9 +103,9 @@ def write(conn: sqlite3.Connection, kind: str, typed: dict[str, str]) -> None:
     conn.commit()
 
 
-def section(conn: sqlite3.Connection, *, today: date) -> dict:
+def section(conn: sqlite3.Connection, *, today: date) -> dict[str, Any]:
     rows = {row["kind"]: row for row in read_all(conn)}
-    result: dict[str, dict] = {}
+    result: dict[str, dict[str, Any]] = {}
     for kind in KINDS:
         row = rows.get(kind)
         entry = {
@@ -121,7 +122,7 @@ def section(conn: sqlite3.Connection, *, today: date) -> dict:
     return result
 
 
-def _vehicle_balance(row: dict | None, today: date) -> tuple[int | None, int | None]:
+def _vehicle_balance(row: dict[str, Any] | None, today: date) -> tuple[int | None, int | None]:
     if row is None or row["first_due_date"] is None:
         return None, None
     first_due = date.fromisoformat(row["first_due_date"])

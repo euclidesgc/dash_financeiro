@@ -2,6 +2,7 @@ import re
 import sqlite3
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
+from typing import Any
 
 from app.commitments.engine import recompute
 from app.config import PLUGGY_CREDENTIALS, load_config, reference_date
@@ -113,7 +114,7 @@ def _outcome(result: IngestResult) -> SyncOutcome:
     )
 
 
-def last_runs(conn: sqlite3.Connection) -> dict:
+def last_runs(conn: sqlite3.Connection) -> dict[str, Any]:
     # Two rows, not one: the last attempt says whether it failed, and the last
     # success says how old the data is. Showing only the attempt would hide the
     # age; showing only the success would hide the failure (RF-12).
@@ -127,7 +128,7 @@ def last_runs(conn: sqlite3.Connection) -> dict:
     }
 
 
-def finished_on(run: dict | None) -> datetime | None:
+def finished_on(run: dict[str, Any] | None) -> datetime | None:
     # Written in UTC and read against a local reference date. Without the
     # conversion a load run after nine at night shows tomorrow's date and the age
     # comes out a day short — the very number this item exists to make honest
@@ -138,7 +139,7 @@ def finished_on(run: dict | None) -> datetime | None:
     return stamp.astimezone() if stamp.tzinfo else stamp
 
 
-def days_since(run: dict | None, today: date) -> int | None:
+def days_since(run: dict[str, Any] | None, today: date) -> int | None:
     when = finished_on(run)
     return None if when is None else (today - when.date()).days
 
