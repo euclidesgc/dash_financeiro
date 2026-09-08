@@ -1,6 +1,7 @@
 from app.settings.catalog import BASIS_POINTS, CENTS
 
 ACTION = "/configuracao/cartao"
+CLEAR_ACTION = f"{ACTION}/apagar"
 
 LIMIT = "limite"
 RATE = "taxa"
