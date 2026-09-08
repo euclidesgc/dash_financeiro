@@ -72,9 +72,8 @@ def write(
 ) -> tuple[int | None, bool]:
     item = entry(field)
     _refuse_unless_credit_account(conn, account_id)
-    # A blank field means "leave the stored value alone" (RF-01): the erase
-    # gesture is the only path that ever writes NULL from here on, so this
-    # function never turns silence into a loss.
+    # Decisão: a blank field means "leave it alone" (RF-01), never "erase it";
+    # the erase gesture is the only path that writes NULL from here on.
     if not (typed or "").strip():
         return None, False
     value = parse(item["unit"], typed, item["label"])
