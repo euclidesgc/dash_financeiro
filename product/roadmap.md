@@ -317,15 +317,20 @@ ao topo da fila é a régua local certa e o agregado errado.
   Fechou com **530 testes**, e a mesma exclusão de cache foi aplicada ao caso
   idêntico ao lado, em `tests/test_frozen_numbers.py`.
 
-- [-] `029-o-guarda-reconhece-uma-forma-so-de-perguntar-as-horas` — O guarda de
-  rota procura o literal `date.today()`. `datetime.now().date()`,
-  `datetime.today()` e `from datetime import date as d` seguido de `d.today()`
-  passam caladas — é a mesma família de silêncio que o `020` fechou por
-  profundidade e que continua aberta por forma. O guarda passa a reconhecer a
-  chamada pela árvore sintática, não por texto, e o dente dele cresce para as
-  formas que hoje escapam. Achado pelo planejador do `020`, que não o resolveu
-  porque requisito nascido no plano é requisito que ninguém aprovou.
-  **Depende de:** nada aberto.
+- [x] `029-o-guarda-reconhece-uma-forma-so-de-perguntar-as-horas` — O guarda de
+  rota reconhece a chamada ao relógio pela **árvore sintática**, não por busca de
+  texto. Ele segue apelido de import e reatribuição simples de nome, alcança
+  `date.today()`, `datetime.today()`, `datetime.now()`, `datetime.utcnow()` e
+  `date.fromtimestamp(time.time())` — e deixa de ser enganado pela cadeia em
+  comentário, docstring, literal, nome de variável ou chave de dicionário,
+  inclusive no caso legítimo de um `date` vindo dos modelos do próprio projeto,
+  que uma busca de texto acusaria em falso.
+  O validador cego provou por **mutação** que o verde é sustentado pela árvore:
+  revertendo a acusação para busca de texto, três testes voltam a falhar. Ele
+  achou quatro formas que ainda escapavam, e as quatro fecharam com teste que
+  reprova sem a correção. O limite declarado é o rastreio de nome, não análise de
+  fluxo: desempacotamento de tupla, atribuição múltipla e reatribuição
+  condicional ficam de fora, e nenhum deles existe hoje em `app/routers/`.
 
 ## Validações de campo pendentes
 
