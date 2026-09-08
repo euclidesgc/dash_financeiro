@@ -317,7 +317,7 @@ ao topo da fila é a régua local certa e o agregado errado.
   Fechou com **530 testes**, e a mesma exclusão de cache foi aplicada ao caso
   idêntico ao lado, em `tests/test_frozen_numbers.py`.
 
-- [ ] `029-o-guarda-reconhece-uma-forma-so-de-perguntar-as-horas` — O guarda de
+- [-] `029-o-guarda-reconhece-uma-forma-so-de-perguntar-as-horas` — O guarda de
   rota procura o literal `date.today()`. `datetime.now().date()`,
   `datetime.today()` e `from datetime import date as d` seguido de `d.today()`
   passam caladas — é a mesma família de silêncio que o `020` fechou por

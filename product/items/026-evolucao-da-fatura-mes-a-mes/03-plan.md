@@ -188,10 +188,10 @@ pagar naquele cartão — sem que nenhuma tela ainda a mostre.
       `frees_cents` igual a `12000`, e a série `posto azul` traz `last_invoice`
       igual a `2026-11` e `frees_cents` igual a `5000` — positivo, porque
       dinheiro que para de sair volta ao caixa; e, nos meses do `Cartão Azul`,
-      `total_cents` de `2026-11` menos `total_cents` de `2026-12` é igual a
-      `5000`, que é exatamente o `frees_cents` da série que morre em `2026-11`:
-      a queda da fatura no mês seguinte à morte é medida na própria curva, e não
-      afirmada ao lado dela
+      `total_cents` de `2026-12`, que vale `-12000`, menos `total_cents` de
+      `2026-11`, que vale `-17000`, é igual a `5000`, que é exatamente o
+      `frees_cents` da série que morre em `2026-11`: a queda da fatura no mês
+      seguinte à morte é medida na própria curva, e não afirmada ao lado dela
 - [ ] `comportamental` — RF-07
       *Dado* a base de três séries e dois cartões, acrescida de
       `INSERT INTO accounts (id, name, type, balance_cents) VALUES ('acc-verde', 'Cartão Verde', 'CREDIT', 0)`
