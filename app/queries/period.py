@@ -1,7 +1,5 @@
 from datetime import date, timedelta
 
-CLOSED_MONTHS = 6
-
 START_FIELD = "inicio"
 END_FIELD = "fim"
 
@@ -38,13 +36,20 @@ def check_period(start: object, end: object) -> tuple[date, date]:
     return first, last
 
 
-def default_period(today: date, months: int = CLOSED_MONTHS) -> tuple[str, str]:
-    # The running month would open the screen on a handful of days of data, so
-    # the window ends on the last month already closed; `today` is a parameter
-    # so the first load of the screen is verifiable without a fake clock.
-    last = shift(date(today.year, today.month, 1), -1)
-    first = shift(last, 1 - months)
-    return first.isoformat(), (shift(last, 1) - timedelta(days=1)).isoformat()
+def default_period(today: date) -> tuple[str, str]:
+    # The window ends on the reference date, not on the last day of the month:
+    # the screen answers "how much left", and summing an instalment already
+    # posted for a future date would answer a different question.
+    return date(today.year, today.month, 1).isoformat(), today.isoformat()
+
+
+def month_end(anchor: date) -> date:
+    return shift(anchor, 1) - timedelta(days=1)
+
+
+def covers_whole_months(start: str, end: str) -> bool:
+    first, last = date.fromisoformat(start), date.fromisoformat(end)
+    return first.day == 1 and last == month_end(last)
 
 
 def shift(anchor: date, months: int) -> date:

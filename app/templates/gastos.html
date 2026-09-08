@@ -17,8 +17,12 @@
     <h1 class="screen-title">Gastos</h1>
     <p class="lede">Onde o dinheiro saiu, recortado por eixo e por período.
       Transferência entre contas próprias e estorno ficam de fora da conta.</p>
+    {% if notice %}
+    <p class="notice" id="recusa" role="alert">{{ notice }}</p>
+    {% endif %}
     <form id="controles" class="controls" method="get" action="{{ screen }}"
           hx-get="{{ panel_url }}" hx-target="#painel" hx-swap="outerHTML">
+      <input type="hidden" name="data" value="{{ reference }}">
       <div class="field">
         <label class="field-label" for="campo-eixo">Eixo</label>
         <select class="field-input" id="campo-eixo" name="eixo"
