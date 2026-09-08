@@ -126,10 +126,10 @@ def store_ia(
     conn = connect()
     try:
         try:
-            advisor_config.save(conn, api_key=_text(chave), model=_text(modelo))
+            advisor_config.save(conn, api_key=text(chave), model=text(modelo))
         except (advisor_config.UnknownModelError, advisor_config.InvalidApiKeyError) as refusal:
-            return _answer(request, conn, notice=str(refusal), status_code=400)
-        return _answer(request, conn, done=SAVED)
+            return answer(request, conn, notice=str(refusal), status_code=400)
+        return answer(request, conn, done=SAVED)
     finally:
         conn.close()
 
@@ -139,7 +139,7 @@ def forget_ia(request: Request) -> Response:
     conn = connect()
     try:
         advisor_config.forget(conn)
-        return _answer(request, conn, done=KEY_FORGOTTEN)
+        return answer(request, conn, done=KEY_FORGOTTEN)
     finally:
         conn.close()
 
