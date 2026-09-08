@@ -1,6 +1,8 @@
 import sqlite3
 
 from app.queries.spending import SPENDING
+from app.settings.limits import PAYEE_ALIAS_MAX
+from app.settings.typed import InvalidValueError
 
 OWNER = "dono"
 LOOKUP = "cnpj"
@@ -128,6 +130,11 @@ def ranked(conn: sqlite3.Connection, limit: int) -> dict:
 def name_it(conn: sqlite3.Connection, payee: str, name: str, source: str) -> None:
     if source not in WRITABLE:
         raise UnknownSourceError(f"Origem desconhecida: “{source}”.")
+    # Motivo: the ceiling is on the nickname the owner types (RF-02), not on a
+    # trade name the CNPJ lookup brings back — that source is not a digitação
+    # field.
+    if source == OWNER and len(name) > PAYEE_ALIAS_MAX:
+        raise InvalidValueError(f"Apelido muito longo: no máximo {PAYEE_ALIAS_MAX} caracteres.")
     conn.execute(_WRITE, (payee, source, name))
     conn.commit()
 
