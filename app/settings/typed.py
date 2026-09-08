@@ -2,10 +2,9 @@ import math
 import re
 
 from app.settings.catalog import BASIS_POINTS, CENTS, MONTHS
-from app.settings.limits import MAX_DIGITS
+from app.settings.limits import MAX_DIGITS, MAX_RATE_BP
 
 CENTS_IN_UNIT = 100
-MAX_RATE_BP = 100 * CENTS_IN_UNIT
 
 # Motivo: bare \d matches every Unicode decimal digit, and an arabic-indic or
 # fullwidth digit was reading as a correct number in a field that decides a car

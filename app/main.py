@@ -32,6 +32,7 @@ from app.routers.render import (
     unit_typed,
     unit_value,
 )
+from app.settings import limits
 
 STYLESHEETS_FOLDER = Path(__file__).resolve().parent / "static" / "css"
 
@@ -49,6 +50,9 @@ def create_app() -> FastAPI:
     TEMPLATES.env.globals["tokens_css"] = _stylesheet("tokens.css")
     TEMPLATES.env.globals["app_css"] = _stylesheet("app.css")
     TEMPLATES.env.globals["screens"] = marked
+    # Motivo: RF-03 pede o mesmo número dos dois lados — o template lê o teto
+    # daqui em vez de repeti-lo.
+    TEMPLATES.env.globals["limits"] = limits
     TEMPLATES.env.filters["brl"] = brl
     TEMPLATES.env.filters["dia"] = day
     TEMPLATES.env.filters["mes"] = month

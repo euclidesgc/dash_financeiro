@@ -287,6 +287,13 @@ body {
   border-color: var(--color-accent);
 }
 
+.field-input[maxlength] {
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  justify-self: start;
+}
+
 .notice {
   margin: 0;
   max-width: var(--measure);

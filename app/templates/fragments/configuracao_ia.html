@@ -18,7 +18,8 @@
   <form class="form" method="post" action="{{ ia_action }}">
     <div class="field">
       <label class="field-label" for="ia-chave">Chave da API</label>
-      <input class="field-input" id="ia-chave" name="chave" type="password" autocomplete="off">
+      <input class="field-input" id="ia-chave" name="chave" type="password" autocomplete="off"
+             maxlength="{{ limits.CREDENTIAL_FIELD_MAXLENGTH }}" size="{{ limits.CREDENTIAL_FIELD_MAXLENGTH }}">
       <p class="lede">Deixar em branco não altera a chave guardada.</p>
     </div>
     <div class="field">

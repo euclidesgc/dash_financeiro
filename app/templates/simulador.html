@@ -16,17 +16,21 @@
     <form method="post" action="{{ action }}" class="stack">
       <input type="hidden" name="data" value="{{ reference }}">
       <label class="eyebrow" for="tipo">Tipo</label>
-      <select class="field" id="tipo" name="tipo">
+      <select class="field-input" id="tipo" name="tipo">
         {% for kind in kinds %}<option value="{{ kind }}">{{ kind }}</option>{% endfor %}
       </select>
       <label class="eyebrow" for="mensal">Valor por mês</label>
-      <input class="field" id="mensal" name="mensal" inputmode="decimal" placeholder="0,00">
+      <input class="field-input" id="mensal" name="mensal" inputmode="decimal" placeholder="0,00"
+             required maxlength="{{ limits.MONEY_FIELD_MAXLENGTH }}" size="{{ limits.MONEY_FIELD_MAXLENGTH }}">
       <label class="eyebrow" for="unico">Valor único, se houver</label>
-      <input class="field" id="unico" name="unico" inputmode="decimal" placeholder="0,00">
+      <input class="field-input" id="unico" name="unico" inputmode="decimal" placeholder="0,00"
+             maxlength="{{ limits.MONEY_FIELD_MAXLENGTH }}" size="{{ limits.MONEY_FIELD_MAXLENGTH }}">
       <label class="eyebrow" for="prazo">Prazo em meses, se houver</label>
-      <input class="field" id="prazo" name="prazo" inputmode="numeric" placeholder="">
+      <input class="field-input" id="prazo" name="prazo" inputmode="numeric" placeholder=""
+             maxlength="{{ limits.MAX_DIGITS }}" size="{{ limits.MAX_DIGITS }}">
       <label class="eyebrow" for="nome">Guardar como (opcional)</label>
-      <input class="field" id="nome" name="nome" placeholder="">
+      <input class="field-input" id="nome" name="nome" placeholder=""
+             maxlength="{{ limits.SCENARIO_NAME_MAX }}" size="{{ limits.SCENARIO_NAME_MAX }}">
       <button class="button" type="submit">Simular</button>
     </form>
   </section>
@@ -137,15 +141,17 @@
     <form method="post" action="{{ fact_action }}" class="stack">
       <input type="hidden" name="data" value="{{ reference }}">
       <label class="eyebrow" for="fato-nome">Qual fato</label>
-      <select class="field" id="fato-nome" name="nome">
+      <select class="field-input" id="fato-nome" name="nome">
         {% for item in catalog %}
         <option value="{{ item['name'] }}">{{ item['label'] }}</option>
         {% endfor %}
       </select>
       <label class="eyebrow" for="fato-valor">Valor</label>
-      <input class="field" id="fato-valor" name="valor" inputmode="decimal" placeholder="0,00">
+      <input class="field-input" id="fato-valor" name="valor" inputmode="decimal" placeholder="0,00"
+             required maxlength="{{ limits.MONEY_FIELD_MAXLENGTH }}" size="{{ limits.MONEY_FIELD_MAXLENGTH }}">
       <label class="eyebrow" for="fato-validade">Vale até (opcional)</label>
-      <input class="field" id="fato-validade" name="validade" placeholder="AAAA-MM-DD">
+      <input class="field-input" id="fato-validade" name="validade" placeholder="AAAA-MM-DD"
+             maxlength="{{ limits.VALIDITY_FIELD_MAXLENGTH }}" size="{{ limits.VALIDITY_FIELD_MAXLENGTH }}">
       <button class="button button-quiet" type="submit">Guardar o fato</button>
     </form>
   </section>

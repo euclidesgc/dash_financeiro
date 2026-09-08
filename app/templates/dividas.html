@@ -77,8 +77,9 @@
             <form method="post" action="{{ rate_action }}" class="stack-tight">
               <input type="hidden" name="degrau" value="{{ step['id'] }}">
               <label class="sr-only" for="taxa-{{ step['id'] }}">Taxa mensal de {{ step['name'] }}</label>
-              <input class="field" id="taxa-{{ step['id'] }}" name="taxa" inputmode="decimal"
-                     placeholder="0,00" value="{% if seen %}{{ seen['median_bp']|taxa|replace('%','') }}{% endif %}">
+              <input class="field-input" id="taxa-{{ step['id'] }}" name="taxa" inputmode="decimal"
+                     placeholder="0,00" value="{% if seen %}{{ seen['median_bp']|taxa|replace('%','') }}{% endif %}"
+                     maxlength="{{ limits.RATE_FIELD_MAXLENGTH }}" size="{{ limits.RATE_FIELD_MAXLENGTH }}">
               <button class="button button-quiet" type="submit">Salvar</button>
             </form>
             {% if seen %}

@@ -9,7 +9,8 @@
   <form method="post" action="{{ parameter_action }}" class="stack">
     <input type="hidden" name="nome" value="quitacao-cdc">
     <label class="eyebrow" for="quitacao">Saldo de quitação antecipada, informado pelo banco</label>
-    <input class="field" id="quitacao" name="valor" inputmode="decimal" placeholder="0,00"
+    <input class="field-input" id="quitacao" name="valor" inputmode="decimal" placeholder="0,00" required
+           maxlength="{{ limits.MONEY_FIELD_MAXLENGTH }}" size="{{ limits.MONEY_FIELD_MAXLENGTH }}"
            value="{% if settlement_cents %}{{ settlement_cents|numero }}{% endif %}">
     <button class="button button-quiet" type="submit">Salvar</button>
   </form>
@@ -31,7 +32,8 @@
   <form method="post" action="{{ parameter_action }}" class="stack">
     <input type="hidden" name="nome" value="transporte-sem-carro">
     <label class="eyebrow" for="transporte">Custo mensal de transporte sem o carro</label>
-    <input class="field" id="transporte" name="valor" inputmode="decimal" placeholder="0,00"
+    <input class="field-input" id="transporte" name="valor" inputmode="decimal" placeholder="0,00" required
+           maxlength="{{ limits.MONEY_FIELD_MAXLENGTH }}" size="{{ limits.MONEY_FIELD_MAXLENGTH }}"
            value="{% if transport_cents %}{{ transport_cents|numero }}{% endif %}">
     <button class="button button-quiet" type="submit">Salvar</button>
   </form>
