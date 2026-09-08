@@ -352,28 +352,47 @@ ao topo da fila é a régua local certa e o agregado errado.
   fluxo: desempacotamento de tupla, atribuição múltipla e reatribuição
   condicional ficam de fora, e nenhum deles existe hoje em `app/routers/`.
 
-- [ ] `030-numeracao-de-migracao-sem-buraco` — O aplicador de esquema **recusa uma
-  migração numerada abaixo da maior já aplicada**, e a numeração não tem vão. Hoje
-  a sequência é `001`–`015` e `018`: `016` e `017` não existem, e vieram a existir
-  como número reservado por itens que fecharam fora de ordem. `run_migrations`
-  aplica em ordem lexical sobre a lista do diretório, então uma migração escrita
-  depois com número `016` entraria **antes** da `018` que já rodou na base do
-  dono — e ela rodaria contra um esquema que não é o que ela pressupõe. Nada
-  quebrou até agora porque nenhum buraco foi preenchido; a correção é o aplicador
-  passar a saber a maior já aplicada e recusar quem chega por baixo, em vez de a
-  ordem certa depender de ninguém reutilizar um número. Achado repetido por três
-  validadores independentes (itens `024`, `025` e `027`), o que pela norma 20 o
-  tira da categoria de remendo.
+- [x] `030-numeracao-de-migracao-sem-buraco` — O aplicador de esquema **recusa
+  uma migração que chega por baixo** do que a base já aplicou, e recusa antes de
+  aplicar qualquer coisa da mesma execução — provado com lote misto, em que
+  pendentes válidas ao lado de uma inválida também não entram. A numeração perdeu
+  o vão: `016` e `017` não existem, a próxima é `019`, e isso está registrado onde
+  quem escrever a próxima migração vai ler.
+  **O guarda achou um caso real, na base do dono:** ela tem `001`–`011`, `013`,
+  `014` e `015` e nunca aplicou a `012`, que entrou na pasta depois. Daí a segunda
+  fase: as duas situações pedem conselhos **opostos** e o guarda dava um só.
+  Migração nova com número baixo se renumera; versão que **esta** base pulou —
+  reconhecida pelo vão, versões abaixo e acima dela — se reconcilia com
+  `python -m app.migrate --reconciliar <versao>`. A reconciliação **tenta
+  aplicar**: se a migração não couber no esquema, nada é gravado e o vão continua,
+  porque registrar às cegas é assinar que o esquema está certo sem olhar — e foi
+  assim que o vão nasceu. Ela também recusa uma versão que não seja vão, para não
+  reabrir a porta que o item existe para fechar.
+  **Ensaiado contra cópia da base real:** reconciliar a `012` esvazia `categories`
+  (77 → 0, porque a migração derruba e recria a tabela) e a classificação a repõe
+  inteira (77, `changed=0`). O validador não confiou nesse número: extraiu os
+  1.942 pares de lançamento e grupo antes e depois e comparou **byte a byte** —
+  idênticos. Nenhum dinheiro se move.
+  E a comparação de versões é textual, então a largura importa: um arquivo `9_x.sql`
+  sem zero à esquerda inverteria ordenação e guarda ao mesmo tempo. É recusado na
+  porta. Fechou com **753 testes**.
 
-- [ ] `032-o-campo-vazio-quer-dizer-a-mesma-coisa` — Campo vazio quer dizer "não
-  mexi" em toda tela do painel, e apagar um valor guardado é um gesto próprio.
-  Hoje **duas telas do mesmo painel dizem o oposto sobre o mesmo gesto**: a da IA
-  diz que deixar em branco não altera a chave guardada, a de cartões diz que
-  apaga o valor. O dono aprende um significado numa e o aplica na outra — e na de
-  cartões o engano é silencioso, porque a resposta é `200 Salvo.` sem dizer o que
-  foi salvo. Os campos em jogo são o dia de fechamento e o de vencimento, que
-  decidem em qual fatura cada parcela cai. O aviso na tela não conserta:
-  documenta a armadilha em vez de removê-la.
+- [x] `032-o-campo-vazio-quer-dizer-a-mesma-coisa` — Campo vazio quer dizer **"não
+  mexi"** em toda tela do painel, e apagar um valor guardado é um gesto próprio:
+  um botão por campo, com o nome do campo no rótulo, visível só quando há o que
+  apagar. A resposta de gravação diz **qual** campo mudou e para quanto — o
+  `200 Salvo.` genérico sobre um formulário de quatro campos era o que escondia o
+  defeito.
+  Duas telas do mesmo painel diziam o oposto sobre o mesmo gesto: a da IA, que
+  branco não altera a chave; a de cartões, que branco apaga o valor. O dono
+  aprendia um significado numa e o aplicava na outra, e na de cartões o engano era
+  silencioso — nos campos que decidem em qual fatura cada parcela cai. O aviso na
+  tela documentava a armadilha em vez de removê-la.
+  O escritor é compartilhado com a rota de taxa de dívida, que herdou a proteção
+  junto. O validador leu a tabela **direto**, campo por campo, em vez de confiar
+  no código de resposta, e confirmou contra `develop` que o valor era mesmo
+  gravado sem condição — perda de dado real, não suposição do plano. Fechou com
+  **763 testes**.
 
 - [ ] `033-semear-taxonomia-deixa-o-banco-coerente-sozinho` — Semear a taxonomia
   deixa o banco coerente sem depender de um segundo comando. Hoje
@@ -415,33 +434,25 @@ ao topo da fila é a régua local certa e o agregado errado.
   (`int | None`), registrado em vez de corrigido em silêncio, porque mudar a
   mensagem é mudança de comportamento fora do escopo daquela fase.
 
-- [ ] `036-a-suite-nao-depende-do-diretorio-do-dono` — A suíte passa numa
-  árvore recém-clonada. Hoje não: `tests/test_sync.py` chama a sincronização sem
-  substituir a etapa de carga, então dois testes leem `data/processed/` e
-  `data/raw/` — diretórios do dono, que o `.gitignore` exclui de propósito. Numa
-  worktree onde `data/raw/` não foi copiado, os dois falham com violação de chave
-  estrangeira, e a mensagem que sobra (`erro de escrita: IntegrityError`) não diz
-  qual restrição nem qual linha, então o defeito parece do código que está sendo
-  julgado. Descoberto quando uma worktree foi reconstruída sem esse diretório e a
-  falha foi atribuída, por duas vezes e por dois julgadores diferentes, a mudança
-  de código que não tinha nada a ver. **Um teste que só passa na máquina onde os
-  dados do dono estão completos não é portão, é coincidência** — e a integração
-  contínua, que roda sem `data/` nenhum, mede outra coisa que ninguém olhou. O
-  item substitui a carga por dado de teste versionado, e faz a mensagem de erro
-  de escrita nomear a restrição violada.
+- [x] `036-a-suite-nao-depende-do-diretorio-do-dono` — A suíte passa numa árvore
+  recém-clonada, **sem nenhum arquivo do dono**: 749 coletados, 749 passados, zero
+  pulados — idêntico à árvore completa. Era o ambiente da integração contínua, e
+  ninguém o tinha medido.
+  Dois testes liam `data/processed/` e `data/raw/`, e **mais seis** liam um nível
+  abaixo, pela reconstrução da escada semeando os contratos de financiamento reais
+  do dono. Todos passaram a usar dado versionado. Três outros liam o corpus real e
+  **se pulavam sozinhos** quando ele faltava — na integração contínua nunca
+  exercitavam a função que diziam provar, e a corrida saía verde assim mesmo. Um
+  teste que se pula sozinho quando o dado falta não é um teste que passou.
+  O que só os 1.942 registros reais provam mudou para
+  `scripts/conferir-normalizacao.py`, que **diz** o que faz em vez de pular em
+  silêncio. A amostra que a suíte usa é sintética: versionar descrições de
+  transação do dono para provar uma função de texto trocaria um problema por um
+  pior.
+  E a mensagem de erro de escrita passou a nomear a restrição violada. A anterior
+  custou **duas atribuições de culpa erradas** nesta corrida, a validadores
+  diferentes. Fechou com **768 testes**.
 
-- [x] `037-editar-um-financiamento-nao-desemeia-o-outro` — Gravar um
-  financiamento pela tela não faz o outro sumir da escada de dívidas. O guarda da
-  semeadura desistia quando a tabela tinha **qualquer** linha, e não quando tinha
-  a linha que ele ia escrever: o primeiro contrato que o dono salvasse pela tela
-  nova encerrava a importação, e a reconstrução seguinte nunca mais semeava o CDC
-  do veículo. **O degrau sumia da tela que decide qual dívida pagar primeiro, sem
-  uma palavra.** O guarda passou a ser por tipo de contrato — quem já está na
-  tabela continua ganhando do arquivo, que era a razão original; quem falta
-  continua vindo do disco. Achado pelo validador cego do item `021`, fora do
-  escopo daquela fase, reproduzido contra uma cópia da base real. O teste vizinho
-  afirmava o defeito — contava uma linha e chamava aquilo de certo — e passou a
-  dizer o que queria dizer.
 
 ## Validações de campo pendentes
 
