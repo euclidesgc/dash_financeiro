@@ -364,7 +364,10 @@ def test_read_never_shows_a_row_forged_for_a_non_credit_account(taxonomy_conn):
     assert [card["account_id"] for card in cards] == []
 
 
-def test_the_four_fields_are_written_and_bad_grammar_is_refused_without_writing(taxonomy_conn):
+def test_the_four_fields_are_written_and_bad_grammar_is_refused_without_writing(
+    taxonomy_conn, tmp_path, monkeypatch
+):
+    monkeypatch.setenv(financings_store.MANUAL_DIR, str(tmp_path / "vazio"))
     _accounts(taxonomy_conn, ("acc-cartao-1", "Cartão Azul", "CREDIT", -1674462))
     rebuild(taxonomy_conn)
 

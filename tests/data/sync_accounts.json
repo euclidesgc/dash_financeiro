@@ -1,0 +1,14 @@
+{
+  "results": [
+    {
+      "id": "sync-acc-1",
+      "type": "BANK",
+      "subtype": "CHECKING_ACCOUNT",
+      "name": "Conta de sincronização",
+      "marketingName": "Banco de teste",
+      "balance": 500.0,
+      "currencyCode": "BRL",
+      "updatedAt": "2026-09-05T12:00:00.000Z"
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 import time
 from datetime import date, timedelta, timezone
+from pathlib import Path
 
 import pytest
 
@@ -16,6 +17,12 @@ from app.sync import (
 from tests.conftest import ACCOUNT, transaction
 
 REFERENCE = date(2026, 9, 5)
+SYNC_DATA = Path(__file__).resolve().parent / "data"
+
+
+def _point_the_load_step_at_the_fixture(monkeypatch):
+    monkeypatch.setenv("DASH_TRANSACTIONS_PATH", str(SYNC_DATA / "sync_transactions.json"))
+    monkeypatch.setenv("DASH_ACCOUNTS_GLOB", str(SYNC_DATA / "sync_accounts.json"))
 
 
 def rows(conn):
@@ -135,6 +142,19 @@ def test_a_write_that_blows_up_still_leaves_a_failed_run(taxonomy_conn):
     assert "erro de escrita" in _message(taxonomy_conn)
 
 
+def test_a_foreign_key_restricao_is_named_and_not_just_the_exception_class(taxonomy_conn):
+    ingest(
+        taxonomy_conn,
+        transactions=[transaction("t-orfa", "2026-08-10", -10.0, conta_id="nao-existe")],
+        accounts=[ACCOUNT],
+        source="tests",
+    )
+
+    message = _message(taxonomy_conn)
+    assert "FOREIGN KEY constraint failed" in message
+    assert message != "erro de escrita: IntegrityError"
+
+
 def _message(conn):
     return conn.execute("SELECT message FROM sync_runs ORDER BY id DESC LIMIT 1").fetchone()[0]
 
@@ -187,6 +207,7 @@ def test_a_failure_after_the_load_demotes_the_run_instead_of_claiming_success(
     def explode(conn, today):
         raise RuntimeError("a reclassificação quebrou")
 
+    _point_the_load_step_at_the_fixture(monkeypatch)
     monkeypatch.setattr(sync, "_after", explode)
     outcome = synchronise(taxonomy_conn, today=REFERENCE)
 
@@ -207,6 +228,7 @@ def test_the_demotion_names_its_own_row_and_not_the_largest_id(taxonomy_conn, mo
         conn.commit()
         raise RuntimeError("quebrou depois")
 
+    _point_the_load_step_at_the_fixture(monkeypatch)
     monkeypatch.setattr(sync, "_after", explode_after_someone_else_writes)
     synchronise(taxonomy_conn, today=REFERENCE)
     found = [
