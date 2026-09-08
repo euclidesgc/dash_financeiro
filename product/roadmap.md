@@ -424,35 +424,18 @@ ao topo da fila é a régua local certa e o agregado errado.
   portão carrega desde que foi ligado, sai no fim: portão com recorte é portão com
   prazo.
 
-- [ ] `035-a-recusa-diz-o-que-faltou` — A recusa de correção
-  de classificação diz ao dono o que faltou. Hoje, quando ele não escolhe um
-  grupo existente nem digita um novo, a validação recusa corretamente — nenhuma
-  linha tem identificador nulo — mas a mensagem que chega à tela mostra
-  literalmente `None` no lugar do termo. Não move dinheiro e não é o caminho de
-  cálculo; é a mensagem que decide se o dono entende o que fazer em seguida ou
-  desiste. Achado do implementador do item `018` ao tornar o tipo honesto
-  (`int | None`), registrado em vez de corrigido em silêncio, porque mudar a
-  mensagem é mudança de comportamento fora do escopo daquela fase.
-
-- [x] `036-a-suite-nao-depende-do-diretorio-do-dono` — A suíte passa numa árvore
-  recém-clonada, **sem nenhum arquivo do dono**: 749 coletados, 749 passados, zero
-  pulados — idêntico à árvore completa. Era o ambiente da integração contínua, e
-  ninguém o tinha medido.
-  Dois testes liam `data/processed/` e `data/raw/`, e **mais seis** liam um nível
-  abaixo, pela reconstrução da escada semeando os contratos de financiamento reais
-  do dono. Todos passaram a usar dado versionado. Três outros liam o corpus real e
-  **se pulavam sozinhos** quando ele faltava — na integração contínua nunca
-  exercitavam a função que diziam provar, e a corrida saía verde assim mesmo. Um
-  teste que se pula sozinho quando o dado falta não é um teste que passou.
-  O que só os 1.942 registros reais provam mudou para
-  `scripts/conferir-normalizacao.py`, que **diz** o que faz em vez de pular em
-  silêncio. A amostra que a suíte usa é sintética: versionar descrições de
-  transação do dono para provar uma função de texto trocaria um problema por um
-  pior.
-  E a mensagem de erro de escrita passou a nomear a restrição violada. A anterior
-  custou **duas atribuições de culpa erradas** nesta corrida, a validadores
-  diferentes. Fechou com **768 testes**.
-
+- [x] `035-a-recusa-diz-o-que-faltou` — A recusa de correção de classificação diz,
+  em português, **o que faltou** e o que fazer em seguida. Ela mostrava
+  literalmente `None` no lugar do termo, quando o dono não escolhia grupo existente
+  nem digitava um novo: a recusa estava certa e a explicação estava quebrada — e é
+  a explicação que decide se ele corrige ou desiste.
+  A correção é da **causa**, não da formatação: a validação passou a distinguir
+  *termo ausente* de *termo inválido*, então o próximo caminho que chegar com valor
+  nulo não imprime `None` de novo. E um teste percorre **as 20 rotas de escrita que
+  podem recusar** — 20 de 20, contadas pelo validador — afirmando que nenhuma
+  mensagem traz `None`, `null`, `NoneType` ou `Traceback`. Revertida a correção,
+  ele falha e **nomeia a rota**. É o que impede o terceiro caso, e o que a norma 20
+  pede quando o segundo aparece. Fechou com **749 testes**.
 
 ## Validações de campo pendentes
 
