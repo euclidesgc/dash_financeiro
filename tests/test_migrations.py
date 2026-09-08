@@ -8,7 +8,12 @@ import pytest
 
 from app.db import connect
 from app.migrate import SQL_FOLDER
-from app.migrations.runner import OutOfOrderMigrationError, apply_migrations
+from app.migrations.runner import (
+    OutOfOrderMigrationError,
+    SkippedMigrationError,
+    apply_migrations,
+    reconcile_skipped,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -220,3 +225,86 @@ def test_a_fresh_base_applies_the_sixteen_real_migrations(tmp_path):
 
     assert result.returncode == 0
     assert "migrations applied: 16" in result.stdout
+
+
+def _base_que_pulou(conn, folder):
+    # Fiel ao que aconteceu na base do dono: ela migrou quando a 012 ainda não
+    # existia na pasta, e a 012 apareceu depois, entre versões já aplicadas.
+    _write_sql(folder, "010_a.sql", "CREATE TABLE marker_010 (id INTEGER PRIMARY KEY);")
+    _write_sql(folder, "015_c.sql", "CREATE TABLE marker_015 (id INTEGER PRIMARY KEY);")
+    apply_migrations(conn, folder)
+    _write_sql(folder, "012_pulada.sql", "CREATE TABLE marker_012 (id INTEGER PRIMARY KEY);")
+
+
+def test_a_base_that_skipped_a_version_is_told_to_reconcile_not_to_renumber(tmp_path, conn):
+    folder = tmp_path / "sql"
+    folder.mkdir()
+    _base_que_pulou(conn, folder)
+
+    with pytest.raises(SkippedMigrationError) as excinfo:
+        apply_migrations(conn, folder)
+
+    mensagem = str(excinfo.value)
+    assert "pulou" in mensagem
+    assert "--reconciliar 012" in mensagem
+    assert "renumere" not in mensagem
+
+
+def test_a_new_low_numbered_migration_on_a_base_with_no_gap_is_told_to_renumber(tmp_path, conn):
+    # Sem versão aplicada ABAIXO da que chega, não há vão: esta base é nova
+    # numa árvore que já tem números altos, e o conselho certo é renumerar.
+    folder = tmp_path / "sql"
+    folder.mkdir()
+    _write_sql(folder, "015_c.sql", "CREATE TABLE marker_015 (id INTEGER PRIMARY KEY);")
+    apply_migrations(conn, folder)
+    _write_sql(folder, "012_nova.sql", "CREATE TABLE marker_012 (id INTEGER PRIMARY KEY);")
+
+    with pytest.raises(OutOfOrderMigrationError) as excinfo:
+        apply_migrations(conn, folder)
+
+    assert "renumere" in str(excinfo.value)
+    assert "pulou" not in str(excinfo.value)
+
+
+def test_reconciling_applies_the_skipped_version_and_unblocks_the_rest(tmp_path, conn):
+    folder = tmp_path / "sql"
+    folder.mkdir()
+    _base_que_pulou(conn, folder)
+
+    resultado = reconcile_skipped(conn, folder, "012")
+
+    assert "fechou" in resultado
+    _write_sql(folder, "019_depois.sql", "CREATE TABLE marker_019 (id INTEGER PRIMARY KEY);")
+    assert apply_migrations(conn, folder) == ["019_depois.sql"]
+
+
+def test_reconciling_a_version_that_does_not_fit_writes_nothing(tmp_path, conn):
+    folder = tmp_path / "sql"
+    folder.mkdir()
+    _base_que_pulou(conn, folder)
+    # A 012 passa a colidir com uma tabela que a 010 já criou: não cabe.
+    _write_sql(folder, "012_pulada.sql", "CREATE TABLE marker_010 (id INTEGER PRIMARY KEY);")
+
+    resultado = reconcile_skipped(conn, folder, "012")
+
+    assert "não se aplica" in resultado
+    registradas = {row[0] for row in conn.execute("SELECT version FROM schema_migrations")}
+    assert "012" not in registradas
+
+
+def test_reconciling_refuses_a_version_that_is_not_a_gap(tmp_path, conn):
+    # Sem versão registrada abaixo dela, a migração é nova e se renumera. Deixar
+    # a reconciliação aceitar este caso recria o vão que o guarda existe para
+    # fechar — o validador provou que a porta estava aberta.
+    folder = tmp_path / "sql"
+    folder.mkdir()
+    _write_sql(folder, "020_alta.sql", "CREATE TABLE marker_020 (id INTEGER PRIMARY KEY);")
+    apply_migrations(conn, folder)
+    _write_sql(folder, "010_nova.sql", "CREATE TABLE marker_010 (id INTEGER PRIMARY KEY);")
+
+    resultado = reconcile_skipped(conn, folder, "010")
+
+    assert "não é um vão" in resultado
+    assert "Renumere" in resultado
+    registradas = {row[0] for row in conn.execute("SELECT version FROM schema_migrations")}
+    assert registradas == {"020"}
