@@ -3,7 +3,8 @@
     <h2 class="section-title">Cartões</h2>
     <p class="lede">Os quatro campos abaixo são o que a fonte não manda: limite, taxa mensal,
       dia de fechamento e dia de vencimento. A taxa é o que põe o cartão na escada de dívida.</p>
-    <p class="lede">Deixar um campo em branco apaga o valor guardado nele.</p>
+    <p class="lede">Deixar um campo em branco não altera o valor guardado nele. Para apagar um
+      valor, use o botão “Apagar” ao lado do campo.</p>
   </div>
   {% if cards['cards'] %}
   <div class="settings">
@@ -36,6 +37,12 @@
               </div>
               <button class="button button-quiet button-small" type="submit" name="campo"
                       value="{{ field['name'] }}">Salvar</button>
+              {% if field['value'] is not none %}
+              <button class="button button-quiet button-small" type="submit" name="campo"
+                      value="{{ field['name'] }}" formaction="{{ cards['clear_action'] }}">
+                Apagar {{ field['label']|lower }}
+              </button>
+              {% endif %}
             </form>
           </div>
           {% endfor %}
