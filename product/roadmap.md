@@ -394,17 +394,21 @@ ao topo da fila é a régua local certa e o agregado errado.
   gravado sem condição — perda de dado real, não suposição do plano. Fechou com
   **763 testes**.
 
-- [ ] `033-semear-taxonomia-deixa-o-banco-coerente-sozinho` — Semear a taxonomia
-  deixa o banco coerente sem depender de um segundo comando. Hoje
-  `seed_taxonomy` só reescreve o grupo dos lançamentos que apontavam para grupo que
-  sumiu; o lançamento cujo grupo sobreviveu mas cuja **regra** mudou de grupo fica
-  desatualizado até a classificação seguinte — 14 de 87 no cenário do validador. E
-  a migração `012_taxonomy_tree.sql` derruba e recria `categories` na subida, o que
-  na base do dono apaga as categorias já registradas. As duas coisas se recuperam
-  rodando a classificação na sequência, e é exatamente isso que a CLI encadeia —
-  então o defeito só aparece para quem roda `python -m app.taxonomy.seed` isolado.
-  O item fecha essa aresta: ou a semeadura classifica, ou ela recusa terminar
-  deixando o banco pela metade.
+- [x] `033-semear-taxonomia-deixa-o-banco-coerente` — Semear a taxonomia deixa o
+  banco coerente **sozinha**, sem depender de um segundo comando. Ela reescrevia o
+  grupo dos lançamentos que apontavam para grupo removido, mas não o do lançamento
+  cujo grupo sobreviveu e cuja **regra** mudou de grupo: rodada isolada, saía com
+  sucesso deixando divergência — o mesmo sucesso mentiroso que o item `012` fechou
+  na sincronização.
+  **A medição desmentiu a estimativa.** O número da árvore anterior era "14 de 87";
+  na base real do dono são **343 de 1.942** — 18% dos lançamentos. O validador
+  refez a conta com consulta própria e chegou ao mesmo: 343 com o código anterior,
+  **0** com a correção.
+  E o custo é o que o plano exigia que fosse: **uma** atualização com predicado
+  alargado, sobre uma que já existia. Nenhuma chamada de classificação por baixo,
+  então o caminho encadeado da linha de comando não passou a fazer o trabalho duas
+  vezes. Os totais das quatro telas de dinheiro são idênticos com e sem a
+  correção — dado derivado não move dinheiro. Fechou com **771 testes**.
 
 - [ ] `034-o-portao-de-comentario-fala-a-lingua-do-projeto` — O portão que cobra
   comentário-com-porquê reconhece justificativa **na língua em que o projeto

@@ -92,11 +92,15 @@ def seed_taxonomy(conn: sqlite3.Connection, seed: dict[str, Any] | None = None) 
         f"UPDATE categories SET group_id = ? WHERE group_id NOT IN ({placeholders})",
         (fallback_id, *declared_ids),
     )
+    # Decision: not scoped to "group_id NOT IN declared_ids". A rule reassigned between
+    # two groups that both survive the reconciliation leaves its transactions'
+    # group_id inside the declared set, just pointing at the wrong member of
+    # it, and that earlier scope let those rows pass untouched.
     conn.execute(
         "UPDATE transactions SET group_id = "
         "(SELECT r.group_id FROM category_rules AS r WHERE r.id = transactions.rule_id) "
-        f"WHERE group_id NOT IN ({placeholders}) AND rule_id IS NOT NULL",
-        declared_ids,
+        "WHERE rule_id IS NOT NULL AND group_id != "
+        "(SELECT r.group_id FROM category_rules AS r WHERE r.id = transactions.rule_id)"
     )
     conn.execute(
         f"UPDATE transactions SET group_id = ? "
