@@ -46,8 +46,9 @@ CORRECTION_HELD_MESSAGE = (
 )
 CORRECTION_MISSING_TARGET_MESSAGE = "Nenhum lançamento selecionado para corrigir."
 
-# The category key stays the raw name the source sends, because that is what
-# matches it again on the next sync; the reading label is data next to it.
+# Reason: the category key stays the raw name the source sends, because
+# that is what matches it again on the next sync; the reading label is data
+# next to it.
 LABELS: dict[str, str] = category_labels()
 
 _CROSSINGS = "SELECT slug, label, nature, essentiality FROM crossings ORDER BY position"
@@ -72,9 +73,10 @@ def spending_screen(request: Request) -> Response:
     axis, start, end, reference = _selection(request)
     conn = connect()
     try:
-        # The panel labels its crossings by category and the table labels the
-        # chosen axis; on the payee axis the table's map is the resolved one, so
-        # the table has the last word over the single `labels` the page renders.
+        # Reason: the panel labels its crossings by category and the table
+        # labels the chosen axis; on the payee axis the table's map is the
+        # resolved one, so the table has the last word over the single
+        # `labels` the page renders.
         context = _panel_context(conn, start, end, reference)
         context.update(
             _table_context(conn, axis, start, end, _key(request), reference, _corrigir(request))
@@ -182,8 +184,9 @@ def spending_correction(
 
 
 def _selection(request: Request) -> tuple[str, str, str, Reference]:
-    # The screen is reached by hand-typed URL as often as by its own form, so a
-    # value it cannot read falls back to the default window instead of a 500.
+    # Reason: the screen is reached by hand-typed URL as often as by its own
+    # form, so a value it cannot read falls back to the default window
+    # instead of a 500.
     params = request.query_params
     axis = params.get("eixo", "")
     reference = screen_date(params.get(DATE_FIELD))
@@ -382,9 +385,10 @@ def _panel_context(
             for row in conn.execute(_CROSSINGS).fetchall()
         ],
         "series": monthly_series(conn, end_month=end_month),
-        # The series always closes on `end_month` in full calendar days, so a
-        # window whose end still sits in the reference's own month draws its
-        # last bar over days the period total never reaches (RF-06's own gap).
+        # Reason: the series always closes on `end_month` in full calendar
+        # days, so a window whose end still sits in the reference's own
+        # month draws its last bar over days the period total never reaches
+        # (RF-06's own gap).
         "series_open": end_month == reference.date.isoformat()[:MONTH_LENGTH],
         "residue": residue(conn, start=start, end=end),
         "period_total_cents": total_spending_cents(conn, start, end),
@@ -406,9 +410,10 @@ def _crossing(
 ) -> dict[str, Any]:
     measured = crossing(conn, slug=definition["slug"], start=start, end=end)
     term = definition["essentiality"]
-    # A crossing whose term no rule assigns is empty in every period, and an
-    # empty block is the screen going mute on the question the item exists to
-    # answer: it carries the candidates for that decision instead (RF-48).
+    # Reason: a crossing whose term no rule assigns is empty in every
+    # period, and an empty block is the screen going mute on the question
+    # the item exists to answer — it carries the candidates for that
+    # decision instead (RF-48).
     unassigned = conn.execute(_RULES_CARRYING, (term,)).fetchone()[0] == 0
     candidates = (
         _candidates(conn, definition["nature"], fallback["value"], start, end)
