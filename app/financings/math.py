@@ -6,7 +6,7 @@ from app.financings.money import MONTHS_IN_YEAR, RATE_SCALE
 
 def monthly_from_yearly_bp(yearly_pct: float) -> int:
     yearly = yearly_pct / 100
-    monthly = (1 + yearly) ** (1 / MONTHS_IN_YEAR) - 1
+    monthly: float = (1 + yearly) ** (1 / MONTHS_IN_YEAR) - 1
     return round(monthly * RATE_SCALE)
 
 

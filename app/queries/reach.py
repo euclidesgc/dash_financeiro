@@ -21,15 +21,18 @@ _HOLDERS = (
 
 
 def payee_reach(conn: sqlite3.Connection, payee: str) -> sqlite3.Row:
-    return conn.execute(_REACH.format(filtro="payee = ?"), (payee,)).fetchone()
+    row: sqlite3.Row = conn.execute(_REACH.format(filtro="payee = ?"), (payee,)).fetchone()
+    return row
 
 
 def category_reach(conn: sqlite3.Connection, category: str) -> sqlite3.Row:
-    return conn.execute(_REACH.format(filtro="category = ?"), (category,)).fetchone()
+    row: sqlite3.Row = conn.execute(_REACH.format(filtro="category = ?"), (category,)).fetchone()
+    return row
 
 
 def rule_reach(conn: sqlite3.Connection, rule_id: int) -> sqlite3.Row:
-    return conn.execute(_REACH.format(filtro="rule_id = ?"), (rule_id,)).fetchone()
+    row: sqlite3.Row = conn.execute(_REACH.format(filtro="rule_id = ?"), (rule_id,)).fetchone()
+    return row
 
 
 def holders(conn: sqlite3.Connection, *, payee: str, rule_id: int) -> list[sqlite3.Row]:

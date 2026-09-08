@@ -19,6 +19,7 @@ dev = [
     "pytest",
     "ruff>=0.16.6",
     "debugpy>=1.8.21",
+    "mypy>=2.3.1",
 ]
 
 [tool.uv]
@@ -45,3 +46,8 @@ select = ["E", "F", "I", "B", "UP", "C4"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app", "tests"]
+
+[tool.mypy]
+strict = true
+packages = ["app", "financas", "ingestao"]
+python_executable = ".venv/bin/python"

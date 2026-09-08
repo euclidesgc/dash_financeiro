@@ -9,7 +9,6 @@ from starlette.responses import Response
 from app.config import reference_date
 from app.db import connect
 from app.debts.ladder import (
-    VEHICLE,
     DebtNotFoundError,
     ladder,
     monthly_interest_cents,
@@ -19,6 +18,7 @@ from app.debts.ladder import (
 )
 from app.debts.observed import observed_rates
 from app.debts.simulate import UnknownRateError, simulate
+from app.financings import VEHICLE
 from app.settings import store
 from app.settings.catalog import SETTLEMENT, TRANSPORT
 from app.settings.typed import InvalidValueError, parse_money

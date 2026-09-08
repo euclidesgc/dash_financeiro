@@ -1,5 +1,6 @@
 import sqlite3
 from datetime import date
+from typing import Any
 
 from app.accounts import BANK, CREDIT
 from app.cards import store
@@ -63,7 +64,7 @@ def rebuild(conn: sqlite3.Connection, *, today: date | None = None) -> int:
     return len(rows)
 
 
-def _from_accounts(conn: sqlite3.Connection) -> list[dict]:
+def _from_accounts(conn: sqlite3.Connection) -> list[dict[str, Any]]:
     # One step per account, not one per kind: the accounts have different limits
     # and different rates, and the rate is a field of the step.
     found = conn.execute(
@@ -86,7 +87,7 @@ def _from_accounts(conn: sqlite3.Connection) -> list[dict]:
     ]
 
 
-def _from_financings(conn: sqlite3.Connection, today: date) -> list[dict]:
+def _from_financings(conn: sqlite3.Connection, today: date) -> list[dict[str, Any]]:
     financings_store.seed_from_manual(conn)
     rows = []
     for row in financings_store.read_all(conn):
@@ -131,7 +132,7 @@ def _from_financings(conn: sqlite3.Connection, today: date) -> list[dict]:
     return rows
 
 
-def ladder(conn: sqlite3.Connection) -> list[dict]:
+def ladder(conn: sqlite3.Connection) -> list[dict[str, Any]]:
     return [
         dict(row)
         for row in conn.execute(
@@ -141,7 +142,7 @@ def ladder(conn: sqlite3.Connection) -> list[dict]:
     ]
 
 
-def without_rate(conn: sqlite3.Connection) -> list[dict]:
+def without_rate(conn: sqlite3.Connection) -> list[dict[str, Any]]:
     # A step with no rate has no place on the ladder, and guessing one would be
     # the panel deciding what it does not know. It is shown apart, saying what is
     # missing (RF-08).
@@ -153,7 +154,7 @@ def without_rate(conn: sqlite3.Connection) -> list[dict]:
     ]
 
 
-def step(conn: sqlite3.Connection, debt_id: int) -> dict | None:
+def step(conn: sqlite3.Connection, debt_id: int) -> dict[str, Any] | None:
     row = conn.execute(f"SELECT * FROM ({_STEPS}) WHERE id = ?", (debt_id,)).fetchone()
     return dict(row) if row else None
 
@@ -179,7 +180,7 @@ def set_rate(conn: sqlite3.Connection, debt_id: int, typed: str) -> None:
     conn.commit()
 
 
-def monthly_interest_cents(row: dict) -> int:
+def monthly_interest_cents(row: dict[str, Any]) -> int:
     if row["monthly_rate_bp"] is None:
         return 0
     return -round(abs(row["balance_cents"]) * row["monthly_rate_bp"] / RATE_SCALE)

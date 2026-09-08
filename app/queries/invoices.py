@@ -1,4 +1,5 @@
 import sqlite3
+from typing import Any
 
 from app.accounts import CREDIT
 
@@ -22,6 +23,6 @@ _CARD_SERIES = (
 )
 
 
-def card_series(conn: sqlite3.Connection, *, kind: str, floor: str) -> list[dict]:
+def card_series(conn: sqlite3.Connection, *, kind: str, floor: str) -> list[dict[str, Any]]:
     rows = conn.execute(_CARD_SERIES, (CREDIT, kind, floor)).fetchall()
     return [dict(row) for row in rows]

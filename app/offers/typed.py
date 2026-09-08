@@ -1,11 +1,12 @@
 from datetime import date
+from typing import Any
 
 from app.settings.typed import InvalidValueError, parse_money, parse_months, parse_rate
 
 NAME_MAX = 60
 
 
-def read_form(typed: dict[str, str], *, today: date) -> dict:
+def read_form(typed: dict[str, str], *, today: date) -> dict[str, Any]:
     name = (typed.get("nome") or "").strip()
     if not name:
         raise InvalidValueError("Nome é obrigatório.")

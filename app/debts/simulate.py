@@ -1,6 +1,6 @@
 from typing import Any
 
-from app.debts.ladder import RATE_SCALE
+from app.financings.money import RATE_SCALE
 from app.settings.typed import InvalidValueError
 
 
