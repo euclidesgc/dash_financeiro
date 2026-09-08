@@ -21,9 +21,12 @@
     <form class="form" method="post" action="{{ action }}">
       <div class="field">
         <label class="field-label" for="campo-{{ item['name'] }}">{% if item['unit'] == 'meses' %}Meses{% elif item['unit'] == 'pontos-base' %}Por cento ao mês{% else %}Novo valor, em reais{% endif %}</label>
-        <input class="field-input" id="campo-{{ item['name'] }}" name="valor" inputmode="decimal"
+        {% set field_maxlength = limits.MAX_DIGITS if item['unit'] == 'meses' else limits.MONEY_FIELD_MAXLENGTH %}
+        <input class="field-input" id="campo-{{ item['name'] }}" name="valor"
+               inputmode="{% if item['unit'] == 'meses' %}numeric{% else %}decimal{% endif %}"
                placeholder="{% if item['unit'] == 'meses' %}6{% elif item['unit'] == 'pontos-base' %}1,99{% else %}0,00{% endif %}"
-               value="{{ item['value']|digitado(item['unit']) }}"
+               value="{{ item['value']|digitado(item['unit']) }}" required
+               maxlength="{{ field_maxlength }}" size="{{ field_maxlength }}"
                {% if item['name'] == 'mediana-meses' %}aria-describedby="janela-base"{% endif %}>
       </div>
       {% if item['name'] == 'mediana-meses' %}
@@ -118,7 +121,8 @@
                   <label class="field-label sr-only" for="apelido-{{ loop.index }}">Apelido de {{ row['payee'] }}</label>
                   <input class="field-input" id="apelido-{{ loop.index }}" name="nome" type="text"
                          placeholder="Apelido"
-                         value="{% if row['origin'] == 'dono' %}{{ row['name'] }}{% endif %}">
+                         value="{% if row['origin'] == 'dono' %}{{ row['name'] }}{% endif %}"
+                         maxlength="{{ limits.PAYEE_ALIAS_MAX }}" size="{{ limits.PAYEE_ALIAS_MAX }}">
                 </div>
                 <button class="button button-quiet button-small" type="submit"
                         name="beneficiario" value="{{ row['payee'] }}">Guardar o nome</button>

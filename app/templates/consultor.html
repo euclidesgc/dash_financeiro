@@ -47,8 +47,9 @@
     <form method="post" action="{{ action }}" class="stack">
       <input type="hidden" name="data" value="{{ reference }}">
       <label class="eyebrow" for="pergunta-livre">Pergunta</label>
-      <input class="field" id="pergunta-livre" name="pergunta" value="{{ asked or '' }}"
-             placeholder="Por que o pior ponto é em outubro?">
+      <input class="field-input" id="pergunta-livre" name="pergunta" value="{{ asked or '' }}"
+             placeholder="Por que o pior ponto é em outubro?" required
+             maxlength="{{ limits.MAX_QUESTION }}" size="{{ limits.MAX_QUESTION }}">
       <button class="button" type="submit">Perguntar</button>
     </form>
     {% if reading %}

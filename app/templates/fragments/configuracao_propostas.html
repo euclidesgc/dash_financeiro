@@ -30,24 +30,28 @@
             <label class="field-label" for="proposta-{{ loop.index }}-taxa">Por cento ao mês</label>
             <input class="field-input" id="proposta-{{ loop.index }}-taxa" name="taxa"
                    inputmode="decimal" placeholder="1,99"
+                   maxlength="{{ limits.RATE_FIELD_MAXLENGTH }}" size="{{ limits.RATE_FIELD_MAXLENGTH }}"
                    value="{{ offer['monthly_rate_bp']|digitado('pontos-base') }}">
           </div>
           <div class="field">
             <label class="field-label" for="proposta-{{ loop.index }}-prazo">Prazo, em meses</label>
             <input class="field-input" id="proposta-{{ loop.index }}-prazo" name="prazo"
-                   inputmode="numeric" placeholder="24"
+                   inputmode="numeric" placeholder="24" required
+                   maxlength="{{ limits.MAX_DIGITS }}" size="{{ limits.MAX_DIGITS }}"
                    value="{{ offer['term_months']|digitado('meses') }}">
           </div>
           <div class="field">
             <label class="field-label" for="proposta-{{ loop.index }}-liberado">Valor liberado, em reais</label>
             <input class="field-input" id="proposta-{{ loop.index }}-liberado" name="liberado"
-                   inputmode="decimal" placeholder="0,00"
+                   inputmode="decimal" placeholder="0,00" required
+                   maxlength="{{ limits.MONEY_FIELD_MAXLENGTH }}" size="{{ limits.MONEY_FIELD_MAXLENGTH }}"
                    value="{{ offer['released_cents']|digitado('centavos') }}">
           </div>
           <div class="field">
             <label class="field-label" for="proposta-{{ loop.index }}-contratacao">Custo de contratação, em reais</label>
             <input class="field-input" id="proposta-{{ loop.index }}-contratacao" name="contratacao"
                    inputmode="decimal" placeholder="0,00"
+                   maxlength="{{ limits.MONEY_FIELD_MAXLENGTH }}" size="{{ limits.MONEY_FIELD_MAXLENGTH }}"
                    value="{{ offer['fee_cents']|digitado('centavos') }}">
           </div>
           <button class="button button-quiet button-small" type="submit">Salvar</button>
@@ -72,28 +76,33 @@
         <form class="form" method="post" action="{{ offers['action'] }}">
           <div class="field">
             <label class="field-label" for="proposta-nova-nome">Nome</label>
-            <input class="field-input" id="proposta-nova-nome" name="nome" type="text"
-                   placeholder="Banco Exemplo" maxlength="60">
+            <input class="field-input" id="proposta-nova-nome" name="nome" type="text" required
+                   placeholder="Banco Exemplo"
+                   maxlength="{{ limits.NAME_MAX }}" size="{{ limits.NAME_MAX }}">
           </div>
           <div class="field">
             <label class="field-label" for="proposta-nova-taxa">Por cento ao mês</label>
             <input class="field-input" id="proposta-nova-taxa" name="taxa"
-                   inputmode="decimal" placeholder="1,99">
+                   inputmode="decimal" placeholder="1,99"
+                   maxlength="{{ limits.RATE_FIELD_MAXLENGTH }}" size="{{ limits.RATE_FIELD_MAXLENGTH }}">
           </div>
           <div class="field">
             <label class="field-label" for="proposta-nova-prazo">Prazo, em meses</label>
-            <input class="field-input" id="proposta-nova-prazo" name="prazo"
-                   inputmode="numeric" placeholder="24">
+            <input class="field-input" id="proposta-nova-prazo" name="prazo" required
+                   inputmode="numeric" placeholder="24"
+                   maxlength="{{ limits.MAX_DIGITS }}" size="{{ limits.MAX_DIGITS }}">
           </div>
           <div class="field">
             <label class="field-label" for="proposta-nova-liberado">Valor liberado, em reais</label>
-            <input class="field-input" id="proposta-nova-liberado" name="liberado"
-                   inputmode="decimal" placeholder="0,00">
+            <input class="field-input" id="proposta-nova-liberado" name="liberado" required
+                   inputmode="decimal" placeholder="0,00"
+                   maxlength="{{ limits.MONEY_FIELD_MAXLENGTH }}" size="{{ limits.MONEY_FIELD_MAXLENGTH }}">
           </div>
           <div class="field">
             <label class="field-label" for="proposta-nova-contratacao">Custo de contratação, em reais</label>
             <input class="field-input" id="proposta-nova-contratacao" name="contratacao"
-                   inputmode="decimal" placeholder="0,00">
+                   inputmode="decimal" placeholder="0,00"
+                   maxlength="{{ limits.MONEY_FIELD_MAXLENGTH }}" size="{{ limits.MONEY_FIELD_MAXLENGTH }}">
           </div>
           <button class="button button-quiet button-small" type="submit">Salvar</button>
         </form>

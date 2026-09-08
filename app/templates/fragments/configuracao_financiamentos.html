@@ -18,19 +18,22 @@
           <div class="field">
             <label class="field-label" for="financiamento-mortgage-saldo">Saldo devedor, em reais</label>
             <input class="field-input" id="financiamento-mortgage-saldo" name="saldo"
-                   inputmode="decimal" placeholder="0,00"
+                   inputmode="decimal" placeholder="0,00" required
+                   maxlength="{{ limits.MONEY_FIELD_MAXLENGTH }}" size="{{ limits.MONEY_FIELD_MAXLENGTH }}"
                    value="{{ financings['mortgage']['balance_cents']|digitado('centavos') }}">
           </div>
           <div class="field">
             <label class="field-label" for="financiamento-mortgage-taxa">Por cento ao mês</label>
             <input class="field-input" id="financiamento-mortgage-taxa" name="taxa"
-                   inputmode="decimal" placeholder="0,72"
+                   inputmode="decimal" placeholder="0,72" required
+                   maxlength="{{ limits.RATE_FIELD_MAXLENGTH }}" size="{{ limits.RATE_FIELD_MAXLENGTH }}"
                    value="{{ financings['mortgage']['monthly_rate_bp']|digitado('pontos-base') }}">
           </div>
           <div class="field">
             <label class="field-label" for="financiamento-mortgage-prazo">Prazo restante, em meses</label>
             <input class="field-input" id="financiamento-mortgage-prazo" name="prazo"
-                   inputmode="numeric" placeholder="370"
+                   inputmode="numeric" placeholder="370" required
+                   maxlength="{{ limits.MAX_DIGITS }}" size="{{ limits.MAX_DIGITS }}"
                    value="{{ financings['mortgage']['term_months']|digitado('meses') }}">
           </div>
           <button class="button button-quiet button-small" type="submit">Salvar</button>
@@ -55,25 +58,28 @@
           <div class="field">
             <label class="field-label" for="financiamento-vehicle-taxa">Por cento ao mês</label>
             <input class="field-input" id="financiamento-vehicle-taxa" name="taxa"
-                   inputmode="decimal" placeholder="1,63"
+                   inputmode="decimal" placeholder="1,63" required
+                   maxlength="{{ limits.RATE_FIELD_MAXLENGTH }}" size="{{ limits.RATE_FIELD_MAXLENGTH }}"
                    value="{{ financings['vehicle']['monthly_rate_bp']|digitado('pontos-base') }}">
           </div>
           <div class="field">
             <label class="field-label" for="financiamento-vehicle-parcela">Valor da parcela, em reais</label>
             <input class="field-input" id="financiamento-vehicle-parcela" name="parcela"
-                   inputmode="decimal" placeholder="0,00"
+                   inputmode="decimal" placeholder="0,00" required
+                   maxlength="{{ limits.MONEY_FIELD_MAXLENGTH }}" size="{{ limits.MONEY_FIELD_MAXLENGTH }}"
                    value="{{ financings['vehicle']['payment_cents']|digitado('centavos') }}">
           </div>
           <div class="field">
             <label class="field-label" for="financiamento-vehicle-prazo">Prazo do contrato, em meses</label>
             <input class="field-input" id="financiamento-vehicle-prazo" name="prazo"
-                   inputmode="numeric" placeholder="60"
+                   inputmode="numeric" placeholder="60" required
+                   maxlength="{{ limits.MAX_DIGITS }}" size="{{ limits.MAX_DIGITS }}"
                    value="{{ financings['vehicle']['term_months']|digitado('meses') }}">
           </div>
           <div class="field">
             <label class="field-label" for="financiamento-vehicle-vencimento">Primeiro vencimento</label>
             <input class="field-input" id="financiamento-vehicle-vencimento" name="vencimento"
-                   type="date" value="{{ financings['vehicle']['first_due_date'] or '' }}">
+                   type="date" required value="{{ financings['vehicle']['first_due_date'] or '' }}">
           </div>
           <button class="button button-quiet button-small" type="submit">Salvar</button>
         </form>

@@ -30,7 +30,8 @@
       <div class="field">
         <label class="field-label" for="campo-correcao-grupo-novo">Ou grupo novo</label>
         <input class="field-input" id="campo-correcao-grupo-novo" name="grupo_novo" type="text"
-               autocapitalize="none" spellcheck="false">
+               autocapitalize="none" spellcheck="false"
+               maxlength="{{ limits.CATEGORY_GROUP_MAXLENGTH }}" size="{{ limits.CATEGORY_GROUP_MAXLENGTH }}">
       </div>
       <div class="field">
         <label class="field-label" for="campo-correcao-natureza">Natureza</label>

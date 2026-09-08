@@ -25,10 +25,14 @@
             {% endif %}
             <form class="form" method="post" action="{{ cards['action'] }}">
               <input type="hidden" name="cartao" value="{{ card['account_id'] }}">
+              {% set field_maxlength = limits.DAY_FIELD_MAXLENGTH if field['unit'] == 'dia'
+                 else (limits.RATE_FIELD_MAXLENGTH if field['unit'] == 'pontos-base' else limits.MONEY_FIELD_MAXLENGTH) %}
               <div class="field">
                 <label class="field-label sr-only" for="campo-{{ card['account_id'] }}-{{ field['name'] }}">{{ field['label'] }}</label>
                 <input class="field-input" id="campo-{{ card['account_id'] }}-{{ field['name'] }}" name="valor"
-                       inputmode="decimal" value="{{ field['value']|digitado(field['unit']) }}">
+                       inputmode="{{ 'numeric' if field['unit'] == 'dia' else 'decimal' }}"
+                       maxlength="{{ field_maxlength }}" size="{{ field_maxlength }}"
+                       value="{{ field['value']|digitado(field['unit']) }}">
               </div>
               <button class="button button-quiet button-small" type="submit" name="campo"
                       value="{{ field['name'] }}">Salvar</button>

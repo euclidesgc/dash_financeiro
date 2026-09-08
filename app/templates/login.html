@@ -14,13 +14,15 @@
         <label class="field-label" for="campo-login">Login</label>
         <input class="field-input" id="campo-login" name="login" type="text"
                autocomplete="username" autocapitalize="none" spellcheck="false"
-               value="{{ login }}"
+               value="{{ login }}" required
+               maxlength="{{ limits.CREDENTIAL_FIELD_MAXLENGTH }}" size="{{ limits.CREDENTIAL_FIELD_MAXLENGTH }}"
                {% if error %}aria-describedby="erro-credencial" aria-invalid="true"{% endif %}>
       </div>
       <div class="field">
         <label class="field-label" for="campo-senha">Senha</label>
         <input class="field-input" id="campo-senha" name="senha" type="password"
-               autocomplete="current-password"
+               autocomplete="current-password" required
+               maxlength="{{ limits.CREDENTIAL_FIELD_MAXLENGTH }}" size="{{ limits.CREDENTIAL_FIELD_MAXLENGTH }}"
                {% if error %}aria-describedby="erro-credencial" aria-invalid="true"{% endif %}>
       </div>
       <button class="button button-block" type="submit">Entrar</button>

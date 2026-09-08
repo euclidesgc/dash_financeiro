@@ -40,8 +40,9 @@
         </div>
         <div class="field">
           <label class="field-label" for="campo-match-value">Casamento</label>
-          <input class="field-input" id="campo-match-value" name="match_value" type="text"
+          <input class="field-input" id="campo-match-value" name="match_value" type="text" required
                  value="{{ form['match_value'] }}" autocapitalize="none" spellcheck="false"
+                 maxlength="{{ limits.RULE_EXPRESSION_MAX }}" size="{{ limits.RULE_EXPRESSION_MAX }}"
                  {% if notice %}aria-describedby="erro-regra" aria-invalid="true"{% endif %}>
         </div>
         <div class="field">

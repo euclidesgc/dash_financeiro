@@ -4,13 +4,14 @@
     juros que deixam de ser pagos — nunca em adjetivo.</p>
   <form method="post" action="{{ simulate_action }}" class="stack">
     <label class="eyebrow" for="degrau">Dívida</label>
-    <select class="field" id="degrau" name="degrau">
+    <select class="field-input" id="degrau" name="degrau">
       {% for step in ladder + without_rate %}
       <option value="{{ step['id'] }}">{{ step['name'] }}</option>
       {% endfor %}
     </select>
     <label class="eyebrow" for="aporte">Aporte</label>
-    <input class="field" id="aporte" name="aporte" inputmode="decimal" placeholder="0,00">
+    <input class="field-input" id="aporte" name="aporte" inputmode="decimal" placeholder="0,00" required
+           maxlength="{{ limits.MONEY_FIELD_MAXLENGTH }}" size="{{ limits.MONEY_FIELD_MAXLENGTH }}">
     <button class="button" type="submit">Simular</button>
   </form>
   {% if simulation %}
