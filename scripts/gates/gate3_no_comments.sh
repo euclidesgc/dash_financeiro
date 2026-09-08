@@ -8,8 +8,19 @@
 # extraindo função ou variável com nome descritivo, não com prosa ao lado.
 #
 # Um comentário que começa por uma marca de justificativa passa: `motivo:`,
-# `por quê:`, `decisão:`, `contorno:`, `invariante:`, `limitação:`. A marca é o
-# custo de dizer que aquilo é uma razão, e não uma descrição.
+# `por quê:`, `decisão:`, `contorno:`, `invariante:`, `limitação:` — ou o
+# equivalente em inglês, `reason:`, `why:`, `decision:`, `workaround:`,
+# `invariant:`, `constraint:`, `limitation:`. As duas línguas convivem: a
+# norma 16 pede inglês, mas a árvore ainda tem marca em português, e tirar as
+# duas de uma vez deixaria o portão vermelho no meio da migração (fase 2
+# converte o que sobrar). A marca é o custo de dizer que aquilo é uma razão, e
+# não uma descrição.
+#
+# O bloco de comentário que ABRE o arquivo — antes de qualquer linha de
+# código — é cabeçalho, e passa sem marca: reconhecido pela posição, não pelo
+# texto. Shebang e bloco de licença antes dele não fecham essa janela; a
+# primeira linha de código, sim. É a diferença entre documentar o arquivo e
+# narrar a linha seguinte.
 #
 # Comentário de várias linhas conta como UM bloco: se a primeira linha carrega
 # a marca, a continuação passa junto. Justificativa raramente cabe em oitenta
@@ -26,24 +37,51 @@ while IFS= read -r file || [ -n "$file" ]; do
       # Alternância, não classe: o motor de regex do awk compara byte a byte, e
       # uma classe como [ãa] espera UM byte onde "ã" ocupa dois — então as marcas
       # acentuadas que a documentação acima manda usar nunca casavam.
-      justificativa = "(por ?qu(ê|e)|motivo|decis(ã|a)o|contorno|workaround|invariante|limita(ç|c)(ã|a)o|restri(ç|c)(ã|a)o|ignore:|gate[0-9]-ok|coverage:ignore)"
+      justificativa = "(por ?qu(ê|e)|motivo|decis(ã|a)o|contorno|workaround:|invariante|limita(ç|c)(ã|a)o|restri(ç|c)(ã|a)o|(reason|decision|why|invariant|constraint|limitation):|ignore:|gate[0-9]-ok|coverage:ignore)"
       diretiva = "(ignore_for_file|dart format|coverage:|@|https?:|eslint-|prettier-|ts-ignore|ts-expect-error|#!|#region|#endregion)"
       bloco_justificado = 0
+      # Invariante: enquanto nenhuma linha de código apareceu, o bloco que
+      # abre o arquivo é cabeçalho e passa por posição. Fecha na primeira
+      # linha de código.
+      sem_codigo_ainda = 1
     }
     {
       linha = $0
       sub(/^[[:space:]]+/, "", linha)
 
-      # Linha que não é comentário fecha o bloco corrente.
+      # Decisão: comentário vazio ("#" ou "//" sem texto) fecha o parágrafo e
+      # NÃO fecha a janela do cabeçalho. As duas metades foram pagas caro. Sem
+      # a segunda, o separador em branco que todo cabeçalho de script usa
+      # contava como código e fechava o cabeçalho na segunda linha do arquivo,
+      # porque `#[^!]` exige um segundo byte que um "#" sozinho não tem. Sem a
+      # primeira, uma marca em qualquer ponto do bloco contaminava todos os
+      # parágrafos seguintes: cabeçalho decorativo, nota de histórico e prosa
+      # sem marca nenhuma passavam por herdar justificativa alheia.
+      if (linha ~ /^(\/\/\/?|#)[[:space:]]*$/) { bloco_justificado = 0; next }
+
+      eh_shebang = (linha ~ /^#!/)
+
+      # Decisão: linha que não é comentário fecha o bloco corrente, mas
+      # shebang é a exceção — não é comentário e não é código, então não
+      # fecha a janela do cabeçalho, que é o caso que o item pede para não
+      # quebrar.
       if (linha !~ /^(\/\/|\/\/\/|#[^!])/) {
         bloco_justificado = 0
+        if (linha != "" && !eh_shebang) { sem_codigo_ainda = 0 }
         next
       }
 
+      if (sem_codigo_ainda) { next }
+
       if (linha ~ /gate3-ok/) { next }
-      if (tolower(linha) ~ justificativa) { bloco_justificado = 1; next }
+
+      # Invariante: a marca vale no começo do comentário, não em qualquer lugar
+      # da frase. Sem âncora, "não faço ideia do motivo disso funcionar" paga o
+      # pedágio que a marca existe para cobrar, e o portão vira enfeite.
+      texto = linha
+      sub(/^(\/\/\/?|#)[[:space:]]*/, "", texto)
+      if (tolower(texto) ~ ("^" justificativa)) { bloco_justificado = 1; next }
       if (linha ~ diretiva) { next }
-      if (NR <= 3 && tolower(linha) ~ /(copyright|license|licen[çc]a)/) { next }
 
       # Continuação de um bloco cuja primeira linha declarou a razão.
       if (bloco_justificado) { next }
