@@ -8,6 +8,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from app.commitments.calendar import WINDOW_DAYS, calendar, window
+from app.commitments.invoice import invoice_curve
 from app.commitments.live import installments, released_cash, subscriptions, totals
 from app.commitments.mark import DismissRefusedError, dismiss, resume
 from app.db import connect
@@ -107,6 +108,9 @@ def _context(conn: sqlite3.Connection, today: date) -> dict[str, Any]:
         "dismissed": [row for row in recurring if row["dismissed"]],
         "installments": live,
         "released": released_cash(conn, today=today),
+        # Decisão: a rota chama a leitura de domínio pronta, do mesmo jeito que já
+        # chama released_cash e calendar acima, sem montar junção nenhuma aqui.
+        "invoice": invoice_curve(conn, today=today),
         "calendar": calendar(conn, today=today),
         "window_start": first.isoformat(),
         "window_end": last.isoformat(),

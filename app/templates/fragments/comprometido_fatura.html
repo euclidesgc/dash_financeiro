@@ -1,0 +1,96 @@
+{% from "fragments/celula.html" import cell_name -%}
+<section id="fatura" class="panel panel-wide">
+  <div class="stack-tight">
+    <h2 class="section-title">Fatura mês a mês</h2>
+    <p class="lede">A curva distribui o que já está lançado nas parcelas em aberto; ela não prevê
+      compra nova.</p>
+    <p class="lede">O mês de cada linha é o mês em que a fatura é paga: o dia de fechamento decide
+      de qual fatura a parcela faz parte, e o dia de vencimento decide em que mês essa fatura sai
+      da conta.</p>
+  </div>
+  <div class="scale" aria-hidden="true"></div>
+  {% if invoice['cards'] %}
+  <div class="settings">
+    {% for card in invoice['cards'] %}
+    <article class="released" data-cartao="{{ card['name'] }}" data-restante="{{ card['remaining_cents'] }}">
+      <div class="stack-tight">
+        <p class="eyebrow">{{ card['name'] }}</p>
+        <p class="lede"{% if card['closing_day'] is not none %} data-fechamento="{{ card['closing_day'] }}"{% endif %}{% if card['due_day'] is not none %} data-vencimento="{{ card['due_day'] }}"{% endif %}{% if card['assumed'] %} data-premissa="1"{% endif %}>
+          {% if card['closing_day'] is not none %}Fecha dia {{ card['closing_day'] }}.{% else %}Sem dia de fechamento informado, a curva usa o mês do lançamento.{% endif %}
+          {% if card['due_day'] is not none %}Vence dia {{ card['due_day'] }}.{% else %}Sem dia de vencimento informado, a curva usa o mês do fechamento.{% endif %}
+        </p>
+      </div>
+      {% if card['series'] %}
+      <div class="table-scroll">
+        <table class="data-table data-table-compact">
+          <caption class="sr-only">Fatura de {{ card['name'] }}, mês a mês até zerar.</caption>
+          <thead>
+            <tr>
+              <th scope="col">Mês</th>
+              <th scope="col" class="col-num">Fatura</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for step in card['months'] %}
+            <tr data-mes="{{ step['month'] }}" data-total="{{ step['total_cents'] }}">
+              <th scope="row" class="col-month">{{ step['month']|mes }}</th>
+              <td class="col-num"><span class="cifra">{{ step['total_cents']|brl }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if card['months'][0]['total_cents'] == 0 %}
+      <p class="lede">Este mês soma {{ card['months'][0]['total_cents']|brl }} porque a fatura do
+        ciclo já fechou antes da próxima parcela entrar na conta — a dívida segue nos meses
+        abaixo, ela não zerou.</p>
+      {% endif %}
+      <div class="table-scroll">
+        <table class="data-table">
+          <caption class="sr-only">Parcelamentos de {{ card['name'] }} dentro da curva.</caption>
+          <thead>
+            <tr>
+              <th scope="col">Parcelamento</th>
+              <th scope="col" class="col-num">Falta pagar</th>
+              <th scope="col">Termina em</th>
+              <th scope="col" class="col-num">Devolve por mês</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in card['series'] %}
+            <tr data-serie="{{ item['series_key'] }}" data-termina="{{ item['last_invoice'] }}" data-devolve="{{ item['frees_cents'] }}">
+              <th scope="row" class="cell-name">{{ cell_name(item['series_key'], labels) }}</th>
+              <td class="col-num"><span class="cifra">{{ item['remaining_cents']|brl }}</span></td>
+              <td class="col-month">{{ item['last_invoice']|mes }}</td>
+              <td class="col-num"><span class="cifra">{{ item['frees_cents']|brl }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty">
+        <p class="empty-title">Nenhum parcelamento em aberto neste cartão.</p>
+      </div>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </div>
+  <p class="headline-small" data-total-cartoes="{{ invoice['remaining_cents'] }}">Falta pagar ao
+    todo <span class="cifra">{{ invoice['remaining_cents']|brl }}</span>, somando todos os
+    cartões.</p>
+  {% if invoice['off_card'] %}
+  <p class="lede" data-fora="{{ invoice['off_card'] }}">{{ invoice['off_card'] }}
+    parcelamento{% if invoice['off_card'] != 1 %}s{% endif %} em aberto
+    {% if invoice['off_card'] != 1 %}ficaram{% else %}ficou{% endif %} fora de cartão: sem conta de
+    crédito, a curva não tem os dois dias que decidem o mês dessa parcela.</p>
+  {% endif %}
+  {% else %}
+  <div class="empty">
+    <p class="empty-title">Nenhuma conta de crédito carregada.</p>
+    <p class="lede">Assim que uma conta de crédito for sincronizada, informe o dia de fechamento e
+      o de vencimento em <a href="/configuracao">Configuração</a> para a curva nomear o mês
+      certo.</p>
+  </div>
+  {% endif %}
+</section>
