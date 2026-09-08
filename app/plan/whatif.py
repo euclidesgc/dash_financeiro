@@ -28,8 +28,8 @@ def signed_monthly(move: Move) -> int:
 
 
 def impact(conn: sqlite3.Connection, move: Move, *, today: date) -> dict[str, Any]:
-    # The answer is in days because the unit of this product is days until the
-    # objective. Reais are the input; the output is distance.
+    # Reason: the answer is in days because the unit of this product is days
+    # until the objective. Reais are the input; the output is distance.
     before = simulate(conn, BASE, today=today)
     after = simulate(
         conn,
@@ -52,9 +52,10 @@ def impact(conn: sqlite3.Connection, move: Move, *, today: date) -> dict[str, An
 
 
 def _days_between(before: int | None, after: int | None) -> int | None:
-    # No number at all when either side has no date: a scenario that turns
-    # "never" into "eleven years" moved the world, and calling that a difference
-    # of N days would be inventing an arithmetic that has no first term.
+    # Reason: no number at all when either side has no date — a scenario
+    # that turns "never" into "eleven years" moved the world, and calling
+    # that a difference of N days would be inventing an arithmetic that has
+    # no first term.
     if before is None or after is None:
         return None
     return (after - before) * DAYS_IN_MONTH
@@ -64,9 +65,10 @@ VALID_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 def parse_validity(typed: str) -> str | None:
-    # Stored raw, the staleness of a fact was decided by comparing strings:
-    # "banana" is never less than a date, so a validity typed wrong left the fact
-    # looking fresh forever — which is exactly what the field exists to prevent.
+    # Reason: stored raw, the staleness of a fact was decided by comparing
+    # strings — "banana" is never less than a date, so a validity typed wrong
+    # left the fact looking fresh forever, which is exactly what the field
+    # exists to prevent.
     cleaned = (typed or "").strip()
     if not cleaned:
         return None

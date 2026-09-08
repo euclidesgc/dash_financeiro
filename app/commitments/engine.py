@@ -29,9 +29,10 @@ _INSERT = f"INSERT INTO commitments ({', '.join(_FIELDS)}) VALUES ({', '.join('?
 def recompute(conn: sqlite3.Connection, *, today: date | None = None) -> int:
     floor = live_floor(today)
     try:
-        # Wiping and rewriting is what makes idempotence a property of
-        # construction instead of a promise of upsert; a half recomputed base
-        # keeps adding up and starts lying, which is worse than no base at all.
+        # Reason: wiping and rewriting is what makes idempotence a property
+        # of construction instead of a promise of upsert; a half recomputed
+        # base keeps adding up and starts lying, which is worse than no base
+        # at all.
         conn.execute("DELETE FROM commitments")
         installments = series.installment_series(conn)
         recurring = series.recurring_series(conn)
@@ -51,10 +52,11 @@ def recompute(conn: sqlite3.Connection, *, today: date | None = None) -> int:
 def recurring_after_precedence(
     recurring: list[dict[str, Any]], installments: list[dict[str, Any]], floor: str
 ) -> list[dict[str, Any]]:
-    # An instalment ends and a subscription does not, so a key that is both
-    # counts once, as the instalment. The precedence looks only at the window,
-    # never at what is still owed: in the month the last instalment falls the
-    # series stops owing, the precedence would let go, and the recurring line —
+    # Reason: an instalment ends and a subscription does not, so a key that
+    # is both counts once, as the instalment. The precedence looks only at
+    # the window, never at what is still owed: in the month the last
+    # instalment falls the series stops owing, the precedence would let go,
+    # and the recurring line —
     # built from those very charges — would resurrect a finished debt (RF-01).
     charged = {row["series_key"] for row in installments if row["last_seen_date"] >= floor}
     return [row for row in recurring if row["series_key"] not in charged]

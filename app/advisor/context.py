@@ -32,10 +32,10 @@ def snapshot(conn: sqlite3.Connection, *, today: date) -> dict[str, Any]:
 
 
 def lines(numbers: dict[str, Any]) -> list[dict[str, Any]]:
-    # The screen renders these and the model receives these — one list, so the
-    # claim "you find on screen every number it may cite" stays true. Showing a
-    # subset would make the screen that exists to prove the model invents nothing
-    # the very thing that produces the suspicion.
+    # Reason: the screen renders these and the model receives these — one
+    # list, so the claim "you find on screen every number it may cite" stays
+    # true. Showing a subset would make the screen that exists to prove the
+    # model invents nothing the very thing that produces the suspicion.
     when = (
         f"{numbers['months_to_objective']} meses"
         if numbers["months_to_objective"] is not None
@@ -88,7 +88,7 @@ def _offer_lines(row: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def as_text(numbers: dict[str, Any]) -> str:
-    # Every figure the model may say, spelled the way the screen spells it. It
-    # copies from here or it says it does not know: the model interprets, the
-    # code computes (invariante 23).
+    # Reason: every figure the model may say, spelled the way the screen
+    # spells it. It copies from here or it says it does not know: the model
+    # interprets, the code computes (invariant 23).
     return "\n".join(f"{line['label']}: {line['value']}." for line in lines(numbers))

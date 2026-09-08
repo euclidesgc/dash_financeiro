@@ -7,9 +7,9 @@ from app.ingest.normalize import normalize_description
 MATCH_DESCRIPTION = "description"
 MATCH_CATEGORY = "category"
 
-# Money moved between the owner's own accounts, and money given back, never
-# left the house; counting either as spending inflates the residue the panel
-# offers for correction (invariant 25).
+# Reason: money moved between the owner's own accounts, and money given
+# back, never left the house; counting either as spending inflates the
+# residue the panel offers for correction (invariant 25).
 _SPENDING = "amount_cents < 0 AND is_transfer = 0 AND is_refund = 0 AND refunded_by IS NULL"
 
 # Motivo: a bare tuple has no field names, so the order is written here once —

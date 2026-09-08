@@ -6,8 +6,9 @@ import httpx
 from app.config import load_config
 
 ENDPOINT = "https://brasilapi.com.br/api/cnpj/v1/{cnpj}"
-# The configuration screen does not wait for a model: shorter than the advisor's
-# on purpose, because the owner is looking at a list and expects it to answer.
+# Reason: the configuration screen does not wait for a model — shorter than
+# the advisor's on purpose, because the owner is looking at a list and
+# expects it to answer.
 TIMEOUT_SECONDS = 8
 
 DIGITS = re.compile(r"\D")
@@ -25,16 +26,17 @@ class InvalidCnpjError(ValueError):
 
 
 def enabled() -> bool:
-    # Opt-in, like the advisor of item 009. This product is local by definition,
-    # and each lookup tells a third party that this person has a commercial
-    # relationship with that CNPJ — from a list ordered by how much money each
-    # one represents (RF-25a).
+    # Reason: opt-in, like the advisor of item 009. This product is local by
+    # definition, and each lookup tells a third party that this person has a
+    # commercial relationship with that CNPJ — from a list ordered by how
+    # much money each one represents (RF-25a).
     return load_config().cnpj_lookup
 
 
 def digits(raw: str) -> str:
-    # The value comes from a third party, not from the owner: a CNPJ carrying a
-    # slash or a scheme would change the target of the request (RF-25b).
+    # Reason: the value comes from a third party, not from the owner — a
+    # CNPJ carrying a slash or a scheme would change the target of the
+    # request (RF-25b).
     cleaned = DIGITS.sub("", raw or "")
     if len(cleaned) != CNPJ_LENGTH:
         raise InvalidCnpjError(f"CNPJ inválido: “{raw}”. São {CNPJ_LENGTH} dígitos.")
