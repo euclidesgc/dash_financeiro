@@ -28,11 +28,11 @@ CNPJ = f"{SCREEN}/cnpj"
 IA = f"{SCREEN}/ia"
 IA_FORGET = f"{IA}/esquecer"
 
-# How many payees the screen offers to name. A product decision, not a
-# measurement of this base: these cover more than half the money, and naming
-# them one by one is an evening of work rather than a project. What was measured
-# — how many payees exist and how much they cover — lives in
-# tests/test_frozen_numbers.py, never in this file.
+# Reason: this is how many payees the screen offers to name. A product
+# decision, not a measurement of this base — these cover more than half the
+# money, and naming them one by one is an evening of work rather than a
+# project. What was measured — how many payees exist and how much they
+# cover — lives in tests/test_frozen_numbers.py, never in this file.
 PAYEES = 30
 
 SAVED = "Salvo."
@@ -89,9 +89,9 @@ def name_payee(
             except InvalidValueError as refusal:
                 return answer(request, conn, notice=str(refusal), status_code=400)
             return answer(request, conn, done=NAMED)
-        # An empty field is the owner deleting the nickname, and RF-24 says the
-        # name then falls back to what was there before — never to the raw
-        # description, if a looked-up name is still stored.
+        # Reason: an empty field is the owner deleting the nickname, and
+        # RF-24 says the name then falls back to what was there before —
+        # never to the raw description, if a looked-up name is still stored.
         names.forget(conn, payee, names.OWNER)
         return answer(request, conn, done=FORGOTTEN)
     finally:
@@ -114,8 +114,9 @@ def look_up_cnpj(
         try:
             found = trade_name(cnpj)
         except (InvalidCnpjError, LookupUnavailableError) as refusal:
-            # Degrades with 200 and says what happened in Portuguese, and the
-            # name already there stays: the same ruler as the advisor of 009.
+            # Reason: this degrades with 200 and says what happened in
+            # Portuguese, and the name already there stays — the same ruler
+            # as the advisor of 009.
             return answer(request, conn, notice=str(refusal))
         names.name_it(conn, payee, found, names.LOOKUP)
         return answer(request, conn, done=f"Nome consultado: {found}.")
@@ -165,9 +166,10 @@ def _cnpj_of(conn: sqlite3.Connection, payee: str) -> str | None:
 
 
 def _refuse_window_the_base_cannot_fill(conn: sqlite3.Connection, name: str, typed: str) -> None:
-    # seen[-N:] truncates in silence: asking for twelve months over a base with
-    # six would print twelve on the screen and compute six (RF-10a). The refusal
-    # lives here because this is the only screen that writes a goal.
+    # Reason: seen[-N:] truncates in silence — asking for twelve months over
+    # a base with six would print twelve on the screen and compute six
+    # (RF-10a). The refusal lives here because this is the only screen that
+    # writes a goal.
     if name != MEDIAN:
         return
     asked = parse_months(typed, "Meses da janela da mediana")
@@ -180,10 +182,11 @@ def _refuse_window_the_base_cannot_fill(conn: sqlite3.Connection, name: str, typ
 
 
 def text(raw: str) -> str:
-    # Starlette reads an urlencoded field as latin-1 before percent-decoding it,
-    # so a body carrying raw UTF-8 bytes arrives mojibake and every accented
-    # value is stored wrong. Reading those bytes back as UTF-8 is exact when it
-    # succeeds and leaves the value untouched when it does not.
+    # Reason: Starlette reads an urlencoded field as latin-1 before
+    # percent-decoding it, so a body carrying raw UTF-8 bytes arrives
+    # mojibake and every accented value is stored wrong. Reading those bytes
+    # back as UTF-8 is exact when it succeeds and leaves the value untouched
+    # when it does not.
     try:
         return raw.encode("latin-1").decode("utf-8")
     except UnicodeError:
