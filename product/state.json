@@ -1408,9 +1408,18 @@
           "por": "autonomo"
         }
       },
-      "current_phase": 1,
+      "current_phase": 2,
       "phases": {
         "1": {
+          "status": "em_execucao",
+          "reproved_count": 0,
+          "verdict": null,
+          "verdict_file": null,
+          "validated_sha": null,
+          "pr": null,
+          "blocked_on": []
+        },
+        "2": {
           "status": "em_execucao",
           "reproved_count": 0,
           "verdict": null,
