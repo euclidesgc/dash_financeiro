@@ -107,7 +107,7 @@ def correct_payee(
             )
             created = False
     except Exception:
-        # The group above, when created, is an uncommitted write on this same
+        # Motivo: the group above, when created, is an uncommitted write on this same
         # connection: without this rollback a refusal here would leave it
         # standing, invisible to every other connection but this one — the one
         # the screen redraws with.

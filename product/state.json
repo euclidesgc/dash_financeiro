@@ -1150,8 +1150,8 @@
           "por": "autonomo"
         },
         "plan": {
-          "at": "2026-09-08T04:30:13Z",
-          "sha": "215f139904530b65043e82de124244b8c12d3dae",
+          "at": "2026-09-08T08:00:37Z",
+          "sha": "6aafac1dc1826b6e033c5fcaa038108f9c007e47",
           "file": "product/items/026-evolucao-da-fatura-mes-a-mes/03-plan.md",
           "por": "autonomo"
         }
@@ -1179,13 +1179,7 @@
           "reconciliada_at": "2026-09-08T04:40:10Z"
         }
       },
-      "criteria_exception": {
-        "file": "product/items/026-evolucao-da-fatura-mes-a-mes/03-plan.md",
-        "agent": "plan-writer",
-        "phase": 1,
-        "opened_at": "2026-09-08T07:55:38Z",
-        "ttl_min": 30
-      }
+      "criteria_exception": null
     },
     "019-reclassificacao-a-partir-do-lancamento": {
       "title": "A correcao de classificacao comeca no lancamento, e diz quanto ela alcanca antes de gravar",
