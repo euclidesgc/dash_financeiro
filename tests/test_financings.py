@@ -1,9 +1,13 @@
 import json
+import sqlite3
 from datetime import date
 from pathlib import Path
 
+import pytest
+
 from app.debts.ladder import ladder, rebuild, without_rate
 from app.financings import store as financings_store
+from app.financings.math import present_value_cents
 
 MORTGAGE_JSON = {
     "prazo_restante_meses": 370,
@@ -230,3 +234,45 @@ def test_a_contract_with_every_instalment_due_leaves_no_step(taxonomy_conn, tmp_
 
     count = taxonomy_conn.execute("SELECT COUNT(*) FROM financings").fetchone()[0]
     assert count == 1
+
+
+def test_present_value_with_zero_rate_sums_the_remaining_instalments():
+    # A vehicle contract with no interest has no annuity factor to divide by:
+    # the present value of what is left is just the sum of the instalments.
+    assert present_value_cents(-123533, 0, 45) == -123533 * 45
+
+
+def test_a_zero_rate_vehicle_rebuilds_without_dividing_by_the_rate(
+    taxonomy_conn, tmp_path, monkeypatch
+):
+    monkeypatch.setenv(financings_store.MANUAL_DIR, str(tmp_path / "nao-existe"))
+    taxonomy_conn.execute(
+        "INSERT INTO financings "
+        "(kind, monthly_rate_bp, term_months, balance_cents, payment_cents, first_due_date) "
+        "VALUES ('vehicle', 0, 60, NULL, -123533, '2025-06-11')"
+    )
+    taxonomy_conn.commit()
+
+    assert rebuild(taxonomy_conn, today=date(2026, 9, 5)) == 1
+
+    row = ladder(taxonomy_conn)[0]
+    assert row["term_months"] == 45
+    assert row["balance_cents"] == -123533 * 45
+
+
+def test_a_vehicle_row_missing_the_payment_is_refused_by_the_schema(taxonomy_conn):
+    with pytest.raises(sqlite3.IntegrityError, match="CHECK constraint failed"):
+        taxonomy_conn.execute(
+            "INSERT INTO financings "
+            "(kind, monthly_rate_bp, term_months, balance_cents, payment_cents, first_due_date) "
+            "VALUES ('vehicle', 163, 60, NULL, NULL, '2025-06-11')"
+        )
+
+
+def test_a_vehicle_row_missing_the_due_date_is_refused_by_the_schema(taxonomy_conn):
+    with pytest.raises(sqlite3.IntegrityError, match="CHECK constraint failed"):
+        taxonomy_conn.execute(
+            "INSERT INTO financings "
+            "(kind, monthly_rate_bp, term_months, balance_cents, payment_cents, first_due_date) "
+            "VALUES ('vehicle', 163, 60, NULL, -123533, NULL)"
+        )

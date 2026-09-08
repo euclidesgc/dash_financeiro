@@ -34,5 +34,9 @@ def remaining_months(first_due: date, term_months: int, today: date) -> int:
 def present_value_cents(payment_cents: int, monthly_rate_bp: int, left: int) -> int:
     if left <= 0:
         return 0
+    if monthly_rate_bp == 0:
+        # No interest, no annuity factor to divide by: the present value of
+        # what is left is just the sum of the remaining instalments.
+        return payment_cents * left
     rate = monthly_rate_bp / RATE_SCALE
     return round(payment_cents * (1 - (1 + rate) ** -left) / rate)
