@@ -1005,7 +1005,7 @@
     },
     "025-financiamentos-na-tela": {
       "title": "Os dois financiamentos saem do JSON a mao e passam a se editar na tela",
-      "track": "rapida",
+      "track": "completa",
       "stage": "execute",
       "stacks": [
         "python"
@@ -1025,9 +1025,25 @@
           "por": "autonomo"
         }
       },
-      "current_phase": 1,
+      "current_phase": 2,
       "phases": {
         "1": {
+          "status": "aprovada",
+          "reproved_count": 0,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/025-financiamentos-na-tela/05-veredictos/fase-1.md",
+          "validated_sha": "38d7942789b26595bf19d57477ab73fc2850856a",
+          "pr": null,
+          "blocked_on": [
+            "D-005"
+          ],
+          "verdict_at": "2026-09-08T03:27:39Z",
+          "validated_trees": {
+            ".": "a1427b8dfd9d1c714106f612c1fcd08b3b7a1a63"
+          },
+          "criteria_sha": "bfddff27a2a3583a16728dac57eefb6c9c805e0c02f183ecd2e0aa87a63d6b5b"
+        },
+        "2": {
           "status": "em_execucao",
           "reproved_count": 0,
           "verdict": null,
@@ -1037,7 +1053,16 @@
           "blocked_on": []
         }
       },
-      "divergences": {},
+      "divergences": {
+        "D-005": {
+          "status": "APROVADA",
+          "kind": "normal",
+          "phase": 1,
+          "detected_at": "2026-09-08T03:26:42Z",
+          "aprovada_at": "2026-09-08T03:26:42Z",
+          "ratificada_por": "autonomo"
+        }
+      },
       "criteria_exception": null
     },
     "027-configuracao-do-gemini": {
