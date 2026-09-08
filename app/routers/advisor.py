@@ -18,6 +18,7 @@ from app.advisor.gaps import (
 from app.advisor.gemini import AdvisorUnavailableError, ask
 from app.db import connect
 from app.routers.reference import screen_date
+from app.settings.limits import MAX_QUESTION
 
 from .render import TEMPLATES
 
@@ -26,7 +27,6 @@ router = APIRouter()
 SCREEN = "/consultor"
 DISMISS = f"{SCREEN}/adiar"
 DATE_FIELD = "data"
-MAX_QUESTION = 500
 
 
 @router.get(SCREEN)
