@@ -156,6 +156,8 @@ resultados = {}
 falhou = False
 linhas_saida = []
 
+nao_mediu = []
+
 for gate in gates:
     gate_id = gate.get("id") or "?"
     script = gate.get("script") or ""
@@ -164,13 +166,31 @@ for gate in gates:
         linhas_saida.append(f"  [{gate_id}] script ausente: {script} — gate não cobrado")
         continue
 
+    # Um portão pode declarar `"modo": "diff"` para cobrar só o que a mudança
+    # tocou. Serve para a regra que nasce depois do código: o projeto adota a
+    # convenção daqui para a frente e agenda a adoção retroativa como item, em
+    # vez de reprovar quinze itens já entregues ou desligar o portão.
+    escopo_gate = universe
+    if gate.get("modo") == "diff" and not use_diff:
+        escopo_gate = changed_files() or []
     alvos = [
-        f for f in universe
+        f for f in escopo_gate
         if fnmatch_any(f, gate.get("applies_to") or ["**"])
         and not fnmatch_any(f, gate.get("exempt") or [])
         and os.path.isfile(os.path.join(root, f))
     ]
+    if not alvos and gate.get("modo") == "diff":
+        linhas_saida.append(f"  [{gate_id}] modo diff: a mudança não tocou arquivo que ele cobra")
+        continue
     if not alvos:
+        # Portão sem alvo é portão que não mediu, e ele saía calado com o
+        # veredicto verde da rodada — foi assim que G3, G4 e G7 passaram itens
+        # inteiros apontando para uma pasta que este projeto não tem.
+        linhas_saida.append(
+            f"  [{gate_id}] nenhum arquivo casou applies_to={gate.get('applies_to')} "
+            f"sobre {len(universe)} arquivo(s) — o portão não mediu"
+        )
+        nao_mediu.append(gate_id)
         continue
 
     proc = subprocess.run(
@@ -235,6 +255,13 @@ if falhou:
 
 if linhas_saida:
     print("\n".join(linhas_saida))
+if nao_mediu:
+    print("\n".join(linhas_saida))
+    print(
+        f"✗ gates: {', '.join(nao_mediu)} não mediu arquivo nenhum ({escopo}). "
+        "Portão que não conseguiu medir reprova, nunca aprova."
+    )
+    raise SystemExit(1)
 print(f"✓ gates: limpos ({escopo}, {len(universe)} arquivo(s) considerados).")
 sys.exit(0)
 PYTHON

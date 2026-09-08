@@ -64,7 +64,7 @@
       var style = getComputedStyle(document.documentElement);
       var muted = style.getPropertyValue("--color-ink-muted").trim();
       var still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      // The box is revealed only once the library is here — an empty rectangle
+      // Motivo: the box is revealed only once the library is here — an empty rectangle
       // is worse than no rectangle when the network fails — and it is revealed
       // before the chart is built, because a chart measured inside a hidden box
       // is born zero by zero and never repaints.
