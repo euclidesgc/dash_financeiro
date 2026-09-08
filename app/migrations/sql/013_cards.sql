@@ -2,7 +2,7 @@
 -- source on every load (app/ingest/loader.py:136), and a column the owner
 -- filled in would be silently overwritten by the next sync.
 CREATE TABLE cards (
-    account_id TEXT PRIMARY KEY REFERENCES accounts(id),
+    account_id TEXT PRIMARY KEY NOT NULL REFERENCES accounts(id),
     limit_cents INTEGER,
     monthly_rate_bp INTEGER,
     closing_day INTEGER,

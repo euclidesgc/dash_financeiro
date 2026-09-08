@@ -224,6 +224,33 @@ def test_a_card_step_without_an_account_keeps_reading_its_rate_from_debts(taxono
     assert [(step["name"], step["monthly_rate_bp"]) for step in steps] == [("Cartao solto", 900)]
 
 
+def test_an_account_that_stops_being_a_card_does_not_inherit_the_dead_cards_rate(
+    taxonomy_conn, tmp_path, monkeypatch
+):
+    monkeypatch.setenv(ladder_module.MANUAL_DIR, str(tmp_path / "vazio"))
+    _accounts(taxonomy_conn, ("acc-x", "Conta X", "CREDIT", -125000))
+    rebuild(taxonomy_conn)
+    store.write(taxonomy_conn, "acc-x", RATE, "12,5")
+
+    taxonomy_conn.execute("UPDATE accounts SET type = 'BANK' WHERE id = 'acc-x'")
+    taxonomy_conn.commit()
+    rebuild(taxonomy_conn)
+
+    every_step = {
+        step["account_id"]: step for step in ladder(taxonomy_conn) + without_rate(taxonomy_conn)
+    }
+    assert every_step["acc-x"]["kind"] == "overdraft"
+    assert every_step["acc-x"]["monthly_rate_bp"] is None
+
+    overdraft_id = [step for step in without_rate(taxonomy_conn) if step["account_id"] == "acc-x"][
+        0
+    ]["id"]
+    set_rate(taxonomy_conn, overdraft_id, "3,52")
+
+    updated = [step for step in ladder(taxonomy_conn) if step["account_id"] == "acc-x"][0]
+    assert updated["monthly_rate_bp"] == 352
+
+
 def test_the_vehicle_and_checking_steps_are_unaffected_when_there_is_no_card(
     taxonomy_conn, tmp_path, monkeypatch
 ):
@@ -319,6 +346,11 @@ def test_the_four_fields_are_written_and_bad_grammar_is_refused_without_writing(
         "SELECT limit_cents, monthly_rate_bp, closing_day, due_day FROM cards"
     ).fetchone()
     assert tuple(row) == (1200000, 1250, 3, 10)
+
+
+def test_the_primary_key_refuses_a_null_account_id(taxonomy_conn):
+    with pytest.raises(sqlite3.IntegrityError):
+        taxonomy_conn.execute("INSERT INTO cards (account_id, limit_cents) VALUES (NULL, 100)")
 
 
 def test_the_check_constraint_refuses_a_day_out_of_range_by_sql(taxonomy_conn):

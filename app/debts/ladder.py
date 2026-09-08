@@ -28,7 +28,7 @@ _STEPS = (
     "SELECT d.id, d.kind, d.name, d.balance_cents, "
     "COALESCE(c.monthly_rate_bp, d.monthly_rate_bp) AS monthly_rate_bp, "
     "d.term_months, d.payment_cents, d.source, d.account_id "
-    "FROM debts d LEFT JOIN cards c ON c.account_id = d.account_id"
+    "FROM debts d LEFT JOIN cards c ON c.account_id = d.account_id AND d.kind = 'card'"
 )
 _INSERT = (
     "INSERT OR REPLACE INTO debts "
