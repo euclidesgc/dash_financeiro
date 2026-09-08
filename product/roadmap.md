@@ -92,7 +92,7 @@ PR e commit já escritos.
   e nenhum número muda de valor ao mudar de lugar.
   **Depende de:** nada aberto. **Destrava:** `028`.
 
-- [ ] `026-evolucao-da-fatura-mes-a-mes` — O painel responde **como fica a fatura
+- [-] `026-evolucao-da-fatura-mes-a-mes` — O painel responde **como fica a fatura
   do cartão mês a mês até zerar**, e não só quanto sai nos próximos 45 dias. O
   motor de compromissos já sabe o que é preciso — `commitments` guarda
   `installment_current`, `installment_total`, `installments_left` e `ends_month`
@@ -145,25 +145,23 @@ PR e commit já escritos.
   **Depende de:** `024-cartoes-como-entidade` e `025-financiamentos-na-tela` — sem
   as taxas reais a comparação responde com confiança um número que não mediu.
 
-- [-] `023-taxonomia-hierarquica-do-dono` — A classificação primária é uma
-  **árvore de duas alturas que pertence ao dono**: grupo, e dentro dele
-  categoria. Moradia contém financiamento ou aluguel, condomínio, energia, água,
-  gás, internet e TV, reforma e manutenção, IPTU; Transporte contém financiamento
-  de veículo, combustível, manutenção, seguro, IPVA e licenciamento,
-  estacionamento e pedágio, aplicativo; e assim para Alimentação, Saúde,
-  Educação, Assinaturas, Pessoal, Financeiro, Dependentes, Renda, e o grupo
-  **Não é gasto**, que guarda transferência entre contas próprias e estorno e
-  existe porque sem ele o painel mente em R$ 20.272,00 (norma 25).
-  Hoje **não há hierarquia nenhuma**: `categories`
-  (`app/migrations/sql/001_schema.sql:20`) tem só `id` e `name`, sem chave
-  estrangeira para grupo, e guarda os nomes crus que a Pluggy manda — 77 rótulos
-  traduzidos em `app/taxonomy/seed.json`. `category_groups` são dez etiquetas
-  paralelas, aplicadas por regra. Grupo e categoria são dois campos lado a lado,
-  não pai e filho, e é essa forma que faz o vocabulário parecer preso à vida de
-  uma pessoa só: ele foi copiado de uma base, não desenhado.
-  O item redesenha a semente, dá à categoria o grupo a que ela pertence, e
-  remapeia as regras existentes — sem que nenhum total de gasto mude, porque a
-  classificação passa a ser da mesma transação por outro caminho.
+- [x] `023-taxonomia-hierarquica-do-dono` — A classificação primária é uma
+  **árvore de duas alturas que pertence ao dono**: grupo, e dentro dele categoria,
+  ligados por chave estrangeira. Os doze grupos são Moradia, Transporte,
+  Alimentação, Saúde, Educação, Assinaturas, Pessoal, Financeiro, Dependentes,
+  Renda, **Não é gasto** — que guarda transferência entre contas próprias e
+  estorno, e existe porque sem ele o painel mente em R$ 20.272,00 — e o escape
+  **Outros**. As 77 categorias que a fonte manda pertencem cada uma a um deles, e
+  o nome em português mora junto da categoria em vez de numa lista paralela.
+  **Nenhum número se moveu.** O validador cego refez o remapeamento na mesma base
+  e mediu os quatro números dos dois lados: gasto total, contagem de lançamentos
+  considerados gasto, e os dois cruzamentos, idênticos dígito a dígito. A
+  exclusão de gasto é pelas colunas escritas na ingestão, nunca pelo grupo — por
+  isso mover um grupo de lugar não desloca um centavo.
+  Ele também achou que o cruzamento que nomeia a lista de corte estava guardado
+  por uma igualdade entre dois conjuntos vazios: nenhum vocabulário declara regra
+  no par variável × supérfluo, porque só o dono marca supérfluo na tela. O teste
+  passou a plantar o par nos dois lados e a exigir conteúdo antes de comparar.
   **Depende de:** nada aberto. **Destrava:** `019`.
 
 - [ ] `019-reclassificacao-a-partir-do-lancamento` — A correção de classificação

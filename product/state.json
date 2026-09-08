@@ -904,7 +904,7 @@
     "023-taxonomia-hierarquica-do-dono": {
       "title": "A classificacao e arvore de duas alturas: grupo e, dentro dele, categoria",
       "track": "rapida",
-      "stage": "execute",
+      "stage": "done",
       "stacks": [
         "python"
       ],
@@ -940,14 +940,18 @@
           "criteria_sha": "ba84df858e22889064f96af1ee83bd6aaa6979eefe3cae1e5e147ada6ea02bac"
         },
         "2": {
-          "status": "criterio_invalido",
+          "status": "aprovada",
           "reproved_count": 0,
-          "verdict": "CRITERIO_INVALIDO",
-          "verdict_file": "product/items/023-taxonomia-hierarquica-do-dono/05-veredictos/fase-2-rodada-1.md",
-          "validated_sha": null,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/023-taxonomia-hierarquica-do-dono/05-veredictos/fase-2-rodada-2.md",
+          "validated_sha": "5bd0b53018863f5c29964d6621bbf50f5c92c644",
           "pr": null,
           "blocked_on": [],
-          "verdict_at": "2026-09-08T03:34:17Z"
+          "verdict_at": "2026-09-08T03:58:00Z",
+          "validated_trees": {
+            ".": "49432fc12b5917d146677009be1312f50114fb18"
+          },
+          "criteria_sha": "5e5886daaeedd48dd2047b7e9c50f63d87c7bae547104bec991a16a24d71a2c1"
         }
       },
       "divergences": {},
