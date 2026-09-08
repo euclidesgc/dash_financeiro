@@ -185,7 +185,7 @@ PR e commit já escritos.
   entra na mesma transação ou reintroduz o sucesso mentiroso que aquele item
   fechou.
 
-- [-] `022-mes-corrente-como-abertura-padrao` — Toda tela abre no presente. O
+- [x] `022-mes-corrente-como-abertura-padrao` — Toda tela abre no presente. O
   período padrão de `/gastos` passa a ser **do dia 01 do mês corrente até a data
   de referência**, e `/gastos` passa a aceitar `?data=` como as outras cinco
   telas, em vez de ser a única que chama o leitor e descarta o que foi pedido.

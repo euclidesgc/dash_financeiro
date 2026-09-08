@@ -127,9 +127,10 @@ Convenções herdadas do trabalho de extração, porque já provaram valer:
 
 O eixo de categoria sozinho não responde "onde cortar sem virar monge":
 
-1. **Grupo** (10): Moradia · Educação · Transporte · Alimentação · Comer fora e
-   lazer · Saúde · Serviços e assinaturas · Dívidas e juros · Transferências ·
-   Outros.
+1. **Grupo** (12), e dentro dele a categoria: Moradia · Transporte ·
+   Alimentação · Saúde · Educação · Assinaturas · Pessoal · Financeiro ·
+   Dependentes · Renda · **Não é gasto**, que guarda transferência entre contas
+   próprias e estorno · **Outros**, o escape de quem nenhuma regra pegou.
 2. **Natureza**: fixa · variável · eventual.
 3. **Essencialidade**: essencial · importante · supérfluo.
 
