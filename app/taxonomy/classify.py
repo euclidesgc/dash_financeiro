@@ -21,8 +21,8 @@ class MissingFallbackError(RuntimeError):
 
 def classify_all(conn: sqlite3.Connection) -> int:
     _fill_payees(conn)
-    _record_categories(conn)
     fallback = _fallback(conn)
+    _record_categories(conn, fallback[1])
     expressions, categories = _rules(conn)
     updates = []
     for row in conn.execute(
@@ -101,13 +101,13 @@ def _fill_payees(conn: sqlite3.Connection) -> None:
     )
 
 
-def _record_categories(conn: sqlite3.Connection) -> None:
+def _record_categories(conn: sqlite3.Connection, fallback_group_id: int) -> None:
+    rows = conn.execute(
+        "SELECT DISTINCT category FROM transactions WHERE category IS NOT NULL AND category != ''"
+    ).fetchall()
     conn.executemany(
-        "INSERT INTO categories (name) VALUES (?) ON CONFLICT (name) DO NOTHING",
-        conn.execute(
-            "SELECT DISTINCT category FROM transactions "
-            "WHERE category IS NOT NULL AND category != ''"
-        ).fetchall(),
+        "INSERT INTO categories (name, group_id) VALUES (?, ?) ON CONFLICT (name) DO NOTHING",
+        [(row["category"], fallback_group_id) for row in rows],
     )
 
 

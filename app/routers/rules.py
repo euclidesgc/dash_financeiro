@@ -9,7 +9,7 @@ from app.db import connect
 from app.queries.spending import SPENDING
 from app.taxonomy import classify
 from app.taxonomy.rules import RuleError, create_rule, delete_rule, update_rule
-from app.taxonomy.seed import load_seed, message
+from app.taxonomy.seed import category_labels, message
 
 from .render import TEMPLATES
 
@@ -22,7 +22,7 @@ REMOVE = "/remover"
 CANDIDATES = 12
 SAMPLES = 3
 
-LABELS: dict[str, str] = load_seed().get("category_labels", {})
+LABELS: dict[str, str] = category_labels()
 
 KINDS: tuple[tuple[str, str], ...] = (
     (classify.MATCH_CATEGORY, "Categoria"),
