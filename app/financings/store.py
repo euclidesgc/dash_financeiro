@@ -1,11 +1,13 @@
 import json
 import os
 import sqlite3
+from datetime import date
 from pathlib import Path
 
-from app.financings import MORTGAGE, VEHICLE
-from app.financings.math import monthly_from_yearly_bp
+from app.financings import KINDS, MORTGAGE, NAMES, VEHICLE
+from app.financings.math import monthly_from_yearly_bp, present_value_cents, remaining_months
 from app.financings.money import CENTS_IN_UNIT
+from app.financings.typed import read_form
 
 MANUAL_DIR = "DASH_MANUAL_DIR"
 DEFAULT_MANUAL = "data/manual"
@@ -13,11 +15,9 @@ MORTGAGE_FILE = "financiamento_caixa.json"
 VEHICLE_FILE = "cdc_safra_veiculo.json"
 
 _COLUMNS = "kind, monthly_rate_bp, term_months, balance_cents, payment_cents, first_due_date"
-_INSERT = (
-    "INSERT OR IGNORE INTO financings "
-    f"({_COLUMNS}) VALUES "
-    "(:kind, :monthly_rate_bp, :term_months, :balance_cents, :payment_cents, :first_due_date)"
-)
+_VALUES = ":kind, :monthly_rate_bp, :term_months, :balance_cents, :payment_cents, :first_due_date"
+_INSERT = f"INSERT OR IGNORE INTO financings ({_COLUMNS}) VALUES ({_VALUES})"
+_UPSERT = f"INSERT OR REPLACE INTO financings ({_COLUMNS}) VALUES ({_VALUES})"
 
 
 def manual_dir() -> Path:
@@ -83,3 +83,38 @@ def _vehicle_row(data: dict) -> dict:
         "payment_cents": -round(data["valor_parcela"] * CENTS_IN_UNIT),
         "first_due_date": data["primeiro_vencimento"],
     }
+
+
+def write(conn: sqlite3.Connection, kind: str, typed: dict[str, str]) -> None:
+    row = read_form(kind, typed)
+    conn.execute(_UPSERT, row)
+    conn.commit()
+
+
+def section(conn: sqlite3.Connection, *, today: date) -> dict:
+    rows = {row["kind"]: row for row in read_all(conn)}
+    result: dict[str, dict] = {}
+    for kind in KINDS:
+        row = rows.get(kind)
+        entry = {
+            "label": NAMES[kind],
+            "monthly_rate_bp": row["monthly_rate_bp"] if row else None,
+            "term_months": row["term_months"] if row else None,
+            "balance_cents": row["balance_cents"] if row else None,
+            "payment_cents": row["payment_cents"] if row else None,
+            "first_due_date": row["first_due_date"] if row else None,
+        }
+        if kind == VEHICLE:
+            entry["remaining_months"], entry["balance_cents"] = _vehicle_balance(row, today)
+        result[kind] = entry
+    return result
+
+
+def _vehicle_balance(row: dict | None, today: date) -> tuple[int | None, int | None]:
+    if row is None or row["first_due_date"] is None:
+        return None, None
+    first_due = date.fromisoformat(row["first_due_date"])
+    left = remaining_months(first_due, row["term_months"], today)
+    if left <= 0:
+        return left, None
+    return left, present_value_cents(row["payment_cents"], row["monthly_rate_bp"], left)

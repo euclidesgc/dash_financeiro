@@ -1,0 +1,83 @@
+<section id="financiamentos" class="panel panel-wide">
+  <div class="stack-tight">
+    <h2 class="section-title">Financiamentos</h2>
+    <p class="lede">Os dois contratos que alimentam a escada de dívidas: o imóvel e o veículo. O
+      saldo do imóvel é o que o banco informa; o do veículo o painel calcula sozinho a cada
+      leitura, a partir da taxa, da parcela e do primeiro vencimento.</p>
+  </div>
+  <div class="settings">
+    <article class="setting" data-financiamento="mortgage">
+      <div class="setting-what">
+        <h3 class="setting-name">{{ financings['mortgage']['label'] }}</h3>
+        <p class="lede">O saldo devedor envelhece: atualize com o que o aplicativo do banco
+          mostrar.</p>
+      </div>
+      <div class="setting-value">
+        <form class="form" method="post" action="/configuracao/financiamento">
+          <input type="hidden" name="tipo" value="mortgage">
+          <div class="field">
+            <label class="field-label" for="financiamento-mortgage-saldo">Saldo devedor, em reais</label>
+            <input class="field-input" id="financiamento-mortgage-saldo" name="saldo"
+                   inputmode="decimal" placeholder="0,00"
+                   value="{{ financings['mortgage']['balance_cents']|digitado('centavos') }}">
+          </div>
+          <div class="field">
+            <label class="field-label" for="financiamento-mortgage-taxa">Por cento ao mês</label>
+            <input class="field-input" id="financiamento-mortgage-taxa" name="taxa"
+                   inputmode="decimal" placeholder="0,72"
+                   value="{{ financings['mortgage']['monthly_rate_bp']|digitado('pontos-base') }}">
+          </div>
+          <div class="field">
+            <label class="field-label" for="financiamento-mortgage-prazo">Prazo restante, em meses</label>
+            <input class="field-input" id="financiamento-mortgage-prazo" name="prazo"
+                   inputmode="numeric" placeholder="370"
+                   value="{{ financings['mortgage']['term_months']|digitado('meses') }}">
+          </div>
+          <button class="button button-quiet button-small" type="submit">Salvar</button>
+        </form>
+      </div>
+    </article>
+    <article class="setting" data-financiamento="vehicle">
+      <div class="setting-what">
+        <h3 class="setting-name">{{ financings['vehicle']['label'] }}</h3>
+        <p class="lede">O saldo é o valor presente das parcelas que faltam, à taxa do contrato —
+          não um número digitado.</p>
+      </div>
+      <div class="setting-value">
+        <p class="eyebrow">Saldo devedor</p>
+        {% if financings['vehicle']['balance_cents'] is not none %}
+        <p class="figure cifra">{{ financings['vehicle']['balance_cents']|brl }}</p>
+        {% else %}
+        <p class="figure cifra">—</p>
+        {% endif %}
+        <form class="form" method="post" action="/configuracao/financiamento">
+          <input type="hidden" name="tipo" value="vehicle">
+          <div class="field">
+            <label class="field-label" for="financiamento-vehicle-taxa">Por cento ao mês</label>
+            <input class="field-input" id="financiamento-vehicle-taxa" name="taxa"
+                   inputmode="decimal" placeholder="1,63"
+                   value="{{ financings['vehicle']['monthly_rate_bp']|digitado('pontos-base') }}">
+          </div>
+          <div class="field">
+            <label class="field-label" for="financiamento-vehicle-parcela">Valor da parcela, em reais</label>
+            <input class="field-input" id="financiamento-vehicle-parcela" name="parcela"
+                   inputmode="decimal" placeholder="0,00"
+                   value="{{ financings['vehicle']['payment_cents']|digitado('centavos') }}">
+          </div>
+          <div class="field">
+            <label class="field-label" for="financiamento-vehicle-prazo">Prazo do contrato, em meses</label>
+            <input class="field-input" id="financiamento-vehicle-prazo" name="prazo"
+                   inputmode="numeric" placeholder="60"
+                   value="{{ financings['vehicle']['term_months']|digitado('meses') }}">
+          </div>
+          <div class="field">
+            <label class="field-label" for="financiamento-vehicle-vencimento">Primeiro vencimento</label>
+            <input class="field-input" id="financiamento-vehicle-vencimento" name="vencimento"
+                   type="date" value="{{ financings['vehicle']['first_due_date'] or '' }}">
+          </div>
+          <button class="button button-quiet button-small" type="submit">Salvar</button>
+        </form>
+      </div>
+    </article>
+  </div>
+</section>
