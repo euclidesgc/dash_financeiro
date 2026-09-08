@@ -1016,7 +1016,7 @@
     "025-financiamentos-na-tela": {
       "title": "Os dois financiamentos saem do JSON a mao e passam a se editar na tela",
       "track": "completa",
-      "stage": "execute",
+      "stage": "done",
       "stacks": [
         "python"
       ],
@@ -1054,14 +1054,18 @@
           "criteria_sha": "bfddff27a2a3583a16728dac57eefb6c9c805e0c02f183ecd2e0aa87a63d6b5b"
         },
         "2": {
-          "status": "criterio_invalido",
+          "status": "aprovada",
           "reproved_count": 0,
-          "verdict": "CRITERIO_INVALIDO",
-          "verdict_file": "product/items/025-financiamentos-na-tela/05-veredictos/fase-2-rodada-1.md",
-          "validated_sha": null,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/025-financiamentos-na-tela/05-veredictos/fase-2-rodada-2.md",
+          "validated_sha": "d6e94773551324caddfbaa146b1b8f8a6787800d",
           "pr": null,
           "blocked_on": [],
-          "verdict_at": "2026-09-08T04:03:30Z"
+          "verdict_at": "2026-09-08T04:33:08Z",
+          "validated_trees": {
+            ".": "53f7cce260e2b022054b3ea13f3c8159eaa1bc2f"
+          },
+          "criteria_sha": "b55ddc7fcda3f065a9bea4c41e7d15db84b5a8ae573567c8c42a3e421eb045d0"
         }
       },
       "divergences": {

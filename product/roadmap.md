@@ -80,16 +80,23 @@ PR e commit já escritos.
   cartão é a entrada que só a fatura dá — está nas validações de campo pendentes.
   **Depende de:** nada aberto. **Destrava:** `026` e `028`.
 
-- [-] `025-financiamentos-na-tela` — O financiamento do imóvel e o do veículo se
-  editam na tela, como todo o resto do que só o humano sabe. Hoje os dois moram
-  em arquivo JSON escrito à mão e fora do versionamento —
-  `data/manual/financiamento_caixa.json` e `cdc_safra_veiculo.json`, lidos por
-  `app/debts/ladder.py:22-23` —, o que contraria a norma 26 do projeto no lugar
-  em que ela mais importa: são as duas maiores dívidas do painel, e a do imóvel é
-  a que a escada existe para **não** amortizar antes da reserva. Os campos que já
-  existem no formato de hoje são saldo devedor, taxa mensal, prazo em meses e
-  valor da parcela; a tela os expõe com a mesma gramática de digitação do `015`,
-  e nenhum número muda de valor ao mudar de lugar.
+- [x] `025-financiamentos-na-tela` — O financiamento do imóvel e o do veículo se
+  editam em `/configuracao`, como todo o resto do que só o humano sabe. Eles
+  saíram do arquivo JSON escrito à mão e fora do versionamento para uma tabela do
+  banco, importados uma vez, e **nenhum número mudou de valor ao mudar de lugar**:
+  o validador cego extraiu do histórico o carregador antigo e comparou as duas
+  origens em cinco datas reais e seis sintéticas — zero divergências, degrau a
+  degrau, nos seis campos.
+  **O saldo do CDC do veículo continua calculado**, como valor presente das
+  parcelas não vencidas: ele encolhe sozinho conforme elas vencem, a tela não
+  oferece campo para ele, e forçar um saldo no corpo do formulário não o congela.
+  O do imóvel continua informado, porque é o que o aplicativo do banco mostra.
+  Quatro defeitos latentes fecharam junto: vencimento no dia 31 atravessando
+  fevereiro, taxa zero dividindo por zero, contrato quitado emitindo degrau
+  fantasma, e a preservação de taxa que faria a taxa editada nunca alcançar a
+  escada. Mais um que o validador achou: gravar um financiamento **trocava o
+  identificador dos degraus**, e uma aba de `/dividas` aberta antes gravaria a
+  taxa na dívida errada — a escrita passou a atualizar a linha no lugar (`D-005`).
   **Depende de:** nada aberto. **Destrava:** `028`.
 
 - [-] `026-evolucao-da-fatura-mes-a-mes` — O painel responde **como fica a fatura
