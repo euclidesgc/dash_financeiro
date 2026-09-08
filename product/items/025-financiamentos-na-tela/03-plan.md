@@ -437,7 +437,7 @@ gramática é recusado com a tela de pé.
 - [ ] `estrutural` — RF-05, RF-08
       `app/routers/financings.py` existe, define `router`, registra a rota
       `POST /configuracao/financiamento`, contém a linha de import
-      `from app.routers.settings import _answer, _text`, e **não** contém as
+      `from app.routers.settings import answer, text`, e **não** contém as
       cadeias `TemplateResponse`, `def _context` nem `conn.execute` — a tela tem
       um renderizador só, e o router não monta consulta (norma 30)
 - [ ] `comportamental` — RF-05
@@ -768,4 +768,3 @@ validador, e ficam registradas aqui em vez de virar fase:
   os dois arquivos de `data/manual/` são os do contrato e não cópias de teste.
   Os critérios provam a importação sobre cópias com os mesmos valores; a
   execução real acontece uma vez, na primeira reconstrução depois do merge.
-</content>

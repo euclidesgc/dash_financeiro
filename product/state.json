@@ -1029,8 +1029,8 @@
           "por": "autonomo"
         },
         "plan": {
-          "at": "2026-09-08T02:26:45Z",
-          "sha": "c5bce6198610f559f07f6652f72b21fcc217176d",
+          "at": "2026-09-08T04:09:58Z",
+          "sha": "7d6c01e5f1d08f0e95f500c623754e1bc96cd65b",
           "file": "product/items/025-financiamentos-na-tela/03-plan.md",
           "por": "autonomo"
         }
@@ -1074,13 +1074,7 @@
           "ratificada_por": "autonomo"
         }
       },
-      "criteria_exception": {
-        "file": "product/items/025-financiamentos-na-tela/03-plan.md",
-        "agent": "plan-writer",
-        "phase": 2,
-        "opened_at": "2026-09-08T04:03:30Z",
-        "ttl_min": 30
-      }
+      "criteria_exception": null
     },
     "027-configuracao-do-gemini": {
       "title": "A integracao com o Gemini se configura na tela: chave e modelo",
