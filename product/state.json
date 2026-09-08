@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "active_item": "028-consultor-comparativo-de-divida",
+  "active_item": "029-o-guarda-reconhece-uma-forma-so-de-perguntar-as-horas",
   "items": {
     "001-base-e-login": {
       "title": "Base e login: schema, ingestão dos 1.942 lançamentos e acesso protegido",
@@ -1179,7 +1179,13 @@
           "reconciliada_at": "2026-09-08T04:40:10Z"
         }
       },
-      "criteria_exception": null
+      "criteria_exception": {
+        "file": "product/items/026-evolucao-da-fatura-mes-a-mes/03-plan.md",
+        "agent": "plan-writer",
+        "phase": 1,
+        "opened_at": "2026-09-08T07:55:38Z",
+        "ttl_min": 30
+      }
     },
     "019-reclassificacao-a-partir-do-lancamento": {
       "title": "A correcao de classificacao comeca no lancamento, e diz quanto ela alcanca antes de gravar",
@@ -1264,6 +1270,43 @@
       },
       "current_phase": null,
       "phases": {},
+      "divergences": {},
+      "criteria_exception": null
+    },
+    "029-o-guarda-reconhece-uma-forma-so-de-perguntar-as-horas": {
+      "title": "O guarda de rota reconhece a chamada ao relogio pela arvore sintatica, nao por texto",
+      "track": "rapida",
+      "stage": "execute",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-08T07:58:19Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-08T07:58:19Z",
+          "sha": "536e21c533af0532616e55223678d8ad2556f6a5",
+          "file": "product/items/029-o-guarda-reconhece-uma-forma-so-de-perguntar-as-horas/01-brief.md",
+          "por": "autonomo"
+        },
+        "plan": {
+          "at": "2026-09-08T07:58:59Z",
+          "sha": "1ed8e2cdaa067ab4abe911d653280e7686cea507",
+          "file": "product/items/029-o-guarda-reconhece-uma-forma-so-de-perguntar-as-horas/03-plan.md",
+          "por": "autonomo"
+        }
+      },
+      "current_phase": 1,
+      "phases": {
+        "1": {
+          "status": "em_execucao",
+          "reproved_count": 0,
+          "verdict": null,
+          "verdict_file": null,
+          "validated_sha": null,
+          "pr": null,
+          "blocked_on": []
+        }
+      },
       "divergences": {},
       "criteria_exception": null
     }
