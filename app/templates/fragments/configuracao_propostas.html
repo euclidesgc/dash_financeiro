@@ -1,0 +1,103 @@
+<section id="propostas" class="panel panel-wide">
+  <div class="stack-tight">
+    <h2 class="section-title">Propostas de empréstimo</h2>
+    <p class="lede">O que um banco oferece para quitar a escada de dívida: taxa mensal, prazo,
+      valor liberado e custo de contratação. Uma proposta vale por dias — a data ao lado de cada
+      uma é quando você a informou, e é contra ela que a comparação em /consultor decide se ainda
+      está de pé.</p>
+    <p class="lede">Proposta sem taxa fica de fora da comparação, com o motivo dito ali: o painel
+      não estima o que o banco não informou.</p>
+  </div>
+  {% if offers['offers'] %}
+  <div class="settings">
+    {% for offer in offers['offers'] %}
+    <article class="setting" data-proposta="{{ offer['name'] }}" data-prazo="{{ offer['term_months'] }}">
+      <div class="setting-what">
+        <h3 class="setting-name">{{ offer['name'] }}</h3>
+        <p class="lede">Informada em {{ offer['captured_at']|dia }}.</p>
+      </div>
+      <div class="setting-value">
+        <p class="eyebrow">Taxa mensal</p>
+        {% if offer['monthly_rate_bp'] is not none %}
+        <p class="figure cifra setting-figure">{{ offer['monthly_rate_bp']|taxa }}</p>
+        {% else %}
+        <p class="figure setting-absent">Ausente</p>
+        <p class="lede">Sem taxa, esta proposta não entra na comparação.</p>
+        {% endif %}
+        <form class="form" method="post" action="{{ offers['action'] }}">
+          <input type="hidden" name="nome" value="{{ offer['name'] }}">
+          <div class="field">
+            <label class="field-label" for="proposta-{{ loop.index }}-taxa">Por cento ao mês</label>
+            <input class="field-input" id="proposta-{{ loop.index }}-taxa" name="taxa"
+                   inputmode="decimal" placeholder="1,99"
+                   value="{{ offer['monthly_rate_bp']|digitado('pontos-base') }}">
+          </div>
+          <div class="field">
+            <label class="field-label" for="proposta-{{ loop.index }}-prazo">Prazo, em meses</label>
+            <input class="field-input" id="proposta-{{ loop.index }}-prazo" name="prazo"
+                   inputmode="numeric" placeholder="24"
+                   value="{{ offer['term_months']|digitado('meses') }}">
+          </div>
+          <div class="field">
+            <label class="field-label" for="proposta-{{ loop.index }}-liberado">Valor liberado, em reais</label>
+            <input class="field-input" id="proposta-{{ loop.index }}-liberado" name="liberado"
+                   inputmode="decimal" placeholder="0,00"
+                   value="{{ offer['released_cents']|digitado('centavos') }}">
+          </div>
+          <div class="field">
+            <label class="field-label" for="proposta-{{ loop.index }}-contratacao">Custo de contratação, em reais</label>
+            <input class="field-input" id="proposta-{{ loop.index }}-contratacao" name="contratacao"
+                   inputmode="decimal" placeholder="0,00"
+                   value="{{ offer['fee_cents']|digitado('centavos') }}">
+          </div>
+          <button class="button button-quiet button-small" type="submit">Salvar</button>
+        </form>
+        <form class="form" method="post" action="{{ offers['remove_action'] }}">
+          <input type="hidden" name="nome" value="{{ offer['name'] }}">
+          <button class="button button-quiet button-small" type="submit">Remover</button>
+        </form>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% endif %}
+  <div class="settings">
+    <article class="setting">
+      <div class="setting-what">
+        <h3 class="setting-name">Nova proposta</h3>
+        <p class="lede">Informe os quatro campos que o banco ofereceu. Sem taxa é aceito — a
+          proposta fica na lista, de fora da comparação.</p>
+      </div>
+      <div class="setting-value">
+        <form class="form" method="post" action="{{ offers['action'] }}">
+          <div class="field">
+            <label class="field-label" for="proposta-nova-nome">Nome</label>
+            <input class="field-input" id="proposta-nova-nome" name="nome" type="text"
+                   placeholder="Banco Exemplo" maxlength="60">
+          </div>
+          <div class="field">
+            <label class="field-label" for="proposta-nova-taxa">Por cento ao mês</label>
+            <input class="field-input" id="proposta-nova-taxa" name="taxa"
+                   inputmode="decimal" placeholder="1,99">
+          </div>
+          <div class="field">
+            <label class="field-label" for="proposta-nova-prazo">Prazo, em meses</label>
+            <input class="field-input" id="proposta-nova-prazo" name="prazo"
+                   inputmode="numeric" placeholder="24">
+          </div>
+          <div class="field">
+            <label class="field-label" for="proposta-nova-liberado">Valor liberado, em reais</label>
+            <input class="field-input" id="proposta-nova-liberado" name="liberado"
+                   inputmode="decimal" placeholder="0,00">
+          </div>
+          <div class="field">
+            <label class="field-label" for="proposta-nova-contratacao">Custo de contratação, em reais</label>
+            <input class="field-input" id="proposta-nova-contratacao" name="contratacao"
+                   inputmode="decimal" placeholder="0,00">
+          </div>
+          <button class="button button-quiet button-small" type="submit">Salvar</button>
+        </form>
+      </div>
+    </article>
+  </div>
+</section>
