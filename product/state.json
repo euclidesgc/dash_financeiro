@@ -1150,8 +1150,8 @@
           "por": "autonomo"
         },
         "plan": {
-          "at": "2026-09-08T08:00:37Z",
-          "sha": "6aafac1dc1826b6e033c5fcaa038108f9c007e47",
+          "at": "2026-09-08T08:45:59Z",
+          "sha": "f0449d29bd251a834d266d7fb05a5619fb3e00d7",
           "file": "product/items/026-evolucao-da-fatura-mes-a-mes/03-plan.md",
           "por": "autonomo"
         }
@@ -1173,13 +1173,14 @@
           "criteria_sha": "f3488b4dc960149893d94d0b537304a48466e130bd068ba86b2f8f4315954512"
         },
         "2": {
-          "status": "em_execucao",
+          "status": "criterio_invalido",
           "reproved_count": 0,
-          "verdict": null,
-          "verdict_file": null,
+          "verdict": "CRITERIO_INVALIDO",
+          "verdict_file": "product/items/026-evolucao-da-fatura-mes-a-mes/05-veredictos/fase-2-rodada-1.md",
           "validated_sha": null,
           "pr": null,
-          "blocked_on": []
+          "blocked_on": [],
+          "verdict_at": "2026-09-08T08:42:02Z"
         }
       },
       "divergences": {
@@ -1234,13 +1235,18 @@
           "criteria_sha": "e7a79f4de6edc053eee7cf2d1cd1d96ac9c523a89c894a564f1fff6b24e5366d"
         },
         "2": {
-          "status": "em_execucao",
+          "status": "aprovada",
           "reproved_count": 0,
-          "verdict": null,
-          "verdict_file": null,
-          "validated_sha": null,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/019-reclassificacao-a-partir-do-lancamento/05-veredictos/fase-2.md",
+          "validated_sha": "8396dbcde66ca02f0b309be92590122315ee88cc",
           "pr": null,
-          "blocked_on": []
+          "blocked_on": [],
+          "verdict_at": "2026-09-08T08:34:53Z",
+          "validated_trees": {
+            ".": "a47d56e6c673a80478fce78a03ed3d3168385b92"
+          },
+          "criteria_sha": "2dc60b953cc383c54f07946f4ae651e41f172f8b80f106f1beec9430db1999e0"
         }
       },
       "divergences": {
@@ -1281,13 +1287,18 @@
       "current_phase": 1,
       "phases": {
         "1": {
-          "status": "em_execucao",
+          "status": "aprovada",
           "reproved_count": 0,
-          "verdict": null,
-          "verdict_file": null,
-          "validated_sha": null,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/028-consultor-comparativo-de-divida/05-veredictos/fase-1.md",
+          "validated_sha": "20c3d65f56d7fa73d6e2b429ea02b3b50e36341e",
           "pr": null,
-          "blocked_on": []
+          "blocked_on": [],
+          "verdict_at": "2026-09-08T08:43:25Z",
+          "validated_trees": {
+            ".": "907ee8d4dd50f3ea595fee10d24e1fe562fea4f0"
+          },
+          "criteria_sha": "2cfce41a5a45f6bc1cb2f5946c5eacc2310624654b95b70e5d925fef4a1990eb"
         }
       },
       "divergences": {},
