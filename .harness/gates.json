@@ -14,9 +14,10 @@
         "**/tests/**",
         "**/migrations/**"
       ],
-      "cobra": "comentário que descreve mecânica em vez de justificar decisão. Em modo diff enquanto a convenção da marca não é adotada na árvore inteira — 562 comentários em 60 arquivos, medidos em 08/09/2026.",
+      "cobra": "comentário que descreve mecânica em vez de justificar decisão. Cobra do commit em que o portão passou a medir para a frente: a convenção da marca nasceu ali, e a árvore anterior — 562 comentários em 60 arquivos — é item de roadmap, não dívida de quem escreve agora.",
       "pack": "python",
-      "modo": "diff"
+      "modo": "diff",
+      "desde": "8b75a6c6cd9c3b20c8c3fe59438af0b036694b7a"
     },
     {
       "id": "G4",

@@ -4,7 +4,7 @@ from app.queries.spending import SPENDING
 
 __all__ = ("category_reach", "holders", "payee_reach", "rule_reach")
 
-# The preview a screen shows before writing and the reach the write measures
+# Motivo: the preview a screen shows before writing and the reach the write measures
 # after it share this one template: two different SQL strings for the same
 # question drift apart at the first edit, and the panel starts promising a
 # number and delivering another (RF-02).
