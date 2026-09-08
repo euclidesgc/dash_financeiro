@@ -12,6 +12,9 @@ MATCH_CATEGORY = "category"
 # offers for correction (invariant 25).
 _SPENDING = "amount_cents < 0 AND is_transfer = 0 AND is_refund = 0 AND refunded_by IS NULL"
 
+# rule_id (or None for the fallback), group_id, nature, essentiality.
+_Target = tuple[int | None, int, str, str]
+
 
 class MissingFallbackError(RuntimeError):
     def __init__(self, table: str) -> None:
@@ -41,18 +44,19 @@ def classify_all(conn: sqlite3.Connection) -> int:
 
 
 def residue(conn: sqlite3.Connection, *, start: str, end: str) -> sqlite3.Row:
-    return conn.execute(
+    row: sqlite3.Row = conn.execute(
         "SELECT count(*) AS entries, coalesce(sum(amount_cents), 0) AS amount_cents "
         f"FROM transactions WHERE rule_id IS NULL AND {_SPENDING} AND date >= ? AND date <= ?",
         (start, end),
     ).fetchone()
+    return row
 
 
 def _match(
     row: sqlite3.Row,
-    expressions: list[tuple[re.Pattern[str], tuple]],
-    categories: dict[str, tuple],
-) -> tuple | None:
+    expressions: list[tuple[re.Pattern[str], _Target]],
+    categories: dict[str, _Target],
+) -> _Target | None:
     payee = row["payee"] or ""
     for pattern, target in expressions:
         if pattern.search(payee):
@@ -62,9 +66,9 @@ def _match(
 
 def _rules(
     conn: sqlite3.Connection,
-) -> tuple[list[tuple[re.Pattern[str], tuple]], dict[str, tuple]]:
-    expressions: list[tuple[re.Pattern[str], tuple]] = []
-    categories: dict[str, tuple] = {}
+) -> tuple[list[tuple[re.Pattern[str], _Target]], dict[str, _Target]]:
+    expressions: list[tuple[re.Pattern[str], _Target]] = []
+    categories: dict[str, _Target] = {}
     for rule in conn.execute(
         "SELECT id, match_kind, match_value, group_id, nature, essentiality "
         "FROM category_rules ORDER BY id"
@@ -77,7 +81,7 @@ def _rules(
     return expressions, categories
 
 
-def _fallback(conn: sqlite3.Connection) -> tuple:
+def _fallback(conn: sqlite3.Connection) -> _Target:
     group = conn.execute("SELECT id FROM category_groups WHERE is_fallback = 1").fetchone()
     nature = conn.execute("SELECT value FROM natures WHERE is_fallback = 1").fetchone()
     essentiality = conn.execute("SELECT value FROM essentialities WHERE is_fallback = 1").fetchone()

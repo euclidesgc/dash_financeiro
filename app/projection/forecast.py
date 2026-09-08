@@ -1,6 +1,7 @@
 import sqlite3
 from calendar import monthrange
 from datetime import date, timedelta
+from typing import Any
 
 from app.commitments.calendar import calendar, window
 from app.commitments.live import totals as committed_totals
@@ -14,7 +15,7 @@ _INCOME_DAYS = (
 )
 
 
-def forecast(conn: sqlite3.Connection, *, today: date | None = None) -> dict:
+def forecast(conn: sqlite3.Connection, *, today: date | None = None) -> dict[str, Any]:
     first, last = window(today)
     month = monthly(conn, today=first)
     committed = committed_totals(conn, today=first)["committed_cents"]
@@ -55,7 +56,7 @@ def _income_day(conn: sqlite3.Connection, today: date) -> int | None:
     return median_day(days) if days else None
 
 
-def _day(when: date, balance: int, entering: int, leaving: int, spread: int) -> dict:
+def _day(when: date, balance: int, entering: int, leaving: int, spread: int) -> dict[str, Any]:
     return {
         "date": when.isoformat(),
         "balance_cents": balance,

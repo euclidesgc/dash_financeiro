@@ -1,7 +1,7 @@
 import json
 import sqlite3
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from app.db import connect
 
@@ -9,11 +9,12 @@ SEED_PATH = Path(__file__).resolve().parent / "seed.json"
 
 
 def load_seed(path: Path | None = None) -> dict[str, Any]:
-    return json.loads((path or SEED_PATH).read_text(encoding="utf-8"))
+    return cast(dict[str, Any], json.loads((path or SEED_PATH).read_text(encoding="utf-8")))
 
 
 def message(key: str, value: object, seed: dict[str, Any] | None = None) -> str:
-    return (seed or load_seed())["messages"][key].format(value=value)
+    template = cast(str, (seed or load_seed())["messages"][key])
+    return template.format(value=value)
 
 
 def category_labels() -> dict[str, str]:
