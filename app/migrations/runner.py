@@ -1,3 +1,4 @@
+import re
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
@@ -8,6 +9,17 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
     applied_at TEXT NOT NULL
 )
 """
+
+
+class OutOfOrderMigrationError(RuntimeError):
+    pass
+
+
+_VERSION = re.compile(r"[0-9]{3}")
+
+
+def _version_of(path: Path) -> str:
+    return path.stem.split("_", 1)[0]
 
 
 def _statements(script: str) -> list[str]:
@@ -32,11 +44,31 @@ def apply_migrations(conn: sqlite3.Connection, folder: Path) -> list[str]:
     try:
         conn.execute(CONTROL_TABLE)
         known = {row[0] for row in conn.execute("SELECT version FROM schema_migrations")}
-        applied: list[str] = []
+        highest_known = max(known, default=None)
+        pending = []
         for path in sorted(folder.glob("*.sql")):
-            version = path.stem.split("_", 1)[0]
-            if version in known:
-                continue
+            version = _version_of(path)
+            # Decisão: a ordem e o guarda comparam a versão como texto, e texto
+            # só ordena como número enquanto todos tiverem a mesma largura —
+            # "9" vem depois de "015". Recusar a largura errada na porta é mais
+            # barato que descobrir a inversão numa base já migrada.
+            if not _VERSION.fullmatch(version):
+                raise OutOfOrderMigrationError(
+                    f"migração “{path.name}” não começa por três algarismos; "
+                    "renomeie para a forma 019_descricao.sql"
+                )
+            if version not in known:
+                pending.append((path, version))
+        if highest_known is not None:
+            for _, version in pending:
+                if version < highest_known:
+                    raise OutOfOrderMigrationError(
+                        f"migração {version} ordena abaixo da mais recente já "
+                        f"aplicada ({highest_known}); renumere o arquivo para uma "
+                        f"versão maior que {highest_known}"
+                    )
+        applied: list[str] = []
+        for path, version in pending:
             conn.execute("BEGIN")
             try:
                 for statement in _statements(path.read_text(encoding="utf-8")):
