@@ -10,6 +10,14 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 """
 
 
+class OutOfOrderMigrationError(RuntimeError):
+    pass
+
+
+def _version_of(path: Path) -> str:
+    return path.stem.split("_", 1)[0]
+
+
 def _statements(script: str) -> list[str]:
     statements: list[str] = []
     buffer = ""
@@ -32,11 +40,22 @@ def apply_migrations(conn: sqlite3.Connection, folder: Path) -> list[str]:
     try:
         conn.execute(CONTROL_TABLE)
         known = {row[0] for row in conn.execute("SELECT version FROM schema_migrations")}
+        highest_known = max(known, default=None)
+        pending = [
+            (path, _version_of(path))
+            for path in sorted(folder.glob("*.sql"))
+            if _version_of(path) not in known
+        ]
+        if highest_known is not None:
+            for _, version in pending:
+                if version < highest_known:
+                    raise OutOfOrderMigrationError(
+                        f"migração {version} ordena abaixo da mais recente já "
+                        f"aplicada ({highest_known}); renumere o arquivo para uma "
+                        f"versão maior que {highest_known}"
+                    )
         applied: list[str] = []
-        for path in sorted(folder.glob("*.sql")):
-            version = path.stem.split("_", 1)[0]
-            if version in known:
-                continue
+        for path, version in pending:
             conn.execute("BEGIN")
             try:
                 for statement in _statements(path.read_text(encoding="utf-8")):

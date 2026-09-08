@@ -1,10 +1,16 @@
+import os
 import sqlite3
+import subprocess
+import sys
+from pathlib import Path
 
 import pytest
 
 from app.db import connect
 from app.migrate import SQL_FOLDER
-from app.migrations.runner import apply_migrations
+from app.migrations.runner import OutOfOrderMigrationError, apply_migrations
+
+ROOT = Path(__file__).resolve().parents[1]
 
 EXPECTED_TABLES = [
     "accounts",
@@ -131,3 +137,64 @@ def test_unknown_account_is_refused(conn):
             "insert into transactions (pluggy_id, account_id, date, amount_cents) "
             "values ('abc-2', 'nao-existe', '2026-09-05', -100)"
         )
+
+
+def _write_sql(folder, name, script):
+    (folder / name).write_text(script, encoding="utf-8")
+
+
+def test_a_migration_fora_de_ordem_names_both_versions_in_the_refusal(tmp_path, conn):
+    folder = tmp_path / "sql"
+    folder.mkdir()
+    _write_sql(folder, "018_first.sql", "CREATE TABLE marker_018 (id INTEGER PRIMARY KEY);")
+    apply_migrations(conn, folder)
+
+    _write_sql(folder, "016_late.sql", "CREATE TABLE marker_016 (id INTEGER PRIMARY KEY);")
+
+    with pytest.raises(OutOfOrderMigrationError) as excinfo:
+        apply_migrations(conn, folder)
+
+    assert "016" in str(excinfo.value)
+    assert "018" in str(excinfo.value)
+
+
+def test_the_refusal_da_ordem_leaves_schema_migrations_unchanged(tmp_path, conn):
+    folder = tmp_path / "sql"
+    folder.mkdir()
+    _write_sql(folder, "018_first.sql", "CREATE TABLE marker_018 (id INTEGER PRIMARY KEY);")
+    apply_migrations(conn, folder)
+
+    _write_sql(folder, "016_late.sql", "CREATE TABLE marker_016 (id INTEGER PRIMARY KEY);")
+
+    before = conn.execute("select version from schema_migrations order by version").fetchall()
+
+    with pytest.raises(OutOfOrderMigrationError):
+        apply_migrations(conn, folder)
+
+    after = conn.execute("select version from schema_migrations order by version").fetchall()
+    assert after == before
+
+    tables = [
+        row[0]
+        for row in conn.execute(
+            "select name from sqlite_master where type='table' and name like 'marker_%'"
+        )
+    ]
+    assert tables == ["marker_018"]
+
+
+def test_a_fresh_base_applies_the_sixteen_real_migrations(tmp_path):
+    result = subprocess.run(
+        [sys.executable, "-m", "app.migrate"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        env={
+            **os.environ,
+            "DASH_DB_PATH": str(tmp_path / "dash.sqlite"),
+            "DASH_ENV_FILE": "/dev/null",
+        },
+    )
+
+    assert result.returncode == 0
+    assert "migrations applied: 16" in result.stdout
