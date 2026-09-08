@@ -1173,13 +1173,14 @@
           "criteria_sha": "f3488b4dc960149893d94d0b537304a48466e130bd068ba86b2f8f4315954512"
         },
         "2": {
-          "status": "em_execucao",
+          "status": "criterio_invalido",
           "reproved_count": 0,
-          "verdict": null,
-          "verdict_file": null,
+          "verdict": "CRITERIO_INVALIDO",
+          "verdict_file": "product/items/026-evolucao-da-fatura-mes-a-mes/05-veredictos/fase-2-rodada-1.md",
           "validated_sha": null,
           "pr": null,
-          "blocked_on": []
+          "blocked_on": [],
+          "verdict_at": "2026-09-08T08:42:02Z"
         }
       },
       "divergences": {
@@ -1193,7 +1194,13 @@
           "reconciliada_at": "2026-09-08T04:40:10Z"
         }
       },
-      "criteria_exception": null
+      "criteria_exception": {
+        "file": "product/items/026-evolucao-da-fatura-mes-a-mes/03-plan.md",
+        "agent": "plan-writer",
+        "phase": 2,
+        "opened_at": "2026-09-08T08:41:18Z",
+        "ttl_min": 30
+      }
     },
     "019-reclassificacao-a-partir-do-lancamento": {
       "title": "A correcao de classificacao comeca no lancamento, e diz quanto ela alcanca antes de gravar",
@@ -1286,13 +1293,18 @@
       "current_phase": 1,
       "phases": {
         "1": {
-          "status": "em_execucao",
+          "status": "aprovada",
           "reproved_count": 0,
-          "verdict": null,
-          "verdict_file": null,
-          "validated_sha": null,
+          "verdict": "APROVADO",
+          "verdict_file": "product/items/028-consultor-comparativo-de-divida/05-veredictos/fase-1.md",
+          "validated_sha": "20c3d65f56d7fa73d6e2b429ea02b3b50e36341e",
           "pr": null,
-          "blocked_on": []
+          "blocked_on": [],
+          "verdict_at": "2026-09-08T08:43:25Z",
+          "validated_trees": {
+            ".": "907ee8d4dd50f3ea595fee10d24e1fe562fea4f0"
+          },
+          "criteria_sha": "2cfce41a5a45f6bc1cb2f5946c5eacc2310624654b95b70e5d925fef4a1990eb"
         }
       },
       "divergences": {},
