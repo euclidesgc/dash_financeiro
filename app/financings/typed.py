@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Any
 
 from app.financings import KINDS, MORTGAGE
 from app.settings.typed import InvalidValueError, parse_money, parse_months, parse_rate
@@ -12,7 +13,7 @@ def parse_due_date(typed: str, field: str = "Primeiro vencimento") -> date:
         raise InvalidValueError(f"{field} inválido: “{typed}”. Use a forma AAAA-MM-DD.") from None
 
 
-def read_form(kind: str, typed: dict[str, str]) -> dict:
+def read_form(kind: str, typed: dict[str, str]) -> dict[str, Any]:
     if kind not in KINDS:
         raise InvalidValueError(f"Tipo de financiamento desconhecido: “{kind}”.")
     rate = parse_rate(typed.get("taxa", ""), "Taxa mensal")

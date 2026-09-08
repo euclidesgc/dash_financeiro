@@ -1,6 +1,7 @@
 import re
 import sqlite3
 from collections import defaultdict
+from typing import Any
 
 from app.commitments import INSTALLMENT, RECURRING
 from app.commitments.schedule import consecutive_run, end_month, median_day
@@ -23,7 +24,7 @@ _OCCURRENCES = (
 )
 
 
-def recurring_series(conn: sqlite3.Connection) -> list[dict]:
+def recurring_series(conn: sqlite3.Connection) -> list[dict[str, Any]]:
     groups: dict[str, list[sqlite3.Row]] = defaultdict(list)
     for row in conn.execute(_OCCURRENCES):
         groups[row["payee"]].append(row)
@@ -59,8 +60,8 @@ def recurring_series(conn: sqlite3.Connection) -> list[dict]:
     return detected
 
 
-def installment_series(conn: sqlite3.Connection) -> list[dict]:
-    groups: dict[tuple, list[tuple[sqlite3.Row, int | None]]] = defaultdict(list)
+def installment_series(conn: sqlite3.Connection) -> list[dict[str, Any]]:
+    groups: dict[tuple[str, int], list[tuple[sqlite3.Row, int | None]]] = defaultdict(list)
     for row in conn.execute(_OCCURRENCES):
         current, total = installment_of(row)
         if not total:
@@ -93,7 +94,9 @@ def _purchases(
     return [sorted(members, key=lambda item: item[0]["date"]) for _, members in clusters]
 
 
-def _installment(key: str, total: int, items: list[tuple[sqlite3.Row, int | None]]) -> dict:
+def _installment(
+    key: str, total: int, items: list[tuple[sqlite3.Row, int | None]]
+) -> dict[str, Any]:
     occurrences = [row for row, _ in items]
     seen = sorted({current for _, current in items if current})
     last_installment = max(seen) if seen else None
@@ -147,7 +150,7 @@ def _average(occurrences: list[sqlite3.Row]) -> int | None:
     # A series whose value swings has no "average value" that predicts anything,
     # and the three cuts together are what separate a live commitment from a
     # coincidence of three months (RF-09).
-    values = [abs(row["amount_cents"]) for row in occurrences]
+    values: list[int] = [abs(row["amount_cents"]) for row in occurrences]
     mean = sum(values) / len(values)
     if mean == 0:
         return None

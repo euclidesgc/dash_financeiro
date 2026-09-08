@@ -309,7 +309,8 @@ def _target(conn: sqlite3.Connection, corrigir: str | None) -> sqlite3.Row | Non
     target_id = _as_int(corrigir)
     if target_id is None:
         return None
-    return conn.execute(_TARGET, (target_id,)).fetchone()
+    row: sqlite3.Row | None = conn.execute(_TARGET, (target_id,)).fetchone()
+    return row
 
 
 def _correction_context(

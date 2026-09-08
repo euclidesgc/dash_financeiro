@@ -6,8 +6,6 @@ from app.queries.reach import rule_reach
 from app.taxonomy import classify
 from app.taxonomy.seed import message
 
-_FIELDS = ("match_kind", "match_value", "group_id", "nature", "essentiality")
-
 
 class RuleError(ValueError):
     pass
@@ -118,6 +116,10 @@ def correct_payee(
         (classify.MATCH_DESCRIPTION, expression),
     ).fetchone()["id"]
     reach = rule_reach(conn, rule_id)
+    # Motivo: create_rule/update_rule already ran _validate above, and a None
+    # group_id never passes it — so reaching this point means target_group
+    # is real.
+    assert target_group is not None
     return Correction(
         rule_id=rule_id,
         created=created,
@@ -133,7 +135,7 @@ def create_rule(
     *,
     match_kind: str,
     match_value: str,
-    group_id: int,
+    group_id: int | None,
     nature: str,
     essentiality: str,
 ) -> int:
@@ -170,17 +172,31 @@ def update_rule(
     ).fetchone()
     if current is None:
         raise UnknownRuleError(rule_id)
-    given = (match_kind, match_value, group_id, nature, essentiality)
-    values = {
-        field: current[field] if value is None else value
-        for field, value in zip(_FIELDS, given, strict=True)
-    }
-    _validate(conn, **values)
+    final_match_kind = current["match_kind"] if match_kind is None else match_kind
+    final_match_value = current["match_value"] if match_value is None else match_value
+    final_group_id = current["group_id"] if group_id is None else group_id
+    final_nature = current["nature"] if nature is None else nature
+    final_essentiality = current["essentiality"] if essentiality is None else essentiality
+    _validate(
+        conn,
+        match_kind=final_match_kind,
+        match_value=final_match_value,
+        group_id=final_group_id,
+        nature=final_nature,
+        essentiality=final_essentiality,
+    )
     return _write(
         conn,
         "UPDATE category_rules SET match_kind = ?, match_value = ?, group_id = ?, "
         "nature = ?, essentiality = ? WHERE id = ?",
-        (*(values[field] for field in _FIELDS), rule_id),
+        (
+            final_match_kind,
+            final_match_value,
+            final_group_id,
+            final_nature,
+            final_essentiality,
+            rule_id,
+        ),
     )
 
 
@@ -190,7 +206,7 @@ def delete_rule(conn: sqlite3.Connection, rule_id: int) -> int:
     return _write(conn, "DELETE FROM category_rules WHERE id = ?", (rule_id,))
 
 
-def _write(conn: sqlite3.Connection, statement: str, params: tuple) -> int:
+def _write(conn: sqlite3.Connection, statement: str, params: tuple[object, ...]) -> int:
     # The write and the reclassification it triggers share one SQL transaction:
     # a half reclassified base keeps adding up and starts lying (RF-14).
     try:
@@ -208,7 +224,7 @@ def _validate(
     *,
     match_kind: str,
     match_value: str,
-    group_id: int,
+    group_id: int | None,
     nature: str,
     essentiality: str,
 ) -> None:

@@ -2,6 +2,7 @@ import re
 import sqlite3
 from dataclasses import dataclass
 from datetime import date
+from typing import Any
 
 from app.plan.timeline import BASE, simulate
 from app.settings.store import stored
@@ -25,7 +26,7 @@ def signed_monthly(move: Move) -> int:
     return move.monthly_cents if move.kind == INCOME else -move.monthly_cents
 
 
-def impact(conn: sqlite3.Connection, move: Move, *, today: date) -> dict:
+def impact(conn: sqlite3.Connection, move: Move, *, today: date) -> dict[str, Any]:
     # The answer is in days because the unit of this product is days until the
     # objective. Reais are the input; the output is distance.
     before = simulate(conn, BASE, today=today)
@@ -100,9 +101,9 @@ def save(conn: sqlite3.Connection, name: str, move: Move) -> None:
     conn.commit()
 
 
-def saved(conn: sqlite3.Connection) -> list[dict]:
+def saved(conn: sqlite3.Connection) -> list[dict[str, Any]]:
     return [dict(row) for row in conn.execute("SELECT * FROM scenarios ORDER BY name")]
 
 
-def facts(conn: sqlite3.Connection, *, today: date) -> list[dict]:
+def facts(conn: sqlite3.Connection, *, today: date) -> list[dict[str, Any]]:
     return stored(conn, today=today)

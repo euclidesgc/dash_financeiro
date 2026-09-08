@@ -1,8 +1,10 @@
 import sqlite3
 from datetime import date
+from typing import Any
 
 from app.commitments.live import released_cash
-from app.debts.ladder import MORTGAGE, ladder
+from app.debts.ladder import ladder
+from app.financings import MORTGAGE
 from app.plan.objective import baseline_cents, levers, reserve_target_cents
 from app.projection.position import positions
 
@@ -55,7 +57,7 @@ def monthly_result_cents(conn: sqlite3.Connection, scenario: str, *, today: date
     return result
 
 
-def expensive_debts(conn: sqlite3.Connection) -> list[dict]:
+def expensive_debts(conn: sqlite3.Connection) -> list[dict[str, Any]]:
     # The mortgage stays out: at the bottom of the ladder it is the cheapest debt
     # there is, and paying it down before having a reserve trades safety for a
     # rate that is not hurting.
@@ -74,7 +76,7 @@ def simulate(
     extra_monthly_cents: int = 0,
     extra_months: int | None = None,
     extra_once_cents: int = 0,
-) -> dict:
+) -> dict[str, Any]:
     # The extra is what the simulator of item 008 injects: the same engine
     # answers "where am I going" and "what would this change", so the two can
     # never disagree. A term makes the effect stop after that many months, and a
@@ -154,11 +156,11 @@ def simulate(
     }
 
 
-def every_scenario(conn: sqlite3.Connection, *, today: date) -> list[dict]:
+def every_scenario(conn: sqlite3.Connection, *, today: date) -> list[dict[str, Any]]:
     return [simulate(conn, scenario, today=today) for scenario in SCENARIOS]
 
 
-def record(conn: sqlite3.Connection, runs: list[dict], *, today: date) -> None:
+def record(conn: sqlite3.Connection, runs: list[dict[str, Any]], *, today: date) -> None:
     # A snapshot per recalculation is the only progress signal this product
     # accepts: "in March you projected 30 months, today you project 24" needs a
     # March to compare against.
@@ -180,7 +182,7 @@ def record(conn: sqlite3.Connection, runs: list[dict], *, today: date) -> None:
     conn.commit()
 
 
-def history(conn: sqlite3.Connection, scenario: str = BASE) -> list[dict]:
+def history(conn: sqlite3.Connection, scenario: str = BASE) -> list[dict[str, Any]]:
     return [
         dict(row)
         for row in conn.execute(

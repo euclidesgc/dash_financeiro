@@ -1,5 +1,6 @@
 import sqlite3
 from datetime import date
+from typing import Any
 
 from app.commitments import INSTALLMENT, RECURRING
 from app.queries.period import shift
@@ -22,7 +23,7 @@ def live_floor(today: date | None = None) -> str:
     return shift(date(reference.year, reference.month, 1), -LIVE_MONTHS).isoformat()
 
 
-def subscriptions(conn: sqlite3.Connection, *, today: date | None = None) -> list[dict]:
+def subscriptions(conn: sqlite3.Connection, *, today: date | None = None) -> list[dict[str, Any]]:
     # Every recurring series is listed, live or not: a series that stopped being
     # charged is shown marked, never hidden, because a short list reads as a
     # quiet month (RF-35 do 003).
@@ -34,7 +35,7 @@ def subscriptions(conn: sqlite3.Connection, *, today: date | None = None) -> lis
     return [dict(row, live=row["last_seen_date"] >= floor) for row in rows]
 
 
-def installments(conn: sqlite3.Connection, *, today: date | None = None) -> list[dict]:
+def installments(conn: sqlite3.Connection, *, today: date | None = None) -> list[dict[str, Any]]:
     # An instalment series is only a commitment while it still has an unpaid
     # instalment and was charged recently enough: without the window the dead
     # series still "owe" money that leaves no account (D1, RF-13 do 003).
@@ -47,7 +48,7 @@ def installments(conn: sqlite3.Connection, *, today: date | None = None) -> list
     return [dict(row) for row in rows if row["last_seen_date"] >= floor]
 
 
-def charged(conn: sqlite3.Connection, *, today: date | None = None) -> list[dict]:
+def charged(conn: sqlite3.Connection, *, today: date | None = None) -> list[dict[str, Any]]:
     # Every series with a charge inside the window, owing more instalments or
     # not: an instalment already posted for a future date is money leaving the
     # account, and dropping it because the series stopped owing would hide a
@@ -59,7 +60,7 @@ def charged(conn: sqlite3.Connection, *, today: date | None = None) -> list[dict
     return [dict(row) for row in rows]
 
 
-def released_cash(conn: sqlite3.Connection, *, today: date | None = None) -> list[dict]:
+def released_cash(conn: sqlite3.Connection, *, today: date | None = None) -> list[dict[str, Any]]:
     # Money that stops leaving is money coming back, so it is counted positive:
     # written negative it would read as one more outflow.
     freed: dict[str, int] = {}
@@ -68,7 +69,7 @@ def released_cash(conn: sqlite3.Connection, *, today: date | None = None) -> lis
     return [{"month": month, "amount_cents": freed[month]} for month in sorted(freed)]
 
 
-def totals(conn: sqlite3.Connection, *, today: date | None = None) -> dict:
+def totals(conn: sqlite3.Connection, *, today: date | None = None) -> dict[str, int]:
     # Only a live series counts: a subscription last charged nine months ago is
     # the same defect the instalment window already fixed, and it inflates the
     # one number the owner reads first (RF-24).

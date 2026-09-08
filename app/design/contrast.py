@@ -11,7 +11,7 @@ def _channel(value: int) -> float:
     share = value / 255
     if share <= 0.03928:
         return share / 12.92
-    return ((share + 0.055) / 1.055) ** 2.4
+    return float(((share + 0.055) / 1.055) ** 2.4)
 
 
 def _relative_luminance(color: str) -> float:

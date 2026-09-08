@@ -15,6 +15,7 @@ from app.routers.reference import Reference, screen_date
 from app.sync import (
     STALE_DAYS,
     MissingCredentialError,
+    SyncOutcome,
     days_since,
     finished_on,
     last_runs,
@@ -58,7 +59,7 @@ def synchronise_now(request: Request) -> Response:
         conn.close()
 
 
-def _said(outcome) -> str:
+def _said(outcome: SyncOutcome) -> str:
     if outcome.status != "ok":
         return f"A sincronização falhou: {readable(outcome.message)}"
     if not outcome.transactions:

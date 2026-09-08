@@ -1,5 +1,6 @@
 import sqlite3
 from datetime import date
+from typing import Any, cast
 
 from app.queries.spending import SPENDING
 from app.settings.catalog import MEDIAN, MEDIAN_MONTHS
@@ -19,7 +20,7 @@ _SPENDING = (
 )
 
 
-def monthly(conn: sqlite3.Connection, *, today: date | None = None) -> dict:
+def monthly(conn: sqlite3.Connection, *, today: date | None = None) -> dict[str, Any]:
     months = complete_months(conn, today=today)
     income = median([_total(conn, _INCOME, month) for month in months])
     spending = median([_total(conn, _SPENDING, month) for month in months])
@@ -68,4 +69,4 @@ def median(values: list[int]) -> int:
 
 
 def _total(conn: sqlite3.Connection, query: str, month: str) -> int:
-    return conn.execute(query, (month,)).fetchone()["total"]
+    return cast(int, conn.execute(query, (month,)).fetchone()["total"])

@@ -1,5 +1,6 @@
 import sqlite3
 from datetime import date
+from typing import Any
 
 from app.commitments.live import totals as commitment_totals
 from app.offers.cost import comparison
@@ -11,7 +12,7 @@ from app.routers.render import brl
 from app.routers.render import rate as as_rate
 
 
-def snapshot(conn: sqlite3.Connection, *, today: date) -> dict:
+def snapshot(conn: sqlite3.Connection, *, today: date) -> dict[str, Any]:
     place = positions(conn)
     line = forecast(conn, today=today)
     plan = simulate(conn, BASE, today=today)
@@ -30,7 +31,7 @@ def snapshot(conn: sqlite3.Connection, *, today: date) -> dict:
     }
 
 
-def lines(numbers: dict) -> list[dict]:
+def lines(numbers: dict[str, Any]) -> list[dict[str, Any]]:
     # The screen renders these and the model receives these — one list, so the
     # claim "you find on screen every number it may cite" stays true. Showing a
     # subset would make the screen that exists to prove the model invents nothing
@@ -57,7 +58,7 @@ def lines(numbers: dict) -> list[dict]:
     ]
 
 
-def _offer_lines(row: dict) -> list[dict]:
+def _offer_lines(row: dict[str, Any]) -> list[dict[str, Any]]:
     # Decisão: a taxa e o prazo da proposta viajam dentro do rótulo, e não só no
     # valor, porque a tela de /consultor mostra os dois na comparação — uma
     # cifra visível na tela e ausente do contexto é uma cifra que a conferência
@@ -86,7 +87,7 @@ def _offer_lines(row: dict) -> list[dict]:
     return entries
 
 
-def as_text(numbers: dict) -> str:
+def as_text(numbers: dict[str, Any]) -> str:
     # Every figure the model may say, spelled the way the screen spells it. It
     # copies from here or it says it does not know: the model interprets, the
     # code computes (invariante 23).

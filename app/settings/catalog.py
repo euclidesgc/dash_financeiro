@@ -1,3 +1,5 @@
+from typing import Any
+
 CENTS = "centavos"
 BASIS_POINTS = "pontos-base"
 MONTHS = "meses"
@@ -114,9 +116,9 @@ CATALOG = (
 BY_NAME = {item["name"]: item for item in CATALOG}
 
 
-def entry(name: str) -> dict | None:
+def entry(name: str) -> dict[str, Any] | None:
     return BY_NAME.get(name)
 
 
-def of_kind(kind: str) -> tuple[dict, ...]:
+def of_kind(kind: str) -> tuple[dict[str, Any], ...]:
     return tuple(item for item in CATALOG if item["kind"] == kind)

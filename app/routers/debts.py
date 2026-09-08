@@ -9,7 +9,6 @@ from starlette.responses import Response
 from app.config import reference_date
 from app.db import connect
 from app.debts.ladder import (
-    VEHICLE,
     DebtNotFoundError,
     ladder,
     monthly_interest_cents,
@@ -19,6 +18,7 @@ from app.debts.ladder import (
 )
 from app.debts.observed import observed_rates
 from app.debts.simulate import UnknownRateError, simulate
+from app.financings import VEHICLE
 from app.settings import store
 from app.settings.catalog import SETTLEMENT, TRANSPORT
 from app.settings.typed import InvalidValueError, parse_money
@@ -116,7 +116,7 @@ def _identifier(asked: str) -> int:
         raise DebtNotFoundError(NOT_FOUND) from None
 
 
-def _debt(conn: sqlite3.Connection, asked: str) -> dict | None:
+def _debt(conn: sqlite3.Connection, asked: str) -> dict[str, Any] | None:
     try:
         return step(conn, _identifier(asked))
     except DebtNotFoundError:
@@ -128,7 +128,7 @@ def _answer(
     conn: sqlite3.Connection,
     *,
     notice: str | None = None,
-    simulation: dict | None = None,
+    simulation: dict[str, Any] | None = None,
     status_code: int = 200,
 ) -> Response:
     context = _context(conn)

@@ -1,4 +1,5 @@
 import sqlite3
+from typing import Any
 
 from app.debts.ladder import ladder
 from app.financings.money import RATE_SCALE
@@ -30,7 +31,7 @@ def total_cost(
     return payment * term_months - released_cents + fee_cents
 
 
-def compare(step: dict | None, offers: list[dict]) -> dict:
+def compare(step: dict[str, Any] | None, offers: list[dict[str, Any]]) -> dict[str, Any]:
     rows = []
     without_rate = []
     for offer in offers:
@@ -72,6 +73,6 @@ def compare(step: dict | None, offers: list[dict]) -> dict:
     return {"step": step, "rows": rows, "without_rate": without_rate}
 
 
-def comparison(conn: sqlite3.Connection) -> dict:
+def comparison(conn: sqlite3.Connection) -> dict[str, Any]:
     steps = ladder(conn)
     return compare(steps[0] if steps else None, read_all(conn))

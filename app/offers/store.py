@@ -1,5 +1,6 @@
 import sqlite3
 from datetime import date
+from typing import Any
 
 from app.offers.typed import read_form
 
@@ -19,7 +20,7 @@ ACTION = "/configuracao/proposta"
 REMOVE_ACTION = f"{ACTION}/remover"
 
 
-def read_all(conn: sqlite3.Connection) -> list[dict]:
+def read_all(conn: sqlite3.Connection) -> list[dict[str, Any]]:
     return [dict(row) for row in conn.execute(f"SELECT {_COLUMNS} FROM offers ORDER BY id")]
 
 
@@ -34,5 +35,5 @@ def remove(conn: sqlite3.Connection, name: str) -> None:
     conn.commit()
 
 
-def section(conn: sqlite3.Connection) -> dict:
+def section(conn: sqlite3.Connection) -> dict[str, Any]:
     return {"action": ACTION, "remove_action": REMOVE_ACTION, "offers": read_all(conn)}
