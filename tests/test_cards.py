@@ -11,8 +11,8 @@ from app.cards import store
 from app.cards import typed as cards_typed
 from app.cards.catalog import BY_NAME, CLOSING, DUE, FIELDS, LIMIT, RATE
 from app.db import connect
-from app.debts import ladder as ladder_module
 from app.debts.ladder import ladder, rebuild, set_rate, without_rate
+from app.financings import store as financings_store
 from app.main import create_app
 from app.migrate import SQL_FOLDER
 from app.migrations.runner import apply_migrations
@@ -142,7 +142,7 @@ def test_the_migration_moves_a_typed_rate_from_debts_to_cards(tmp_path):
 def test_every_credit_account_gets_a_card_and_keeps_it_through_a_reload(
     taxonomy_conn, tmp_path, monkeypatch
 ):
-    monkeypatch.setenv(ladder_module.MANUAL_DIR, str(tmp_path / "vazio"))
+    monkeypatch.setenv(financings_store.MANUAL_DIR, str(tmp_path / "vazio"))
     _accounts(taxonomy_conn, ("acc-cartao-1", "Cartão Azul", "CREDIT", -1674462))
     rebuild(taxonomy_conn)
     store.write(taxonomy_conn, "acc-cartao-1", LIMIT, "12.000,00")
@@ -167,7 +167,7 @@ def test_every_credit_account_gets_a_card_and_keeps_it_through_a_reload(
 def test_the_ladder_reads_the_cards_rate_and_clears_it_back_to_without_rate(
     taxonomy_conn, tmp_path, monkeypatch
 ):
-    monkeypatch.setenv(ladder_module.MANUAL_DIR, str(tmp_path / "vazio"))
+    monkeypatch.setenv(financings_store.MANUAL_DIR, str(tmp_path / "vazio"))
     _accounts(
         taxonomy_conn,
         ("acc-cartao-1", "Cartão Azul", "CREDIT", -1674462),
@@ -195,7 +195,7 @@ def test_the_ladder_reads_the_cards_rate_and_clears_it_back_to_without_rate(
 
 
 def test_set_rate_on_a_card_step_writes_to_cards_not_debts(taxonomy_conn, tmp_path, monkeypatch):
-    monkeypatch.setenv(ladder_module.MANUAL_DIR, str(tmp_path / "vazio"))
+    monkeypatch.setenv(financings_store.MANUAL_DIR, str(tmp_path / "vazio"))
     _accounts(taxonomy_conn, ("acc-cartao-1", "Cartão Azul", "CREDIT", -1674462))
     rebuild(taxonomy_conn)
     identifier = taxonomy_conn.execute("SELECT id FROM debts WHERE kind = 'card'").fetchone()[0]
@@ -231,7 +231,7 @@ def test_a_card_step_without_an_account_keeps_reading_its_rate_from_debts(taxono
 def test_an_account_that_stops_being_a_card_does_not_inherit_the_dead_cards_rate(
     taxonomy_conn, tmp_path, monkeypatch
 ):
-    monkeypatch.setenv(ladder_module.MANUAL_DIR, str(tmp_path / "vazio"))
+    monkeypatch.setenv(financings_store.MANUAL_DIR, str(tmp_path / "vazio"))
     _accounts(taxonomy_conn, ("acc-x", "Conta X", "CREDIT", -125000))
     rebuild(taxonomy_conn)
     store.write(taxonomy_conn, "acc-x", RATE, "12,5")
@@ -260,7 +260,7 @@ def test_the_vehicle_and_checking_steps_are_unaffected_when_there_is_no_card(
 ):
     folder = tmp_path / "manual"
     folder.mkdir()
-    (folder / ladder_module.VEHICLE_FILE).write_text(
+    (folder / financings_store.VEHICLE_FILE).write_text(
         json.dumps(
             {
                 "prazo_meses": 60,
@@ -270,7 +270,7 @@ def test_the_vehicle_and_checking_steps_are_unaffected_when_there_is_no_card(
             }
         )
     )
-    monkeypatch.setenv(ladder_module.MANUAL_DIR, str(folder))
+    monkeypatch.setenv(financings_store.MANUAL_DIR, str(folder))
     _accounts(taxonomy_conn, ("acc-corrente", "Conta corrente", "BANK", -100000))
     rebuild(taxonomy_conn, today=date(2026, 9, 5))
     checking_id = taxonomy_conn.execute("SELECT id FROM debts WHERE kind = 'overdraft'").fetchone()[
@@ -371,7 +371,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv("DASH_ENV_FILE", "/dev/null")
     monkeypatch.setenv("DASH_DB_PATH", str(tmp_path / "dash.sqlite"))
     monkeypatch.setenv("SESSION_SECRET", "chave-de-teste")
-    monkeypatch.setenv(ladder_module.MANUAL_DIR, str(tmp_path / "vazio"))
+    monkeypatch.setenv(financings_store.MANUAL_DIR, str(tmp_path / "vazio"))
     app = create_app()
     connection = connect()
     seed_user(connection, LOGIN, PASSWORD)
