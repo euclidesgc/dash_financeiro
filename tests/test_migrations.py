@@ -290,3 +290,21 @@ def test_reconciling_a_version_that_does_not_fit_writes_nothing(tmp_path, conn):
     assert "não se aplica" in resultado
     registradas = {row[0] for row in conn.execute("SELECT version FROM schema_migrations")}
     assert "012" not in registradas
+
+
+def test_reconciling_refuses_a_version_that_is_not_a_gap(tmp_path, conn):
+    # Sem versão registrada abaixo dela, a migração é nova e se renumera. Deixar
+    # a reconciliação aceitar este caso recria o vão que o guarda existe para
+    # fechar — o validador provou que a porta estava aberta.
+    folder = tmp_path / "sql"
+    folder.mkdir()
+    _write_sql(folder, "020_alta.sql", "CREATE TABLE marker_020 (id INTEGER PRIMARY KEY);")
+    apply_migrations(conn, folder)
+    _write_sql(folder, "010_nova.sql", "CREATE TABLE marker_010 (id INTEGER PRIMARY KEY);")
+
+    resultado = reconcile_skipped(conn, folder, "010")
+
+    assert "não é um vão" in resultado
+    assert "Renumere" in resultado
+    registradas = {row[0] for row in conn.execute("SELECT version FROM schema_migrations")}
+    assert registradas == {"020"}

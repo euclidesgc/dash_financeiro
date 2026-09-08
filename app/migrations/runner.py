@@ -122,6 +122,15 @@ def reconcile_skipped(conn: sqlite3.Connection, folder: Path, version: str) -> s
     if version in known:
         return f"a migração {version} já está registrada nesta base; nada a fazer"
 
+    highest_known = max(known, default=None)
+    if highest_known is not None and version < highest_known and not _base_pulou(known, version):
+        return (
+            f"a migração {version} não é um vão desta base: ela não tem versão registrada "
+            f"abaixo de {version}, então {version} é migração nova com número baixo. "
+            f"Renumere o arquivo para uma versão maior que {highest_known} em vez de "
+            "reconciliar — reconciliar aqui recria o vão que este guarda existe para fechar"
+        )
+
     achados = [p for p in folder.glob("*.sql") if _version_of(p) == version]
     if not achados:
         return f"não existe migração {version} em {folder}"
