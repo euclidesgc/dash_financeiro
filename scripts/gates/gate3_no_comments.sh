@@ -37,7 +37,7 @@ while IFS= read -r file || [ -n "$file" ]; do
       # Alternância, não classe: o motor de regex do awk compara byte a byte, e
       # uma classe como [ãa] espera UM byte onde "ã" ocupa dois — então as marcas
       # acentuadas que a documentação acima manda usar nunca casavam.
-      justificativa = "(por ?qu(ê|e)|motivo|decis(ã|a)o|contorno|workaround|invariante|limita(ç|c)(ã|a)o|restri(ç|c)(ã|a)o|(reason|decision|why|invariant|constraint|limitation):|ignore:|gate[0-9]-ok|coverage:ignore)"
+      justificativa = "(por ?qu(ê|e)|motivo|decis(ã|a)o|contorno|workaround:|invariante|limita(ç|c)(ã|a)o|restri(ç|c)(ã|a)o|(reason|decision|why|invariant|constraint|limitation):|ignore:|gate[0-9]-ok|coverage:ignore)"
       diretiva = "(ignore_for_file|dart format|coverage:|@|https?:|eslint-|prettier-|ts-ignore|ts-expect-error|#!|#region|#endregion)"
       bloco_justificado = 0
       # Invariante: enquanto nenhuma linha de código apareceu, o bloco que
@@ -49,13 +49,15 @@ while IFS= read -r file || [ -n "$file" ]; do
       linha = $0
       sub(/^[[:space:]]+/, "", linha)
 
-      # Contorno: comentário vazio ("#" ou "//" sem texto) é separador de
-      # parágrafo dentro de um bloco, não fecha a janela do cabeçalho nem
-      # interrompe a continuação de um bloco já justificado. `#[^!]` mais
-      # abaixo exige um segundo byte, e um "#" sozinho não tem um — sem este
-      # desvio, o separador em branco que todo cabeçalho de script usa contava
-      # como código e fechava o cabeçalho na segunda linha do arquivo.
-      if (linha ~ /^(\/\/\/?|#)[[:space:]]*$/) { next }
+      # Decisão: comentário vazio ("#" ou "//" sem texto) fecha o parágrafo e
+      # NÃO fecha a janela do cabeçalho. As duas metades foram pagas caro. Sem
+      # a segunda, o separador em branco que todo cabeçalho de script usa
+      # contava como código e fechava o cabeçalho na segunda linha do arquivo,
+      # porque `#[^!]` exige um segundo byte que um "#" sozinho não tem. Sem a
+      # primeira, uma marca em qualquer ponto do bloco contaminava todos os
+      # parágrafos seguintes: cabeçalho decorativo, nota de histórico e prosa
+      # sem marca nenhuma passavam por herdar justificativa alheia.
+      if (linha ~ /^(\/\/\/?|#)[[:space:]]*$/) { bloco_justificado = 0; next }
 
       eh_shebang = (linha ~ /^#!/)
 
@@ -72,7 +74,13 @@ while IFS= read -r file || [ -n "$file" ]; do
       if (sem_codigo_ainda) { next }
 
       if (linha ~ /gate3-ok/) { next }
-      if (tolower(linha) ~ justificativa) { bloco_justificado = 1; next }
+
+      # Invariante: a marca vale no começo do comentário, não em qualquer lugar
+      # da frase. Sem âncora, "não faço ideia do motivo disso funcionar" paga o
+      # pedágio que a marca existe para cobrar, e o portão vira enfeite.
+      texto = linha
+      sub(/^(\/\/\/?|#)[[:space:]]*/, "", texto)
+      if (tolower(texto) ~ ("^" justificativa)) { bloco_justificado = 1; next }
       if (linha ~ diretiva) { next }
 
       # Continuação de um bloco cuja primeira linha declarou a razão.

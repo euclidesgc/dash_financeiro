@@ -82,6 +82,35 @@ $h This script backs up the database nightly and rotates old copies.
 echo hi
 EOF
 
+paragrafo_herdado="$tmp/paragrafo_herdado.py"
+cat > "$paragrafo_herdado" <<EOF
+def f():
+    x = 1
+    ${h} Reason: retries protect against a flaky upstream, not a local bug.
+    ${h}
+    ${h} ---- secao decorativa sem marca nenhuma ----
+    y = 2
+    return x + y
+EOF
+
+historia_herdada="$tmp/historia_herdada.py"
+cat > "$historia_herdada" <<EOF
+def f():
+    x = 1
+    ${h} Decision: the ceiling is twelve digits.
+    ${h}
+    ${h} antes era feito de outra forma, mudou na fase 12
+    return x
+EOF
+
+marca_no_meio_da_frase="$tmp/marca_no_meio_da_frase.py"
+cat > "$marca_no_meio_da_frase" <<EOF
+def f():
+    x = 1
+    ${h} I have no idea why this works but for some reason: it does, whatever
+    return x
+EOF
+
 saida="$(find "$tmp" -type f | bash "$alvo")"
 
 limpo() { # limpo <nome> <arquivo>
@@ -110,6 +139,9 @@ acusado "comentário sem marca nenhuma é acusado" "$sem_marca" 3
 limpo "cabeçalho de arquivo sem marca passa" "$cabecalho"
 limpo "cabeçalho depois de shebang e bloco de licença passa" "$cabecalho_com_licenca"
 acusado "o mesmo texto, ao lado de código, é acusado" "$mesmo_texto_no_meio" 3
+acusado "parágrafo sem marca depois de linha de comentário vazia é acusado" "$paragrafo_herdado" 5
+acusado "nota de histórico não herda a justificativa do parágrafo anterior" "$historia_herdada" 5
+acusado "marca no meio da frase não paga o pedágio" "$marca_no_meio_da_frase" 3
 
 if [ "$falhas" -eq 0 ]; then
   printf '\n✓ gate3: reconhece inglês e português, e distingue cabeçalho de comentário ao lado de código.\n'
