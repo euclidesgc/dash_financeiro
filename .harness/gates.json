@@ -5,30 +5,16 @@
       "id": "G3",
       "script": "scripts/gates/gate3_no_comments.sh",
       "escape": "gate3-ok",
-      "applies_to": [
-        "app/**",
-        "financas/**",
-        "ingestao/**"
-      ],
-      "exempt": [
-        "**/tests/**",
-        "**/migrations/**"
-      ],
-      "cobra": "comentário que descreve mecânica em vez de justificar decisão. Cobra do commit em que o portão passou a medir para a frente: a convenção da marca nasceu ali, e a árvore anterior — 562 comentários em 60 arquivos — é item de roadmap, não dívida de quem escreve agora.",
-      "pack": "python",
-      "modo": "diff",
-      "desde": "8b75a6c6cd9c3b20c8c3fe59438af0b036694b7a"
+      "applies_to": ["app/**", "financas/**", "ingestao/**"],
+      "exempt": ["**/tests/**", "**/migrations/**"],
+      "cobra": "comentário que descreve mecânica em vez de justificar decisão. Cobra a árvore inteira: a varredura do item 034 julgou bloco a bloco tudo o que a marca não cobria, e a fase 2 fechou o prazo que o portão carregava desde a fase 1.",
+      "pack": "python"
     },
     {
       "id": "G4",
       "script": "scripts/gates/gate4_no_todo.sh",
       "escape": null,
-      "applies_to": [
-        "app/**",
-        "financas/**",
-        "ingestao/**",
-        "tests/**"
-      ],
+      "applies_to": ["app/**", "financas/**", "ingestao/**", "tests/**"],
       "exempt": [],
       "cobra": "pendência marcada no código em vez de virar roadmap ou divergência",
       "pack": "python"
@@ -37,14 +23,8 @@
       "id": "G7",
       "script": "scripts/gates/gate7_layer_boundary.sh",
       "escape": "gate7-ok",
-      "applies_to": [
-        "app/**",
-        "financas/**",
-        "ingestao/**"
-      ],
-      "exempt": [
-        "**/tests/**"
-      ],
+      "applies_to": ["app/**", "financas/**", "ingestao/**"],
+      "exempt": ["**/tests/**"],
       "cobra": "router montando consulta ou controlando transação, sem passar pelo service",
       "pack": "python"
     }

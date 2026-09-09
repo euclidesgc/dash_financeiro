@@ -68,8 +68,9 @@ def _mark(
         except DismissRefusedError as refusal:
             return _answer(request, conn, today, notice=str(refusal), status_code=400)
         conn.commit()
-        # The whole screen comes back from the write, totals included: asking for
-        # a reload would take the number the owner just changed out of sight.
+        # Reason: the whole screen comes back from the write, totals
+        # included — asking for a reload would take the number the owner
+        # just changed out of sight.
         return _answer(request, conn, today)
     finally:
         conn.close()
@@ -91,9 +92,9 @@ def _answer(
 
 
 def _labels(conn: sqlite3.Connection, rows: list[dict[str, Any]]) -> dict[str, str]:
-    # The reading name of a series is the description the source sent; a payee
-    # the owner named, or one the Pluggy names, takes its place. Measured: the
-    # 115 series keys of this base are payees that exist.
+    # Reason: the reading name of a series is the description the source
+    # sent; a payee the owner named, or one the Pluggy names, takes its
+    # place. Measured: the 115 series keys of this base are payees that exist.
     resolved = payee_labels(conn)
     return {row["series_key"]: resolved.get(row["series_key"], row["description"]) for row in rows}
 
@@ -108,20 +109,21 @@ def _context(conn: sqlite3.Connection, today: date) -> dict[str, Any]:
         "dismissed": [row for row in recurring if row["dismissed"]],
         "installments": live,
         "released": released_cash(conn, today=today),
-        # Motivo: the route calls a finished domain reading, the same way it already
-        # calls released_cash and calendar above, and builds no join of its own.
+        # Reason: the route calls a finished domain reading, the same way it
+        # already calls released_cash and calendar above, and builds no join
+        # of its own.
         "invoice": invoice_curve(conn, today=today),
         "calendar": calendar(conn, today=today),
         "window_start": first.isoformat(),
         "window_end": last.isoformat(),
         "window_days": WINDOW_DAYS,
-        # A short calendar reads as a quiet month, so the screen counts the
-        # series it left out for lack of a recent charge instead of shrinking
-        # in silence (RF-22).
+        # Reason: a short calendar reads as a quiet month, so the screen
+        # counts the series it left out for lack of a recent charge instead
+        # of shrinking in silence (RF-22).
         "stale": len([row for row in recurring if not row["live"]]),
-        # The reading name of a series is the description the source sent; the key
-        # underneath it is what the form posts back, and the two are shown by the
-        # same macro the other screens use.
+        # Reason: the reading name of a series is the description the source
+        # sent; the key underneath it is what the form posts back, and the
+        # two are shown by the same macro the other screens use.
         "labels": _labels(conn, recurring + live),
         "screen": SCREEN,
         "dismiss_url": DISMISS,

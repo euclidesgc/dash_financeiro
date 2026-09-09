@@ -37,9 +37,10 @@ def check_period(start: object, end: object) -> tuple[date, date]:
 
 
 def default_period(today: date) -> tuple[str, str]:
-    # The window ends on the reference date, not on the last day of the month:
-    # the screen answers "how much left", and summing an instalment already
-    # posted for a future date would answer a different question.
+    # Reason: the window ends on the reference date, not on the last day of
+    # the month — the screen answers "how much left", and summing an
+    # instalment already posted for a future date would answer a different
+    # question.
     return date(today.year, today.month, 1).isoformat(), today.isoformat()
 
 

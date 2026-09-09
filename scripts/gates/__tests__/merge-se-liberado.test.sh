@@ -30,21 +30,21 @@ raiz="$(cd "$(dirname "$0")/../../.." && pwd)"
 alvo="$raiz/scripts/merge-se-liberado.sh"
 falhas=0
 
-# O teste falha FECHADO. Sem esta linha, um alvo ausente faz o `bash` sair 1 e
-# os casos que esperam recusa passam — todos eles —, e só o caminho feliz acusa.
-# Um teste que aprova a maior parte por não ter o que medir é o mesmo defeito
-# que o script sob teste existe para matar.
+# Reason: the test fails CLOSED. Without this line, a missing target makes
+# `bash` exit 1 and every case expecting a refusal passes — all of them —
+# and only the happy path flags anything. A test that approves most of
+# itself for having nothing to measure is the same defect the script under
+# test exists to kill.
 [ -f "$alvo" ] || {
   printf '✗ merge-se-liberado: o alvo %s não existe — não há o que medir.\n' "$alvo" >&2
   exit 2
 }
 
-# caso <nome> <esperado> <checks-tsv> [rótulos] [pré-condições] [trecho da recusa]
-#
-# O trecho é o que separa recusar do recusar **pelo motivo certo**. Sem ele,
-# um dublo que devolve a linha de pré-condições inteira onde o script antigo
-# esperava só o estado de merge recusa por estado desconhecido, o caso fica
-# verde, e o teste deixa de morder exatamente o defeito que existe para prender.
+# Reason: the snippet is what separates refusing from refusing **for the
+# right reason**. Without it, a double that returns the whole precondition
+# line where the old script expected just the merge state fails with an
+# unknown-state refusal, the case stays green, and the test stops biting the
+# exact defect it exists to catch.
 caso() {
   local nome="$1" esperado="$2" checks="$3" rotulos="${4:-}" precond="${5:-false\tOPEN\tCLEAN}" trecho="${6:-}" obtido dublo saida
   dublo="$(mktemp -d)"
@@ -79,24 +79,25 @@ caso 'pendente recusa'              1 'ci\tpass\t1s\turl\nportoes\tpending\t0\tu
 caso 'vermelho recusa'              1 'ci\tfail\t1s\turl\n'
 caso 'rótulo de bloqueio recusa'    1 'ci\tpass\t1s\turl\n' 'blocked-on-D-007'
 caso 'pendente recusa mesmo com o resto verde' 1 'a\tpass\t1s\turl\nb\tpass\t1s\turl\nc\tpending\t0\turl\n'
-# Nenhuma verificação não é verificação verde: pode ser CI que não disparou,
-# cota esgotada, fluxo desabilitado ou filtro de caminho. Num projeto real o
-# Actions parou por cota e dois PRs foram ao encerramento sem nenhuma suíte.
+# Reason: no check is not a green check — it can be CI that never triggered,
+# an exhausted quota, a disabled workflow, or a path filter. On a real
+# project Actions stopped for quota and two PRs went to closing with no
+# suite at all.
 caso 'sem verificação nenhuma recusa'  1 ''
-# A lista vazia logo depois de um push ainda vai encher — o GitHub leva segundos
-# para registrar os checks. Quem recusa na primeira leitura vazia recusa todo PR
-# recém-empurrado. O caso acima só vale porque a espera esgotou antes.
+# Reason: the empty list right after a push will still fill up — GitHub
+# takes seconds to register the checks. Whoever refuses on the first empty
+# reading refuses every freshly pushed PR. The case above only holds because
+# the wait ran out first.
 caso 'rascunho recusa, e diz que é rascunho'     1 'ci\tpass\t1s\turl\n' '' 'true\tOPEN\tCLEAN'  'está em rascunho'
 caso 'PR fechado recusa, e diz que não está aberto' 1 'ci\tpass\t1s\turl\n' '' 'false\tCLOSED\tCLEAN' 'não está aberto'
 caso 'estado de merge sujo recusa nomeando o estado' 1 'ci\tpass\t1s\turl\n' '' 'false\tOPEN\tDIRTY' 'estado DIRTY'
 caso 'pré-condição ilegível recusa por não medir' 1 'ci\tpass\t1s\turl\n' '' 'sei la\t\t' 'impossibilidade de medição'
 
-# caso_via <nome> <via esperada: pr-merge|stack-merge> <json da pilha>
-#
-# O `gh stack view --json` do dublo devolve a pilha inteira, e o rastro grava
-# qual comando de merge o script escolheu. Sem o rastro o teste só saberia que
-# o script saiu 0 — que é verdade nas duas vias, e não distingue a que funciona
-# da que o GitHub recusa.
+# Reason: the double's `gh stack view --json` returns the whole stack, and
+# the trace records which merge command the script chose. Without the trace
+# the test would only know the script exited 0 — which is true on both
+# paths, and does not tell the one that works apart from the one GitHub
+# refuses.
 caso_via() {
   local nome="$1" esperada="$2" json="$3" dublo rastro obtida saida rc
   dublo="$(mktemp -d)"; rastro="$dublo/via"
@@ -125,9 +126,10 @@ GH
   fi
 }
 
-# caso_pilha_ilegivel: a pilha responde, a contagem não sai, e a tranca recusa
-# por não ter medido — nunca cai no merge do PR "porque deu para ler alguma
-# coisa". É a mesma regra do cabeçalho, aplicada ao ramo novo.
+# Reason: caso_pilha_ilegivel — the stack answers, the count does not come
+# out, and the lock refuses for failing to measure — it never falls back to
+# merging the PR "because it managed to read something". It is the same
+# rule from the header, applied to the new branch.
 caso_pilha_ilegivel() {
   local dublo saida rc
   dublo="$(mktemp -d)"
@@ -161,10 +163,11 @@ if command -v jq >/dev/null 2>&1; then
     '{"branches":[{"name":"a","pr":{"number":42,"state":"OPEN"}}]}'
   caso_via 'pilha de dois PRs mergeia pela pilha'  stack-merge \
     '{"branches":[{"name":"a","pr":{"number":41,"state":"OPEN"}},{"name":"b","pr":{"number":42,"state":"OPEN"}}]}'
-  # `gh stack view` só responde pela branch em que se está. Quem fecha um PR de
-  # fora da própria pilha — o caso de quem acompanha uma corrida sem sair da
-  # branch onde estava — mediria uma corrente que não contém o alvo. Com dois
-  # PRs nela, a via atômica levaria junto PRs que ninguém mandou mergear.
+  # Reason: `gh stack view` only answers for the branch you are on. Whoever
+  # closes a PR from outside their own stack — the case of someone following
+  # a run without leaving the branch they were on — would measure a chain
+  # that does not contain the target. With two PRs on it, the atomic path
+  # would take along PRs nobody asked to merge.
   caso_via 'PR fora da pilha medida vai pela via do PR'  pr-merge \
     '{"branches":[{"name":"a","pr":{"number":90,"state":"OPEN"}},{"name":"b","pr":{"number":91,"state":"OPEN"}}]}'
   caso_pilha_ilegivel

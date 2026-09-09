@@ -77,11 +77,11 @@ def installment_series(conn: sqlite3.Connection) -> list[dict[str, Any]]:
 def _purchases(
     items: list[tuple[sqlite3.Row, int | None]],
 ) -> list[list[tuple[sqlite3.Row, int | None]]]:
-    # The same store has several open purchases at once, so the instalment value
-    # separates them — but the first instalment of a purchase almost always
-    # differs from the rest by rounding, and an exact value splits one purchase
-    # into two series, the older half still owing instalments already paid
-    # (RF-05, RF-06).
+    # Reason: the same store has several open purchases at once, so the
+    # instalment value separates them — but the first instalment of a
+    # purchase almost always differs from the rest by rounding, and an exact
+    # value splits one purchase into two series, the older half still owing
+    # instalments already paid (RF-05, RF-06).
     clusters: list[tuple[int, list[tuple[sqlite3.Row, int | None]]]] = []
     for row, current in sorted(items, key=lambda item: abs(item[0]["amount_cents"])):
         amount = abs(row["amount_cents"])
@@ -108,8 +108,8 @@ def _installment(
         "series_key": key,
         "description": last["description"] or key,
         "account": last["account"],
-        # The last occurrence, not the first: it is the one that predicts what
-        # still leaves the account (RF-09).
+        # Reason: the last occurrence, not the first — it is the one that
+        # predicts what still leaves the account (RF-09).
         "amount_cents": -abs(last["amount_cents"]),
         "months_observed": len(months),
         "months_consecutive": consecutive_run(sorted(months)),
@@ -147,9 +147,9 @@ def _days(occurrences: list[sqlite3.Row]) -> list[int]:
 
 
 def _average(occurrences: list[sqlite3.Row]) -> int | None:
-    # A series whose value swings has no "average value" that predicts anything,
-    # and the three cuts together are what separate a live commitment from a
-    # coincidence of three months (RF-09).
+    # Reason: a series whose value swings has no "average value" that
+    # predicts anything, and the three cuts together are what separate a
+    # live commitment from a coincidence of three months (RF-09).
     values: list[int] = [abs(row["amount_cents"]) for row in occurrences]
     mean = sum(values) / len(values)
     if mean == 0:

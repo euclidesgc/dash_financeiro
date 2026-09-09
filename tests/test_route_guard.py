@@ -19,8 +19,8 @@ def client(tmp_path, monkeypatch):
         yield opened
 
 
-# FastAPI keeps an included router as a single wrapper entry in app.routes, so
-# the sweep has to walk into it to reach the routes it carries.
+# Reason: FastAPI keeps an included router as a single wrapper entry in
+# app.routes, so the sweep has to walk into it to reach the routes it carries.
 def _registered(app, routes=None, prefix=""):
     for route in app.routes if routes is None else routes:
         nested = getattr(route, "original_router", None)
@@ -56,8 +56,8 @@ def test_the_login_form_is_the_open_door(client):
     for attribute in ('method="post"', 'action="/login"', 'name="login"', 'name="senha"'):
         assert attribute in form.text
 
-    # The rejection message proves the handler answered: had the guard caught
-    # this route, the answer would be a redirect instead.
+    # Reason: the rejection message proves the handler answered — had the
+    # guard caught this route, the answer would be a redirect instead.
     rejected = client.post("/login", data={"login": "teste", "senha": "errada"})
 
     assert rejected.status_code == 401

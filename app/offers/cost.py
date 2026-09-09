@@ -16,10 +16,10 @@ def total_cost(
     term_months: int,
     fee_cents: int = 0,
 ) -> int:
-    # Invariante: sem rota na frente para barrar antes — a comparação da fase
-    # 2 chama esta função direto —, prazo zero divide por zero e taxa negativa
-    # devolve custo negativo. A rota de proposta já recusa os dois; esta função
-    # precisa recusar sozinha também.
+    # Invariant: with no route in front to block it first — the phase-2
+    # comparison calls this function directly — a zero term divides by
+    # zero and a negative rate returns a negative cost. The offer route
+    # already refuses both; this function needs to refuse on its own too.
     if term_months <= 0:
         raise InvalidCostInputError("Prazo precisa ser maior que zero.")
     if monthly_rate_bp < 0:
@@ -48,10 +48,11 @@ def compare(step: dict[str, Any] | None, offers: list[dict[str, Any]]) -> dict[s
         difference_cents = None
         cheaper = None
         if step is not None:
-            # Decisão: mesmo valor liberado e mesmo prazo da proposta, à taxa do
-            # degrau atual, e sem custo de contratação — é a única base em que um
-            # cheque especial, que não tem cronograma próprio, tem custo até
-            # zerar (registrado no plano como lacuna do brief).
+            # Decision: same amount released and same term as the offer,
+            # at the current step's rate, and with no origination cost — it
+            # is the only basis on which an overdraft, which has no
+            # schedule of its own, has a cost to pay down to zero
+            # (recorded in the plan as a gap in the brief).
             stay_cents = total_cost(
                 offer["released_cents"], step["monthly_rate_bp"], offer["term_months"], 0
             )

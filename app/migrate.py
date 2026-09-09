@@ -30,9 +30,10 @@ def reconcile(version: str, path: str | None = None) -> str:
 
 
 if __name__ == "__main__":
-    # Decisão: a reconciliação é um comando explícito e não um modo automático.
-    # Ela grava uma versão como aplicada numa base que a pulou, e essa é uma
-    # afirmação sobre o esquema que só quem olhou o arquivo pode fazer.
+    # Decision: reconciliation is an explicit command and not an automatic
+    # mode. It records a version as applied on a base that skipped it, and
+    # that is a claim about the schema only someone who looked at the file
+    # can make.
     if len(sys.argv) == 3 and sys.argv[1] == "--reconciliar":
         reconcile(sys.argv[2])
     else:

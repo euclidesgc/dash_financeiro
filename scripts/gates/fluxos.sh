@@ -47,7 +47,8 @@ for f in fluxos:
         print(f"::error::{f.name} não é YAML legível ({erro}) — não consegui medir.", file=sys.stderr)
         raise SystemExit(1)
 
-    # `on:` vira booleano True no YAML 1.1, que é como o PyYAML o lê.
+    # Reason: `on:` turns into the boolean True in YAML 1.1, which is how
+    # PyYAML reads it.
     gatilhos = doc.get("on", doc.get(True)) or {}
     if not isinstance(gatilhos, dict) or "pull_request" not in gatilhos:
         continue
@@ -63,13 +64,12 @@ for f in fluxos:
         if "github.event.pull_request.draft" not in str((job or {}).get("if", "")):
             sem_guarda.append(f"{f.name}:{nome}")
 
-    # O DESENHO DE DOIS ESTÁGIOS
-    #
-    # O fluxo que delega para uma suíte reutilizável a chama duas vezes: em casa
-    # primeiro, na nuvem depois, e a segunda depende da primeira. Sem o `needs`,
-    # as duas rodam em paralelo e a nuvem deixa de ser confirmação para virar
-    # cópia — o dobro do custo pelo mesmo veredicto. Sem a ordem, o filtro barato
-    # deixa de filtrar.
+    # Reason: this is the two-stage design — the workflow that delegates to a
+    # reusable suite calls it twice: at home first, in the cloud after, and
+    # the second depends on the first. Without `needs`, the two run in
+    # parallel and the cloud stops being confirmation and becomes a copy —
+    # double the cost for the same verdict. Without the order, the cheap
+    # filter stops filtering.
     casa = {n: j for n, j in jobs.items() if str((j or {}).get("with", {}).get("runner", "")) == "self-hosted"}
     nuvem = {n: j for n, j in jobs.items() if str((j or {}).get("with", {}).get("runner", "")) == "ubuntu-latest"}
     if casa and nuvem:

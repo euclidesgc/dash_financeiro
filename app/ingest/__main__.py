@@ -36,17 +36,17 @@ def main() -> int:
         print(f"ingest failed: {result.message}", file=sys.stderr)
         return 1
     print(f"ingested {result.message}", flush=True)
-    # A load that is not classified leaves every reader between two commands
-    # looking at rows without group, nature or essentiality.
+    # Reason: a load that is not classified leaves every reader between two
+    # commands looking at rows without group, nature or essentiality.
     status = seed_command()
     if status != 0:
         return status
     status = classify_command()
     if status != 0:
         return status
-    # The recomputation is idempotent, so running it always costs nothing, and a
-    # base loaded without commitments would leave the screen empty between two
-    # commands.
+    # Reason: the recomputation is idempotent, so running it always costs
+    # nothing, and a base loaded without commitments would leave the screen
+    # empty between two commands.
     status = recompute_command()
     if status != 0:
         return status

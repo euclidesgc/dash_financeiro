@@ -22,11 +22,11 @@ def category_labels() -> dict[str, str]:
 
 
 def seed_taxonomy(conn: sqlite3.Connection, seed: dict[str, Any] | None = None) -> None:
-    # Reconciles instead of only inserting: the CLI is the one path that
-    # carries a renamed vocabulary to a database the owner already seeded, and
-    # ON CONFLICT DO NOTHING would leave a retired group name standing forever
-    # (app/db.py:27 then blocks its deletion once a rule or transaction still
-    # points at it).
+    # Reason: this reconciles instead of only inserting — the CLI is the one
+    # path that carries a renamed vocabulary to a database the owner already
+    # seeded, and ON CONFLICT DO NOTHING would leave a retired group name
+    # standing forever (app/db.py:27 then blocks its deletion once a rule or
+    # transaction still points at it).
     data = seed or load_seed()
     conn.executemany(
         "INSERT INTO category_groups (name, position, is_fallback) VALUES (?, ?, ?) "
@@ -71,9 +71,10 @@ def seed_taxonomy(conn: sqlite3.Connection, seed: dict[str, Any] | None = None) 
             for entry in data["rules"]
         ],
     )
-    # Written before the retired groups are deleted below: a category the
-    # owner's machine already carries under an old vocabulary can still be
-    # pointing at one of them, and app/db.py:27 blocks the delete while it does.
+    # Reason: written before the retired groups are deleted below — a
+    # category the owner's machine already carries under an old vocabulary
+    # can still be pointing at one of them, and app/db.py:27 blocks the
+    # delete while it does.
     conn.executemany(
         "INSERT INTO categories (name, group_id) VALUES (?, ?) "
         "ON CONFLICT (name) DO UPDATE SET group_id = excluded.group_id",

@@ -164,8 +164,9 @@ def test_reclassifying_the_same_base_changes_nothing(taxonomy_conn, seed, vocabu
 
 
 def test_the_observed_categories_are_recorded(taxonomy_conn, seed, vocabulary, rows):
-    # `seed_taxonomy` also seeds the known tree (77 categories), so a category
-    # the data observes is asserted as present, not as the whole table.
+    # Reason: `seed_taxonomy` also seeds the known tree (77 categories), so a
+    # category the data observes is asserted as present, not as the whole
+    # table.
     conn = classified(load(taxonomy_conn, rows), seed, vocabulary, [])
     names = {row[0] for row in conn.execute("SELECT name FROM categories")}
     assert {"Compras", "Saude", "Nada"} <= names

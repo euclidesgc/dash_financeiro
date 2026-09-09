@@ -18,9 +18,10 @@ def invoice_month(when: str, closing_day: int | None) -> str:
 
 def payment_month(when: str, closing_day: int | None, due_day: int | None) -> str:
     anchor = invoice_month(when, closing_day)
-    # Motivo (D-006): closing_day decides which invoice a parcel belongs to;
-    # due_day decides the month that invoice leaves the account. The offset is
-    # constant per card, so it moves the whole curve and changes no sum.
+    # Reason: (D-006) closing_day decides which invoice a parcel belongs
+    # to; due_day decides the month that invoice leaves the account. The
+    # offset is constant per card, so it moves the whole curve and changes
+    # no sum.
     if closing_day is None or due_day is None:
         return end_month(anchor, 0)
     return end_month(anchor, 1 if due_day < closing_day else 0)

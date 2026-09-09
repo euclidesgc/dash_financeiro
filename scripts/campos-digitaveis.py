@@ -18,18 +18,19 @@ _INPUT_TAG = re.compile(r"<input\b[^>]*>", re.IGNORECASE)
 _ATTRIBUTE = re.compile(r'([\w-]+)\s*=\s*"([^"]*)"')
 
 _IGNORED_TYPES = {"submit", "hidden"}
-# Motivo: type="date" tem medida e teto próprios do navegador — nenhum aceita
-# maxlength no widget de data, e não há forma de declarar um sem que o
-# navegador o ignore. Ele conta como campo digitável (RF-01/RF-02 falam de
-# todo campo), mas nunca é acusado por não ter maxlength.
+# Reason: type="date" has its own browser-owned measure and ceiling — none
+# accepts maxlength on the date widget, and there is no way to declare one
+# without the browser ignoring it. It counts as a typed field (RF-01/RF-02
+# talk about every field), but is never flagged for lacking maxlength.
 _DATE_TYPE = "date"
 
 _NUMERIC_INPUTMODES = {"decimal", "numeric"}
-# Motivo: o teto de um campo de dinheiro, taxa ou prazo vem sempre de um
-# destes quatro nomes em app/settings/limits.py (RF-03) — nunca de um número
-# solto no template. Reconhecer o campo pelo nome do teto que ele declara é
-# mais firme do que adivinhar pelo `name` do campo, e continua valendo
-# quando um campo novo nascer com um `name` diferente destes.
+# Reason: the ceiling of a money, rate or term field always comes from one
+# of these four names in app/settings/limits.py (RF-03) — never from a
+# loose number in the template. Recognising the field by the name of the
+# ceiling it declares is sturdier than guessing from the field's `name`,
+# and keeps holding when a new field is born with a different `name` than
+# these.
 _FINANCIAL_MAXLENGTH_MARKERS = (
     "limits.MONEY_FIELD_MAXLENGTH",
     "limits.RATE_FIELD_MAXLENGTH",

@@ -20,8 +20,8 @@ def _moment(now: datetime | None) -> datetime:
     return now
 
 
-# Every stamp is written with the same precision so that the window filter can
-# compare them as text, which is what SQLite indexes.
+# Reason: every stamp is written with the same precision so that the window
+# filter can compare them as text, which is what SQLite indexes.
 def _stamp(moment: datetime) -> str:
     return moment.astimezone(UTC).isoformat(timespec="microseconds")
 
@@ -38,8 +38,9 @@ def record_failure(conn: sqlite3.Connection, ip: str, *, now: datetime | None = 
     _record(conn, ip, 0, now)
 
 
-# The trail of who got in and when is what an incident asks for first; the block
-# counter reads only the failures, so this row never changes what it decides.
+# Reason: the trail of who got in and when is what an incident asks for
+# first; the block counter reads only the failures, so this row never
+# changes what it decides.
 def record_success(conn: sqlite3.Connection, ip: str, *, now: datetime | None = None) -> None:
     _record(conn, ip, 1, now)
 

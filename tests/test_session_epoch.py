@@ -21,8 +21,8 @@ def database(tmp_path, monkeypatch):
     conn.close()
 
 
-# Every client is a fresh app over the same file, which is what a restart of
-# the server leaves behind: the database, and nothing else.
+# Reason: every client is a fresh app over the same file, which is what a
+# restart of the server leaves behind — the database, and nothing else.
 def _restarted() -> TestClient:
     return TestClient(create_app(), follow_redirects=False)
 

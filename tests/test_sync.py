@@ -179,9 +179,9 @@ def test_the_age_is_counted_over_the_local_date(monkeypatch, request):
     stamped = {"finished_at": "2026-09-07T02:00:00+00:00"}
     monkeypatch.setenv("TZ", "America/Sao_Paulo")
     time.tzset()
-    # The env var is restored by monkeypatch, but the process zone is not until
-    # tzset is called again: without this the zone leaks into every test that
-    # runs after this one in the same worker.
+    # Reason: the env var is restored by monkeypatch, but the process zone is
+    # not until tzset is called again — without this the zone leaks into
+    # every test that runs after this one in the same worker.
     request.addfinalizer(time.tzset)
 
     assert days_since(stamped, date(2026, 9, 6)) == 0

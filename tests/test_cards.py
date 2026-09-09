@@ -124,9 +124,9 @@ def test_the_migration_moves_a_typed_rate_from_debts_to_cards(tmp_path):
 
     applied = apply_migrations(conn, SQL_FOLDER)
 
-    # Igualdade aqui congela a lista inteira de migrações: ela passa enquanto
-    # a 013 for a última e reprova o item seguinte que acrescentar a sua, por
-    # um motivo que não é dele.
+    # Reason: this equality freezes the whole migration list — it passes while
+    # 013 is the last one and fails the next item that adds its own, for a
+    # reason that is not its fault.
     assert "013_cards.sql" in applied
     assert [name for name in applied if name.split("_", 1)[0] < BEFORE] == []
     assert [
@@ -186,8 +186,9 @@ def test_the_ladder_reads_the_cards_rate_and_only_erase_clears_it_back_to_withou
     assert [step["monthly_rate_bp"] for step in steps] == [1250, 352]
     assert without_rate(taxonomy_conn) == []
 
-    # set_rate reuses the cards writer, and a blank rate through it must obey
-    # the same rule as every other card field: RF-01, not a hidden clear.
+    # Reason: set_rate reuses the cards writer, and a blank rate through it
+    # must obey the same rule as every other card field — RF-01, not a hidden
+    # clear.
     set_rate(taxonomy_conn, checking_id, "3,52")
     store.write(taxonomy_conn, "acc-cartao-1", RATE, "")
     steps = ladder(taxonomy_conn)
@@ -338,8 +339,9 @@ def test_write_refuses_an_account_that_is_not_a_credit_card(taxonomy_conn):
     with pytest.raises(InvalidValueError) as wrong_type:
         store.write(taxonomy_conn, "acc-corrente", LIMIT, "12.000,00")
 
-    # Same refusal for "no such account" and "account exists but is not a
-    # credit card": the owner never learns that acc-corrente exists at all.
+    # Reason: same refusal for "no such account" and "account exists but is
+    # not a credit card" — the owner never learns that acc-corrente exists at
+    # all.
     assert str(wrong_type.value) == str(not_found.value).replace("acc-inexistente", "acc-corrente")
     assert (
         taxonomy_conn.execute(
@@ -351,9 +353,9 @@ def test_write_refuses_an_account_that_is_not_a_credit_card(taxonomy_conn):
 
 def test_read_never_shows_a_row_forged_for_a_non_credit_account(taxonomy_conn):
     _accounts(taxonomy_conn, ("acc-corrente", "Conta corrente", "BANK", -100000))
-    # Stands in for the pre-fix bug: a row that reached `cards` for an account
-    # that is not of type CREDIT, by whatever path. The join in `read` is the
-    # last line of defence, independent of what let the row in.
+    # Reason: stands in for the pre-fix bug — a row that reached `cards` for an
+    # account that is not of type CREDIT, by whatever path. The join in `read`
+    # is the last line of defence, independent of what let the row in.
     taxonomy_conn.execute(
         "INSERT INTO cards (account_id, limit_cents) VALUES ('acc-corrente', 500000)"
     )

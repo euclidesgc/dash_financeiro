@@ -13,9 +13,9 @@ from app.taxonomy.seed import load_seed
 
 @pytest.fixture(autouse=True, scope="session")
 def ignore_the_owner_env_file():
-    # load_config falls back to the repository .env, so without this the suite
-    # reads the owner's real credentials, and a test that unsets a variable to
-    # exercise its absence gets the value handed back by the file.
+    # Reason: load_config falls back to the repository .env, so without this
+    # the suite reads the owner's real credentials, and a test that unsets a
+    # variable to exercise its absence gets the value handed back by the file.
     os.environ["DASH_ENV_FILE"] = os.devnull
 
 
@@ -75,11 +75,12 @@ def rule(match_kind: str, match_value: str, group: str, nature: str, essentialit
 
 @pytest.fixture(autouse=True)
 def no_network(monkeypatch):
-    # Two modules of app/ leave for the internet, and each test that exercises
-    # one used to install its own monkeypatch. A test that forgets goes to the
-    # real network, and then the suite passes or fails by what a third party
-    # answered. Only the module-level helpers are replaced: the TestClient
-    # drives httpx through a client instance of its own, which is not egress.
+    # Reason: two modules of app/ leave for the internet, and each test that
+    # exercises one used to install its own monkeypatch. A test that forgets
+    # goes to the real network, and then the suite passes or fails by what a
+    # third party answered. Only the module-level helpers are replaced: the
+    # TestClient drives httpx through a client instance of its own, which is
+    # not egress.
     def refused(*args, **kwargs):
         raise AssertionError("o teste tentou sair para a rede")
 

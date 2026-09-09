@@ -34,11 +34,11 @@ LOGIN = "teste"
 PASSWORD = "senha-teste-9k2"
 REFERENCE = date(2026, 9, 5)
 
-# Motivo: a coerência dos campos (RF-03) precisa de uma dívida sem taxa (para
-# o campo de /dividas), um cartão (para a seção de cartões), um financiamento
-# de cada tipo (para a seção de financiamentos e para a escada com taxa) e
-# uma proposta (para a seção de propostas) — a mesma base que qualquer tela
-# real teria, só que pequena.
+# Reason: field coherence (RF-03) needs a debt with no rate (for the
+# /dividas field), a card (for the cards section), one financing of each
+# kind (for the financings section and for the ladder with a rate), and an
+# offer (for the offers section) — the same base any real screen would
+# have, only small.
 OVERDRAFT_ACCOUNT = {
     "id": "acc-cheque-especial",
     "type": "BANK",
@@ -362,8 +362,9 @@ def test_coerencia_dos_campos_em_configuracao(campos_client):
     client, _target = campos_client
     page = client.get("/configuracao").text
 
-    # Fatos e metas: a mesma marcação atende dinheiro (quitação/transporte) e
-    # meses (reserva/mediana) — o teto e o inputmode seguem a unidade do item.
+    # Reason: facts and goals share the same markup for both money
+    # (settlement/transport) and months (reserve/median) — the ceiling and the
+    # inputmode follow the unit of the item.
     assert _maxlength_of(page, "campo-quitacao-cdc") == limits.MONEY_FIELD_MAXLENGTH
     assert _inputmode_of(page, "campo-quitacao-cdc") == "decimal"
     assert _maxlength_of(page, "campo-reserva-meses") == limits.MAX_DIGITS

@@ -17,18 +17,18 @@ __all__ = (
 
 AXES_PATH = Path(__file__).resolve().parent / "axes.json"
 
-# The five axis names are interface vocabulary, and no code file of app/ may
-# carry one as a literal (RF-08), so they live in data next to the mapping to
-# the column each one partitions.
+# Reason: the five axis names are interface vocabulary, and no code file of
+# app/ may carry one as a literal (RF-08), so they live in data next to the
+# mapping to the column each one partitions.
 _COLUMNS: dict[str, str] = json.loads(AXES_PATH.read_text(encoding="utf-8"))["axes"]
 
 AXES: tuple[str, ...] = tuple(_COLUMNS)
 
-# Derived from the data, never spelled out: the axis names are interface
-# vocabulary and no file of app/ may carry one as a literal.
+# Reason: derived from the data, never spelled out — the axis names are
+# interface vocabulary and no file of app/ may carry one as a literal.
 PAYEE_AXIS = next(name for name, column in _COLUMNS.items() if column == "payee")
 
-# Decisão: same reason as PAYEE_AXIS. The correction form binds a field by
+# Decision: same reason as PAYEE_AXIS. The correction form binds a field by
 # this exact name, and the name shares a prefix with one of the three
 # essentiality values — writing it out in the router would trip the very
 # guard this pattern satisfies.
@@ -44,9 +44,10 @@ _KEYS = {
     "essentiality": "coalesce(t.essentiality, '')",
 }
 
-# A left join keeps every spending row in every axis: an inner join would drop
-# whatever a broken classification left without a group, and that axis would
-# stop matching the other four without saying so (RF-20).
+# Reason: a left join keeps every spending row in every axis — an inner
+# join would drop whatever a broken classification left without a group,
+# and that axis would stop matching the other four without saying so
+# (RF-20).
 _FROM = "FROM transactions AS t LEFT JOIN category_groups AS g ON g.id = t.group_id"
 
 _WINDOW = f"WHERE {SPENDING} AND t.date >= ? AND t.date <= ?"
@@ -84,9 +85,9 @@ def transactions_of(
 
 
 def _key(axis: str) -> str:
-    # The axis reaches SQL as a GROUP BY target, so it is resolved against the
-    # declared set before touching the statement: interpolated straight, it is
-    # an injection.
+    # Reason: the axis reaches SQL as a GROUP BY target, so it is resolved
+    # against the declared set before touching the statement — interpolated
+    # straight, it is an injection.
     if axis not in _COLUMNS:
         raise UnknownAxisError(axis)
     return _KEYS[_COLUMNS[axis]]

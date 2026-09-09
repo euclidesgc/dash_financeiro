@@ -13,8 +13,9 @@ class DismissRefusedError(ValueError):
 
 
 def dismiss(conn: sqlite3.Connection, series_key: str) -> None:
-    # A contracted instalment keeps leaving the account after the click, so the
-    # refusal is a product rule and lives here, not in the route (RF-27).
+    # Reason: a contracted instalment keeps leaving the account after the
+    # click, so the refusal is a product rule and lives here, not in the
+    # route (RF-27).
     if not _is_recurring(conn, series_key):
         raise DismissRefusedError(series_key)
     conn.execute(

@@ -47,9 +47,10 @@ def calendar(conn: sqlite3.Connection, *, today: date | None = None) -> list[Day
 
 
 def _live_series(conn: sqlite3.Connection, today: date) -> list[dict[str, Any]]:
-    # A series that stopped being charged has no next due date to predict, and a
-    # dismissed one is money the owner already took out of the total: both stay
-    # off the prediction, and the screen says how many (RF-22 do 003).
+    # Reason: a series that stopped being charged has no next due date to
+    # predict, and a dismissed one is money the owner already took out of
+    # the total — both stay off the prediction, and the screen says how many
+    # (RF-22 from item 003).
     recurring = [
         row for row in subscriptions(conn, today=today) if row["live"] and not row["dismissed"]
     ]
@@ -102,12 +103,13 @@ def _predicted_entries(series: list[dict[str, Any]], first: date, last: date) ->
 
 
 def _remaining_predictions(predictions: list[Entry], recorded: list[Entry]) -> list[Entry]:
-    # A recorded charge replaces the prediction it realises, and that is the
-    # nearest one of its own series — measured between whole dates, so a series
-    # due on the 29th and charged on the 1st of the next month is two days away
-    # and not twenty-eight (RF-13). Keyed by month instead, a stray charge on the
-    # 5th would hide the due date on the 25th; matched by exact day, the median
-    # being a day or two off would show the same money leaving twice (RF-10).
+    # Reason: a recorded charge replaces the prediction it realises, and
+    # that is the nearest one of its own series — measured between whole
+    # dates, so a series due on the 29th and charged on the 1st of the next
+    # month is two days away and not twenty-eight (RF-13). Keyed by month
+    # instead, a stray charge on the 5th would hide the due date on the
+    # 25th; matched by exact day, the median being a day or two off would
+    # show the same money leaving twice (RF-10).
     left = list(predictions)
     for entry in recorded:
         when = date.fromisoformat(entry["date"])
@@ -124,9 +126,9 @@ def _remaining_predictions(predictions: list[Entry], recorded: list[Entry]) -> l
 
 
 def _charges(row: dict[str, Any], month: str) -> bool:
-    # An instalment stops at its last instalment, so the prediction runs only
-    # over the months it still owes; a subscription has no end and is charged in
-    # every month of the window.
+    # Reason: an instalment stops at its last instalment, so the prediction
+    # runs only over the months it still owes; a subscription has no end and
+    # is charged in every month of the window.
     if row["due_day"] is None:
         return False
     if row["kind"] != INSTALLMENT:
@@ -151,11 +153,12 @@ def _series_identity(row: dict[str, Any]) -> tuple[str, int, int]:
 def _row_identity(
     row: sqlite3.Row, known: dict[tuple[str, int, int], dict[str, Any]]
 ) -> tuple[str, int, int]:
-    # The same identity the engine grouped by, read from the raw line: matching a
-    # recorded occurrence to its series by payee alone would let one open
-    # purchase of a store silence the prediction of another (RF-23). The marker
-    # falls back to the recurring key because a subscription whose description
-    # happens to carry one is still that subscription being charged.
+    # Reason: the same identity the engine grouped by, read from the raw
+    # line — matching a recorded occurrence to its series by payee alone
+    # would let one open purchase of a store silence the prediction of
+    # another (RF-23). The marker falls back to the recurring key because a
+    # subscription whose description happens to carry one is still that
+    # subscription being charged.
     _, total = installment_of(row)
     marked = (row["payee"], total or 0, abs(row["amount_cents"]) if total else 0)
     return marked if marked in known else (row["payee"], 0, 0)

@@ -6,10 +6,11 @@ import httpx
 ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 TIMEOUT_SECONDS = 20
 
-# The one rule the model cannot break. Every figure it is allowed to say is
-# already in the context, computed by tested code: if it did the arithmetic it
-# would get it wrong, and a wrong number in the central unit of this product
-# destroys trust in everything else (invariante 23).
+# Reason: this is the one rule the model cannot break. Every figure it is
+# allowed to say is already in the context, computed by tested code — if it
+# did the arithmetic it would get it wrong, and a wrong number in the
+# central unit of this product destroys trust in everything else
+# (invariant 23).
 INSTRUCTION = (
     "Você lê um painel financeiro pessoal e responde em português do Brasil, "
     "em no máximo quatro frases, sem exclamação e sem tom animado. "
@@ -29,8 +30,9 @@ TOO_MANY = 429
 
 
 def _refused(status: int) -> str:
-    # The owner cannot act on "HTTPStatusError". They can act on "the key was
-    # refused" (norma 16: interface em pt-BR, e erro que diz o próximo ato).
+    # Reason: the owner cannot act on "HTTPStatusError". They can act on "the
+    # key was refused" (norm 16: interface is pt-BR, and an error names the
+    # next act).
     if status in UNAUTHORISED:
         return "a chave foi recusada pelo provedor"
     if status == TOO_MANY:
@@ -78,10 +80,11 @@ def ask(question: str, context: str, *, api_key: str | None, model: str) -> Read
     except httpx.HTTPError:
         raise AdvisorUnavailableError(_said("não foi possível alcançar o modelo")) from None
     except UnicodeEncodeError:
-        # A key sourced from the screen is refused at app.advisor.config.save
-        # before it ever reaches here; a key sourced from the environment is
-        # not, and httpx encodes a str header value as ascii, so a leftover
-        # accented byte lands here instead of on the wire.
+        # Reason: a key sourced from the screen is refused at
+        # app.advisor.config.save before it ever reaches here; a key sourced
+        # from the environment is not, and httpx encodes a str header value
+        # as ascii, so a leftover accented byte lands here instead of on the
+        # wire.
         raise AdvisorUnavailableError(
             _said("a chave da IA tem um caractere que o cabeçalho HTTP não aceita")
         ) from None

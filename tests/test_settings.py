@@ -28,9 +28,10 @@ NOT_A_NUMBER = ("inf", "nan", "1e308")
 
 
 def _base(tmp_path, *, rows: list[tuple[str, int, str]]) -> sqlite3.Connection:
-    # The migration is exercised over a base that already has data, because
-    # ALTER TABLE ADD COLUMN NOT NULL passes on an empty table and fails on a
-    # table with a row: the empty case would prove nothing about the real base.
+    # Reason: the migration is exercised over a base that already has data,
+    # because ALTER TABLE ADD COLUMN NOT NULL passes on an empty table and
+    # fails on a table with a row — the empty case would prove nothing about
+    # the real base.
     folder = tmp_path / "sql"
     folder.mkdir()
     for path in sorted(SQL_FOLDER.glob("*.sql")):
@@ -146,10 +147,10 @@ def test_the_refusal_also_names_the_cards_section_now_on_the_same_screen(conn):
     with pytest.raises(InvalidValueError) as refusal:
         store.write(conn, CARD_RATE, "3,52")
 
-    # The field now also lives in the Cartões section of /configuracao, the
-    # very screen answering this refusal — the message may not claim /dividas
-    # is the only place, and it borrows the catalogue's own "help" text, which
-    # already names both.
+    # Reason: the field now also lives in the Cartões section of
+    # /configuracao, the very screen answering this refusal — the message may
+    # not claim /dividas is the only place, and it borrows the catalogue's own
+    # "help" text, which already names both.
     assert "Cartões desta tela" in str(refusal.value)
 
 
@@ -241,9 +242,9 @@ def client(tmp_path, monkeypatch):
     app = create_app()
     connection = connect()
     seed_user(connection, LOGIN, PASSWORD)
-    # The payoff field lives inside the car decision, and that block only exists
-    # when there is a vehicle debt: without the step the screen renders without
-    # the field and the test would prove nothing.
+    # Reason: the payoff field lives inside the car decision, and that block
+    # only exists when there is a vehicle debt — without the step the screen
+    # renders without the field and the test would prove nothing.
     connection.execute(
         "INSERT INTO debts (kind, name, balance_cents, monthly_rate_bp, term_months, "
         "payment_cents, source) VALUES ('vehicle', 'CDC do veículo', -3917636, 163, 45, "

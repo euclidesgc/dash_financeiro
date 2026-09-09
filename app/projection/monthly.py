@@ -33,15 +33,15 @@ def monthly(conn: sqlite3.Connection, *, today: date | None = None) -> dict[str,
 
 
 def median_months(conn: sqlite3.Connection) -> int:
-    # The constant is the premise the panel declares while the owner has not
-    # decided, never the answer (RF-09).
+    # Reason: the constant is the premise the panel declares while the owner
+    # has not decided, never the answer (RF-09).
     chosen = value(conn, MEDIAN)
     return MEDIAN_MONTHS if chosen is None else chosen
 
 
 def _seen(conn: sqlite3.Connection, today: date | None) -> list[str]:
-    # The month of the reference date is still running, so counting it would
-    # compare a fraction of a month against whole ones.
+    # Reason: the month of the reference date is still running, so counting
+    # it would compare a fraction of a month against whole ones.
     current = (today or date.today()).strftime("%Y-%m")
     return [row["month"] for row in conn.execute(_MONTHS_SEEN, (current,))]
 
@@ -55,10 +55,10 @@ def complete_months(conn: sqlite3.Connection, *, today: date | None = None) -> l
 
 
 def median(values: list[int]) -> int:
-    # The median, not the mean: one month of this base carries an atypical credit
-    # of R$ 42 thousand, and the mean would project an income that does not
-    # exist. The median neutralises it without anyone deciding by hand which
-    # month is atypical (RF-06).
+    # Reason: the median, not the mean — one month of this base carries an
+    # atypical credit of R$ 42 thousand, and the mean would project an income
+    # that does not exist. The median neutralises it without anyone deciding
+    # by hand which month is atypical (RF-06).
     if not values:
         return 0
     ordered = sorted(values)

@@ -30,9 +30,9 @@ def new_conn(tmp_path: Path, name: str) -> sqlite3.Connection:
 
 
 def install_previous_vocabulary(conn: sqlite3.Connection, data: dict = PREVIOUS_VOCABULARY) -> None:
-    # A guard that shares code with the thing it guards passes in green the day
-    # that code breaks: the "before" state is written by INSERT of its own,
-    # never through app.taxonomy.seed.seed_taxonomy.
+    # Reason: a guard that shares code with the thing it guards passes in
+    # green the day that code breaks — the "before" state is written by INSERT
+    # of its own, never through app.taxonomy.seed.seed_taxonomy.
     conn.executemany(
         "INSERT INTO category_groups (name, position, is_fallback) VALUES (?, ?, ?)",
         [

@@ -9,7 +9,8 @@ MODELS = ("gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash-lite")
 DEFAULT_MODEL = MODELS[0]
 API_KEY, MODEL = "api_key", "model"
 FROM_SCREEN, FROM_ENV, ABSENT = "tela", "ambiente", "ausente"
-# Four of eight is half the secret, and "no máximo quatro" needs a floor.
+# Reason: four of eight is half the secret, and the plan's own "no máximo
+# quatro" (at most four) needs a floor.
 TAIL, MIN_TO_SHOW = 4, 8
 UNKNOWN_MODEL = "Modelo desconhecido. Escolha um da lista: {models}."
 INVALID_API_KEY = (
@@ -47,11 +48,12 @@ def _stored(conn: sqlite3.Connection, name: str) -> str | None:
 
 
 def _unfit_for_a_header(value: str) -> bool:
-    # httpx encodes a str header value as ascii before writing it on the wire
-    # (httpx._models._normalize_header_value): a control character is legal
-    # ascii yet corrupts the request line seen by h11, and a character above
-    # that range makes the encoding itself raise. Both must be refused before
-    # the value is ever written, not discovered on the outbound call.
+    # Reason: httpx encodes a str header value as ascii before writing it on
+    # the wire (httpx._models._normalize_header_value) — a control character
+    # is legal ascii yet corrupts the request line seen by h11, and a
+    # character above that range makes the encoding itself raise. Both must
+    # be refused before the value is ever written, not discovered on the
+    # outbound call.
     if any(unicodedata.category(char) == "Cc" for char in value):
         return True
     try:
@@ -73,8 +75,9 @@ def current(conn: sqlite3.Connection) -> Setup:
 
 
 def view(conn: sqlite3.Connection) -> dict[str, Any]:
-    # Separate from current() on purpose: the screen receives a dict that never
-    # held the key, instead of receiving the key and promising not to print it.
+    # Reason: separate from current() on purpose — the screen receives a
+    # dict that never held the key, instead of receiving the key and
+    # promising not to print it.
     setup = current(conn)
     return {
         "stored": setup.origin == FROM_SCREEN,

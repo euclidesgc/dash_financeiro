@@ -14,8 +14,8 @@ DEFAULT_TRANSACTIONS_PATH = "data/processed/transacoes.json"
 DEFAULT_ACCOUNTS_GLOB = "data/raw/accounts_*.json"
 SESSION_SECRET_BYTES = 32
 
-# The panel reads the already consolidated file by default: it is the path that
-# works without network, and the one every test exercises.
+# Reason: the panel reads the already consolidated file by default — it is
+# the path that works without network, and the one every test exercises.
 DEFAULT_SYNC_SOURCE = "arquivo"
 CNPJ_LOOKUP = "DASH_CNPJ_LOOKUP"
 TRUE_WORDS = ("1", "true", "sim")
@@ -53,9 +53,10 @@ def _environment(env: Mapping[str, str] | None) -> Mapping[str, str]:
 
 
 def reference_date(env: Mapping[str, str] | None = None) -> date:
-    # Read by the commands that decide what is still alive. Without it the same
-    # command over an unchanged base answers differently tomorrow, and no run can
-    # be replayed or compared against the frozen reference numbers.
+    # Reason: read by the commands that decide what is still alive. Without
+    # it the same command over an unchanged base answers differently
+    # tomorrow, and no run can be replayed or compared against the frozen
+    # reference numbers.
     value = _first(_environment(env), "DASH_TODAY")
     return date.fromisoformat(value) if value else date.today()
 
@@ -72,8 +73,8 @@ def load_config(env: Mapping[str, str] | None = None) -> Config:
         transactions_path=_first(env, "DASH_TRANSACTIONS_PATH") or DEFAULT_TRANSACTIONS_PATH,
         accounts_glob=_first(env, "DASH_ACCOUNTS_GLOB") or DEFAULT_ACCOUNTS_GLOB,
         sync_source=_first(env, "DASH_SYNC_SOURCE") or DEFAULT_SYNC_SOURCE,
-        # Opt-in, and off by default: the only other egress of this product,
-        # the advisor, also exists only when the owner turns it on.
+        # Reason: opt-in, and off by default — the only other egress of this
+        # product, the advisor, also exists only when the owner turns it on.
         cnpj_lookup=(_first(env, CNPJ_LOOKUP) or "").strip().lower() in TRUE_WORDS,
         pluggy={name: _first(env, name) for name in PLUGGY_CREDENTIALS},
     )
@@ -89,15 +90,17 @@ def resolve_session_secret(config: Config | None = None) -> str:
         handle = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     except FileExistsError:
         stored = path.read_text(encoding="utf-8").strip()
-        # An empty key file signs every cookie with an empty secret, which anyone
-        # can forge: two processes racing, an interrupted write or a restored
-        # backup all reach here, and none of them may boot the app.
+        # Reason: an empty key file signs every cookie with an empty secret,
+        # which anyone can forge — two processes racing, an interrupted
+        # write or a restored backup all reach here, and none of them may
+        # boot the app.
         if not stored:
             raise RuntimeError(f"empty session key file: {path}") from None
         return stored
     secret = secrets.token_hex(SESSION_SECRET_BYTES)
     with os.fdopen(handle, "w", encoding="utf-8") as file:
         file.write(secret)
-    # The creation mode passes through the umask, so the mode is stated again.
+    # Reason: the creation mode passes through the umask, so the mode is
+    # stated again.
     os.chmod(path, 0o600)
     return secret

@@ -32,10 +32,10 @@ def snapshot(conn: sqlite3.Connection, *, today: date) -> dict[str, Any]:
 
 
 def lines(numbers: dict[str, Any]) -> list[dict[str, Any]]:
-    # The screen renders these and the model receives these — one list, so the
-    # claim "you find on screen every number it may cite" stays true. Showing a
-    # subset would make the screen that exists to prove the model invents nothing
-    # the very thing that produces the suspicion.
+    # Reason: the screen renders these and the model receives these — one
+    # list, so the claim "you find on screen every number it may cite" stays
+    # true. Showing a subset would make the screen that exists to prove the
+    # model invents nothing the very thing that produces the suspicion.
     when = (
         f"{numbers['months_to_objective']} meses"
         if numbers["months_to_objective"] is not None
@@ -59,12 +59,13 @@ def lines(numbers: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def _offer_lines(row: dict[str, Any]) -> list[dict[str, Any]]:
-    # Decisão: a taxa e o prazo da proposta viajam dentro do rótulo, e não só no
-    # valor, porque a tela de /consultor mostra os dois na comparação — uma
-    # cifra visível na tela e ausente do contexto é uma cifra que a conferência
-    # de app.advisor.cited recusaria se o modelo a copiasse de lá. O rótulo
-    # nomeia a taxa como "desta proposta" para não sugerir que é a taxa de
-    # continuar como está, que é outro número.
+    # Decision: the offer's rate and term travel inside the label, not only
+    # in the value, because the /consultor screen shows both in the
+    # comparison — a figure visible on the screen and absent from the
+    # context is a figure app.advisor.cited's check would refuse if the
+    # model copied it from there. The label names the rate as "desta
+    # proposta" so as not to suggest it is the rate of staying as is, which
+    # is a different number.
     term = row["term_months"]
     when = f"{term} mês" if term == 1 else f"{term} meses"
     tag = f"{row['name']} (proposta a {as_rate(row['monthly_rate_bp'])} ao mês, {when})"
@@ -88,7 +89,7 @@ def _offer_lines(row: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def as_text(numbers: dict[str, Any]) -> str:
-    # Every figure the model may say, spelled the way the screen spells it. It
-    # copies from here or it says it does not know: the model interprets, the
-    # code computes (invariante 23).
+    # Reason: every figure the model may say, spelled the way the screen
+    # spells it. It copies from here or it says it does not know: the model
+    # interprets, the code computes (invariant 23).
     return "\n".join(f"{line['label']}: {line['value']}." for line in lines(numbers))

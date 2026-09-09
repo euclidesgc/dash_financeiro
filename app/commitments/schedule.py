@@ -5,16 +5,16 @@ MONTHS_IN_YEAR = 12
 
 
 def median_day(days: list[int]) -> int:
-    # With an even count the lower of the two middle days wins, so the predicted
-    # day stays a day the series actually had: the average of two middle days
-    # would announce a date that never happened (RF-19).
+    # Reason: with an even count the lower of the two middle days wins, so
+    # the predicted day stays a day the series actually had — the average of
+    # two middle days would announce a date that never happened (RF-19).
     ordered = sorted(days)
     return ordered[(len(ordered) - 1) // 2]
 
 
 def on_month(day: int, month: date) -> date:
-    # Day 31 does not exist in November, and an invalid date would take the whole
-    # calendar down instead of being one day off (RF-20).
+    # Reason: day 31 does not exist in November, and an invalid date would
+    # take the whole calendar down instead of being one day off (RF-20).
     last = monthrange(month.year, month.month)[1]
     return date(month.year, month.month, min(day, last))
 

@@ -14,8 +14,9 @@ from app.routers import (
 
 LOGOUT = "/logout"
 
-# The destination comes from the router that owns it, so a screen that moves
-# takes its menu entry along instead of leaving a link that answers 404.
+# Reason: the destination comes from the router that owns it, so a screen
+# that moves takes its menu entry along instead of leaving a link that
+# answers 404.
 SCREENS: tuple[dict[str, str], ...] = (
     {"href": summary.SCREEN, "label": "Resumo"},
     {"href": spending.SCREEN, "label": "Gastos"},
@@ -30,9 +31,9 @@ SCREENS: tuple[dict[str, str], ...] = (
 
 
 def current(path: str, href: str) -> bool:
-    # A screen keeps the mark while the reader is inside it: /regras/7/editar is
-    # still Regras. The root would swallow every path under the prefix rule, so
-    # it matches whole.
+    # Reason: a screen keeps the mark while the reader is inside it —
+    # /regras/7/editar is still Regras. The root would swallow every path
+    # under the prefix rule, so it matches whole.
     if href == "/":
         return path == "/"
     return path == href or path.startswith(f"{href}/")

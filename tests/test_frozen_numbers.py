@@ -5,9 +5,10 @@ ROOT = Path(__file__).resolve().parents[1]
 APP = ROOT / "app"
 EXTENSIONS = ("py", "sql", "html")
 
-# The measured base grows in item 006, and a total frozen inside the code would
-# make the query of the following month fail by being right (invariant 28):
-# these numbers live in the criteria and in the tests, never in app/.
+# Invariant: the measured base grows in item 006, and a total frozen inside
+# the code would make the query of the following month fail by being right
+# (invariant 28) — these numbers live in the criteria and in the tests, never
+# in app/.
 FROZEN = (
     "10377233",
     "103772",
@@ -25,8 +26,8 @@ FROZEN = (
     "246720",
     "14106",
     "12727",
-    # Item 015: o alcance do nome que a Pluggy já manda, e a lista de
-    # beneficiários que a tela de configuração oferece para batizar.
+    # Reason: item 015 — the reach of the name Pluggy already sends, and the
+    # list of payees the configuration screen offers to name.
     "338",
     "169",
     "148",
@@ -36,9 +37,9 @@ FROZEN = (
     "53",
 )
 
-# Small counts are only swept inside the files of item 003: 100 and 32 already
-# live legitimately in app/routers/render.py and app/config.py, and a scanner
-# that fails the innocent is switched off in the first week.
+# Reason: small counts are only swept inside the files of item 003 — 100 and
+# 32 already live legitimately in app/routers/render.py and app/config.py,
+# and a scanner that fails the innocent is switched off in the first week.
 ITEM_COUNTS = ("100", "55", "32", "6")
 
 ITEM_PATHS = (

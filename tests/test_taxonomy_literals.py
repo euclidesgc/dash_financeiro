@@ -27,8 +27,9 @@ def scan(folder: Path, terms: set[str], base: Path | None = None) -> list[str]:
     for extension in EXTENSIONS:
         for path in sorted(folder.rglob(f"*.{extension}")):
             for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
-                # Interface copy lives in .html text; only a Jinja expression can
-                # decide by vocabulary name, so only {{ }} / {% %} lines are read.
+                # Reason: interface copy lives in .html text; only a Jinja
+                # expression can decide by vocabulary name, so only {{ }} /
+                # {% %} lines are read.
                 if extension == "html" and "{{" not in line and "{%" not in line:
                     continue
                 for term in sorted(terms):

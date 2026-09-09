@@ -23,9 +23,10 @@ _UPDATE_SET = (
     "balance_cents = excluded.balance_cents, payment_cents = excluded.payment_cents, "
     "first_due_date = excluded.first_due_date"
 )
-# A true UPDATE on conflict, not INSERT OR REPLACE: the latter deletes and
-# reinserts the row, which moves it to the end of the table and reshuffles
-# every id the ladder assigns by insertion order on the next rebuild.
+# Reason: a true UPDATE on conflict, not INSERT OR REPLACE — the latter
+# deletes and reinserts the row, which moves it to the end of the table and
+# reshuffles every id the ladder assigns by insertion order on the next
+# rebuild.
 _UPSERT = (
     f"INSERT INTO financings ({_COLUMNS}) VALUES ({_VALUES}) "
     f"ON CONFLICT (kind) DO UPDATE SET {_UPDATE_SET}"
@@ -46,11 +47,12 @@ def read(conn: sqlite3.Connection, kind: str) -> dict[str, Any] | None:
 
 
 def seed_from_manual(conn: sqlite3.Connection) -> int:
-    # Decisão: o guarda é por tipo de contrato, não por a tabela estar vazia.
-    # Contando a tabela inteira, a primeira gravação de um financiamento pela
-    # tela dava a importação por encerrada e o outro contrato nunca mais era
-    # semeado — o degrau sumia da escada de dívidas sem uma palavra. Quem já
-    # está na tabela continua intocado, que é a razão original do guarda.
+    # Decision: the guard is by contract kind, not by the table being
+    # empty. Counting the whole table, the first write of a financing
+    # through the screen gave the import for finished and the other
+    # contract was never seeded again — its rung silently vanished from the
+    # debt ladder. Whatever is already in the table stays untouched, which
+    # is the guard's original reason.
     present = {row[0] for row in conn.execute("SELECT kind FROM financings")}
     seeded = 0
     for kind, path, to_row in (
@@ -69,9 +71,9 @@ def seed_from_manual(conn: sqlite3.Connection) -> int:
 
 
 def _read(name: str) -> dict[str, Any] | None:
-    # data/ lives outside version control, so the panel has to boot on a
-    # machine that never received the contracts. A missing file is a missing
-    # financing, never a broken load (RF-04).
+    # Reason: data/ lives outside version control, so the panel has to boot
+    # on a machine that never received the contracts. A missing file is a
+    # missing financing, never a broken load (RF-04).
     path = manual_dir() / name
     if not path.is_file():
         return None

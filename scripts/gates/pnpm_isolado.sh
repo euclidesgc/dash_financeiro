@@ -40,9 +40,10 @@ if not fluxos:
     print("::error::nenhum fluxo em .github/workflows — não há o que medir.", file=sys.stderr)
     raise SystemExit(1)
 
-# O CASO DO VAZIO É EXPLÍCITO, E NÃO É O MESMO QUE O CASO DO ILEGÍVEL
-# Um repositório pode legitimamente não usar a ação, e aí não há o que reprovar.
-# O que ele não pode é passar por não ter conseguido ler o YAML.
+# Reason: the empty case is explicit, and it is not the same as the
+# unreadable case. A repository can legitimately not use the action, and
+# then there is nothing to fail. What it cannot do is pass because it failed
+# to read the YAML.
 referencias, sem_dest, sob_home = 0, [], []
 
 for f in fluxos:

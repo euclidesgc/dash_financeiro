@@ -184,10 +184,11 @@ def main() -> None:
                 "instituicao": instituicao_da_conta(conta),
                 "descricao": (t.get("description") or "").strip(),
                 "descricao_raw": (t.get("descriptionRaw") or "").strip(),
-                # Motivo: merchant chega como None, não ausente, em 1556 dos 1942
-                # lançamentos: t.get("merchant", {}) levantaria AttributeError em
-                # 80% da base. String vazia é ausência, não valor — businessName vem
-                # vazia em 48 lançamentos que têm nome fantasia.
+                # Reason: merchant arrives as None, not absent, in 1556 of
+                # 1942 entries — t.get("merchant", {}) would raise
+                # AttributeError on 80% of the base. An empty string is
+                # absence, not a value — businessName comes back empty in
+                # 48 entries that do have a trade name.
                 "nome_fantasia": ((t.get("merchant") or {}).get("name") or "").strip(),
                 "razao_social": ((t.get("merchant") or {}).get("businessName") or "").strip(),
                 "cnpj": ((t.get("merchant") or {}).get("cnpj") or "").strip(),

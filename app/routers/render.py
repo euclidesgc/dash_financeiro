@@ -9,8 +9,9 @@ TEMPLATES_FOLDER = Path(__file__).resolve().parents[1] / "templates"
 
 TEMPLATES = Jinja2Templates(directory=str(TEMPLATES_FOLDER))
 
-# U+2212, the mathematical minus. Colour is never the only sign a value is an
-# outflow, so the glyph travels glued to the figure in every screen.
+# Reason: U+2212, the mathematical minus. Colour is never the only sign a
+# value is an outflow, so the glyph travels glued to the figure in every
+# screen.
 MINUS = "−"
 
 CENTS_IN_REAL = 100
@@ -51,9 +52,9 @@ def number(cents: int | None) -> str:
 
 
 def unit_value(value: int | None, unit: str) -> str:
-    # A row of the store holds cents, basis points or months, and the unit is the
-    # column that says which. Reading every row as money is how "6 meses" was
-    # printed "R$ 0,06".
+    # Reason: a row of the store holds cents, basis points or months, and the
+    # unit is the column that says which. Reading every row as money is how
+    # "6 meses" was printed "R$ 0,06".
     if value is None:
         return "—"
     if unit == CENTS:
@@ -66,14 +67,16 @@ def unit_value(value: int | None, unit: str) -> str:
 
 
 def unit_typed(value: int | None, unit: str) -> str:
-    # What the owner types back into the field, in the grammar the reader of that
-    # unit accepts — never the formatted figure, which no reader accepts.
+    # Reason: this is what the owner types back into the field, in the
+    # grammar the reader of that unit accepts — never the formatted figure,
+    # which no reader accepts.
     if value is None:
         return ""
     if unit == CENTS:
-        # The grouped form, the same one the figure above the field shows: a
-        # field that reads 35000,00 under a figure that reads R$ 35.000,00 makes
-        # the owner check whether the panel understood the number.
+        # Reason: the grouped form, the same one the figure above the field
+        # shows — a field that reads 35000,00 under a figure that reads
+        # R$ 35.000,00 makes the owner check whether the panel understood
+        # the number.
         return brl(value).removeprefix(f"{MINUS}").removeprefix("R$ ")
     if unit == BASIS_POINTS:
         return rate(value).replace("%", "")

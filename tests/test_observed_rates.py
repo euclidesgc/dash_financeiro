@@ -32,8 +32,9 @@ def test_the_balance_is_walked_backwards_from_the_reported_one(taxonomy_conn):
 
     assert days["2026-09-05"] == -10000
     assert days["2026-08-01"] == -10000
-    # The walk stops at the first movement: before it there is no history to
-    # reconstruct, and inventing a zero there would invent days in the black.
+    # Reason: the walk stops at the first movement — before it there is no
+    # history to reconstruct, and inventing a zero there would invent days in
+    # the black.
     assert "2026-07-31" not in days
     assert min(days) == "2026-08-01"
 
@@ -115,7 +116,9 @@ def test_an_account_that_posts_early_is_charging_in_arrears(taxonomy_conn):
 
 
 def test_the_boundary_is_the_account_posting_day_and_not_a_fixed_cut(taxonomy_conn):
-    # The day the real base posts on, and the day a fixed cut of five missed.
+    # Reason: day six clears the real ten-day threshold and a plausible
+    # hardcoded five alike — only reading the account's own threshold keeps
+    # this classified as arrears.
     conn = account(load(taxonomy_conn, posted_on("06")), -100000)
     arrears, found = charges(conn, "06")
 
@@ -161,7 +164,7 @@ def test_the_month_in_progress_is_left_out(taxonomy_conn):
 def test_a_truncated_oldest_month_is_measured_against_the_calendar(taxonomy_conn):
     from app.debts.observed import _monthly_rates, daily_balances
 
-    # The walk starts here, so June holds 26 reconstructed days, not 30.
+    # Reason: the walk starts here, so June holds 26 reconstructed days, not 30.
     rows = [transaction("c", "2026-06-05", -3000.0, descricao="Compra")]
     rows += [
         transaction(f"p-{day}", f"2026-06-{day}", 3000.0, descricao="Deposito") for day in ("20",)
@@ -173,8 +176,8 @@ def test_a_truncated_oldest_month_is_measured_against_the_calendar(taxonomy_conn
     days = daily_balances(conn, ACCOUNT["id"], -300000, REFERENCE)
     months = [when for when, _ in _monthly_rates(conn, ACCOUNT["id"], days, REFERENCE)]
 
-    # 15 negative days of 30 in the calendar is under half, even though it is
-    # over half of the 26 days the reconstruction holds.
+    # Reason: 15 negative days of 30 in the calendar is under half, even though
+    # it is over half of the 26 days the reconstruction holds.
     assert "2026-06" not in months
 
 

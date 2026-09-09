@@ -5,9 +5,10 @@ from typing import Any
 from app.settings.catalog import BY_NAME, CATALOG
 from app.settings.typed import InvalidValueError, parse
 
-# None is a real argument here — it clears the deadline of a fact — so the
-# absence of an argument needs a token of its own, or writing a value from a
-# screen without a validity field would erase the validity typed in another.
+# Reason: None is a real argument here — it clears the deadline of a fact —
+# so the absence of an argument needs a token of its own, or writing a value
+# from a screen without a validity field would erase the validity typed in
+# another.
 UNCHANGED = object()
 
 HUMAN = "humano"
@@ -57,8 +58,9 @@ def value(conn: sqlite3.Connection, name: str) -> int | None:
 
 
 def entry(name: str) -> dict[str, Any]:
-    # The same refusal as the classification rules of item 002: a name the
-    # catalogue does not declare is named back to the owner, never written.
+    # Reason: the same refusal as the classification rules of item 002 — a
+    # name the catalogue does not declare is named back to the owner, never
+    # written.
     item = BY_NAME.get(name)
     if item is None:
         raise InvalidValueError(f"Valor desconhecido: “{name}”.")

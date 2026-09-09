@@ -6,9 +6,9 @@ from app.config import load_config
 
 
 def _restrict(target: str) -> None:
-    # The file holds the password hash and the statement, and SQLite creates it
-    # through the umask, at 0644. A missing file (":memory:") or a filesystem
-    # that refuses chmod is not a reason to refuse the connection.
+    # Reason: the file holds the password hash and the statement, and SQLite
+    # creates it through the umask, at 0644. A missing file (":memory:") or a
+    # filesystem that refuses chmod is not a reason to refuse the connection.
     try:
         os.chmod(target, 0o600)
     except OSError:
@@ -23,6 +23,6 @@ def connect(path: str | None = None) -> sqlite3.Connection:
     conn = sqlite3.connect(target)
     _restrict(target)
     conn.row_factory = sqlite3.Row
-    # SQLite ships foreign key enforcement off, per connection.
+    # Reason: SQLite ships foreign key enforcement off, per connection.
     conn.execute("PRAGMA foreign_keys = ON")
     return conn

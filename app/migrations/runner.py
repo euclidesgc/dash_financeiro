@@ -20,9 +20,10 @@ class SkippedMigrationError(OutOfOrderMigrationError):
 
 
 def _base_pulou(known: set[str], version: str) -> bool:
-    # Invariante: a base pulou a versão se ela registrou alguma anterior E
-    # alguma posterior. Sem a anterior, esta base é nova e só está começando
-    # numa árvore que já tem números altos — caso diferente, e não é vão.
+    # Invariant: the base skipped the version if it registered some
+    # earlier one AND some later one. Without the earlier one, this base
+    # is new and is only starting in a tree that already has high numbers —
+    # a different case, and not a gap.
     return any(v < version for v in known) and any(v > version for v in known)
 
 
@@ -48,8 +49,8 @@ def _statements(script: str) -> list[str]:
 
 
 def apply_migrations(conn: sqlite3.Connection, folder: Path) -> list[str]:
-    # executescript commits whatever is open before running, so the DDL is fed
-    # statement by statement inside an explicit transaction instead.
+    # Reason: executescript commits whatever is open before running, so the
+    # DDL is fed statement by statement inside an explicit transaction instead.
     previous_isolation = conn.isolation_level
     conn.isolation_level = None
     try:
@@ -59,10 +60,11 @@ def apply_migrations(conn: sqlite3.Connection, folder: Path) -> list[str]:
         pending = []
         for path in sorted(folder.glob("*.sql")):
             version = _version_of(path)
-            # Decisão: a ordem e o guarda comparam a versão como texto, e texto
-            # só ordena como número enquanto todos tiverem a mesma largura —
-            # "9" vem depois de "015". Recusar a largura errada na porta é mais
-            # barato que descobrir a inversão numa base já migrada.
+            # Decision: order and the guard compare the version as text,
+            # and text only sorts like a number while every one has the
+            # same width — "9" comes after "015". Refusing the wrong width
+            # at the door is cheaper than discovering the inversion on a
+            # base already migrated.
             if not _VERSION.fullmatch(version):
                 raise OutOfOrderMigrationError(
                     f"migração “{path.name}” não começa por três algarismos; "
@@ -74,12 +76,13 @@ def apply_migrations(conn: sqlite3.Connection, folder: Path) -> list[str]:
             for _, version in pending:
                 if version >= highest_known:
                     continue
-                # Decisão: duas situações chegam aqui e pedem conselhos
-                # opostos. Uma migração que nasceu agora com número baixo se
-                # renumera. Uma que já existia e que ESTA base pulou não se
-                # renumera — renumerá-la faria toda outra base reaplicá-la. A
-                # segunda se reconhece pelo vão: a base tem versões acima dela
-                # e não tem ela.
+                # Decision: two situations reach here and call for opposite
+                # advice. A migration just born with a low number renumbers
+                # itself. One that already existed and that THIS base
+                # skipped does not renumber — renumbering it would make
+                # every other base reapply it. The second is recognised by
+                # the gap: the base has versions above it and does not have
+                # it.
                 if _base_pulou(known, version):
                     raise SkippedMigrationError(
                         f"esta base pulou a migração {version}: ela tem {highest_known} "
@@ -113,10 +116,11 @@ def apply_migrations(conn: sqlite3.Connection, folder: Path) -> list[str]:
 
 
 def reconcile_skipped(conn: sqlite3.Connection, folder: Path, version: str) -> str:
-    # Decisão: reconciliar TENTA aplicar, e só registra sem aplicar quando o
-    # esquema já tem o que a migração criaria. Registrar às cegas é assinar que
-    # o esquema está certo sem olhar — e foi assim que esta base ficou com um
-    # vão em primeiro lugar.
+    # Decision: reconciling TRIES to apply, and only records without
+    # applying when the schema already has what the migration would
+    # create. Recording blindly is signing off that the schema is right
+    # without looking — and that is how this base ended up with a gap in
+    # the first place.
     conn.execute(CONTROL_TABLE)
     known = {row[0] for row in conn.execute("SELECT version FROM schema_migrations")}
     if version in known:

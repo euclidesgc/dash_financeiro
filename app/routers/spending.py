@@ -46,8 +46,9 @@ CORRECTION_HELD_MESSAGE = (
 )
 CORRECTION_MISSING_TARGET_MESSAGE = "Nenhum lançamento selecionado para corrigir."
 
-# The category key stays the raw name the source sends, because that is what
-# matches it again on the next sync; the reading label is data next to it.
+# Reason: the category key stays the raw name the source sends, because
+# that is what matches it again on the next sync; the reading label is data
+# next to it.
 LABELS: dict[str, str] = category_labels()
 
 _CROSSINGS = "SELECT slug, label, nature, essentiality FROM crossings ORDER BY position"
@@ -72,9 +73,10 @@ def spending_screen(request: Request) -> Response:
     axis, start, end, reference = _selection(request)
     conn = connect()
     try:
-        # The panel labels its crossings by category and the table labels the
-        # chosen axis; on the payee axis the table's map is the resolved one, so
-        # the table has the last word over the single `labels` the page renders.
+        # Reason: the panel labels its crossings by category and the table
+        # labels the chosen axis; on the payee axis the table's map is the
+        # resolved one, so the table has the last word over the single
+        # `labels` the page renders.
         context = _panel_context(conn, start, end, reference)
         context.update(
             _table_context(conn, axis, start, end, _key(request), reference, _corrigir(request))
@@ -128,7 +130,7 @@ def spending_correction(
     grupo: Annotated[str, Form()] = "",
     grupo_novo: Annotated[str, Form()] = "",
     natureza: Annotated[str, Form()] = "",
-    # Contorno: bound by alias, not by name. The parameter reads whatever
+    # Workaround: bound by alias, not by name. The parameter reads whatever
     # the form field named after ESSENTIALITY_AXIS carries, without
     # spelling that field's name here as a literal.
     term: Annotated[str, Form(alias=ESSENTIALITY_AXIS)] = "",
@@ -144,7 +146,7 @@ def spending_correction(
         notice: str | None = None
         result: Correction | None = None
         if corrigir is None:
-            # Motivo: without a target there is no payee to look up, so
+            # Reason: without a target there is no payee to look up, so
             # calling correct_payee here would blame an "unknown payee" for a
             # request that never named one.
             notice = CORRECTION_MISSING_TARGET_MESSAGE
@@ -182,8 +184,9 @@ def spending_correction(
 
 
 def _selection(request: Request) -> tuple[str, str, str, Reference]:
-    # The screen is reached by hand-typed URL as often as by its own form, so a
-    # value it cannot read falls back to the default window instead of a 500.
+    # Reason: the screen is reached by hand-typed URL as often as by its own
+    # form, so a value it cannot read falls back to the default window
+    # instead of a 500.
     params = request.query_params
     axis = params.get("eixo", "")
     reference = screen_date(params.get(DATE_FIELD))
@@ -229,7 +232,7 @@ def _base(axis: str, start: str, end: str, reference: Reference) -> dict[str, An
 
 def _ahead(conn: sqlite3.Connection, reference: Reference, end: str) -> Ahead:
     reference_iso = reference.date.isoformat()
-    # Motivo: a window whose end already reaches or passes the reference date
+    # Reason: a window whose end already reaches or passes the reference date
     # already carries whatever the current month posted ahead of it in its own
     # total, so naming it again here would say those entries are out of a
     # total that already holds them. A window that ends in an earlier month
@@ -255,7 +258,7 @@ def _table_context(
     rows = aggregate(conn, axis=axis, start=start, end=end)
     context = _base(axis, start, end, reference)
     if axis == PAYEE_AXIS:
-        # Motivo: only the label. row['key'] is the label and the drill-down
+        # Reason: only the label. row['key'] is the label and the drill-down
         # parameter at once, and replacing the rendered value would kill the
         # opening of the list in silence (RF-28).
         context["labels"] = {**context["labels"], **payee_labels(conn)}
@@ -321,7 +324,7 @@ def _correction_context(
     result: Correction | None,
 ) -> dict[str, Any] | None:
     if corrigir is None:
-        # Motivo: a refusal built above (missing target) still needs a place
+        # Reason: a refusal built above (missing target) still needs a place
         # to land; returning None here would carry the built notice into the
         # template and then drop it, which is the bug this guards against.
         return {"found": False, "notice": notice} if notice is not None else None
@@ -382,9 +385,10 @@ def _panel_context(
             for row in conn.execute(_CROSSINGS).fetchall()
         ],
         "series": monthly_series(conn, end_month=end_month),
-        # The series always closes on `end_month` in full calendar days, so a
-        # window whose end still sits in the reference's own month draws its
-        # last bar over days the period total never reaches (RF-06's own gap).
+        # Reason: the series always closes on `end_month` in full calendar
+        # days, so a window whose end still sits in the reference's own
+        # month draws its last bar over days the period total never reaches
+        # (RF-06's own gap).
         "series_open": end_month == reference.date.isoformat()[:MONTH_LENGTH],
         "residue": residue(conn, start=start, end=end),
         "period_total_cents": total_spending_cents(conn, start, end),
@@ -406,9 +410,10 @@ def _crossing(
 ) -> dict[str, Any]:
     measured = crossing(conn, slug=definition["slug"], start=start, end=end)
     term = definition["essentiality"]
-    # A crossing whose term no rule assigns is empty in every period, and an
-    # empty block is the screen going mute on the question the item exists to
-    # answer: it carries the candidates for that decision instead (RF-48).
+    # Reason: a crossing whose term no rule assigns is empty in every
+    # period, and an empty block is the screen going mute on the question
+    # the item exists to answer — it carries the candidates for that
+    # decision instead (RF-48).
     unassigned = conn.execute(_RULES_CARRYING, (term,)).fetchone()[0] == 0
     candidates = (
         _candidates(conn, definition["nature"], fallback["value"], start, end)

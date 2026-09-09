@@ -8,10 +8,11 @@ from app.settings.catalog import CARD_RATE, FACT, of_kind
 
 
 def wanted() -> tuple[dict[str, Any], ...]:
-    # Read from the catalogue at every call, never copied: a second list here is
-    # the same defect this item closed in the base, where one fact had one name
-    # on the screen that wrote it and another on the screen that asked for it.
-    # A goal never appears: it has a default, so its absence is not a gap.
+    # Reason: read from the catalogue at every call, never copied — a second
+    # list here is the same defect this item closed in the base, where one
+    # fact had one name on the screen that wrote it and another on the
+    # screen that asked for it. A goal never appears: it has a default, so
+    # its absence is not a gap.
     return tuple(
         {
             "name": item["name"],
@@ -41,8 +42,8 @@ def pending(conn: sqlite3.Connection, *, today: date) -> list[dict[str, Any]]:
 
 
 def next_question(conn: sqlite3.Connection, *, today: date) -> dict[str, Any] | None:
-    # One question, never a list: a panel that asks three things at once gets
-    # none of them answered.
+    # Reason: one question, never a list — a panel that asks three things at
+    # once gets none of them answered.
     found = pending(conn, today=today)
     return found[0] if found else None
 
@@ -61,8 +62,9 @@ def postponed(conn: sqlite3.Connection) -> int:
 
 
 def dismiss(conn: sqlite3.Connection, name: str) -> None:
-    # Only a name from the catalogue: any string would grow the table without a
-    # ceiling on an authenticated POST, and none of them would ever be shown.
+    # Reason: only a name from the catalogue — any string would grow the
+    # table without a ceiling on an authenticated POST, and none of them
+    # would ever be shown.
     if name not in {question["name"] for question in wanted()}:
         raise UnknownQuestionError("Pergunta desconhecida.")
     conn.execute(

@@ -32,9 +32,9 @@ RATE = f"{SCREEN}/taxa"
 SIMULATE = f"{SCREEN}/simular"
 PARAMETER = f"{SCREEN}/parametro"
 
-# The kind is a key in the schema and a word on the screen, and the screen is in
-# pt-BR (norm 16). The map is here and not in the template so the vocabulary has
-# one home.
+# Reason: the kind is a key in the schema and a word on the screen, and the
+# screen is in pt-BR (norm 16). The map is here and not in the template so
+# the vocabulary has one home.
 KIND_LABELS = {
     "overdraft": "conta em cheque especial",
     "card": "cartão de crédito",
@@ -108,8 +108,9 @@ def store_parameter(
 
 
 def _identifier(asked: str) -> int:
-    # A key that is not a number is a debt that does not exist, and the reader
-    # says so in pt-BR instead of letting the interpreter answer in English.
+    # Reason: a key that is not a number is a debt that does not exist, and
+    # the reader says so in pt-BR instead of letting the interpreter answer
+    # in English.
     try:
         return int(asked)
     except ValueError:
@@ -139,9 +140,10 @@ def _answer(
 def _context(conn: sqlite3.Connection, today: date | None = None) -> dict[str, Any]:
     steps = ladder(conn)
     missing = without_rate(conn)
-    # Derived from the interest the bank actually charged, never adopted in
-    # silence: the spread between the months is wide, and a suggestion the owner
-    # confirms is honest where a fact would not be (invariante 26).
+    # Reason: derived from the interest the bank actually charged, never
+    # adopted in silence — the spread between the months is wide, and a
+    # suggestion the owner confirms is honest where a fact would not be
+    # (invariant 26).
     observed = observed_rates(conn, today=today or reference_date())
     vehicle = next((row for row in steps + missing if row["kind"] == VEHICLE), None)
     settlement = store.value(conn, SETTLEMENT)
@@ -157,11 +159,12 @@ def _context(conn: sqlite3.Connection, today: date | None = None) -> dict[str, A
         "vehicle": vehicle,
         "settlement_cents": settlement,
         "transport_cents": store.value(conn, TRANSPORT),
-        # The difference between what the schedule is worth and what the bank
-        # actually charges to end it. It is a discount only when it is positive:
-        # banks often quote settlement above the strict present value, and
-        # calling that a discount — in the colour of a gain — would be the screen
-        # lying in favour of a thirty-nine thousand real decision.
+        # Reason: this is the difference between what the schedule is worth
+        # and what the bank actually charges to end it. It is a discount
+        # only when it is positive: banks often quote settlement above the
+        # strict present value, and calling that a discount — in the colour
+        # of a gain — would be the screen lying in favour of a thirty-nine
+        # thousand real decision.
         "discount_cents": (
             abs(vehicle["balance_cents"]) - settlement
             if vehicle and settlement is not None

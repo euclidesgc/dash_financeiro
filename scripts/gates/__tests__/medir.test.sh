@@ -45,8 +45,8 @@ caso "exige_escrita passa quando o arquivo foi reescrito" 0 \
 caso "exige_escrita REPROVA quando o arquivo nem existe" 1 \
   "GITHUB_WORKSPACE='$tmp'; source '$lib'; exige_escrita nunca-gerado.txt 0"
 
-# O caso que originou tudo: contar sob diretório inexistente tem de reprovar,
-# nunca devolver zero em silêncio.
+# Reason: the case that started all of this — counting under a nonexistent
+# directory has to fail, never silently return zero.
 caso "conta_sob REPROVA quando o diretório não existe" 1 \
   "GITHUB_WORKSPACE='$tmp'; source '$lib'; conta_sob apps/api/src -name '*.ts'"
 caso "conta_sob conta quando o diretório existe" 0 \
@@ -54,9 +54,9 @@ caso "conta_sob conta quando o diretório existe" 0 \
 
 caso "exige_pacote_pnpm REPROVA quando o filtro não casa pacote" 1 \
   "source '$lib'; exige_pacote_pnpm pacote-inexistente-42 'um pacote do workspace'"
-# As duas asserções abaixo precisam de um workspace pnpm de verdade, então elas
-# montam o seu: um teste que só passa no repositório onde nasceu não prova nada
-# sobre o script que o harness entrega a outro projeto.
+# Reason: the two assertions below need a real pnpm workspace, so they build
+# their own — a test that only passes in the repository where it was born
+# proves nothing about the script the harness ships to another project.
 if command -v pnpm >/dev/null 2>&1; then
   ws="$tmp/ws"
   mkdir -p "$ws/packages/alvo"
@@ -65,15 +65,17 @@ if command -v pnpm >/dev/null 2>&1; then
   printf '{"name":"alvo","version":"1.0.0"}\n' > "$ws/packages/alvo/package.json"
   git -C "$ws" init -q 2>/dev/null
 
-  # `medir_raiz` prefere `GITHUB_WORKSPACE`: sem apontá-lo para cá, dentro do CI
-  # a função ignora o `cd` do caso e mede a raiz do repositório, onde o filtro
-  # não casa pacote nenhum. Passava local e falhava só no CI.
+  # Reason: `medir_raiz` prefers `GITHUB_WORKSPACE` — without pointing it
+  # here, inside CI the function ignores the case's `cd` and measures the
+  # repository's own root, where the filter matches no package. It used to
+  # pass locally and fail only in CI.
   caso "exige_pacote_pnpm passa com um pacote real do workspace" 0 \
     "cd '$ws'; GITHUB_WORKSPACE='$ws'; source '$lib'; exige_pacote_pnpm alvo 'o pacote alvo'"
 
-  # O marcador tem de vir do shell do sistema. Um `sh` que o PATH ofereça — e
-  # `pnpm exec` oferece o `node_modules/.bin` do pacote antes de tudo — mataria
-  # a medição e ainda daria execução de código a quem plantasse o binário.
+  # Reason: the marker has to come from the system shell. A `sh` the PATH
+  # offers — and `pnpm exec` offers the package's `node_modules/.bin` before
+  # anything else — would kill the measurement and even hand code execution
+  # to whoever planted the binary.
   mkdir -p "$tmp/bin-sequestrado"
   printf '#!/bin/sh\nexit 0\n' > "$tmp/bin-sequestrado/sh"
   chmod +x "$tmp/bin-sequestrado/sh"

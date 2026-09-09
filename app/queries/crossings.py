@@ -40,9 +40,9 @@ def crossing(conn: sqlite3.Connection, *, slug: str, start: str, end: str) -> Cr
         label=definition["label"],
         rows=rows,
         total_cents=total,
-        # The monthly average is what sizes the reserve of item 007, so it is
-        # read from the same rows as the total instead of being divided again
-        # by each screen that shows the crossing.
+        # Reason: the monthly average is what sizes the reserve of item 007,
+        # so it is read from the same rows as the total instead of being
+        # divided again by each screen that shows the crossing.
         monthly_average_cents=round(total / _months(start, end)),
     )
 

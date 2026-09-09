@@ -125,9 +125,10 @@ def test_seed_taxonomy_alone_keeps_the_base_coerente_when_a_rules_group_changes(
         "SELECT group_id FROM transactions WHERE pluggy_id = 't-unmatched'"
     ).fetchone()[0]
 
-    # The group survives the reseed (it stays declared); only the rule that
-    # classifies "t-moved" is reassigned to a different, also surviving group —
-    # the case an earlier "group_id NOT IN declared" scope let through untouched.
+    # Reason: the group survives the reseed (it stays declared); only the
+    # rule that classifies "t-moved" is reassigned to a different, also
+    # surviving group — the case an earlier "group_id NOT IN declared"
+    # scope let through untouched.
     seed_taxonomy(
         taxonomy_conn,
         narrowed(seed, [rule("category", match_value, destination, nature, essentiality)]),
@@ -192,8 +193,9 @@ def test_the_taxonomy_tree_migracao_drops_categories_and_only_classify_all_puts_
     taxonomy_conn.commit()
     assert taxonomy_conn.execute("SELECT count(*) FROM categories").fetchone()[0] == 0
 
-    # Control positive: without this call, the equality below compares the
-    # empty table the migration left against the names it dropped, and fails.
+    # Reason: the control positive — without this call, the equality below
+    # compares the empty table the migration left against the names it
+    # dropped, and fails.
     changed = classify_all(taxonomy_conn)
     taxonomy_conn.commit()
 

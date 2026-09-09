@@ -25,8 +25,9 @@ LABELS = {
 
 
 def released_by_month(conn: sqlite3.Connection, *, today: date) -> list[tuple[int, int]]:
-    # The cash an instalment frees arrives when the instalment ends, not today:
-    # the label says "ao acabar" and the simulation has to honour it (RF-16).
+    # Reason: the cash an instalment frees arrives when the instalment
+    # ends, not today — the label says "ao acabar" and the simulation has
+    # to honour it (RF-16).
     reference = f"{today.year:04d}-{today.month:02d}"
     freed = []
     for row in released_cash(conn, today=today):
@@ -40,27 +41,27 @@ def _months_between(start: str, end: str) -> int:
 
 
 def monthly_result_cents(conn: sqlite3.Connection, scenario: str, *, today: date) -> int:
-    # Three scenarios, and none of them is a multiplier over the other: each adds
-    # a lever the product already identified and that the owner has to actually
-    # pull. A number invented by percentage would be a guess wearing the clothes
-    # of a plan.
+    # Reason: three scenarios, and none of them is a multiplier over the
+    # other — each adds a lever the product already identified and that the
+    # owner has to actually pull. A number invented by percentage would be
+    # a guess wearing the clothes of a plan.
     gained = levers(conn, today=today)
     result = baseline_cents(conn, today=today)
     if scenario in (BASE, OPTIMISTIC):
         result += gained["dismissed"] + gained["cut"]
     if scenario == OPTIMISTIC:
-        # The headline is the steady state the scenario promises — every lever
-        # pulled and every instalment finished. The simulation below phases the
-        # freed cash in at the month each instalment actually ends, which is what
-        # the label says (RF-16).
+        # Reason: the headline is the steady state the scenario promises —
+        # every lever pulled and every instalment finished. The simulation
+        # below phases the freed cash in at the month each instalment
+        # actually ends, which is what the label says (RF-16).
         result += gained["released"]
     return result
 
 
 def expensive_debts(conn: sqlite3.Connection) -> list[dict[str, Any]]:
-    # The mortgage stays out: at the bottom of the ladder it is the cheapest debt
-    # there is, and paying it down before having a reserve trades safety for a
-    # rate that is not hurting.
+    # Reason: the mortgage stays out — at the bottom of the ladder it is
+    # the cheapest debt there is, and paying it down before having a
+    # reserve trades safety for a rate that is not hurting.
     return [
         row
         for row in ladder(conn)
@@ -77,17 +78,19 @@ def simulate(
     extra_months: int | None = None,
     extra_once_cents: int = 0,
 ) -> dict[str, Any]:
-    # The extra is what the simulator of item 008 injects: the same engine
-    # answers "where am I going" and "what would this change", so the two can
-    # never disagree. A term makes the effect stop after that many months, and a
-    # one-off lands in the first month — both are fields of the form, and a field
-    # that changes nothing is a field that lies.
+    # Reason: the extra is what the simulator of item 008 injects — the
+    # same engine answers "where am I going" and "what would this change",
+    # so the two can never disagree. A term makes the effect stop after
+    # that many months, and a one-off lands in the first month — both are
+    # fields of the form, and a field that changes nothing is a field that
+    # lies.
     steady = monthly_result_cents(conn, scenario, today=today) + extra_monthly_cents
     freed = released_by_month(conn, today=today) if scenario == OPTIMISTIC else []
-    # Only the cash that is still ahead is taken out of the starting point: an
-    # instalment ending in the month of the reading has already freed its money,
-    # and the loop starts at month one, so subtracting it here would make it
-    # vanish from the path while the headline went on announcing it.
+    # Reason: only the cash that is still ahead is taken out of the
+    # starting point — an instalment ending in the month of the reading has
+    # already freed its money, and the loop starts at month one, so
+    # subtracting it here would make it vanish from the path while the
+    # headline went on announcing it.
     freed = [(when, amount) for when, amount in freed if when >= 1]
     base_result = steady - sum(amount for _, amount in freed)
     target = reserve_target_cents(conn, today=today)
@@ -99,7 +102,8 @@ def simulate(
     milestones: dict[str, int | None] = {"resultado": None, "dividas": None, "reserva": None}
     if base_result >= 0:
         milestones["resultado"] = 0
-    # A ladder that is already clear was cleared in month zero, not in month one.
+    # Reason: a ladder that is already clear was cleared in month zero, not
+    # in month one.
     if not any(owed):
         milestones["dividas"] = 0
     reserve = 0
@@ -114,10 +118,10 @@ def simulate(
         if milestones["resultado"] is None and result >= 0:
             milestones["resultado"] = month
         if result + injected <= 0:
-            # A month in the red pays nothing down. The one-off is counted here
-            # too: discarding it before this check made a million reais of
-            # declared income change nothing on a base whose monthly result is
-            # negative — which is this base (RF-18).
+            # Reason: a month in the red pays nothing down. The one-off is
+            # counted here too — discarding it before this check made a
+            # million reais of declared income change nothing on a base
+            # whose monthly result is negative — which is this base (RF-18).
             if any(when > month for when, _ in freed):
                 continue
             break
@@ -133,9 +137,10 @@ def simulate(
         if milestones["dividas"] is None and not any(owed):
             milestones["dividas"] = month
         if not any(owed):
-            # Only what the ladder did not swallow goes to the reserve. Adding the
-            # whole month when the spare happens to be exactly zero would credit
-            # a month that went entirely to the debt (RF-17).
+            # Reason: only what the ladder did not swallow goes to the
+            # reserve. Adding the whole month when the spare happens to be
+            # exactly zero would credit a month that went entirely to the
+            # debt (RF-17).
             reserve += spare
             if milestones["reserva"] is None and reserve >= target:
                 milestones["reserva"] = month
@@ -149,9 +154,10 @@ def simulate(
         "milestones": milestones,
         "months_to_objective": milestones["reserva"],
         "monthly_result_cents": steady,
-        # Without a date, the only useful number left is how far the monthly
-        # result is from zero: that is the distance between "never" and "a date
-        # exists", and it is the one thing the owner can act on.
+        # Reason: without a date, the only useful number left is how far
+        # the monthly result is from zero — that is the distance between
+        # "never" and "a date exists", and it is the one thing the owner
+        # can act on.
         "missing_cents": -steady if steady < 0 else 0,
     }
 
@@ -161,9 +167,9 @@ def every_scenario(conn: sqlite3.Connection, *, today: date) -> list[dict[str, A
 
 
 def record(conn: sqlite3.Connection, runs: list[dict[str, Any]], *, today: date) -> None:
-    # A snapshot per recalculation is the only progress signal this product
-    # accepts: "in March you projected 30 months, today you project 24" needs a
-    # March to compare against.
+    # Reason: a snapshot per recalculation is the only progress signal this
+    # product accepts — "in March you projected 30 months, today you
+    # project 24" needs a March to compare against.
     conn.executemany(
         "INSERT OR REPLACE INTO plan_snapshots (taken_at, reference_date, scenario, "
         "monthly_result_cents, reserve_target_cents, months_to_objective) "

@@ -72,9 +72,10 @@ def consult(
         except AdvisorUnavailableError as refusal:
             return _answer(request, conn, today, unavailable=str(refusal), asked=asked)
         if uncited(reading.text, context_text):
-            # Decisão: a leitura inteira é descartada, e não só marcada — exibir a
-            # frase com a cifra inventada dentro é o dano que a norma 23 existe
-            # para impedir. A mensagem não repete a cifra recusada.
+            # Decision: the whole reading is discarded, not just flagged —
+            # showing the sentence with the invented figure inside is the
+            # harm norm 23 exists to prevent. The message does not repeat
+            # the refused figure.
             return _answer(request, conn, today, unchecked=UNCHECKED, asked=asked)
         return _answer(request, conn, today, reading=reading.text, asked=asked)
     finally:
@@ -129,9 +130,9 @@ def _context(conn: sqlite3.Connection, today: date) -> dict[str, Any]:
         "comparison": numbers["comparison"],
         "question": next_question(conn, today=today),
         "pending": pending(conn, today=today),
-        # "Nothing to ask because everything is answered" and "nothing to ask
-        # because you postponed everything" are different states, and only one of
-        # them means the projection is running on fact.
+        # Reason: "nothing to ask because everything is answered" and
+        # "nothing to ask because you postponed everything" are different
+        # states, and only one of them means the projection is running on fact.
         "postponed": postponed(conn) if not next_question(conn, today=today) else 0,
         "action": SCREEN,
         "dismiss_action": DISMISS,

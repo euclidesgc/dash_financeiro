@@ -48,8 +48,9 @@ exige_comando git
 RAIZ="$(medir_raiz)"
 export RAIZ
 
-# Fora de um repositório git não há universo a varrer, e varrer o que não se
-# conhece responde "nenhum marcador" para o caso em que nem se olhou.
+# Reason: outside a git repository there is no universe to sweep, and
+# sweeping what it does not know answers "no marker" for the case where it
+# never even looked.
 git -C "$RAIZ" rev-parse --git-dir >/dev/null 2>&1 ||
   _reprova "$RAIZ não é um repositório git — sem a lista de arquivos versionados não há universo para varrer, e varrer nada responde 'nenhum marcador'"
 
@@ -67,12 +68,12 @@ IGNORA_DIR = {
     ".dart_tool", ".next", "__pycache__", ".venv", ".gradle",
 }
 
-# Os portões são ativos que o harness entrega, não código do produto — e o
-# teste deste portão precisa carregar marcadores de exemplo deliberadamente
-# incompletos para provar que a recusa morde. Sem esta exclusão, o portão conta
-# os próprios exemplos e reprova todo projeto no dia da instalação, por um
-# defeito que não é do projeto. Medido na primeira execução do teste em layout
-# instalado, que foi exatamente assim que apareceu.
+# Reason: the gates are assets the harness ships, not the product's own
+# code — and this gate's test needs to carry deliberately incomplete example
+# markers to prove the refusal actually bites. Without this exclusion, the
+# gate counts its own examples and fails every project on install day, for a
+# defect that is not the project's. Measured on the test's first run in an
+# installed layout, which is exactly how it showed up.
 IGNORA_PREFIXO = ("scripts/gates/",)
 
 MARCADOR = re.compile(r"(?:#|//|--|/\*|\*)\s*atalho:\s*(?P<corpo>.*)$", re.IGNORECASE)
@@ -143,7 +144,8 @@ for rel in alvos:
                 if m:
                     marcadores.append((rel, numero, m.group("corpo").strip()))
     except (UnicodeDecodeError, OSError):
-        # Binário ou ilegível não carrega comentário; não é falha de medição.
+        # Reason: binary or unreadable carries no comment; this is not a
+        # measurement failure.
         continue
 
 print("medido: %d arquivo(s) versionados varridos, %d marcador(es) atalho:"
@@ -153,8 +155,8 @@ if not marcadores:
     print("Nenhum atalho deliberado marcado.")
     sys.exit(0)
 
-# O roadmap só é exigido quando há marcador — projeto sem atalho nenhum não
-# precisa ter a fila montada para este portão aprovar.
+# Reason: the roadmap is only required when there is a marker — a project
+# with no shortcut at all does not need the queue set up for this gate to pass.
 roadmap_rel = "product/roadmap.md"
 roadmap = os.path.join(raiz, roadmap_rel)
 if not os.path.isfile(roadmap):
