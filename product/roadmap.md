@@ -410,36 +410,36 @@ ao topo da fila é a régua local certa e o agregado errado.
   vezes. Os totais das quatro telas de dinheiro são idênticos com e sem a
   correção — dado derivado não move dinheiro. Fechou com **771 testes**.
 
-- [ ] `034-o-portao-de-comentario-fala-a-lingua-do-projeto` — O portão que cobra
-  comentário-com-porquê reconhece justificativa **na língua em que o projeto
+- [x] `034-o-portao-de-comentario-fala-a-lingua-do-projeto` — O portão que cobra
+  comentário-com-porquê reconhece a justificativa **na língua em que o projeto
   escreve código**, distingue cabeçalho de arquivo de comentário ao lado de
-  código, e julga a árvore inteira sem recorte.
-  Hoje a norma 16 manda escrever em inglês e o portão só reconhece marca de
-  justificativa em português — então comentário escrito na língua certa é
-  reprovado, e comentário que passa viola a norma 16. Medido sobre a árvore
-  inteira: **1.129 linhas acusadas em 103 arquivos, que são 407 blocos** (`app`
-  187, `scripts` 174, `tests` 46), e a maior parte é justificativa legítima em
-  inglês, sem marca, mais cabeçalho de script — que documenta o contrato do
-  arquivo e não tem outro lugar onde morar.
-  **Absorve o antigo `031`**, que era a varredura retroativa: ela é a fase 2 deste
-  item, depois de o portão estar certo. Invertido, a varredura poria marca em
-  português em 407 blocos e a correção seguinte mandaria trocar todas. Norma 20 —
-  segunda ocorrência é causa raiz, não segundo remendo. O recorte por diff, que o
-  portão carrega desde que foi ligado, sai no fim: portão com recorte é portão com
-  prazo.
-
-- [x] `035-a-recusa-diz-o-que-faltou` — A recusa de correção de classificação diz,
-  em português, **o que faltou** e o que fazer em seguida. Ela mostrava
-  literalmente `None` no lugar do termo, quando o dono não escolhia grupo existente
-  nem digitava um novo: a recusa estava certa e a explicação estava quebrada — e é
-  a explicação que decide se ele corrige ou desiste.
-  A correção é da **causa**, não da formatação: a validação passou a distinguir
-  *termo ausente* de *termo inválido*, então o próximo caminho que chegar com valor
-  nulo não imprime `None` de novo. E um teste percorre **as 20 rotas de escrita que
-  podem recusar** — 20 de 20, contadas pelo validador — afirmando que nenhuma
-  mensagem traz `None`, `null`, `NoneType` ou `Traceback`. Revertida a correção,
-  ele falha e **nomeia a rota**. É o que impede o terceiro caso, e o que a norma 20
-  pede quando o segundo aparece. Fechou com **749 testes**.
+  código, e **julga a árvore inteira** — o recorte por diff que ele carregava
+  desde que foi ligado acabou.
+  A norma 16 manda escrever em inglês e o portão só reconhecia marca em
+  português: comentário escrito na língua certa era reprovado, e o que passava
+  violava a norma. Medido na árvore inteira, o estrago era **1.129 linhas em 103
+  arquivos — 407 blocos**, e a maior parte era justificativa legítima em inglês,
+  sem marca, mais cabeçalho de script, que documenta o contrato do próprio arquivo
+  e não tem outro lugar onde morar.
+  **Absorveu o antigo `031`**, que era a varredura retroativa: ela virou a fase 2
+  deste item. Invertido, a varredura poria marca em português em 407 blocos para a
+  correção seguinte mandar trocar todas — norma 20, causa raiz e não segundo
+  remendo.
+  A fase 1 **foi reprovada na primeira rodada**, e a reprovação é o que dá valor a
+  este item: o portão tinha ficado permissivo. Uma linha de comentário vazia não
+  fechava o bloco, então uma marca em qualquer ponto contaminava todos os
+  parágrafos seguintes; e a marca casava em qualquer lugar da frase, então
+  `# for some reason: it does` pagava o pedágio. **A contagem tinha caído de 1.129
+  para 910 e parte da queda era vazamento.** Fechado o vazamento e ancorada a
+  marca, ela subiu para 977 — o número honesto é maior que o bonito.
+  A fase 2 julgou os **336 blocos um a um**. Três foram apagados, todos assinatura
+  de função, nenhum um porquê — e o validador vasculhou as linhas removidas atrás
+  de número medido, data, incidente e decisão de segurança: todas continuam lá,
+  traduzidas e marcadas. Ele leu 18 blocos marcados para conferir o risco oposto,
+  a marca virando enfeite sobre prosa descritiva: nenhum. E provou que o `0` é
+  conserto e não permissividade injetando dois comentários e vendo o portão sair
+  vermelho.
+  Fechou com **771 testes**, e as quatro telas de dinheiro byte a byte idênticas.
 
 ## Validações de campo pendentes
 
