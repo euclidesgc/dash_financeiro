@@ -1029,10 +1029,10 @@
           "por": "autonomo"
         },
         "plan": {
-          "at": "2026-09-08T04:09:58Z",
-          "sha": "7d6c01e5f1d08f0e95f500c623754e1bc96cd65b",
+          "at": "2026-09-09T04:32:43Z",
+          "sha": "1dc5bd71f4f01ce291670f4d4fc7d767748cd499",
           "file": "product/items/025-financiamentos-na-tela/03-plan.md",
-          "por": "autonomo"
+          "por": "humano"
         }
       },
       "current_phase": 2,
@@ -1044,9 +1044,7 @@
           "verdict_file": "product/items/025-financiamentos-na-tela/05-veredictos/fase-1.md",
           "validated_sha": "38d7942789b26595bf19d57477ab73fc2850856a",
           "pr": null,
-          "blocked_on": [
-            "D-005"
-          ],
+          "blocked_on": [],
           "verdict_at": "2026-09-08T03:27:39Z",
           "validated_trees": {
             ".": "a1427b8dfd9d1c714106f612c1fcd08b3b7a1a63"
@@ -1070,12 +1068,14 @@
       },
       "divergences": {
         "D-005": {
-          "status": "APROVADA",
+          "status": "RECONCILIADA",
           "kind": "normal",
           "phase": 1,
           "detected_at": "2026-09-08T03:26:42Z",
           "aprovada_at": "2026-09-08T03:26:42Z",
-          "ratificada_por": "autonomo"
+          "ratificada_por": "humano",
+          "ratificacao_humana_at": "2026-09-09T04:25:49Z",
+          "reconciliada_at": "2026-09-09T04:32:38Z"
         }
       },
       "criteria_exception": null
@@ -1111,9 +1111,7 @@
           "verdict_file": "product/items/027-configuracao-do-gemini/05-veredictos/fase-1.md",
           "validated_sha": "9c026b929e24d72ff4efa336f4c0e4f50480f7e3",
           "pr": null,
-          "blocked_on": [
-            "D-004"
-          ],
+          "blocked_on": [],
           "verdict_at": "2026-09-08T03:05:22Z",
           "validated_trees": {
             ".": "4d3aaa278456192ecd008b760b1c75580ed54a10"
@@ -1128,8 +1126,9 @@
           "phase": 1,
           "detected_at": "2026-09-08T00:51:27Z",
           "aprovada_at": "2026-09-08T03:06:15Z",
-          "ratificada_por": "autonomo",
-          "reconciliada_at": "2026-09-08T03:07:56Z"
+          "ratificada_por": "humano",
+          "reconciliada_at": "2026-09-08T03:07:56Z",
+          "ratificacao_humana_at": "2026-09-09T04:25:49Z"
         }
       },
       "criteria_exception": null
@@ -1194,8 +1193,9 @@
           "phase": 1,
           "detected_at": "2026-09-08T04:30:13Z",
           "aprovada_at": "2026-09-08T04:30:13Z",
-          "ratificada_por": "autonomo",
-          "reconciliada_at": "2026-09-08T04:40:10Z"
+          "ratificada_por": "humano",
+          "reconciliada_at": "2026-09-08T04:40:10Z",
+          "ratificacao_humana_at": "2026-09-09T04:25:49Z"
         }
       },
       "criteria_exception": null
@@ -1260,8 +1260,9 @@
           "phase": 1,
           "detected_at": "2026-09-08T04:34:43Z",
           "aprovada_at": "2026-09-08T04:34:43Z",
-          "ratificada_por": "autonomo",
-          "reconciliada_at": "2026-09-08T04:40:10Z"
+          "ratificada_por": "humano",
+          "reconciliada_at": "2026-09-08T04:40:10Z",
+          "ratificacao_humana_at": "2026-09-09T04:25:49Z"
         }
       },
       "criteria_exception": null
@@ -1361,7 +1362,7 @@
     },
     "021-mascara-e-medida-dos-campos": {
       "title": "Todo campo declara o que aceita e cabe no que aceita",
-      "track": "rapida",
+      "track": "completa",
       "stage": "done",
       "stacks": [
         "python"
@@ -1390,10 +1391,22 @@
           "verdict_file": null,
           "validated_sha": null,
           "pr": null,
-          "blocked_on": []
+          "blocked_on": [
+            "D-001"
+          ]
         }
       },
-      "divergences": {},
+      "divergences": {
+        "D-001": {
+          "status": "APROVADA",
+          "kind": "normal",
+          "phase": 2,
+          "detected_at": "2026-09-09T04:26:12Z",
+          "aprovada_at": "2026-09-09T04:27:14Z",
+          "ratificada_por": "humano",
+          "pendente_at": "2026-09-09T04:26:35Z"
+        }
+      },
       "criteria_exception": null
     },
     "018-tipagem-estrita-em-python": {
