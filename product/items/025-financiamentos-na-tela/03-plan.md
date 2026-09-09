@@ -263,6 +263,7 @@ exatamente os degraus que tinha lendo os arquivos.
 ### Etapas
 
 - [ ] **1.1 — Criar `app/migrations/sql/014_financings.sql`.**
+      > Reconciliado em D-005.
       ```sql
       CREATE TABLE financings (
           kind TEXT NOT NULL PRIMARY KEY,
@@ -270,12 +271,17 @@ exatamente os degraus que tinha lendo os arquivos.
           term_months INTEGER NOT NULL,
           balance_cents INTEGER,
           payment_cents INTEGER,
-          first_due_date TEXT
+          first_due_date TEXT,
+          CHECK (kind != 'vehicle' OR (payment_cents IS NOT NULL AND first_due_date IS NOT NULL))
       );
       ```
-      Sem `CHECK` por tipo: a violação viraria `IntegrityError` no meio de uma
-      requisição, e a recusa de RF-08 é da camada que fala pt-BR. Sem índice: a
-      tabela tem no máximo duas linhas.
+      O `CHECK` garante a completude estrutural da linha de veículo — ela não
+      existe sem parcela e sem data de primeiro vencimento —, e é rede de
+      segurança nunca alcançada em uso normal, porque a tela da fase 2 exige os
+      dois campos antes de escrever. Essa garantia é outra coisa da recusa de
+      RF-08, que continua sendo da camada que fala pt-BR e trata da gramática do
+      campo digitado, não da completude da linha. Sem índice: a tabela tem no
+      máximo duas linhas.
       *Considerando:* nada antes — é a primeira etapa.
       *Justificativa:* RF-01. O número `014` é o reservado a este item; `012`,
       `013` e `015` pertencem a itens que correm ao mesmo tempo, e
