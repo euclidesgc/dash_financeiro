@@ -264,6 +264,121 @@ PR e commit já escritos.
   zerar na próxima tela que alguém escrever — foi assim que 26 viraram 37.
   Fechou com **741 testes**, lint, tipos e portões limpos.
 
+- [-] `037-sincronizacao-real-com-a-pluggy` — O botão **Sincronizar busca na
+  Pluggy**, e a base deixa de estar parada em 05/09/2026. Hoje ele relê um
+  arquivo que dois scripts de `ingestao/` geram à mão: catorze sincronizações
+  seguidas trouxeram zero lançamentos, e o painel mostra dado velho com cara de
+  fresco — o que o `006` existia para impedir. A busca por janela (desde a última
+  busca bem-sucedida, sem data final) e as marcas que o consolidador fazia — sinal
+  do cartão, transferência entre contas próprias, pagamento de fatura, estorno,
+  saque, parcela — passam para dentro do app, e a carga guarda o que hoje
+  descarta: CPF/CNPJ de pagador e recebedor, meio de pagamento, MCC, pendente ou
+  lançado, fatura, data da compra e a conexão de cada conta.
+  **O id da Pluggy não é estável**: a compra de cartão que passa de pendente a
+  lançada volta com id novo, e as 139 pendentes da base virariam duplicata. O
+  lançamento recriado é **religado** ao antigo, mantendo o número interno — é
+  isso que faz ajuste do dono e etiqueta sobreviverem —, e só o que some sem par
+  sai da base, com lápide, dentro da janela buscada e nunca de conta com resposta
+  incompleta. A Pluggy guarda 12 meses; a base local é o arquivo de longo prazo.
+  **Corrige um defeito de dinheiro:** 14 compras em dólar foram gravadas com o
+  valor em dólar — STRIPE US$ 64,80 entrou como R$ 64,80, eram R$ 350,57 — e o
+  gasto histórico está **R$ 2.346,09 abaixo** do real.
+  A rotina diária roda sozinha com o app de pé, e a tela diz, por banco, quando a
+  Pluggy o atualizou e qual pede novo login no MeuPluggy. Pedir atualização ao
+  banco é limitado a uma vez por hora por conexão.
+  Fases: 1 a carga entende o bruto; 2 o botão busca na Pluggy; 3 o botão e o
+  relógio.
+  **Depende de:** nada aberto. **Destrava:** `038`, `039`, `040` e `041`.
+
+- [-] `038-conta-e-instituicao-como-eixo` — Todo lançamento diz **de que banco e
+  de que conta veio**, e os gastos se leem, filtram e agrupam por instituição e
+  por conta. O banco é a conexão da Pluggy, não o campo `institution`, que repete
+  o nome do cartão: a conta chamada "platinum" é o cartão do Nubank, e o Passaí
+  Visa Gold está na conexão do Itaú. As cinco conexões — C6, Mercado Pago,
+  Nubank, CAIXA, Itaú — viram cinco instituições com nome editável, e cada uma
+  das 12 contas ganha apelido editável. A sincronização nunca sobrescreve nenhum
+  dos dois, pelo mesmo motivo que separou `cards` de `accounts`.
+  **Depende de:** `037` — a conexão de cada conta só passa a ser gravada na fase
+  1 dele.
+
+- [-] `039-beneficiario-como-entidade` — O beneficiário é **um cadastro** — nome,
+  razão social, nome fantasia, CPF ou CNPJ e ramo de atividade —, e não mais a
+  descrição do extrato normalizada. Hoje "IFOOD *RESTAURANTE X" e "iFood.com" são
+  dois beneficiários, e os 805 da base são 805 textos. O mesmo documento junta as
+  variações sozinho; o que o documento não junta, o dono **funde**, e fundir
+  nunca muda o total. A contraparte segue o sentido: na saída é quem recebeu, na
+  entrada quem pagou, no cartão o estabelecimento.
+  A razão social e o nome fantasia chegam **sem clique**: depois da
+  sincronização, cada CNPJ novo é consultado uma vez na BrasilAPI, com cache por
+  CNPJ e ritmo contido, e falha não rebaixa a sincronização. A consulta continua
+  opt-in, como decidiu o `015`. CPF não tem consulta pública: fica o nome que o
+  banco mandou. Os apelidos gravados pelo `015` migram para o cadastro.
+  Fases: 1 o cadastro; 2 o CNPJ automático.
+  **Depende de:** `037` — o CPF/CNPJ de pagador e recebedor (624 e 516
+  lançamentos no bruto) só entra na base pela fase 1 dele. **Destrava:** `040`,
+  `042` e `043`.
+
+- [ ] `040-classificacao-em-camadas` — Cada campo da classificação sabe **de onde
+  veio** — dono, regra, IA, sistema ou reserva —, e o dono ajusta **um lançamento
+  só** sem que a próxima sincronização apague. Hoje não dá: a classificação é
+  recalculada inteira a cada carga, e por isso o `019` teve de transformar toda
+  correção em regra. A precedência é por campo: ajuste no lançamento, padrão do
+  dono para o beneficiário, regra do dono, sugestão da IA, sistema, reserva. E a
+  semente para de devolver o grupo antigo a uma regra que o dono editou.
+  **Dois eixos mudam.** Entra a **operação** — compra no cartão, Pix enviado e
+  recebido, TED/DOC, boleto, pagamento de fatura, transferência entre contas
+  próprias, estorno, saque —, derivada dos dados e corrigível pelo dono, e é dela
+  que passa a sair o que não é gasto: hoje 7 lançamentos do grupo "Não é gasto"
+  contam como gasto (−R$ 2.125,65), e o dono não tem como corrigir uma
+  transferência que a detecção errou. A **natureza** ganha "parcelada", e a
+  parcela sai de variável e de fixa — piso e lista de corte encolhem, e a
+  diferença é medida e declarada.
+  Fases: 1 as camadas, sem mover número nenhum; 2 operação e parcelada, com o
+  número medido.
+  **Depende de:** `039` — o padrão do dono mora no cadastro do beneficiário — e
+  `037`, cujo meio de pagamento e tipo de operação alimentam a derivação.
+  **Destrava:** `041`, `042` e `043`.
+
+- [ ] `041-lancamentos-e-edicao-em-massa` — Existe **uma tela com todos os
+  lançamentos** de todas as contas, entradas e saídas, com o saldo de hoje de
+  cada conta no topo. Ela filtra por período, banco, conta, texto (descrição,
+  beneficiário, razão social), faixa de valor, sentido, cada eixo, etiqueta,
+  origem da classificação, pendente ou lançado e recorrente; e agrupa por
+  qualquer eixo, pela **compra parcelada** (parcela atual, quantas faltam,
+  quando acaba) e pela **fatura** do cartão.
+  **A edição é em massa:** o dono marca linhas, ou "todos os N do filtro", e troca
+  categoria, natureza, operação, essencialidade, beneficiário, etiqueta ou
+  descrição própria de uma vez, escolhendo se vale **só para estes** ou **também
+  para os próximos deste beneficiário**. A tela diz antes de gravar quantos
+  lançamentos e quanto dinheiro a mudança alcança, e recusa gravar se a seleção
+  mudou entre a prévia e a confirmação — uma sincronização que entrou no meio,
+  por exemplo. A descrição do extrato continua visível ao lado da do dono. A
+  etiqueta é texto livre, várias por lançamento ("Reforma", "Férias jan/27").
+  Fases: 1 leitura; 2 ação em massa; 3 etiquetas.
+  **Depende de:** `040` — sem origem e sem ajuste por lançamento não há o que
+  editar em massa —, e de `038` e `039` para os eixos conta e beneficiário.
+
+- [ ] `042-tela-de-beneficiarios` — Os beneficiários têm tela própria: nome,
+  razão social, nome fantasia, documento, quantidade de lançamentos, dinheiro e a
+  classificação padrão de cada um, com fundir, renomear e classificar em massa.
+  O "corrigir" de `/gastos` passa a gravar o padrão do beneficiário em vez de uma
+  regra de texto exato, e `mercado livre` deixa de não alcançar
+  `mercado livre pago`. A seção de apelidos sai de `/configuracao`.
+  **Depende de:** `039` e `040`.
+
+- [ ] `043-sugestao-da-ia-por-beneficiario` — A IA **sugere** categoria, natureza
+  e essencialidade **por beneficiário**, não por lançamento, e a sugestão vale na
+  hora, marcada como da IA, até o dono aceitar ou trocar. O modelo recebe nome,
+  razão social, ramo de atividade, exemplos de descrição, valor típico e
+  frequência, e só pode responder com o vocabulário do banco: valor fora dele é
+  descartado. **Nunca recebe beneficiário pessoa física** e **nunca decide
+  operação** — é a operação que decide o que é gasto, e a norma 23 tira isso do
+  modelo. Pergunta uma vez por beneficiário, e a sincronização seguinte só
+  pergunta pelos novos; um interruptor na tela diz se a IA pode classificar, e
+  uma fila "revisar sugestões" aceita em massa.
+  **Depende de:** `039` e `040` — a sugestão é uma camada da classificação presa
+  ao cadastro do beneficiário. Não depende do `041` e pode correr ao lado dele.
+
 ## Dívida técnica
 
 Bloco separado de propósito. Pendência de processo — portão, fluxo de CI,
@@ -440,6 +555,52 @@ ao topo da fila é a régua local certa e o agregado errado.
   conserto e não permissividade injetando dois comentários e vendo o portão sair
   vermelho.
   Fechou com **771 testes**, e as quatro telas de dinheiro byte a byte idênticas.
+
+- [x] `035-a-recusa-diz-o-que-faltou` — A recusa de correção de classificação diz,
+  em português, **o que faltou** e o que fazer em seguida. Ela mostrava
+  literalmente `None` no lugar do termo, quando o dono não escolhia grupo existente
+  nem digitava um novo: a recusa estava certa e a explicação estava quebrada — e é
+  a explicação que decide se ele corrige ou desiste.
+  A correção é da **causa**, não da formatação: a validação passou a distinguir
+  *termo ausente* de *termo inválido*, então o próximo caminho que chegar com valor
+  nulo não imprime `None` de novo. E um teste percorre **as 20 rotas de escrita que
+  podem recusar** — 20 de 20, contadas pelo validador — afirmando que nenhuma
+  mensagem traz `None`, `null`, `NoneType` ou `Traceback`. Revertida a correção,
+  ele falha e **nomeia a rota**. É o que impede o terceiro caso, e o que a norma 20
+  pede quando o segundo aparece. Fechou com **749 testes**.
+
+- [x] `036-a-suite-nao-depende-do-diretorio-do-dono` — A suíte passa numa árvore
+  recém-clonada, **sem nenhum arquivo do dono**: 749 coletados, 749 passados, zero
+  pulados — idêntico à árvore completa. Era o ambiente da integração contínua, e
+  ninguém o tinha medido.
+  Dois testes liam `data/processed/` e `data/raw/`, e **mais seis** liam um nível
+  abaixo, pela reconstrução da escada semeando os contratos de financiamento reais
+  do dono. Todos passaram a usar dado versionado. Três outros liam o corpus real e
+  **se pulavam sozinhos** quando ele faltava — na integração contínua nunca
+  exercitavam a função que diziam provar, e a corrida saía verde assim mesmo. Um
+  teste que se pula sozinho quando o dado falta não é um teste que passou.
+  O que só os 1.942 registros reais provam mudou para
+  `scripts/conferir-normalizacao.py`, que **diz** o que faz em vez de pular em
+  silêncio. A amostra que a suíte usa é sintética: versionar descrições de
+  transação do dono para provar uma função de texto trocaria um problema por um
+  pior.
+  E a mensagem de erro de escrita passou a nomear a restrição violada. A anterior
+  custou **duas atribuições de culpa erradas** nesta corrida, a validadores
+  diferentes. Fechou com **768 testes**.
+
+- [ ] `044-o-router-nao-monta-consulta` — O portão da norma 30 enxerga **SQL
+  cru**. Hoje ele casa só as formas do SQLAlchemy — `select(` e
+  `session.execute` —, que este projeto não usa, e passa verde sobre quatro
+  routers que montam consulta com `conn.execute("SELECT…")`: `spending`,
+  `rules`, `settings` e `summary`. É o defeito que o `018` descreveu nos portões
+  arquiteturais: `limpos` sobre a contagem do que foi varrido, não do que foi
+  julgado. O SQL dos quatro vai para `app/queries`, e o portão passa a pegar
+  `conn.execute(`, `.executemany(` e `.commit()` em `app/routers`, provado
+  reprovando de propósito antes de merecer confiança.
+  Fases: 1 a varredura; 2 o portão que a cobra — nesta ordem, porque portão
+  ligado antes da varredura nasce vermelho.
+  Vem **por último**, depois do `043`: os itens de cima mexem nesses mesmos
+  routers, e as telas novas já nascem com o SQL fora do router (norma 36).
 
 ## Validações de campo pendentes
 

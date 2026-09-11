@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "active_item": "018-tipagem-estrita-em-python",
+  "active_item": "037-sincronizacao-real-com-a-pluggy",
   "items": {
     "001-base-e-login": {
       "title": "Base e login: schema, ingestão dos 1.942 lançamentos e acesso protegido",
@@ -1452,6 +1452,97 @@
           "blocked_on": []
         }
       },
+      "divergences": {},
+      "criteria_exception": null
+    },
+    "037-sincronizacao-real-com-a-pluggy": {
+      "title": "Sincronização real com a Pluggy: busca por janela, bruto guardado, religação do id recriado e rotina diária",
+      "track": "completa",
+      "stage": "spec",
+      "stacks": [],
+      "created_at": "2026-09-11T00:23:31Z",
+      "approvals": {
+        "prd": {
+          "at": "2026-09-11T00:51:50Z",
+          "sha": "ecd69740f022556820211ec2fbcbea600beadc56",
+          "file": "product/items/037-sincronizacao-real-com-a-pluggy/01-prd.md",
+          "por": "humano"
+        },
+        "spec": {
+          "at": null,
+          "sha": null
+        },
+        "plan": {
+          "at": null,
+          "sha": null
+        }
+      },
+      "current_phase": null,
+      "phases": {},
+      "divergences": {
+        "D-008": {
+          "status": "PENDENTE",
+          "kind": "normal",
+          "phase": null,
+          "detected_at": "2026-09-11T01:27:05Z"
+        }
+      },
+      "criteria_exception": null
+    },
+    "038-conta-e-instituicao-como-eixo": {
+      "title": "Conta e instituição como eixo: o banco é a conexão da Pluggy, com nome e apelido que a sync não toca",
+      "track": "rapida",
+      "stage": "plan",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-11T00:29:49Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-11T01:03:21Z",
+          "sha": "f5979971fef71a93c82352b7e6cde63faedb7d62",
+          "file": "product/items/038-conta-e-instituicao-como-eixo/01-brief.md",
+          "por": "humano"
+        },
+        "plan": {
+          "at": null,
+          "sha": null
+        }
+      },
+      "current_phase": null,
+      "phases": {},
+      "divergences": {
+        "D-009": {
+          "status": "PENDENTE",
+          "kind": "normal",
+          "phase": null,
+          "detected_at": "2026-09-11T01:27:05Z"
+        }
+      },
+      "criteria_exception": null
+    },
+    "039-beneficiario-como-entidade": {
+      "title": "Beneficiário como entidade: cadastro por documento, fusão e renomeação, razão social e nome fantasia pelo CNPJ",
+      "track": "rapida",
+      "stage": "plan",
+      "stacks": [
+        "python"
+      ],
+      "created_at": "2026-09-11T00:29:49Z",
+      "approvals": {
+        "brief": {
+          "at": "2026-09-11T01:03:21Z",
+          "sha": "0e9ba708f66bca44086a79184cfb89fdc3f23036",
+          "file": "product/items/039-beneficiario-como-entidade/01-brief.md",
+          "por": "humano"
+        },
+        "plan": {
+          "at": null,
+          "sha": null
+        }
+      },
+      "current_phase": null,
+      "phases": {},
       "divergences": {},
       "criteria_exception": null
     }
