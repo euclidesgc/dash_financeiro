@@ -22,3 +22,8 @@ venv/
 
 # playwright mcp
 .playwright-mcp/
+
+# harness br
+.debug/
+coverage/
+.vitest/

@@ -88,3 +88,5 @@ Detalhe nas skills `python-*`; as de SQLAlchemy, Alembic e `BaseSettings`
 descrevem ferramenta que este projeto não usa.
 
 <!-- harness:claude-md -->
+
+@AGENTS.md
