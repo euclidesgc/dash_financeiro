@@ -2,9 +2,20 @@ import { useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { useUpdateCategory } from '@/features/expenses/api/update-category'
+import { SimilarOffer } from '@/features/expenses/components/similar-offer'
 import type { Category, CategoryUpdateBody, Expense } from '@/features/expenses/types/expense'
 
 const AUTO_OPTION = '__auto__'
+
+interface Chosen {
+  label: string
+  body: CategoryUpdateBody
+}
+
+function reflects(expense: Expense, body: CategoryUpdateBody): boolean {
+  if (body.mode === 'auto') return expense.category_source === 'auto'
+  return expense.category_source === 'manual' && expense.category_key === body.category
+}
 
 export function CategoryPicker({
   expense,
@@ -16,34 +27,47 @@ export function CategoryPicker({
   categoriesReady: boolean
 }): React.JSX.Element {
   const [editing, setEditing] = useState(false)
-  const [chosen, setChosen] = useState<string | null>(null)
+  const [chosen, setChosen] = useState<Chosen | null>(null)
+  const [offer, setOffer] = useState<{ category: string | null } | null>(null)
   const mutation = useUpdateCategory()
   const name = expense.description ?? 'Sem descrição'
-  const label = chosen ?? expense.category ?? 'Sem categoria'
+  // Reason: the chosen label stays until the refetched row carries the same choice, so the
+  // button never flashes the previous category between the PATCH and the list refetch.
+  if (chosen !== null && reflects(expense, chosen.body)) setChosen(null)
+  const label = chosen?.label ?? expense.category ?? 'Sem categoria'
   const isManual = expense.category_source === 'manual'
 
   function save(body: CategoryUpdateBody): void {
+    setOffer(null)
     mutation.mutate(
       { id: expense.id, body },
       {
-        onSettled: () => {
+        onSuccess: () => {
+          if (body.mode === 'manual') setOffer({ category: body.category })
+        },
+        onError: () => {
           setChosen(null)
         },
       },
     )
   }
 
+  function choose(chosenLabel: string, body: CategoryUpdateBody): void {
+    setChosen({ label: chosenLabel, body })
+    save(body)
+  }
+
   function handleChange(event: ChangeEvent<HTMLSelectElement>): void {
     const value = event.target.value
     if (value === AUTO_OPTION) {
-      setChosen(null)
       save({ mode: 'auto' })
     } else if (value === '') {
-      setChosen('Sem categoria')
-      save({ mode: 'manual', category: null })
+      choose('Sem categoria', { mode: 'manual', category: null })
     } else {
-      setChosen(categories.find((category) => category.key === value)?.label ?? value)
-      save({ mode: 'manual', category: value })
+      choose(categories.find((category) => category.key === value)?.label ?? value, {
+        mode: 'manual',
+        category: value,
+      })
     }
     setEditing(false)
   }
@@ -107,6 +131,15 @@ export function CategoryPicker({
             Tentar de novo
           </Button>
         </>
+      ) : null}
+      {offer !== null ? (
+        <SimilarOffer
+          expenseId={expense.id}
+          category={offer.category}
+          onDismiss={() => {
+            setOffer(null)
+          }}
+        />
       ) : null}
     </div>
   )

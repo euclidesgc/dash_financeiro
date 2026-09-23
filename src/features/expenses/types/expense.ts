@@ -59,6 +59,14 @@ export interface CategoriesResponse {
 
 export type CategoryUpdateBody = { mode: 'manual'; category: string | null } | { mode: 'auto' }
 
+export interface SimilarCountResponse {
+  count: number
+}
+
+export interface ApplyToSimilarResponse {
+  updated: number
+}
+
 export interface ExpenseAccount {
   id: string
   name: string | null

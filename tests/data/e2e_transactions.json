@@ -124,5 +124,26 @@
     "razao_social": "",
     "cnpj": "",
     "recebedor": ""
+  },
+  {
+    "id": "e2e-t-7",
+    "data": "2026-07-08",
+    "conta_id": "acc-fixture-1",
+    "descricao": "FARMACIA CENTRAL",
+    "valor": -30.0,
+    "tipo": "DEBIT",
+    "categoria_pluggy": "Healthcare",
+    "categoria": "Healthcare",
+    "parcela_atual": null,
+    "parcela_total": null,
+    "eh_transferencia": false,
+    "motivo_transferencia": "",
+    "eh_saque": false,
+    "eh_estorno": false,
+    "estornada_por": "",
+    "nome_fantasia": "",
+    "razao_social": "",
+    "cnpj": "",
+    "recebedor": ""
   }
 ]
