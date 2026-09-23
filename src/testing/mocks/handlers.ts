@@ -3,6 +3,7 @@ import type { SyncStatus } from '@/features/sync/types/sync-status'
 import type { CatalogueCategory } from '@/features/categories/types/category'
 import type {
   CategoryGroup,
+  CategorySignal,
   CategoryUpdateBody,
   Expense,
   ExpenseOrder,
@@ -260,10 +261,7 @@ function isWholeMonth(from: string | null, to: string | null): boolean {
   return to === `${from.slice(0, 7)}-${String(lastDay).padStart(2, '0')}`
 }
 
-function signalFor(
-  spentCents: number,
-  limitCents: number | null,
-): 'within' | 'warning' | 'over' | null {
+function signalFor(spentCents: number, limitCents: number | null): CategorySignal | null {
   if (limitCents === null) {
     return null
   }

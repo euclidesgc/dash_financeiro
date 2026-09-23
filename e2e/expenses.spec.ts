@@ -255,6 +255,53 @@ test('shows the totals by category and hides them when the filter has no spendin
   await expect(page.getByText('Nenhum gasto para esse filtro.')).toBeVisible()
 })
 
+test('shows the signal of each category against its limit only in a whole month and leaves the base as it found it', async ({
+  page,
+}) => {
+  await page.goto('/app/login')
+  await page.getByLabel('Login').fill(LOGIN)
+  await page.getByLabel('Senha').fill(PASSWORD)
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page).toHaveURL(/\/app\/?$/)
+
+  await page.getByRole('link', { name: 'Categorias' }).click()
+  const supermercado = page.getByRole('listitem').filter({ has: page.getByText('Supermercado', { exact: true }) })
+  await expect(supermercado).toContainText('Sem limite')
+  await supermercado.getByRole('button', { name: 'Definir limite de Supermercado' }).click()
+  await supermercado.getByLabel('Limite mensal (R$)').fill('50')
+  await supermercado.getByLabel('Limite mensal (R$)').press('Enter')
+  await expect(supermercado).toContainText('Limite: R$ 50,00')
+
+  await page.goto('/app/expenses?month=2026-08')
+  const table = page.getByRole('table', { name: 'Por categoria' })
+  const groceries = table.getByRole('row').filter({ hasText: 'Supermercado' })
+  await expect(groceries).toContainText('Acima')
+  await expect(groceries).toContainText('R$ 60,00 de R$ 50,00 · 120%')
+  await expect(page.getByText('1 categoria acima do limite', { exact: true })).toBeVisible()
+  const health = table.getByRole('row').filter({ hasText: 'Plano de saúde' })
+  await expect(health).not.toContainText('Dentro')
+  await expect(health).not.toContainText('Atenção')
+  await expect(health).not.toContainText('Acima')
+  await expect(page.getByText('Sinal só por mês', { exact: true })).toHaveCount(0)
+
+  await page.goto('/app/expenses?from=2026-08-01&to=2026-08-20')
+  await expect(page.getByText('Sinal só por mês', { exact: true })).toBeVisible()
+  await expect(page.getByRole('table', { name: 'Por categoria' })).not.toContainText('Acima')
+  await expect(page.getByText(/acima do limite/)).toHaveCount(0)
+
+  await page.getByRole('link', { name: 'Categorias' }).click()
+  await supermercado.getByRole('button', { name: 'Definir limite de Supermercado' }).click()
+  await supermercado.getByLabel('Limite mensal (R$)').fill('')
+  await supermercado.getByLabel('Limite mensal (R$)').press('Enter')
+  await expect(supermercado).toContainText('Sem limite')
+
+  await page.goto('/app/expenses?month=2026-08')
+  await expect(page.getByRole('table', { name: 'Por categoria' })).toBeVisible()
+  await expect(page.getByRole('table', { name: 'Por categoria' })).not.toContainText('Acima')
+  await expect(page.getByText(/acima do limite/)).toHaveCount(0)
+  await expect(page.getByText('Sinal só por mês', { exact: true })).toHaveCount(0)
+})
+
 test('goes back to the balances page', async ({ page }) => {
   await page.goto('/app/login')
   await page.getByLabel('Login').fill(LOGIN)

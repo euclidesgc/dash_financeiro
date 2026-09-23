@@ -9,6 +9,7 @@ import { server } from '@/testing/mocks/server'
 import type { CategoryGroup, CategoryTotalsQuery } from '@/features/expenses/types/expense'
 
 const ALL: CategoryTotalsQuery = { from: null, to: null, account: null, search: null }
+const MONTH: CategoryTotalsQuery = { from: '2026-08-01', to: '2026-08-31', account: null, search: null }
 
 function groupsOf(n: number): CategoryGroup[] {
   return Array.from({ length: n }, (_, index) => {
@@ -24,15 +25,18 @@ function groupsOf(n: number): CategoryGroup[] {
   })
 }
 
-function respondWith(groups: CategoryGroup[]): void {
+function respondWith(
+  groups: CategoryGroup[],
+  extra?: { over_limit_count?: number; signal_scope?: 'month' | 'none' },
+): void {
   const total_cents = groups.reduce((sum, group) => sum + group.total_cents, 0)
   server.use(
     http.get('/api/transactions/expenses/by-category', () =>
       HttpResponse.json({
         groups,
         total_cents,
-        over_limit_count: groups.filter((g) => g.signal === 'over').length,
-        signal_scope: 'none',
+        over_limit_count: extra?.over_limit_count ?? 0,
+        signal_scope: extra?.signal_scope ?? 'none',
       }),
     ),
   )
@@ -250,4 +254,174 @@ test('sends from, to, account_id and q only when they are set', async () => {
     expect(calls).toHaveLength(2)
   })
   expect(calls[1].size).toBe(0)
+})
+
+test('shows "Acima" and the limit text for an over group', async () => {
+  respondWith(
+    [
+      { category: 'Groceries', label: 'Supermercado', count: 1, total_cents: -6000, limit_cents: 5000, signal: 'over' },
+    ],
+    { over_limit_count: 1, signal_scope: 'month' },
+  )
+
+  renderWithProviders(<CategoryTotals query={MONTH} />)
+
+  await screen.findByRole('table')
+  const firstCell = cellsOf(dataRows()[0])[0]
+  expect(firstCell).toHaveTextContent('Acima')
+  expect(firstCell).toHaveTextContent('R$ 60,00 de R$ 50,00 · 120%')
+})
+
+test('shows "Atenção" for a warning group', async () => {
+  respondWith(
+    [
+      { category: 'Groceries', label: 'Supermercado', count: 1, total_cents: -4000, limit_cents: 5000, signal: 'warning' },
+    ],
+    { signal_scope: 'month' },
+  )
+
+  renderWithProviders(<CategoryTotals query={MONTH} />)
+
+  await screen.findByRole('table')
+  const firstCell = cellsOf(dataRows()[0])[0]
+  expect(firstCell).toHaveTextContent('Atenção')
+  expect(firstCell).toHaveTextContent('R$ 40,00 de R$ 50,00 · 80%')
+})
+
+test('shows "Dentro" for a within group', async () => {
+  respondWith(
+    [
+      { category: 'Groceries', label: 'Supermercado', count: 1, total_cents: -3000, limit_cents: 5000, signal: 'within' },
+    ],
+    { signal_scope: 'month' },
+  )
+
+  renderWithProviders(<CategoryTotals query={MONTH} />)
+
+  await screen.findByRole('table')
+  const firstCell = cellsOf(dataRows()[0])[0]
+  expect(firstCell).toHaveTextContent('Dentro')
+  expect(firstCell).toHaveTextContent('R$ 30,00 de R$ 50,00 · 60%')
+})
+
+test('shows no badge and no limit text for a group without limit', async () => {
+  respondWith(
+    [
+      { category: 'Groceries', label: 'Supermercado', count: 1, total_cents: -3000, limit_cents: null, signal: null },
+    ],
+    { signal_scope: 'month' },
+  )
+
+  renderWithProviders(<CategoryTotals query={MONTH} />)
+
+  await screen.findByRole('table')
+  const firstCell = cellsOf(dataRows()[0])[0]
+  expect(firstCell).not.toHaveTextContent('Dentro')
+  expect(firstCell).not.toHaveTextContent('Atenção')
+  expect(firstCell).not.toHaveTextContent('Acima')
+  expect(firstCell.textContent).not.toContain(' de R$ ')
+})
+
+test('shows the singular summary with one category over the limit', async () => {
+  respondWith(
+    [
+      { category: 'Groceries', label: 'Supermercado', count: 1, total_cents: -6000, limit_cents: 5000, signal: 'over' },
+    ],
+    { over_limit_count: 1, signal_scope: 'month' },
+  )
+
+  renderWithProviders(<CategoryTotals query={MONTH} />)
+
+  const heading = await screen.findByRole('heading', { level: 2, name: 'Por categoria' })
+  const summary = screen.getByText('1 categoria acima do limite')
+  const table = screen.getByRole('table')
+
+  expect(heading.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  expect(summary.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+})
+
+test('shows the plural summary with two categories over the limit', async () => {
+  respondWith(
+    [
+      { category: 'Groceries', label: 'Supermercado', count: 1, total_cents: -6000, limit_cents: 5000, signal: 'over' },
+      { category: 'Shopping', label: 'Compras', count: 1, total_cents: -6000, limit_cents: 5000, signal: 'over' },
+    ],
+    { over_limit_count: 2, signal_scope: 'month' },
+  )
+
+  renderWithProviders(<CategoryTotals query={MONTH} />)
+
+  expect(await screen.findByText('2 categorias acima do limite')).toBeInTheDocument()
+})
+
+test('shows no summary when no category is over the limit', async () => {
+  respondWith(
+    [
+      { category: 'Groceries', label: 'Supermercado', count: 1, total_cents: -3000, limit_cents: 5000, signal: 'within' },
+    ],
+    { over_limit_count: 0, signal_scope: 'month' },
+  )
+
+  renderWithProviders(<CategoryTotals query={MONTH} />)
+
+  await screen.findByRole('table')
+  expect(screen.queryByText(/acima do limite/)).not.toBeInTheDocument()
+})
+
+test('shows "Sinal só por mês" outside a whole month when some group has a limit', async () => {
+  respondWith(
+    [
+      { category: 'Groceries', label: 'Supermercado', count: 1, total_cents: -3000, limit_cents: 5000, signal: null },
+    ],
+    { signal_scope: 'none' },
+  )
+
+  renderWithProviders(<CategoryTotals query={ALL} />)
+
+  expect(await screen.findByText('Sinal só por mês')).toBeInTheDocument()
+  expect(screen.queryByText('Dentro')).not.toBeInTheDocument()
+  expect(screen.queryByText('Atenção')).not.toBeInTheDocument()
+  expect(screen.queryByText('Acima')).not.toBeInTheDocument()
+})
+
+test('shows no "Sinal só por mês" when no group has a limit', async () => {
+  respondWith(
+    [
+      { category: 'Groceries', label: 'Supermercado', count: 1, total_cents: -3000, limit_cents: null, signal: null },
+    ],
+    { signal_scope: 'none' },
+  )
+
+  renderWithProviders(<CategoryTotals query={ALL} />)
+
+  await screen.findByRole('table')
+  expect(screen.queryByText('Sinal só por mês')).not.toBeInTheDocument()
+})
+
+test('shows no "Sinal só por mês" in a whole month', async () => {
+  respondWith(
+    [
+      { category: 'Groceries', label: 'Supermercado', count: 1, total_cents: -3000, limit_cents: 5000, signal: 'within' },
+    ],
+    { signal_scope: 'month' },
+  )
+
+  renderWithProviders(<CategoryTotals query={MONTH} />)
+
+  await screen.findByRole('table')
+  expect(screen.queryByText('Sinal só por mês')).not.toBeInTheDocument()
+})
+
+test('rounds the percentage', async () => {
+  respondWith(
+    [
+      { category: 'Groceries', label: 'Supermercado', count: 1, total_cents: -33333, limit_cents: 100000, signal: 'within' },
+    ],
+    { signal_scope: 'month' },
+  )
+
+  renderWithProviders(<CategoryTotals query={MONTH} />)
+
+  await screen.findByRole('table')
+  expect(cellsOf(dataRows()[0])[0]).toHaveTextContent('33%')
 })

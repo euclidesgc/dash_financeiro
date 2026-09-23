@@ -2,10 +2,22 @@ import { useId, useState } from 'react'
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { useCategoryTotals } from '@/features/expenses/api/get-category-totals'
-import type { CategoryTotalsQuery } from '@/features/expenses/types/expense'
+import type { CategorySignal, CategoryTotalsQuery } from '@/features/expenses/types/expense'
 import { formatMoney } from '@/utils/format-money'
 
 const VISIBLE_GROUPS = 8
+
+const SIGNAL_LABELS: Record<CategorySignal, { text: string; className: string }> = {
+  within: { text: 'Dentro', className: 'bg-green-100 text-green-800' },
+  warning: { text: 'Atenção', className: 'bg-amber-100 text-amber-800' },
+  over: { text: 'Acima', className: 'bg-red-100 text-red-800' },
+}
+
+function limitText(totalCents: number, limitCents: number): string {
+  const spent = Math.abs(totalCents)
+  const percent = Math.round((spent / limitCents) * 100)
+  return `${formatMoney(spent)} de ${formatMoney(limitCents)} · ${String(percent)}%`
+}
 
 export function CategoryTotals({ query }: { query: CategoryTotalsQuery }): React.JSX.Element | null {
   const { data, isPending, isError, refetch } = useCategoryTotals(query)
@@ -41,6 +53,16 @@ export function CategoryTotals({ query }: { query: CategoryTotalsQuery }): React
       <h2 id={headingId} className="mt-6 text-lg font-semibold">
         Por categoria
       </h2>
+      {data.over_limit_count > 0 ? (
+        <p className="mt-2 text-sm font-medium text-red-800">
+          {data.over_limit_count === 1
+            ? '1 categoria acima do limite'
+            : `${String(data.over_limit_count)} categorias acima do limite`}
+        </p>
+      ) : null}
+      {data.signal_scope === 'none' && data.groups.some((group) => group.limit_cents !== null) ? (
+        <p className="mt-2 text-sm text-gray-600">Sinal só por mês</p>
+      ) : null}
       <table aria-labelledby={headingId} className="mt-3 w-full text-sm">
         <thead className="sr-only">
           <tr>
@@ -52,7 +74,23 @@ export function CategoryTotals({ query }: { query: CategoryTotalsQuery }): React
         <tbody className="divide-y divide-gray-200">
           {visible.map((group) => (
             <tr key={group.category ?? ''}>
-              <td className="min-w-0 truncate py-2 text-gray-900">{group.label}</td>
+              <td className="min-w-0 truncate py-2 text-gray-900">
+                <div className="flex items-center gap-2">
+                  <span className="min-w-0 truncate">{group.label}</span>
+                  {group.signal !== null && group.limit_cents !== null ? (
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-sm ${SIGNAL_LABELS[group.signal].className}`}
+                    >
+                      {SIGNAL_LABELS[group.signal].text}
+                    </span>
+                  ) : null}
+                </div>
+                {group.signal !== null && group.limit_cents !== null ? (
+                  <p className="text-xs text-gray-600 tabular-nums">
+                    {limitText(group.total_cents, group.limit_cents)}
+                  </p>
+                ) : null}
+              </td>
               <td className="whitespace-nowrap py-2 pl-4 text-right text-gray-600 tabular-nums">
                 {group.count === 1 ? '1 gasto' : `${String(group.count)} gastos`}
               </td>
