@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ApiError } from '@/lib/api-client'
+import { formatMoney } from '@/utils/format-money'
 import { useDeleteCategory } from '@/features/categories/api/delete-category'
+import { CategoryLimitForm } from '@/features/categories/components/category-limit-form'
 import { RenameCategoryForm } from '@/features/categories/components/rename-category-form'
 import type { CatalogueCategory } from '@/features/categories/types/category'
 
@@ -10,6 +12,10 @@ function usageText(count: number): string {
   if (count === 0) return 'Nenhum gasto'
   if (count === 1) return '1 gasto'
   return `${String(count)} gastos`
+}
+
+function limitText(cents: number | null): string {
+  return cents === null ? 'Sem limite' : `Limite: ${formatMoney(cents)}`
 }
 
 function deleteErrorMessage(error: unknown): string {
@@ -20,7 +26,9 @@ function deleteErrorMessage(error: unknown): string {
 }
 
 export function CategoryItem({ category }: { category: CatalogueCategory }): React.JSX.Element {
-  const [mode, setMode] = useState<'view' | 'rename' | 'confirm-delete' | 'in-use'>('view')
+  const [mode, setMode] = useState<'view' | 'rename' | 'limit' | 'confirm-delete' | 'in-use'>(
+    'view',
+  )
   const deletion = useDeleteCategory()
 
   const badgeColor = category.is_system ? 'bg-gray-100 text-gray-700' : 'bg-blue-100 text-blue-800'
@@ -54,9 +62,20 @@ export function CategoryItem({ category }: { category: CatalogueCategory }): Rea
         <>
           <div className="flex shrink-0 flex-col items-end gap-1">
             <span className="text-sm text-gray-600 tabular-nums">
+              {limitText(category.monthly_limit_cents)}
+            </span>
+            <span className="text-sm text-gray-600 tabular-nums">
               {usageText(category.usage_count)}
             </span>
             <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                aria-label={`Definir limite de ${category.label}`}
+                onClick={() => { setMode('limit'); }}
+              >
+                Limite
+              </Button>
               <Button
                 type="button"
                 variant="secondary"
@@ -83,6 +102,14 @@ export function CategoryItem({ category }: { category: CatalogueCategory }): Rea
 
       {mode === 'rename' ? (
         <RenameCategoryForm key={category.label} category={category} onDone={() => { setMode('view'); }} />
+      ) : null}
+
+      {mode === 'limit' ? (
+        <CategoryLimitForm
+          key={String(category.monthly_limit_cents)}
+          category={category}
+          onDone={() => { setMode('view'); }}
+        />
       ) : null}
 
       {mode === 'confirm-delete' ? (

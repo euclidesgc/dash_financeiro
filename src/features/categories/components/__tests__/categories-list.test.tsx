@@ -17,6 +17,11 @@ interface PatchCall {
   body: { label: string }
 }
 
+interface PutCall {
+  key: string
+  body: { monthly_limit_cents: number | null }
+}
+
 function itemOf(label: string): HTMLElement {
   const labelEl = screen.getByText(label, { selector: '[title]', exact: true })
   const item = labelEl.closest('li')
@@ -108,6 +113,22 @@ function spyOnPendingPatch(): { calls: PatchCall[]; release: () => void } {
   return { calls, release: resolvePromise }
 }
 
+function spyOnPut(): PutCall[] {
+  const calls: PutCall[] = []
+  server.use(
+    http.put('/api/categories/:key/limit', async ({ params, request }) => {
+      const body = (await request.json()) as { monthly_limit_cents: number | null }
+      calls.push({ key: params.key as string, body })
+      const item = fakeCategories.find((category) => category.key === params.key)
+      if (item !== undefined) {
+        item.monthly_limit_cents = body.monthly_limit_cents
+      }
+      return HttpResponse.json(item)
+    }),
+  )
+  return calls
+}
+
 test('shows the loading state', () => {
   renderWithProviders(<CategoriesList />)
 
@@ -125,12 +146,12 @@ test('shows the error and "Tentar de novo" refetches', async () => {
       }
       return HttpResponse.json({
         categories: [
-          { key: 'Food', label: 'Alimentação', is_system: true, usage_count: 1 },
-          { key: 'Shopping', label: 'Compras', is_system: true, usage_count: 40 },
-          { key: 'lazer', label: 'Lazer', is_system: false, usage_count: 3 },
-          { key: 'pet-shop', label: 'Pet shop', is_system: false, usage_count: 0 },
-          { key: 'Groceries', label: 'Supermercado', is_system: true, usage_count: 0 },
-          { key: 'Transport', label: 'Transporte', is_system: true, usage_count: 1 },
+          { key: 'Food', label: 'Alimentação', is_system: true, usage_count: 1, monthly_limit_cents: null },
+          { key: 'Shopping', label: 'Compras', is_system: true, usage_count: 40, monthly_limit_cents: null },
+          { key: 'lazer', label: 'Lazer', is_system: false, usage_count: 3, monthly_limit_cents: null },
+          { key: 'pet-shop', label: 'Pet shop', is_system: false, usage_count: 0, monthly_limit_cents: null },
+          { key: 'Groceries', label: 'Supermercado', is_system: true, usage_count: 0, monthly_limit_cents: null },
+          { key: 'Transport', label: 'Transporte', is_system: true, usage_count: 1, monthly_limit_cents: null },
         ],
       })
     }),
@@ -422,4 +443,78 @@ test('success invalidates the categories and the expenses queries', async () => 
   await waitFor(() => {
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['expenses'] }))
   })
+})
+
+test('shows the limit of each category or "Sem limite"', async () => {
+  renderWithProviders(<CategoriesList />)
+
+  await screen.findAllByRole('listitem')
+
+  expect(within(itemOf('Compras')).getByText('Limite: R$ 1.500,00')).toBeInTheDocument()
+  expect(within(itemOf('Alimentação')).getByText('Limite: R$ 800,00')).toBeInTheDocument()
+  expect(within(itemOf('Pet shop')).getByText('Sem limite')).toBeInTheDocument()
+  expect(within(itemOf('Supermercado')).getByText('Sem limite')).toBeInTheDocument()
+})
+
+test('shows "Limite" on every row, system ones included', async () => {
+  renderWithProviders(<CategoriesList />)
+
+  await screen.findAllByRole('listitem')
+
+  expect(screen.getByRole('button', { name: 'Definir limite de Supermercado' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Definir limite de Compras' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Definir limite de Pet shop' })).toBeInTheDocument()
+})
+
+test('"Limite" opens the field with the current value in the row', async () => {
+  const user = userEvent.setup()
+  renderWithProviders(<CategoriesList />)
+
+  await screen.findAllByRole('listitem')
+  await user.click(screen.getByRole('button', { name: 'Definir limite de Compras' }))
+
+  const item = itemOf('Compras')
+  const input = within(item).getByLabelText('Limite mensal (R$)')
+  expect(input).toHaveValue(1500)
+  expect(input).toHaveFocus()
+  expect(within(item).queryByRole('button', { name: 'Definir limite de Compras' })).not.toBeInTheDocument()
+})
+
+test('saving a limit sends PUT, the row shows it and the categories query is invalidated', async () => {
+  const user = userEvent.setup()
+  spyOnPut()
+  const { queryClient } = renderWithProviders(<CategoriesList />)
+  const spy = vi.spyOn(queryClient, 'invalidateQueries')
+
+  await screen.findAllByRole('listitem')
+  await user.click(screen.getByRole('button', { name: 'Definir limite de Pet shop' }))
+
+  const item = itemOf('Pet shop')
+  const input = within(item).getByLabelText('Limite mensal (R$)')
+  await user.clear(input)
+  await user.type(input, '300')
+  await user.click(within(item).getByRole('button', { name: 'Salvar' }))
+
+  expect(await within(item).findByText('Limite: R$ 300,00')).toBeInTheDocument()
+  expect(within(item).queryByLabelText('Limite mensal (R$)')).not.toBeInTheDocument()
+  await waitFor(() => {
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['categories'] }))
+  })
+  expect(spy).not.toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['expenses'] }))
+})
+
+test('clearing the limit sends null and the row shows "Sem limite"', async () => {
+  const user = userEvent.setup()
+  spyOnPut()
+  renderWithProviders(<CategoriesList />)
+
+  await screen.findAllByRole('listitem')
+  await user.click(screen.getByRole('button', { name: 'Definir limite de Compras' }))
+
+  const item = itemOf('Compras')
+  const input = within(item).getByLabelText('Limite mensal (R$)')
+  await user.clear(input)
+  await user.click(within(item).getByRole('button', { name: 'Salvar' }))
+
+  expect(await within(item).findByText('Sem limite')).toBeInTheDocument()
 })
