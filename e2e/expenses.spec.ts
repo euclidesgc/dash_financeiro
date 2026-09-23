@@ -230,6 +230,35 @@ test('searches the expenses by text and keeps the search on reload', async ({ pa
   await expect(page.getByRole('listitem')).toHaveCount(1)
 })
 
+test('shows the totals by category and hides them when the filter has no spending', async ({
+  page,
+}) => {
+  await page.goto('/app/login')
+  await page.getByLabel('Login').fill(LOGIN)
+  await page.getByLabel('Senha').fill(PASSWORD)
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page).toHaveURL(/\/app\/?$/)
+
+  await page.goto('/app/expenses?month=2026-08')
+  await expect(page.getByRole('heading', { level: 2, name: 'Por categoria' })).toBeVisible()
+
+  const table = page.getByRole('table', { name: 'Por categoria' })
+  const rows = table.getByRole('row')
+  await expect(rows).toHaveCount(3)
+  await expect(rows.nth(1)).toContainText('Supermercado')
+  await expect(rows.nth(1)).toContainText('1 gasto')
+  await expect(rows.nth(1)).toContainText('R$ 60,00')
+  await expect(rows.nth(2)).toContainText('Plano de saúde')
+  await expect(rows.nth(2)).toContainText('R$ 45,00')
+  await expect(page.getByRole('button', { name: /Mostrar todas/ })).toHaveCount(0)
+  await expect(page.getByRole('listitem')).toHaveCount(2)
+
+  await page.goto('/app/expenses?q=zzzz')
+  await expect(page.getByRole('heading', { level: 2, name: 'Por categoria' })).toHaveCount(0)
+  await expect(page.getByRole('table')).toHaveCount(0)
+  await expect(page.getByText('Nenhum gasto para esse filtro.')).toBeVisible()
+})
+
 test('goes back to the balances page', async ({ page }) => {
   await page.goto('/app/login')
   await page.getByLabel('Login').fill(LOGIN)

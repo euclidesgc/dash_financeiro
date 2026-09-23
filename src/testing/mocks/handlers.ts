@@ -1,6 +1,11 @@
 import { http, HttpResponse } from 'msw'
 import type { SyncStatus } from '@/features/sync/types/sync-status'
-import type { Expense, ExpenseOrder, ExpenseSort } from '@/features/expenses/types/expense'
+import type {
+  CategoryGroup,
+  Expense,
+  ExpenseOrder,
+  ExpenseSort,
+} from '@/features/expenses/types/expense'
 
 export const fakeUser = { login: 'teste' }
 
@@ -169,6 +174,58 @@ function sortExpenses(items: Expense[], sort: ExpenseSort, order: ExpenseOrder):
   })
 }
 
+export function filterExpenses(url: URL): Expense[] {
+  const from = url.searchParams.get('from')
+  const to = url.searchParams.get('to')
+  const accountId = url.searchParams.get('account_id')
+  const rawTerm = url.searchParams.get('q')?.trim() ?? ''
+  const term = rawTerm.length >= 2 ? foldText(rawTerm) : null
+  return fakeExpenses.filter(
+    (item) =>
+      (from === null || item.date >= from) &&
+      (to === null || item.date <= to) &&
+      (accountId === null || item.account_id === accountId) &&
+      (term === null ||
+        foldText(item.description ?? '').includes(term) ||
+        foldText(item.payee_name ?? '').includes(term)),
+  )
+}
+
+export function groupByCategory(items: Expense[]): CategoryGroup[] {
+  const byCategory = new Map<string | null, CategoryGroup>()
+  for (const item of items) {
+    const category = item.category ?? null
+    const existing = byCategory.get(category)
+    if (existing) {
+      existing.count += 1
+      existing.total_cents += item.amount_cents
+    } else {
+      byCategory.set(category, {
+        category,
+        label: category ?? 'Sem categoria',
+        count: 1,
+        total_cents: item.amount_cents,
+      })
+    }
+  }
+  return [...byCategory.values()].sort((a, b) => {
+    const diff = Math.abs(b.total_cents) - Math.abs(a.total_cents)
+    if (diff !== 0) {
+      return diff
+    }
+    if (a.category === null && b.category === null) {
+      return 0
+    }
+    if (a.category === null) {
+      return 1
+    }
+    if (b.category === null) {
+      return -1
+    }
+    return a.category < b.category ? -1 : a.category > b.category ? 1 : 0
+  })
+}
+
 let signedIn = false
 
 export function resetSession(): void {
@@ -215,20 +272,7 @@ export const handlers = [
     const pageSize = Number.parseInt(url.searchParams.get('page_size') ?? '20', 10) || 20
     const sort = (url.searchParams.get('sort') ?? 'date') as ExpenseSort
     const order = (url.searchParams.get('order') ?? 'desc') as ExpenseOrder
-    const from = url.searchParams.get('from')
-    const to = url.searchParams.get('to')
-    const accountId = url.searchParams.get('account_id')
-    const rawTerm = url.searchParams.get('q')?.trim() ?? ''
-    const term = rawTerm.length >= 2 ? foldText(rawTerm) : null
-    const filtered = fakeExpenses.filter(
-      (item) =>
-        (from === null || item.date >= from) &&
-        (to === null || item.date <= to) &&
-        (accountId === null || item.account_id === accountId) &&
-        (term === null ||
-          foldText(item.description ?? '').includes(term) ||
-          foldText(item.payee_name ?? '').includes(term)),
-    )
+    const filtered = filterExpenses(url)
     const items = sortExpenses(filtered, sort, order)
     return HttpResponse.json({
       items: items.slice((page - 1) * pageSize, page * pageSize),
@@ -236,6 +280,15 @@ export const handlers = [
       page_size: pageSize,
       total: filtered.length,
       total_cents: filtered.reduce((sum, item) => sum + item.amount_cents, 0),
+    })
+  }),
+
+  http.get('/api/transactions/expenses/by-category', ({ request }) => {
+    const url = new URL(request.url)
+    const groups = groupByCategory(filterExpenses(url))
+    return HttpResponse.json({
+      groups,
+      total_cents: groups.reduce((sum, group) => sum + group.total_cents, 0),
     })
   }),
 ]

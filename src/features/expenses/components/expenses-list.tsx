@@ -4,12 +4,18 @@ import { Alert } from '@/components/ui/alert'
 import { useExpenseAccounts } from '@/features/expenses/api/get-accounts'
 import { useExpenses } from '@/features/expenses/api/get-expenses'
 import { AccountSelect } from '@/features/expenses/components/account-select'
+import { CategoryTotals } from '@/features/expenses/components/category-totals'
 import { ExpenseItem } from '@/features/expenses/components/expense-item'
 import { Pagination } from '@/features/expenses/components/pagination'
 import { PeriodControls } from '@/features/expenses/components/period-controls'
 import { SearchInput } from '@/features/expenses/components/search-input'
 import { SortControls } from '@/features/expenses/components/sort-controls'
-import type { ExpenseOrder, ExpenseSort, Period } from '@/features/expenses/types/expense'
+import type {
+  CategoryTotalsQuery,
+  ExpenseOrder,
+  ExpenseSort,
+  Period,
+} from '@/features/expenses/types/expense'
 import { currentMonth, readPeriod, shiftMonth, toDateBounds, writePeriod } from '@/features/expenses/utils/period'
 
 const SORTS = ['date', 'amount', 'category'] as const
@@ -95,14 +101,12 @@ export function ExpensesList(): React.JSX.Element {
   const accountKnown = accounts.data
     ? accounts.data.accounts.some((item) => item.id === account)
     : true
+  const filters: CategoryTotalsQuery = { from, to, account: accountKnown ? account : null, search }
   const { data, isPending, isError, isPlaceholderData, refetch } = useExpenses({
     page,
     sort,
     order,
-    from,
-    to,
-    account: accountKnown ? account : null,
-    search,
+    ...filters,
   })
   const pages = data ? Math.max(1, Math.ceil(data.total / data.page_size)) : 1
 
@@ -181,36 +185,39 @@ export function ExpensesList(): React.JSX.Element {
     }
   }
 
-  const controls = (
-    <div className="mt-6 flex flex-wrap items-end gap-3">
-      <SearchInput value={search} onCommit={handleSearchCommit} />
-      <AccountSelect
-        value={account}
-        accounts={accounts.data?.accounts ?? []}
-        isPending={accounts.isPending}
-        isError={accounts.isError}
-        onChange={handleAccountChange}
-        onRetry={() => void accounts.refetch()}
-      />
-      <PeriodControls
-        period={period}
-        onMonthChange={handleMonthChange}
-        onRangeChange={handleRangeChange}
-        onClear={handleClear}
-      />
-      <SortControls
-        sort={sort}
-        order={order}
-        onSortChange={handleSortChange}
-        onOrderToggle={handleOrderToggle}
-      />
-    </div>
+  const header = (
+    <>
+      <div className="mt-6 flex flex-wrap items-end gap-3">
+        <SearchInput value={search} onCommit={handleSearchCommit} />
+        <AccountSelect
+          value={account}
+          accounts={accounts.data?.accounts ?? []}
+          isPending={accounts.isPending}
+          isError={accounts.isError}
+          onChange={handleAccountChange}
+          onRetry={() => void accounts.refetch()}
+        />
+        <PeriodControls
+          period={period}
+          onMonthChange={handleMonthChange}
+          onRangeChange={handleRangeChange}
+          onClear={handleClear}
+        />
+        <SortControls
+          sort={sort}
+          order={order}
+          onSortChange={handleSortChange}
+          onOrderToggle={handleOrderToggle}
+        />
+      </div>
+      <CategoryTotals query={filters} />
+    </>
   )
 
   if (isPending) {
     return (
       <>
-        {controls}
+        {header}
         <p role="status" className="mt-6 text-gray-600">
           Carregando gastos…
         </p>
@@ -221,7 +228,7 @@ export function ExpensesList(): React.JSX.Element {
   if (isError) {
     return (
       <>
-        {controls}
+        {header}
         <Alert
           message="Não foi possível carregar os gastos."
           action={{ label: 'Tentar de novo', onClick: () => void refetch() }}
@@ -234,7 +241,7 @@ export function ExpensesList(): React.JSX.Element {
     const filtered = period.kind !== 'all' || account !== null || search !== null
     return (
       <>
-        {controls}
+        {header}
         <p className="mt-6 rounded-md border border-dashed border-gray-300 p-6 text-center text-gray-600">
           {filtered ? 'Nenhum gasto para esse filtro.' : 'Nenhum gasto registrado ainda.'}
         </p>
@@ -244,7 +251,7 @@ export function ExpensesList(): React.JSX.Element {
 
   return (
     <>
-      {controls}
+      {header}
       <ul className="mt-6 divide-y divide-gray-200">
         {data.items.map((expense) => (
           <ExpenseItem key={expense.id} expense={expense} />

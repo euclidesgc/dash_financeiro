@@ -32,6 +32,20 @@ export interface ExpensesQuery {
   search: string | null
 }
 
+export interface CategoryGroup {
+  category: string | null
+  label: string
+  count: number
+  total_cents: number
+}
+
+export interface CategoryTotalsResponse {
+  groups: CategoryGroup[]
+  total_cents: number
+}
+
+export type CategoryTotalsQuery = Pick<ExpensesQuery, 'from' | 'to' | 'account' | 'search'>
+
 export interface ExpenseAccount {
   id: string
   name: string | null
