@@ -45,3 +45,56 @@ test('keeps the last update after a reload', async ({ page }) => {
   await expect(page.getByText(/Última atualização: /)).toBeVisible()
   await expect(page.getByText('Nunca atualizado')).not.toBeVisible()
 })
+
+test('keeps a manual category across "Atualizar agora" and goes back to the automatic one', async ({
+  page,
+}) => {
+  await page.goto('/app/login')
+  await page.getByLabel('Login').fill(LOGIN)
+  await page.getByLabel('Senha').fill(PASSWORD)
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page).toHaveURL(/\/app\/?$/)
+
+  await page.goto('/app/expenses?month=2026-08')
+  const row = page.getByRole('listitem').filter({ hasText: 'FARMACIA CENTRAL' })
+  await expect(row).toContainText('Plano de saúde')
+
+  await row.getByRole('button', { name: 'Trocar categoria de FARMACIA CENTRAL' }).click()
+  await row
+    .getByRole('combobox', { name: 'Categoria de FARMACIA CENTRAL' })
+    .selectOption({ label: 'Supermercado' })
+
+  await expect(row).toContainText('Supermercado')
+  await expect(row.getByText('manual', { exact: true })).toBeVisible()
+  const table = page.getByRole('table', { name: 'Por categoria' })
+  await expect(table.getByRole('row')).toHaveCount(2)
+  await expect(table.getByRole('row').nth(1)).toContainText('Supermercado')
+  await expect(table.getByRole('row').nth(1)).toContainText('2 gastos')
+  await expect(table.getByRole('row').nth(1)).toContainText('R$ 105,00')
+  await expect(page.getByText('Plano de saúde')).toHaveCount(0)
+
+  await page.goto('/app/')
+  await page.getByRole('button', { name: 'Atualizar agora' }).click()
+  await expect(page.getByText('Concluída')).toBeVisible()
+
+  await page.goto('/app/expenses?month=2026-08')
+  await expect(row).toContainText('Supermercado')
+  await expect(row.getByText('manual', { exact: true })).toBeVisible()
+
+  await row.getByRole('button', { name: 'Trocar categoria de FARMACIA CENTRAL' }).click()
+  await row
+    .getByRole('combobox', { name: 'Categoria de FARMACIA CENTRAL' })
+    .selectOption({ label: 'Voltar para a automática' })
+
+  await expect(row).toContainText('Plano de saúde')
+  await expect(row.getByText('manual', { exact: true })).toHaveCount(0)
+
+  await page.reload()
+  await expect(row).toContainText('Plano de saúde')
+  await expect(table.getByRole('row')).toHaveCount(3)
+  await expect(table.getByRole('row').nth(1)).toContainText('Supermercado')
+  await expect(table.getByRole('row').nth(1)).toContainText('1 gasto')
+  await expect(table.getByRole('row').nth(1)).toContainText('R$ 60,00')
+  await expect(table.getByRole('row').nth(2)).toContainText('Plano de saúde')
+  await expect(table.getByRole('row').nth(2)).toContainText('R$ 45,00')
+})

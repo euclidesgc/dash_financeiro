@@ -109,6 +109,12 @@ function categoryRows(): HTMLElement[] {
   return within(screen.getByRole('table')).getAllByRole('row').slice(1)
 }
 
+function cellsOf(row: HTMLElement): string[] {
+  return within(row)
+    .getAllByRole('cell')
+    .map((cell) => cell.textContent)
+}
+
 test('shows the loading state', () => {
   renderWithProviders(<ExpensesList />, { route: '/expenses' })
 
@@ -1357,4 +1363,115 @@ test('changing the period refetches by-category with from and to', async () => {
     expect(last?.get('from')).toBeNull()
     expect(last?.get('to')).toBeNull()
   })
+})
+
+test('renders every category badge as a button that is enabled once the catalogue loads', async () => {
+  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+
+  const rows = await screen.findAllByRole('listitem')
+  expect(rows).toHaveLength(20)
+
+  const badge = within(rows[0]).getByRole('button', { name: 'Trocar categoria de MERCADO DO BAIRRO' })
+  expect(badge).toHaveTextContent('Compras')
+  await waitFor(() => {
+    expect(badge).toBeEnabled()
+  })
+
+  const list = screen.getByRole('list')
+  expect(within(list).queryByRole('combobox')).not.toBeInTheDocument()
+})
+
+test('changing the category of an uncategorised row refetches the list and the totals and marks it manual', async () => {
+  const user = userEvent.setup()
+  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+
+  const list = await screen.findByRole('list')
+  const row = within(list).getByText('Sem categoria').closest('li')
+  if (row === null) throw new Error('row not found')
+
+  await user.click(within(row).getByRole('button', { name: 'Trocar categoria de Sem descrição' }))
+  await user.selectOptions(
+    within(row).getByRole('combobox', { name: 'Categoria de Sem descrição' }),
+    'Groceries',
+  )
+
+  await waitFor(() => {
+    expect(within(row).getByText('Supermercado')).toBeInTheDocument()
+  })
+  expect(within(row).getByText('manual')).toBeInTheDocument()
+
+  await waitFor(() => {
+    const rows = categoryRows()
+    expect(rows.some((r) => cellsOf(r)[0] === 'Supermercado')).toBe(true)
+  })
+  const rows = categoryRows()
+  const supermercado = rows.find((r) => cellsOf(r)[0] === 'Supermercado')
+  expect(supermercado).toBeDefined()
+  if (supermercado) {
+    const cells = within(supermercado).getAllByRole('cell')
+    expect(cells[0]).toHaveTextContent('Supermercado')
+    expect(cells[1]).toHaveTextContent('1 gasto')
+    expect(cells[2]).toHaveTextContent('R$ 430,00')
+  }
+  expect(rows.some((r) => cellsOf(r)[0] === 'Sem categoria')).toBe(false)
+  expect(within(list).queryByText('Sem categoria')).not.toBeInTheDocument()
+})
+
+test('"Voltar para a automática" restores the row and removes "manual"', async () => {
+  const user = userEvent.setup()
+  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+
+  const list = await screen.findByRole('list')
+  const row = within(list).getByText('Sem categoria').closest('li')
+  if (row === null) throw new Error('row not found')
+
+  await user.click(within(row).getByRole('button', { name: 'Trocar categoria de Sem descrição' }))
+  await user.selectOptions(
+    within(row).getByRole('combobox', { name: 'Categoria de Sem descrição' }),
+    'Groceries',
+  )
+
+  await waitFor(() => {
+    expect(within(row).getByText('Supermercado')).toBeInTheDocument()
+  })
+
+  await user.click(within(row).getByRole('button', { name: 'Trocar categoria de Sem descrição' }))
+  await user.selectOptions(
+    within(row).getByRole('combobox', { name: 'Categoria de Sem descrição' }),
+    '__auto__',
+  )
+
+  await waitFor(() => {
+    expect(within(row).getByText('Sem categoria')).toBeInTheDocument()
+  })
+  expect(within(row).queryByText('manual')).not.toBeInTheDocument()
+
+  await waitFor(() => {
+    const rows = categoryRows()
+    const semCategoria = rows.find((r) => cellsOf(r)[0] === 'Sem categoria')
+    expect(semCategoria).toBeDefined()
+    if (semCategoria) {
+      const cells = within(semCategoria).getAllByRole('cell')
+      expect(cells[0]).toHaveTextContent('Sem categoria')
+      expect(cells[1]).toHaveTextContent('1 gasto')
+      expect(cells[2]).toHaveTextContent('R$ 430,00')
+    }
+  })
+})
+
+test('keeps the list usable when the categories request fails', async () => {
+  server.use(http.get('/api/categories', () => HttpResponse.json({}, { status: 500 })))
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+
+  const rows = await screen.findAllByRole('listitem')
+  expect(rows).toHaveLength(20)
+
+  const buttons = screen.getAllByRole('button', { name: /^Trocar categoria de / })
+  expect(buttons.length).toBeGreaterThan(0)
+  for (const button of buttons) {
+    expect(button).toBeDisabled()
+  }
+
+  expect(screen.queryByText('Não foi possível carregar os gastos.')).not.toBeInTheDocument()
 })

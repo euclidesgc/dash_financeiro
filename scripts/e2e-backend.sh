@@ -8,7 +8,7 @@ trap 'exit 143' TERM INT
 export DASH_ENV_FILE=/dev/null
 export DASH_DB_PATH="$E2E_DIR/dash.sqlite"
 export SESSION_SECRET=e2e-secret
-export DASH_TRANSACTIONS_PATH=tests/data/sync_transactions.json
+export DASH_TRANSACTIONS_PATH=tests/data/e2e_transactions.json
 export DASH_ACCOUNTS_GLOB=tests/data/sync_accounts.json
 
 uv run python -c '

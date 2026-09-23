@@ -7,6 +7,8 @@ export interface Expense {
   account_institution: string | null
   account_type: 'BANK' | 'CREDIT' | null
   category: string | null
+  category_key: string | null
+  category_source: 'auto' | 'manual'
   amount_cents: number
   account_id: string | null
 }
@@ -45,6 +47,17 @@ export interface CategoryTotalsResponse {
 }
 
 export type CategoryTotalsQuery = Pick<ExpensesQuery, 'from' | 'to' | 'account' | 'search'>
+
+export interface Category {
+  key: string
+  label: string
+}
+
+export interface CategoriesResponse {
+  categories: Category[]
+}
+
+export type CategoryUpdateBody = { mode: 'manual'; category: string | null } | { mode: 'auto' }
 
 export interface ExpenseAccount {
   id: string
