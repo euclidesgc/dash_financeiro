@@ -9,6 +9,7 @@ from app.db import connect
 from app.ingest.loader import ingest
 from app.ingest.source import load_accounts
 from app.main import create_app
+from app.payees.names import name_it
 from app.taxonomy.classify import _fill_payees
 from app.taxonomy.seed import seed_taxonomy
 
@@ -88,6 +89,11 @@ def _load(rows: list[dict[str, Any]], accounts: list[dict[str, Any]] | None = No
 def _descriptions(client: TestClient, query: str) -> list[str]:
     response = client.get(f"/api/transactions/expenses?{query}")
     return [item["description"] for item in response.json()["items"]]
+
+
+def _payee_of(conn, id: str) -> str:
+    row = conn.execute("SELECT payee FROM transactions WHERE pluggy_id = ?", (id,)).fetchone()
+    return row["payee"]
 
 
 def test_expenses_without_session_answers_401(client):
@@ -790,5 +796,235 @@ def test_the_openapi_lists_account_id_as_an_optional_string(client):
         option
         for option in parameter["schema"]["anyOf"]
         if option.get("type") == "string" and option.get("minLength") == 1
+    ]
+    assert string_options
+
+
+def _load_search_fixture(extra: list[dict[str, Any]] | None = None) -> None:
+    _load(
+        [
+            _transaction("acougue", "2026-09-01", -60.0, descricao="AÇOUGUE SÃO JORGE"),
+            _transaction("mercado", "2026-09-02", -84.9, descricao="Pagamento mercado"),
+            _transaction(
+                "bairro",
+                "2026-09-03",
+                -30.0,
+                descricao="COMPRA 123",
+                nome_fantasia="Mercado do Bairro",
+            ),
+            _transaction("x1", "2026-09-04", -10.0),
+            _transaction("x2", "2026-08-20", -20.0, conta_id="sync-acc-2"),
+            *(extra or []),
+        ],
+        accounts=[CREDIT_ACCOUNT],
+    )
+
+
+def test_q_matches_the_description_ignoring_accents(client):
+    _load_search_fixture()
+    _sign_in(client)
+
+    response = client.get("/api/transactions/expenses?q=acougue")
+
+    body = response.json()
+    assert [item["description"] for item in body["items"]] == ["AÇOUGUE SÃO JORGE"]
+    assert body["total"] == 1
+    assert body["total_cents"] == -6000
+
+
+def test_q_matches_the_description_ignoring_case(client):
+    _load_search_fixture()
+    _sign_in(client)
+
+    assert _descriptions(client, "q=MERCADO") == ["Pagamento mercado"]
+
+
+def test_q_matches_the_payee_name_from_the_merchant_name(client):
+    _load_search_fixture()
+    conn = connect()
+    _fill_payees(conn)
+    conn.commit()
+    conn.close()
+    _sign_in(client)
+
+    assert _descriptions(client, "q=bairro") == ["COMPRA 123"]
+
+
+def test_the_owner_nickname_wins_over_the_merchant_name_in_the_search(client):
+    _load_search_fixture()
+    conn = connect()
+    _fill_payees(conn)
+    conn.commit()
+    name_it(conn, _payee_of(conn, "bairro"), "Padaria da Esquina", "dono")
+    conn.close()
+    _sign_in(client)
+
+    assert _descriptions(client, "q=padaria") == ["COMPRA 123"]
+    response = client.get("/api/transactions/expenses?q=bairro")
+    assert response.json()["items"] == []
+    assert response.json()["total"] == 0
+
+
+def test_without_a_payee_key_the_merchant_name_is_not_searched(client):
+    _load_search_fixture()
+    _sign_in(client)
+
+    response = client.get("/api/transactions/expenses?q=bairro")
+
+    assert response.status_code == 200
+    assert response.json()["items"] == []
+
+
+def test_a_percent_sign_in_q_is_literal(client):
+    _load(
+        [
+            _transaction("p1", "2026-09-01", -10.0, descricao="GASTO 100%"),
+            _transaction("p2", "2026-09-02", -10.0, descricao="GASTO 1000"),
+        ]
+    )
+    _sign_in(client)
+
+    assert _descriptions(client, "q=100%25") == ["GASTO 100%"]
+
+
+def test_an_underscore_in_q_is_literal(client):
+    _load(
+        [
+            _transaction("u1", "2026-09-01", -10.0, descricao="GASTO_1"),
+            _transaction("u2", "2026-09-02", -10.0, descricao="GASTOX1"),
+        ]
+    )
+    _sign_in(client)
+
+    assert _descriptions(client, "q=to_1") == ["GASTO_1"]
+
+
+def test_a_backslash_in_q_is_literal(client):
+    _load(
+        [
+            _transaction("b1", "2026-09-01", -10.0, descricao="A\\B"),
+            _transaction("b2", "2026-09-02", -10.0, descricao="AB"),
+        ]
+    )
+    _sign_in(client)
+
+    assert _descriptions(client, "q=a%5Cb") == ["A\\B"]
+
+
+def test_q_shorter_than_two_characters_is_ignored(client):
+    _load_search_fixture()
+    _sign_in(client)
+
+    baseline = client.get("/api/transactions/expenses").json()
+
+    for query in ("q=a", "q=%20a%20", "q=%20%20"):
+        response = client.get(f"/api/transactions/expenses?{query}")
+        assert response.json()["total"] == baseline["total"]
+        assert [item["description"] for item in response.json()["items"]] == [
+            item["description"] for item in baseline["items"]
+        ]
+
+
+def test_q_is_stripped_before_matching(client):
+    _load_search_fixture()
+    _sign_in(client)
+
+    assert _descriptions(client, "q=%20acougue%20") == ["AÇOUGUE SÃO JORGE"]
+
+
+def test_q_combines_with_account_and_period_by_and(client):
+    _load_search_fixture(
+        extra=[
+            _transaction(
+                "x3", "2026-08-25", -15.0, descricao="AÇOUGUE DO CARTÃO", conta_id="sync-acc-2"
+            )
+        ]
+    )
+    _sign_in(client)
+
+    assert _descriptions(client, "q=acougue&account_id=sync-acc-2") == ["AÇOUGUE DO CARTÃO"]
+    assert _descriptions(client, "q=acougue&from=2026-09-01&to=2026-09-30") == ["AÇOUGUE SÃO JORGE"]
+    assert _descriptions(client, "q=acougue&account_id=sync-acc-2&from=2026-09-01") == []
+
+
+def test_total_and_total_cents_cover_the_whole_search_not_the_page(client):
+    _load(
+        [
+            _transaction("m1", "2026-09-01", -10.0, descricao="MERCADO 1"),
+            _transaction("m2", "2026-09-02", -20.0, descricao="MERCADO 2"),
+            _transaction("m3", "2026-09-03", -30.0, descricao="MERCADO 3"),
+        ]
+    )
+    _sign_in(client)
+
+    response = client.get("/api/transactions/expenses?q=mercado&page_size=1")
+
+    body = response.json()
+    assert len(body["items"]) == 1
+    assert body["total"] == 3
+    assert body["total_cents"] == -6000
+
+
+def test_a_transfer_whose_description_matches_stays_out(client):
+    _load_search_fixture(
+        extra=[
+            _transaction("t1", "2026-09-05", -500.0, descricao="TED ACOUGUE", eh_transferencia=True)
+        ]
+    )
+    _sign_in(client)
+
+    response = client.get("/api/transactions/expenses?q=acougue")
+
+    body = response.json()
+    assert body["total"] == 1
+    assert body["total_cents"] == -6000
+
+
+def test_a_null_description_does_not_break_the_search(client):
+    _load(
+        [
+            _transaction("n1", "2026-09-01", -10.0, descricao=None),
+            _transaction("n2", "2026-09-02", -10.0, descricao="GASTO n2"),
+        ]
+    )
+    _sign_in(client)
+
+    response = client.get("/api/transactions/expenses?q=gasto")
+
+    assert response.status_code == 200
+    assert _descriptions(client, "q=gasto") == ["GASTO n2"]
+
+
+def test_sorting_respects_the_search(client):
+    _load_search_fixture()
+    conn = connect()
+    _fill_payees(conn)
+    conn.commit()
+    conn.close()
+    _sign_in(client)
+
+    without_q = client.get("/api/transactions/expenses?sort=amount&order=asc").json()
+    with_short_q = client.get("/api/transactions/expenses?q=a&sort=amount&order=asc").json()
+    assert with_short_q["items"] == without_q["items"]
+
+    response = client.get("/api/transactions/expenses?q=mercado&sort=amount&order=asc")
+    amounts = [item["amount_cents"] for item in response.json()["items"]]
+    assert amounts == [-3000, -8490]
+
+
+def test_the_openapi_lists_q_as_an_optional_string(client):
+    _sign_in(client)
+
+    response = client.get("/openapi.json")
+
+    parameters = response.json()["paths"]["/api/transactions/expenses"]["get"]["parameters"]
+    by_name = {parameter["name"]: parameter for parameter in parameters}
+    parameter = by_name["q"]
+    assert parameter["in"] == "query"
+    assert not parameter.get("required", False)
+    string_options = [
+        option
+        for option in parameter["schema"]["anyOf"]
+        if option.get("type") == "string" and "minLength" not in option
     ]
     assert string_options

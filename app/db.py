@@ -1,8 +1,17 @@
 import os
 import sqlite3
+import unicodedata
 from pathlib import Path
 
 from app.config import load_config
+
+
+def fold(value: str | None) -> str | None:
+    if value is None:
+        return None
+    return "".join(
+        char for char in unicodedata.normalize("NFKD", value) if not unicodedata.combining(char)
+    ).casefold()
 
 
 def _restrict(target: str) -> None:
@@ -25,4 +34,7 @@ def connect(path: str | None = None) -> sqlite3.Connection:
     conn.row_factory = sqlite3.Row
     # Reason: SQLite ships foreign key enforcement off, per connection.
     conn.execute("PRAGMA foreign_keys = ON")
+    # Reason: expense search compares both sides in SQL, so fold must exist
+    # on every connection, including tests and e2e.
+    conn.create_function("fold", 1, fold, deterministic=True)
     return conn

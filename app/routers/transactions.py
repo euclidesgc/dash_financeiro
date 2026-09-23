@@ -40,11 +40,14 @@ def expenses(
     from_: Annotated[date | None, Query(alias="from")] = None,
     to: Annotated[date | None, Query()] = None,
     account_id: Annotated[str | None, Query(min_length=1)] = None,
+    q: Annotated[str | None, Query()] = None,
 ) -> ExpensesResponse:
     if from_ is not None and to is not None and to < from_:
         raise HTTPException(
             status_code=422, detail="A data final precisa ser igual ou posterior à inicial."
         )
+    term = q.strip() if q is not None else ""
+    search = term if len(term) >= 2 else None
     conn = connect()
     try:
         found = list_expenses(
@@ -56,6 +59,7 @@ def expenses(
             date_from=from_.isoformat() if from_ else None,
             date_to=to.isoformat() if to else None,
             account_id=account_id,
+            search=search,
         )
     finally:
         conn.close()
