@@ -5,9 +5,18 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from app.db import connect
-from app.queries.expenses import Order, Sort, list_expenses, sum_by_category
+from app.queries.expenses import Order, Sort, get_expense, list_expenses, sum_by_category
+from app.taxonomy.override import (
+    UnknownCategoryError,
+    UnknownTransactionError,
+    restore_auto,
+    set_manual,
+)
 
 router = APIRouter(prefix="/api/transactions")
+
+UNKNOWN_EXPENSE = "Gasto não encontrado."
+UNKNOWN_CATEGORY = "Categoria desconhecida."
 
 
 class Expense(BaseModel):
@@ -19,6 +28,8 @@ class Expense(BaseModel):
     account_institution: str | None
     account_type: Literal["BANK", "CREDIT"] | None
     category: str | None
+    category_key: str | None
+    category_source: Literal["auto", "manual"]
     amount_cents: int
     account_id: str | None
 
@@ -41,6 +52,11 @@ class CategoryGroup(BaseModel):
 class CategoryTotalsResponse(BaseModel):
     groups: list[CategoryGroup]
     total_cents: int
+
+
+class CategoryUpdate(BaseModel):
+    mode: Literal["manual", "auto"]
+    category: str | None = None
 
 
 def _date_bounds(from_: date | None, to: date | None) -> tuple[str | None, str | None]:
@@ -122,3 +138,24 @@ def expenses_by_category(
         ],
         total_cents=sum(g.total_cents for g in groups),
     )
+
+
+@router.patch("/{transaction_id}/category")
+def update_category(transaction_id: int, body: CategoryUpdate) -> Expense:
+    conn = connect()
+    try:
+        try:
+            if body.mode == "manual":
+                set_manual(conn, transaction_id, body.category)
+            else:
+                restore_auto(conn, transaction_id)
+        except UnknownTransactionError as error:
+            raise HTTPException(status_code=404, detail=UNKNOWN_EXPENSE) from error
+        except UnknownCategoryError as error:
+            raise HTTPException(status_code=422, detail=UNKNOWN_CATEGORY) from error
+        item = get_expense(conn, transaction_id)
+    finally:
+        conn.close()
+    if item is None:
+        raise HTTPException(status_code=404, detail=UNKNOWN_EXPENSE)
+    return Expense(**item)

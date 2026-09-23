@@ -1,12 +1,11 @@
 import sqlite3
-import unicodedata
 from dataclasses import dataclass
 from typing import Any, Literal
 
 from app.db import fold
 from app.payees.names import labels
 from app.queries.spending import SPENDING
-from app.taxonomy.seed import category_labels
+from app.taxonomy.seed import category_labels, label_sort_key
 
 Sort = Literal["date", "amount", "category"]
 Order = Literal["asc", "desc"]
@@ -28,8 +27,8 @@ _FROM = (
     " LEFT JOIN payee_names AS lk ON lk.payee = t.payee AND lk.source = 'cnpj'"
 )
 
-_SELECT = f"""SELECT t.id, t.date, t.description, t.payee, t.category, t.amount_cents,
-       t.account_id,
+_SELECT = f"""SELECT t.id, t.date, t.description, t.payee, t.category, t.category_source,
+       t.amount_cents, t.account_id,
        a.name AS account_name, a.institution AS account_institution, a.type AS account_type
 {_FROM}"""
 
@@ -70,15 +69,7 @@ def _category_rank_clause() -> tuple[str, list[str | int]]:
     # SQLite's BINARY collation would put "Água" after "Z"; normalizing to
     # the base letter here keeps the sort matching what the user reads.
     labels_by_key = category_labels()
-    keys = sorted(
-        labels_by_key,
-        key=lambda key: (
-            unicodedata.normalize("NFKD", labels_by_key[key])
-            .encode("ascii", "ignore")
-            .decode("ascii")
-            .casefold()
-        ),
-    )
+    keys = sorted(labels_by_key, key=lambda key: label_sort_key(labels_by_key[key]))
     params: list[str | int] = []
     for position, key in enumerate(keys):
         params.append(key)
@@ -125,6 +116,24 @@ def _page_sql(sort: Sort, order: Order, where: str) -> tuple[str, list[str | int
     return sql, params
 
 
+def _item(row: sqlite3.Row, names: dict[str, str], categories: dict[str, str]) -> dict[str, Any]:
+    raw_category = row["category"]
+    return {
+        "id": row["id"],
+        "date": row["date"],
+        "description": row["description"],
+        "payee_name": names.get(row["payee"]),
+        "account_name": row["account_name"],
+        "account_institution": row["account_institution"],
+        "account_type": row["account_type"],
+        "category": categories.get(raw_category, raw_category) if raw_category else None,
+        "category_key": raw_category or None,
+        "category_source": row["category_source"],
+        "amount_cents": row["amount_cents"],
+        "account_id": row["account_id"],
+    }
+
+
 def list_expenses(
     conn: sqlite3.Connection,
     *,
@@ -148,24 +157,17 @@ def list_expenses(
     # duplicated logic.
     names = labels(conn)
     categories = category_labels()
-    items = []
-    for row in rows:
-        raw_category = row["category"]
-        items.append(
-            {
-                "id": row["id"],
-                "date": row["date"],
-                "description": row["description"],
-                "payee_name": names.get(row["payee"]),
-                "account_name": row["account_name"],
-                "account_institution": row["account_institution"],
-                "account_type": row["account_type"],
-                "category": categories.get(raw_category, raw_category) if raw_category else None,
-                "amount_cents": row["amount_cents"],
-                "account_id": row["account_id"],
-            }
-        )
+    items = [_item(row, names, categories) for row in rows]
     return ExpensesPage(items=items, total=total, total_cents=int(total_cents))
+
+
+def get_expense(conn: sqlite3.Connection, transaction_id: int) -> dict[str, Any] | None:
+    row = conn.execute(f"{_SELECT} WHERE t.id = ?", (transaction_id,)).fetchone()
+    if row is None:
+        return None
+    # Reason: no SPENDING filter here — this reads a single transaction by
+    # id, not a page of gastos.
+    return _item(row, labels(conn), category_labels())
 
 
 def sum_by_category(

@@ -56,9 +56,9 @@ STALE_CONSOLIDATED = (
     "ingestao/pluggy_consolidate.py de novo antes de carregar"
 )
 
-# Reason: a categoria ajustada manualmente pelo dono sobrevive à reingestão
-# (R6) — o CASE só cede a coluna category à fonte quando category_source
-# ainda é 'auto'.
+# Reason: a categoria escolhida manualmente pelo dono não pode ser
+# sobrescrita por uma reingestão — o CASE só cede a coluna category à fonte
+# quando category_source ainda é 'auto'.
 _TRANSACTION_OVERRIDES: dict[str, str] = {
     "category": (
         "CASE WHEN transactions.category_source = 'manual' "
