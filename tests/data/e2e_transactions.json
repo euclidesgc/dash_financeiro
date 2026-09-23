@@ -103,5 +103,26 @@
     "razao_social": "",
     "cnpj": "",
     "recebedor": ""
+  },
+  {
+    "id": "e2e-t-6",
+    "data": "2026-08-20",
+    "conta_id": "acc-fixture-1",
+    "descricao": "AÇOUGUE SÃO JORGE",
+    "valor": -60.0,
+    "tipo": "DEBIT",
+    "categoria_pluggy": "Groceries",
+    "categoria": "Groceries",
+    "parcela_atual": null,
+    "parcela_total": null,
+    "eh_transferencia": false,
+    "motivo_transferencia": "",
+    "eh_saque": false,
+    "eh_estorno": false,
+    "estornada_por": "",
+    "nome_fantasia": "",
+    "razao_social": "",
+    "cnpj": "",
+    "recebedor": ""
   }
 ]

@@ -1,14 +1,18 @@
 import { http, HttpResponse, delay } from 'msw'
-import { expect, test, vi } from 'vitest'
+import { afterEach, expect, test, vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
-import { screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { useLocation } from 'react-router'
 
 import { ExpensesList } from '@/features/expenses/components/expenses-list'
 import { renderWithProviders } from '@/testing/test-utils'
 import { server } from '@/testing/mocks/server'
-import { fakeExpenses } from '@/testing/mocks/handlers'
+import { fakeExpenses, foldText } from '@/testing/mocks/handlers'
 import type { Expense, ExpenseOrder, ExpenseSort } from '@/features/expenses/types/expense'
+
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 function LocationProbe(): React.JSX.Element {
   const location = useLocation()
@@ -20,12 +24,16 @@ function filterForSpy(
   from: string | null,
   to: string | null,
   accountId: string | null,
+  term: string | null,
 ): Expense[] {
   return items.filter(
     (item) =>
       (from === null || item.date >= from) &&
       (to === null || item.date <= to) &&
-      (accountId === null || item.account_id === accountId),
+      (accountId === null || item.account_id === accountId) &&
+      (term === null ||
+        foldText(item.description ?? '').includes(term) ||
+        foldText(item.payee_name ?? '').includes(term)),
   )
 }
 
@@ -65,7 +73,9 @@ function spyOnExpensesRequests(): URLSearchParams[] {
       const from = url.searchParams.get('from')
       const to = url.searchParams.get('to')
       const accountId = url.searchParams.get('account_id')
-      const filtered = filterForSpy(fakeExpenses, from, to, accountId)
+      const rawTerm = url.searchParams.get('q')?.trim() ?? ''
+      const term = rawTerm.length >= 2 ? foldText(rawTerm) : null
+      const filtered = filterForSpy(fakeExpenses, from, to, accountId, term)
       const items = sortForSpy(filtered, sort, order)
       return HttpResponse.json({
         items: items.slice((page - 1) * pageSize, page * pageSize),
@@ -943,4 +953,265 @@ test('keeps the account select visible in the error state', async () => {
   const alert = await screen.findByRole('alert')
   expect(alert).toHaveTextContent('Não foi possível carregar os gastos.')
   expect(screen.getByLabelText('Conta')).toBeInTheDocument()
+})
+
+test('shows an empty "Buscar" field by default and calls the API without q', async () => {
+  const calls = spyOnExpensesRequests()
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+
+  expect(screen.getByLabelText('Buscar')).toHaveValue('')
+  expect(screen.queryByRole('button', { name: 'Limpar busca' })).not.toBeInTheDocument()
+
+  await waitFor(() => {
+    expect(calls[0]?.get('q')).toBeNull()
+  })
+
+  expect(await screen.findByText(/45 gastos/)).toBeInTheDocument()
+})
+
+test('reads the search from the URL', async () => {
+  const calls = spyOnExpensesRequests()
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses?q=mercado' })
+
+  await waitFor(() => {
+    expect(calls.at(-1)?.get('q')).toBe('mercado')
+  })
+
+  expect(screen.getByLabelText('Buscar')).toHaveValue('mercado')
+  expect(screen.getByRole('button', { name: 'Limpar busca' })).toBeInTheDocument()
+  expect(await screen.findByText(/1 gasto\b/)).toBeInTheDocument()
+
+  const items = screen.getAllByRole('listitem')
+  expect(items).toHaveLength(1)
+  expect(within(items[0]).getByText('MERCADO DO BAIRRO')).toBeInTheDocument()
+})
+
+test('typing writes q to the URL after 300 ms and filters the list', async () => {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+  const calls = spyOnExpensesRequests()
+
+  renderWithProviders(
+    <>
+      <ExpensesList />
+      <LocationProbe />
+    </>,
+    { route: '/expenses' },
+  )
+
+  fireEvent.change(screen.getByLabelText('Buscar'), { target: { value: 'acougue' } })
+
+  expect(screen.getByTestId('search')).not.toHaveTextContent('q=')
+
+  vi.advanceTimersByTime(300)
+
+  await vi.waitFor(() => {
+    expect(screen.getByTestId('search')).toHaveTextContent('q=acougue')
+  })
+
+  await vi.waitFor(() => {
+    expect(calls.at(-1)?.get('q')).toBe('acougue')
+  })
+
+  await vi.waitFor(() => {
+    expect(screen.getAllByRole('listitem')).toHaveLength(1)
+  })
+  const items = screen.getAllByRole('listitem')
+  expect(within(items[0]).getByText('Açougue São Jorge')).toBeInTheDocument()
+  expect(within(items[0]).getByText('GASTO 42')).toBeInTheDocument()
+})
+
+test('a one-character search does not touch the URL nor the API', async () => {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+  const calls = spyOnExpensesRequests()
+
+  renderWithProviders(
+    <>
+      <ExpensesList />
+      <LocationProbe />
+    </>,
+    { route: '/expenses' },
+  )
+
+  await vi.waitFor(() => {
+    expect(screen.getByText(/45 gastos/)).toBeInTheDocument()
+  })
+  const callsBefore = calls.length
+
+  fireEvent.change(screen.getByLabelText('Buscar'), { target: { value: 'a' } })
+  vi.advanceTimersByTime(300)
+
+  expect(screen.getByTestId('search')).not.toHaveTextContent('q=')
+  expect(calls.length).toBe(callsBefore)
+  expect(screen.getByText(/45 gastos/)).toBeInTheDocument()
+})
+
+test('Enter commits the search immediately', async () => {
+  const calls = spyOnExpensesRequests()
+
+  renderWithProviders(
+    <>
+      <ExpensesList />
+      <LocationProbe />
+    </>,
+    { route: '/expenses' },
+  )
+
+  await screen.findByText(/45 gastos/)
+
+  await userEvent.type(screen.getByLabelText('Buscar'), 'Gasto 4{Enter}')
+
+  await waitFor(() => {
+    const search = new URLSearchParams(screen.getByTestId('search').textContent)
+    expect(search.get('q')).toBe('Gasto 4')
+  })
+
+  await waitFor(() => {
+    expect(calls.at(-1)?.get('q')).toBe('Gasto 4')
+  })
+})
+
+test('searching drops the page and keeps the account and the sorting', async () => {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+  const calls = spyOnExpensesRequests()
+
+  renderWithProviders(
+    <>
+      <ExpensesList />
+      <LocationProbe />
+    </>,
+    { route: '/expenses?page=2&account=acc-bank-1&sort=amount' },
+  )
+
+  fireEvent.change(screen.getByLabelText('Buscar'), { target: { value: 'gasto' } })
+  vi.advanceTimersByTime(300)
+
+  await vi.waitFor(() => {
+    const search = new URLSearchParams(screen.getByTestId('search').textContent)
+    expect(search.get('page')).toBeNull()
+    expect(search.get('q')).toBe('gasto')
+    expect(search.get('account')).toBe('acc-bank-1')
+    expect(search.get('sort')).toBe('amount')
+  })
+
+  await vi.waitFor(() => {
+    const last = calls.at(-1)
+    expect(last?.get('q')).toBe('gasto')
+    expect(last?.get('account_id')).toBe('acc-bank-1')
+    expect(last?.get('sort')).toBe('amount')
+    expect(last?.get('page')).toBe('1')
+  })
+
+  vi.useRealTimers()
+})
+
+test('clearing the search removes q from the URL', async () => {
+  renderWithProviders(
+    <>
+      <ExpensesList />
+      <LocationProbe />
+    </>,
+    { route: '/expenses?q=mercado' },
+  )
+
+  await screen.findByRole('button', { name: 'Limpar busca' })
+
+  await userEvent.click(screen.getByRole('button', { name: 'Limpar busca' }))
+
+  expect(screen.getByTestId('search')).not.toHaveTextContent('q=')
+  expect(screen.getByLabelText('Buscar')).toHaveValue('')
+  expect(await screen.findByText(/45 gastos/)).toBeInTheDocument()
+})
+
+test('shows the filtered empty state for a search without results', async () => {
+  renderWithProviders(<ExpensesList />, { route: '/expenses?q=zzzz' })
+
+  expect(await screen.findByText('Nenhum gasto para esse filtro.')).toBeInTheDocument()
+  expect(screen.getByLabelText('Buscar')).toHaveValue('zzzz')
+  expect(screen.getByLabelText('Conta')).toBeInTheDocument()
+  expect(screen.getByRole('combobox', { name: 'Ordenar por' })).toBeInTheDocument()
+})
+
+test('pagination keeps the search', async () => {
+  const calls = spyOnExpensesRequests()
+
+  renderWithProviders(
+    <>
+      <ExpensesList />
+      <LocationProbe />
+    </>,
+    { route: '/expenses?q=gasto' },
+  )
+
+  expect(await screen.findByText(/43 gastos/)).toBeInTheDocument()
+
+  await userEvent.click(screen.getByRole('button', { name: 'Próxima' }))
+
+  await waitFor(() => {
+    const search = new URLSearchParams(screen.getByTestId('search').textContent)
+    expect(search.get('q')).toBe('gasto')
+    expect(search.get('page')).toBe('2')
+  })
+
+  await waitFor(() => {
+    const last = calls.at(-1)
+    expect(last?.get('q')).toBe('gasto')
+    expect(last?.get('page')).toBe('2')
+  })
+})
+
+test('keeps the search field visible in the error state', async () => {
+  server.use(http.get('/api/transactions/expenses', () => HttpResponse.json({}, { status: 500 })))
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+
+  const alert = await screen.findByRole('alert')
+  expect(alert).toHaveTextContent('Não foi possível carregar os gastos.')
+  expect(screen.getByLabelText('Buscar')).toBeInTheDocument()
+})
+
+test('retrying keeps the search', async () => {
+  let attempt = 0
+  server.use(
+    http.get('/api/transactions/expenses', ({ request }) => {
+      attempt += 1
+      if (attempt === 1) {
+        return HttpResponse.json({}, { status: 500 })
+      }
+      const url = new URL(request.url)
+      expect(url.searchParams.get('q')).toBe('mercado')
+      return HttpResponse.json({
+        items: [
+          {
+            id: 1,
+            date: '2026-08-01',
+            description: 'MERCADO DO BAIRRO',
+            payee_name: 'Mercado do Bairro',
+            account_name: 'Conta corrente',
+            account_institution: 'Banco de teste',
+            account_type: 'BANK',
+            account_id: 'acc-bank-1',
+            category: 'Compras',
+            amount_cents: -8490,
+          },
+        ],
+        page: 1,
+        page_size: 20,
+        total: 1,
+        total_cents: -8490,
+      })
+    }),
+  )
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses?q=mercado' })
+
+  const alert = await screen.findByRole('alert')
+  expect(alert).toHaveTextContent('Não foi possível carregar os gastos.')
+
+  await userEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }))
+
+  const items = await screen.findAllByRole('listitem')
+  expect(items).toHaveLength(1)
+  expect(within(items[0]).getByText('MERCADO DO BAIRRO')).toBeInTheDocument()
 })

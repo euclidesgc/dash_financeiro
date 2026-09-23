@@ -4,6 +4,13 @@ import type { Expense, ExpenseOrder, ExpenseSort } from '@/features/expenses/typ
 
 export const fakeUser = { login: 'teste' }
 
+export function foldText(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+}
+
 export const fakeAccounts = [
   {
     id: 'acc-bank-1',
@@ -84,7 +91,7 @@ function generateFakeExpenses(): Expense[] {
         id,
         date,
         description: `GASTO ${String(id)}`,
-        payee_name: null,
+        payee_name: 'Açougue São Jorge',
         account_name: 'Conta corrente',
         account_institution: 'Banco de teste',
         account_type: 'BANK',
@@ -211,11 +218,16 @@ export const handlers = [
     const from = url.searchParams.get('from')
     const to = url.searchParams.get('to')
     const accountId = url.searchParams.get('account_id')
+    const rawTerm = url.searchParams.get('q')?.trim() ?? ''
+    const term = rawTerm.length >= 2 ? foldText(rawTerm) : null
     const filtered = fakeExpenses.filter(
       (item) =>
         (from === null || item.date >= from) &&
         (to === null || item.date <= to) &&
-        (accountId === null || item.account_id === accountId),
+        (accountId === null || item.account_id === accountId) &&
+        (term === null ||
+          foldText(item.description ?? '').includes(term) ||
+          foldText(item.payee_name ?? '').includes(term)),
     )
     const items = sortExpenses(filtered, sort, order)
     return HttpResponse.json({
