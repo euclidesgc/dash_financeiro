@@ -76,7 +76,7 @@ Só Python. Ao final: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api
 
 Ao final: `pnpm dev` sobe a SPA em `http://127.0.0.1:5173/app/`, `/app/login` mostra o formulário, o login válido leva a `/app/` (que por ora mostra o cabeçalho de app com "Sair" e o `<h1>` "Saldos de hoje" com o texto de apoio — a lista chega na fase 3), e "Sair" volta ao login.
 
-- [ ] T2.1 — Ferramental da SPA na raiz do repositório
+- [x] T2.1 — Ferramental da SPA na raiz do repositório
   - Arquivos: `package.json` (criar); `pnpm-lock.yaml` (criar, gerado por `pnpm install`); `vite.config.ts` (criar); `tsconfig.json`, `tsconfig.app.json`, `tsconfig.node.json` (criar); `eslint.config.js` (criar); `index.html` (criar); `src/index.css` (criar)
   - O que fazer:
     - `package.json`: `"private": true`, `"type": "module"`, scripts `dev` (`vite`), `lint` (`eslint .`), `typecheck` (`tsc -b`), `test` (`vitest run`), `test:e2e` (`playwright test`), `build` (`tsc -b && vite build`). Dependências: react, react-dom, react-router, @tanstack/react-query, react-hook-form, zod, @hookform/resolvers, tailwindcss, @tailwindcss/vite. Dev: vite, typescript, @vitejs/plugin-react, vitest, @testing-library/react, @testing-library/jest-dom, @testing-library/user-event, jsdom, msw, @playwright/test, eslint, typescript-eslint, eslint-plugin-import, eslint-plugin-react-hooks, @types/react, @types/react-dom, @types/node. Versões atuais estáveis (React 19, Vite 7, Vitest 3, MSW 2, react-router 7, Tailwind 4).
@@ -88,7 +88,7 @@ Ao final: `pnpm dev` sobe a SPA em `http://127.0.0.1:5173/app/`, `/app/login` mo
   - Skills: project-structure, api-client
   - Complexidade: média
 
-- [ ] T2.2 — Cliente HTTP, React Query, sessão do usuário e provedores
+- [x] T2.2 — Cliente HTTP, React Query, sessão do usuário e provedores
   - Arquivos: `src/lib/api-client.ts` (criar); `src/lib/react-query.ts` (criar); `src/lib/auth.tsx` (criar); `src/config/paths.ts` (criar); `src/components/errors/error-boundary.tsx` (criar); `src/app/provider.tsx` (criar)
   - O que fazer:
     - `src/lib/api-client.ts`: `export class ApiError extends Error { status: number; detail: string }`; `export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T>`: `fetch(path, { credentials: 'same-origin', headers: { 'Content-Type': 'application/json', ...init?.headers }, ...init })`; resposta `!ok` lança `ApiError` com `status` e `detail` lido do JSON (`{detail}`) ou `response.statusText`; 204 devolve `undefined as T`; senão `response.json()`.
@@ -100,7 +100,7 @@ Ao final: `pnpm dev` sobe a SPA em `http://127.0.0.1:5173/app/`, `/app/login` mo
   - Skills: api-client, error-handling, authentication, routing
   - Complexidade: média
 
-- [ ] T2.3 — Componentes de UI compartilhados e receitas novas no design
+- [x] T2.3 — Componentes de UI compartilhados e receitas novas no design
   - Arquivos: `src/components/ui/button.tsx` (criar); `src/components/ui/alert.tsx` (criar); `docs/design.md` (alterar)
   - O que fazer:
     - `button.tsx`: `export type ButtonProps = React.ComponentPropsWithRef<'button'> & { variant?: 'primary' | 'secondary' | 'danger' }`; `export function Button({ variant = 'primary', type = 'button', className, ref, ...rest }: ButtonProps): React.JSX.Element`; `primary` e `secondary` usam as receitas "Botão principal" e "Botão secundário" do `docs/design.md`; `danger` é o "botão de erro" (principal com `red-600`/`red-700`); todos com `disabled:opacity-50` e altura ≥ 40px. `ref` como prop comum, sem `forwardRef`.
@@ -109,7 +109,7 @@ Ao final: `pnpm dev` sobe a SPA em `http://127.0.0.1:5173/app/`, `/app/login` mo
   - Skills: ui-components, interface-design
   - Complexidade: baixa
 
-- [ ] T2.4 — Feature `auth`: chamadas de login/logout, schema, formulário e botão de sair
+- [x] T2.4 — Feature `auth`: chamadas de login/logout, schema, formulário e botão de sair
   - Arquivos: `src/features/auth/api/login.ts` (criar); `src/features/auth/api/logout.ts` (criar); `src/features/auth/types/login-schema.ts` (criar); `src/features/auth/components/login-form.tsx` (criar); `src/features/auth/components/logout-button.tsx` (criar)
   - O que fazer:
     - `login-schema.ts`: `export const loginSchema = z.object({ login: z.string().min(1, 'Informe o login.'), password: z.string().min(1, 'Informe a senha.') })`; `export type LoginInput = z.infer<typeof loginSchema>`.
@@ -120,7 +120,7 @@ Ao final: `pnpm dev` sobe a SPA em `http://127.0.0.1:5173/app/`, `/app/login` mo
   - Skills: api-requests, authentication, forms, interface-design, error-handling
   - Complexidade: média
 
-- [ ] T2.5 — Rotas, tela de Entrar, casca da tela de Saldos e ponto de entrada
+- [x] T2.5 — Rotas, tela de Entrar, casca da tela de Saldos e ponto de entrada
   - Arquivos: `src/app/router.tsx` (criar); `src/app/routes/login.tsx` (criar); `src/app/routes/dashboard.tsx` (criar); `src/main.tsx` (criar)
   - O que fazer:
     - `router.tsx`: `export const routes: RouteObject[]` = [`{ path: paths.login, element: <LoginRoute /> }`, `{ path: paths.dashboard, element: <ProtectedRoute><DashboardRoute /></ProtectedRoute> }`]; `export const router = createBrowserRouter(routes, { basename: '/app' })`; `export function AppRouter()` = `<RouterProvider router={router} />`. Exportar `routes` separado permite ao teste de integração montar um `createMemoryRouter(routes, { initialEntries })`.
@@ -130,7 +130,7 @@ Ao final: `pnpm dev` sobe a SPA em `http://127.0.0.1:5173/app/`, `/app/login` mo
   - Skills: routing, authentication, interface-design
   - Complexidade: média
 
-- [ ] T2.6 — Testes da fase 2
+- [x] T2.6 — Testes da fase 2
   - Arquivos: `src/testing/setup.ts` (criar); `src/testing/test-utils.tsx` (criar); `src/testing/mocks/server.ts` (criar); `src/testing/mocks/handlers.ts` (criar); `src/features/auth/components/__tests__/login-form.test.tsx` (criar); `src/lib/__tests__/api-client.test.ts` (criar)
   - O que fazer:
     - `setup.ts`: `import '@testing-library/jest-dom/vitest'`; `beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))`, `afterEach(() => server.resetHandlers())`, `afterAll(() => server.close())`.
@@ -144,16 +144,16 @@ Ao final: `pnpm dev` sobe a SPA em `http://127.0.0.1:5173/app/`, `/app/login` mo
 
 ### Critérios de aceite da fase 2
 
-- [ ] CA2.1 — `pnpm lint`, `pnpm typecheck`, `pnpm test` e `pnpm build` saem com código 0; `bash scripts/lint.sh` e `bash scripts/gates/gates_runner.sh` também. (comando)
-- [ ] CA2.2 — `package.json` tem os scripts `dev`, `lint`, `typecheck`, `test`, `test:e2e`, `build`; `vite.config.ts` tem `base: '/app/'`, `server.proxy['/api']` apontando para `http://127.0.0.1:8000` e `build.outDir: 'dist'`; `eslint.config.js` configura `import/no-restricted-paths` com zonas que proíbem `src/features/auth` ↔ `src/features/accounts` e `src/features/**` → `src/app/**`. (estrutural)
-- [ ] CA2.3 — Existe `apiRequest<T>(path: string, init?: RequestInit): Promise<T>` e `class ApiError extends Error` com `status: number` e `detail: string` em `src/lib/api-client.ts`; `src/lib/react-query.ts` exporta `queryClient` com `staleTime: 30_000` e `retry` que devolve `false` para `ApiError` 401. (estrutural)
-- [ ] CA2.4 — `src/lib/auth.tsx` exporta `getMe`, `meQueryOptions` (queryKey `['auth','me']`), `useUser` e `ProtectedRoute`; o pendente de `ProtectedRoute` tem `role="status"` e texto "Carregando…"; 401 rende `<Navigate to="/login" replace>`. (estrutural)
-- [ ] CA2.5 — `src/features/auth/types/login-schema.ts` exporta `loginSchema` com as mensagens "Informe o login." e "Informe a senha."; `login.ts` exporta `login` e `useLogin` (invalida `['auth','me']`); `logout.ts` exporta `logout` e `useLogout` (chama `queryClient.clear()`). (estrutural)
-- [ ] CA2.6 — `login-form.tsx` contém os textos literais "Login", "Senha", "Entrar", "Entrando…", "Login ou senha inválidos.", "Muitas tentativas seguidas. Tente novamente mais tarde." e "Não foi possível entrar. Verifique se o servidor está no ar e tente de novo."; cada `<input>` tem `<label htmlFor>` associado; o de login tem `autoComplete="username"` e o de senha `type="password"` e `autoComplete="current-password"`; o erro de credencial é renderizado por `<Alert>` (que tem `role="alert"`). (estrutural)
-- [ ] CA2.7 — Piso visual, verificado lendo o código: `routes/login.tsx` e `routes/dashboard.tsx` envolvem o conteúdo em `<main>` com as classes do "Contêiner de página" do `docs/design.md` e têm um único `<h1>` com as classes de "Título de página" ("Entrar" e "Saldos de hoje"); o texto de apoio usa as classes de "Texto de apoio"; os campos usam as classes de "Campo de formulário" do `docs/design.md`; `Button` aplica, por variante, exatamente as classes de "Botão principal"/"Botão secundário"/botão de erro, define `type` explícito, `disabled:opacity-50` e `focus-visible:outline-2`; o cabeçalho de `dashboard.tsx` usa as classes de "Cabeçalho de app"; nenhum arquivo em `src/` contém `style={{` ou `<a href`. (estrutural)
-- [ ] CA2.8 — `docs/design.md` tem, em "Padrões acrescentados pelas entregas", as linhas "Campo de formulário", "Valor monetário" e "Cabeçalho de app", com fatia `001`. (estrutural)
-- [ ] CA2.9 — Os testes nomeados em T2.6 existem em `src/features/auth/components/__tests__/login-form.test.tsx` e `src/lib/__tests__/api-client.test.ts`; `pnpm test -- --coverage` reporta ≥ 80% de linhas em `src/lib/api-client.ts`, `src/features/auth/components/login-form.tsx` e `src/features/auth/types/login-schema.ts`. (comando)
-- [ ] CA2.10 — `src/features/auth/**` não importa de `src/app/**` nem de `src/features/accounts/**` (basta `pnpm lint` passar com a regra de CA2.2 ativa). (estrutural)
+- [x] CA2.1 — `pnpm lint`, `pnpm typecheck`, `pnpm test` e `pnpm build` saem com código 0; `bash scripts/lint.sh` e `bash scripts/gates/gates_runner.sh` também. (comando)
+- [x] CA2.2 — `package.json` tem os scripts `dev`, `lint`, `typecheck`, `test`, `test:e2e`, `build`; `vite.config.ts` tem `base: '/app/'`, `server.proxy['/api']` apontando para `http://127.0.0.1:8000` e `build.outDir: 'dist'`; `eslint.config.js` configura `import/no-restricted-paths` com zonas que proíbem `src/features/auth` ↔ `src/features/accounts` e `src/features/**` → `src/app/**`. (estrutural)
+- [x] CA2.3 — Existe `apiRequest<T>(path: string, init?: RequestInit): Promise<T>` e `class ApiError extends Error` com `status: number` e `detail: string` em `src/lib/api-client.ts`; `src/lib/react-query.ts` exporta `queryClient` com `staleTime: 30_000` e `retry` que devolve `false` para `ApiError` 401. (estrutural)
+- [x] CA2.4 — `src/lib/auth.tsx` exporta `getMe`, `meQueryOptions` (queryKey `['auth','me']`), `useUser` e `ProtectedRoute`; o pendente de `ProtectedRoute` tem `role="status"` e texto "Carregando…"; 401 rende `<Navigate to="/login" replace>`. (estrutural)
+- [x] CA2.5 — `src/features/auth/types/login-schema.ts` exporta `loginSchema` com as mensagens "Informe o login." e "Informe a senha."; `login.ts` exporta `login` e `useLogin` (invalida `['auth','me']`); `logout.ts` exporta `logout` e `useLogout` (chama `queryClient.clear()`). (estrutural)
+- [x] CA2.6 — `login-form.tsx` contém os textos literais "Login", "Senha", "Entrar", "Entrando…", "Login ou senha inválidos.", "Muitas tentativas seguidas. Tente novamente mais tarde." e "Não foi possível entrar. Verifique se o servidor está no ar e tente de novo."; cada `<input>` tem `<label htmlFor>` associado; o de login tem `autoComplete="username"` e o de senha `type="password"` e `autoComplete="current-password"`; o erro de credencial é renderizado por `<Alert>` (que tem `role="alert"`). (estrutural)
+- [x] CA2.7 — Piso visual, verificado lendo o código: `routes/login.tsx` e `routes/dashboard.tsx` envolvem o conteúdo em `<main>` com as classes do "Contêiner de página" do `docs/design.md` e têm um único `<h1>` com as classes de "Título de página" ("Entrar" e "Saldos de hoje"); o texto de apoio usa as classes de "Texto de apoio"; os campos usam as classes de "Campo de formulário" do `docs/design.md`; `Button` aplica, por variante, exatamente as classes de "Botão principal"/"Botão secundário"/botão de erro, define `type` explícito, `disabled:opacity-50` e `focus-visible:outline-2`; o cabeçalho de `dashboard.tsx` usa as classes de "Cabeçalho de app"; nenhum arquivo em `src/` contém `style={{` ou `<a href`. (estrutural)
+- [x] CA2.8 — `docs/design.md` tem, em "Padrões acrescentados pelas entregas", as linhas "Campo de formulário", "Valor monetário" e "Cabeçalho de app", com fatia `001`. (estrutural)
+- [x] CA2.9 — Os testes nomeados em T2.6 existem em `src/features/auth/components/__tests__/login-form.test.tsx` e `src/lib/__tests__/api-client.test.ts`; `pnpm test -- --coverage` reporta ≥ 80% de linhas em `src/lib/api-client.ts`, `src/features/auth/components/login-form.tsx` e `src/features/auth/types/login-schema.ts`. (comando)
+- [x] CA2.10 — `src/features/auth/**` não importa de `src/app/**` nem de `src/features/accounts/**` (basta `pnpm lint` passar com a regra de CA2.2 ativa). (estrutural)
 
 ## Fase 3 — Lista de saldos, jornada completa e e2e real
 

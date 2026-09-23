@@ -12,7 +12,7 @@ def spa_client(tmp_path, monkeypatch):
     dist = tmp_path / "dist"
     (dist / "assets").mkdir(parents=True)
     (dist / "index.html").write_text("<html>spa shell</html>", encoding="utf-8")
-    (dist / "assets" / "app.js").write_text("console.log('app')", encoding="utf-8")
+    (dist / "assets" / "app.js").write_text("window.appLoaded = true", encoding="utf-8")
 
     app = FastAPI()
     app.state.session_secret = "chave-de-teste"
@@ -41,7 +41,7 @@ def test_app_assets_are_served_statically(spa_client):
     response = spa_client.get("/app/assets/app.js")
 
     assert response.status_code == 200
-    assert response.text == "console.log('app')"
+    assert response.text == "window.appLoaded = true"
 
 
 def test_without_dist_answers_503(tmp_path, monkeypatch):
