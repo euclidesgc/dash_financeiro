@@ -16,7 +16,7 @@ Decisões registradas aqui (a SPEC deixou ao plano; escolhido o mais simples):
 
 Só Python. Ao final: `GET /api/transactions/expenses` aceita `from` e `to` (ISO `YYYY-MM-DD`, opcionais, inclusivos), filtra em SQL antes do `ORDER BY` e do `LIMIT/OFFSET`, responde `total_cents` (soma do filtro inteiro no mesmo `SELECT` da contagem), devolve 422 para data inválida ou `to < from`, e a suíte Python prova tudo.
 
-- [ ] T1.1 — Predicado de data e soma do filtro na consulta paginada
+- [x] T1.1 — Predicado de data e soma do filtro na consulta paginada
   - Arquivos: `app/queries/expenses.py` (alterar)
   - O que fazer:
     - `_SELECT` perde o `WHERE {SPENDING}` (fica só `SELECT … FROM transactions AS t LEFT JOIN accounts AS a ON a.id = t.account_id`). `_TOTAL` vira `f"SELECT count(*), coalesce(sum(t.amount_cents), 0) FROM transactions AS t"` (sem `WHERE`).
@@ -27,7 +27,7 @@ Só Python. Ao final: `GET /api/transactions/expenses` aceita `from` e `to` (ISO
   - Skills: —
   - Complexidade: média
 
-- [ ] T1.2 — Router aceita `from`/`to` como `date`, rejeita intervalo invertido e responde `total_cents`
+- [x] T1.2 — Router aceita `from`/`to` como `date`, rejeita intervalo invertido e responde `total_cents`
   - Arquivos: `app/routers/transactions.py` (alterar)
   - O que fazer:
     - `from datetime import date`; `from fastapi import APIRouter, HTTPException, Query`.
@@ -38,7 +38,7 @@ Só Python. Ao final: `GET /api/transactions/expenses` aceita `from` e `to` (ISO
   - Skills: api-requests
   - Complexidade: baixa
 
-- [ ] T1.3 — Testes da fase 1
+- [x] T1.3 — Testes da fase 1
   - Arquivos: `tests/test_expenses_api.py` (alterar)
   - O que fazer: reaproveitar `client`, `_sign_in`, `_transaction`, `_load` e `_descriptions`. Atualizar `test_an_empty_base_answers_an_empty_first_page` (json passa a incluir `"total_cents": 0`) e `test_the_response_has_the_contract_fields` (chave `total_cents` presente e `int`). Casos novos (api-requests, unit-testing):
     - `test_total_cents_sums_every_spending_without_a_filter` — gastos `-50.0`, `-84.9`, `-150.0`; sem `from`/`to`, `total == 3` e `total_cents == -28490`.
@@ -56,13 +56,13 @@ Só Python. Ao final: `GET /api/transactions/expenses` aceita `from` e `to` (ISO
 
 ### Critérios de aceite da fase 1
 
-- [ ] CA1.1 — `bash scripts/lint.sh` sai com código 0. (comando)
-- [ ] CA1.2 — `uv run pytest tests/test_expenses_api.py tests/test_sync_api.py tests/test_accounts_api.py tests/test_auth_api.py` passa, e cada nome de teste listado em T1.3 existe em `tests/test_expenses_api.py`, junto com os 24 já existentes (`test_expenses_without_session_answers_401` … `test_the_openapi_lists_the_sort_and_order_enums`), sem renomear. (comando)
-- [ ] CA1.3 — `bash scripts/gates/gates_runner.sh` sai com código 0. (comando)
-- [ ] CA1.4 — `app/queries/expenses.py` define `def _where(date_from: str | None, date_to: str | None) -> tuple[str, list[str]]`, `def _page_sql(sort: Sort, order: Order, where: str) -> tuple[str, list[str | int]]` e `def list_expenses(conn: sqlite3.Connection, *, page: int, page_size: int, sort: Sort = "date", order: Order = "desc", date_from: str | None = None, date_to: str | None = None) -> ExpensesPage`; `ExpensesPage` tem os campos `items`, `total` e `total_cents: int`; o arquivo contém as substrings `" AND t.date >= ?"`, `" AND t.date <= ?"`, `count(*), coalesce(sum(t.amount_cents), 0)` e `(*where_params, *order_params, page_size, offset)`; `_SELECT` e `_TOTAL` não contêm `WHERE`; não contém `amount_cents < 0` nem `commit(`. (estrutural)
-- [ ] CA1.5 — `app/routers/transactions.py` importa `date` de `datetime` e `HTTPException` de `fastapi`; `def expenses(` declara `from_: Annotated[date | None, Query(alias="from")] = None` e `to: Annotated[date | None, Query()] = None`; contém `HTTPException(status_code=422, detail="A data final precisa ser igual ou posterior à inicial.")` e a chamada `list_expenses(` com `date_from=` e `date_to=`; `ExpensesResponse` tem exatamente `items`, `page`, `page_size`, `total`, `total_cents`; a rota é `def`, não `async def`; `SELECT`, `INSERT` e `commit(` não aparecem. (estrutural)
-- [ ] CA1.6 — Sem filtro, `total_cents == -28490` para três gastos de `-50.0`, `-84.9` e `-150.0` (`test_total_cents_sums_every_spending_without_a_filter`); `?from=2026-09-01&to=2026-09-30` devolve só `["2026-09-30", "2026-09-15", "2026-09-01"]` (`test_from_and_to_keep_only_the_month`); com `page_size=1` o `total_cents` continua `-3000` (`test_total_and_total_cents_cover_the_whole_filter_not_the_page`); transferência no período não entra na soma (`test_a_transfer_inside_the_period_stays_out_of_total_cents`); `?from=2026-02-31` e `?from=01/09/2026` respondem 422 (`test_invalid_dates_answer_422`); `?from=2026-09-10&to=2026-09-01` responde 422 com o `detail` literal (`test_an_inverted_interval_answers_422`). (comportamental)
-- [ ] CA1.7 — `uv run pytest --cov=app.queries.expenses --cov=app.routers.transactions --cov-report=term tests/test_expenses_api.py` reporta ≥ 80% em `app/queries/expenses.py` e `app/routers/transactions.py`. (comando)
+- [x] CA1.1 — `bash scripts/lint.sh` sai com código 0. (comando)
+- [x] CA1.2 — `uv run pytest tests/test_expenses_api.py tests/test_sync_api.py tests/test_accounts_api.py tests/test_auth_api.py` passa, e cada nome de teste listado em T1.3 existe em `tests/test_expenses_api.py`, junto com os 24 já existentes (`test_expenses_without_session_answers_401` … `test_the_openapi_lists_the_sort_and_order_enums`), sem renomear. (comando)
+- [x] CA1.3 — `bash scripts/gates/gates_runner.sh` sai com código 0. (comando)
+- [x] CA1.4 — `app/queries/expenses.py` define `def _where(date_from: str | None, date_to: str | None) -> tuple[str, list[str]]`, `def _page_sql(sort: Sort, order: Order, where: str) -> tuple[str, list[str | int]]` e `def list_expenses(conn: sqlite3.Connection, *, page: int, page_size: int, sort: Sort = "date", order: Order = "desc", date_from: str | None = None, date_to: str | None = None) -> ExpensesPage`; `ExpensesPage` tem os campos `items`, `total` e `total_cents: int`; o arquivo contém as substrings `" AND t.date >= ?"`, `" AND t.date <= ?"`, `count(*), coalesce(sum(t.amount_cents), 0)` e `(*where_params, *order_params, page_size, offset)`; `_SELECT` e `_TOTAL` não contêm `WHERE`; não contém `amount_cents < 0` nem `commit(`. (estrutural)
+- [x] CA1.5 — `app/routers/transactions.py` importa `date` de `datetime` e `HTTPException` de `fastapi`; `def expenses(` declara `from_: Annotated[date | None, Query(alias="from")] = None` e `to: Annotated[date | None, Query()] = None`; contém `HTTPException(status_code=422, detail="A data final precisa ser igual ou posterior à inicial.")` e a chamada `list_expenses(` com `date_from=` e `date_to=`; `ExpensesResponse` tem exatamente `items`, `page`, `page_size`, `total`, `total_cents`; a rota é `def`, não `async def`; `SELECT`, `INSERT` e `commit(` não aparecem. (estrutural)
+- [x] CA1.6 — Sem filtro, `total_cents == -28490` para três gastos de `-50.0`, `-84.9` e `-150.0` (`test_total_cents_sums_every_spending_without_a_filter`); `?from=2026-09-01&to=2026-09-30` devolve só `["2026-09-30", "2026-09-15", "2026-09-01"]` (`test_from_and_to_keep_only_the_month`); com `page_size=1` o `total_cents` continua `-3000` (`test_total_and_total_cents_cover_the_whole_filter_not_the_page`); transferência no período não entra na soma (`test_a_transfer_inside_the_period_stays_out_of_total_cents`); `?from=2026-02-31` e `?from=01/09/2026` respondem 422 (`test_invalid_dates_answer_422`); `?from=2026-09-10&to=2026-09-01` responde 422 com o `detail` literal (`test_an_inverted_interval_answers_422`). (comportamental)
+- [x] CA1.7 — `uv run pytest --cov=app.queries.expenses --cov=app.routers.transactions --cov-report=term tests/test_expenses_api.py` reporta ≥ 80% em `app/queries/expenses.py` e `app/routers/transactions.py`. (comando)
 
 ## Fase 2 — Controles de período na tela, total do período, mocks, testes de componente e e2e
 

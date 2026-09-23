@@ -92,7 +92,13 @@ def test_an_empty_base_answers_an_empty_first_page(client):
     response = client.get("/api/transactions/expenses")
 
     assert response.status_code == 200
-    assert response.json() == {"items": [], "page": 1, "page_size": 20, "total": 0}
+    assert response.json() == {
+        "items": [],
+        "page": 1,
+        "page_size": 20,
+        "total": 0,
+        "total_cents": 0,
+    }
 
 
 def test_only_spending_rows_come_back(client):
@@ -233,7 +239,8 @@ def test_the_response_has_the_contract_fields(client):
 
     response = client.get("/api/transactions/expenses")
 
-    item = response.json()["items"][0]
+    body = response.json()
+    item = body["items"][0]
     assert set(item.keys()) == {
         "id",
         "date",
@@ -246,6 +253,8 @@ def test_the_response_has_the_contract_fields(client):
         "amount_cents",
     }
     assert item["amount_cents"] == -5000
+    assert "total_cents" in body
+    assert isinstance(body["total_cents"], int)
 
 
 def test_the_default_order_is_date_desc_then_id_desc(client):
@@ -434,3 +443,183 @@ def test_the_openapi_lists_the_sort_and_order_enums(client):
     assert by_name["sort"]["schema"]["default"] == "date"
     assert by_name["order"]["schema"]["enum"] == ["asc", "desc"]
     assert by_name["order"]["schema"]["default"] == "desc"
+
+
+def test_total_cents_sums_every_spending_without_a_filter(client):
+    _load(
+        [
+            _transaction("a", "2026-09-01", -50.0),
+            _transaction("b", "2026-09-02", -84.9),
+            _transaction("c", "2026-09-03", -150.0),
+        ]
+    )
+    _sign_in(client)
+
+    response = client.get("/api/transactions/expenses")
+
+    body = response.json()
+    assert body["total"] == 3
+    assert body["total_cents"] == -28490
+
+
+def test_from_and_to_keep_only_the_month(client):
+    _load(
+        [
+            _transaction("before", "2026-08-31", -10.0),
+            _transaction("start", "2026-09-01", -10.0),
+            _transaction("middle", "2026-09-15", -10.0),
+            _transaction("end", "2026-09-30", -10.0),
+            _transaction("after", "2026-10-01", -10.0),
+        ]
+    )
+    _sign_in(client)
+
+    response = client.get(
+        "/api/transactions/expenses", params={"from": "2026-09-01", "to": "2026-09-30"}
+    )
+
+    body = response.json()
+    assert [item["date"] for item in body["items"]] == ["2026-09-30", "2026-09-15", "2026-09-01"]
+    assert body["total"] == 3
+    assert body["total_cents"] == -3000
+
+
+def test_total_and_total_cents_cover_the_whole_filter_not_the_page(client):
+    _load(
+        [
+            _transaction("before", "2026-08-31", -10.0),
+            _transaction("start", "2026-09-01", -10.0),
+            _transaction("middle", "2026-09-15", -10.0),
+            _transaction("end", "2026-09-30", -10.0),
+            _transaction("after", "2026-10-01", -10.0),
+        ]
+    )
+    _sign_in(client)
+
+    response = client.get(
+        "/api/transactions/expenses",
+        params={"from": "2026-09-01", "to": "2026-09-30", "page_size": 1},
+    )
+
+    body = response.json()
+    assert len(body["items"]) == 1
+    assert body["total"] == 3
+    assert body["total_cents"] == -3000
+
+
+def test_only_from_is_an_open_ended_interval(client):
+    _load(
+        [
+            _transaction("before", "2026-08-31", -10.0),
+            _transaction("start", "2026-09-01", -10.0),
+            _transaction("middle", "2026-09-15", -10.0),
+            _transaction("end", "2026-09-30", -10.0),
+            _transaction("after", "2026-10-01", -10.0),
+        ]
+    )
+    _sign_in(client)
+
+    response = client.get("/api/transactions/expenses", params={"from": "2026-09-15"})
+
+    assert [item["date"] for item in response.json()["items"]] == [
+        "2026-10-01",
+        "2026-09-30",
+        "2026-09-15",
+    ]
+
+
+def test_only_to_is_an_open_ended_interval(client):
+    _load(
+        [
+            _transaction("before", "2026-08-31", -10.0),
+            _transaction("start", "2026-09-01", -10.0),
+            _transaction("middle", "2026-09-15", -10.0),
+            _transaction("end", "2026-09-30", -10.0),
+            _transaction("after", "2026-10-01", -10.0),
+        ]
+    )
+    _sign_in(client)
+
+    response = client.get("/api/transactions/expenses", params={"to": "2026-09-01"})
+
+    assert [item["date"] for item in response.json()["items"]] == ["2026-09-01", "2026-08-31"]
+
+
+def test_a_transfer_inside_the_period_stays_out_of_total_cents(client):
+    _load(
+        [
+            _transaction("spend-1", "2026-09-02", -50.0),
+            _transaction("transfer-1", "2026-09-02", -500.0, eh_transferencia=True),
+        ]
+    )
+    _sign_in(client)
+
+    response = client.get(
+        "/api/transactions/expenses", params={"from": "2026-09-01", "to": "2026-09-30"}
+    )
+
+    body = response.json()
+    assert body["total"] == 1
+    assert body["total_cents"] == -5000
+
+
+def test_sorting_respects_the_period(client):
+    _load(
+        [
+            _transaction("outside", "2026-08-01", -300.0),
+            _transaction("small", "2026-09-01", -50.0),
+            _transaction("medium", "2026-09-02", -120.0),
+        ]
+    )
+    _sign_in(client)
+
+    response = client.get(
+        "/api/transactions/expenses",
+        params={"from": "2026-09-01", "to": "2026-09-30", "sort": "amount", "order": "desc"},
+    )
+
+    amounts = [item["amount_cents"] for item in response.json()["items"]]
+    assert amounts == [-12000, -5000]
+
+
+def test_invalid_dates_answer_422(client):
+    _sign_in(client)
+
+    assert (
+        client.get("/api/transactions/expenses", params={"from": "2026-13-01"}).status_code == 422
+    )
+    assert (
+        client.get("/api/transactions/expenses", params={"from": "01/09/2026"}).status_code == 422
+    )
+    assert (
+        client.get("/api/transactions/expenses", params={"from": "2026-02-31"}).status_code == 422
+    )
+    assert client.get("/api/transactions/expenses", params={"to": "hoje"}).status_code == 422
+
+
+def test_an_inverted_interval_answers_422(client):
+    _sign_in(client)
+
+    response = client.get(
+        "/api/transactions/expenses", params={"from": "2026-09-10", "to": "2026-09-01"}
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "A data final precisa ser igual ou posterior à inicial."
+
+
+def test_the_openapi_lists_from_and_to_as_dates(client):
+    _sign_in(client)
+
+    response = client.get("/openapi.json")
+
+    parameters = response.json()["paths"]["/api/transactions/expenses"]["get"]["parameters"]
+    by_name = {parameter["name"]: parameter for parameter in parameters}
+    for name in ("from", "to"):
+        schema = by_name[name]["schema"]
+        date_options = [
+            option
+            for option in schema["anyOf"]
+            if option.get("type") == "string" and option.get("format") == "date"
+        ]
+        assert date_options, f"{name} deveria aceitar uma data ISO"
