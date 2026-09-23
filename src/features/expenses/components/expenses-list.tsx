@@ -1,7 +1,9 @@
 import { useEffect } from 'react'
 import { useSearchParams } from 'react-router'
 import { Alert } from '@/components/ui/alert'
+import { useExpenseAccounts } from '@/features/expenses/api/get-accounts'
 import { useExpenses } from '@/features/expenses/api/get-expenses'
+import { AccountSelect } from '@/features/expenses/components/account-select'
 import { ExpenseItem } from '@/features/expenses/components/expense-item'
 import { Pagination } from '@/features/expenses/components/pagination'
 import { PeriodControls } from '@/features/expenses/components/period-controls'
@@ -32,6 +34,19 @@ function readOrder(value: string | null): ExpenseOrder {
   return (ORDERS as readonly string[]).includes(value ?? '') ? (value as ExpenseOrder) : 'desc'
 }
 
+function readAccount(value: string | null): string | null {
+  return value === null || value === '' ? null : value
+}
+
+function writeAccount(params: URLSearchParams, id: string | null): void {
+  params.delete('page')
+  if (id === null) {
+    params.delete('account')
+  } else {
+    params.set('account', id)
+  }
+}
+
 function writeSorting(params: URLSearchParams, sort: ExpenseSort, order: ExpenseOrder): void {
   params.delete('page')
   if (sort === DEFAULT_SORT) {
@@ -53,12 +68,18 @@ export function ExpensesList(): React.JSX.Element {
   const order = readOrder(searchParams.get('order'))
   const period = readPeriod(searchParams)
   const { from, to } = toDateBounds(period)
+  const account = readAccount(searchParams.get('account'))
+  const accounts = useExpenseAccounts()
+  const accountKnown = accounts.data
+    ? accounts.data.accounts.some((item) => item.id === account)
+    : true
   const { data, isPending, isError, isPlaceholderData, refetch } = useExpenses({
     page,
     sort,
     order,
     from,
     to,
+    account: accountKnown ? account : null,
   })
   const pages = data ? Math.max(1, Math.ceil(data.total / data.page_size)) : 1
 
@@ -69,6 +90,14 @@ export function ExpensesList(): React.JSX.Element {
       setSearchParams(params, { replace: true })
     }
   }, [data, page, pages, searchParams, setSearchParams])
+
+  useEffect(() => {
+    if (account !== null && accounts.data && !accountKnown) {
+      const params = new URLSearchParams(searchParams)
+      params.delete('account')
+      setSearchParams(params, { replace: true })
+    }
+  }, [account, accountKnown, accounts.data, searchParams, setSearchParams])
 
   function commitPeriod(next: Period): void {
     const params = new URLSearchParams(searchParams)
@@ -116,8 +145,22 @@ export function ExpensesList(): React.JSX.Element {
     setSearchParams(params, { replace: true })
   }
 
+  function handleAccountChange(next: string | null): void {
+    const params = new URLSearchParams(searchParams)
+    writeAccount(params, next)
+    setSearchParams(params, { replace: true })
+  }
+
   const controls = (
     <div className="mt-6 flex flex-wrap items-end gap-3">
+      <AccountSelect
+        value={account}
+        accounts={accounts.data?.accounts ?? []}
+        isPending={accounts.isPending}
+        isError={accounts.isError}
+        onChange={handleAccountChange}
+        onRetry={() => void accounts.refetch()}
+      />
       <PeriodControls
         period={period}
         onMonthChange={handleMonthChange}
@@ -157,11 +200,12 @@ export function ExpensesList(): React.JSX.Element {
   }
 
   if (data.total === 0) {
+    const filtered = period.kind !== 'all' || account !== null
     return (
       <>
         {controls}
         <p className="mt-6 rounded-md border border-dashed border-gray-300 p-6 text-center text-gray-600">
-          {period.kind === 'all' ? 'Nenhum gasto registrado ainda.' : 'Nenhum gasto nesse período.'}
+          {filtered ? 'Nenhum gasto para esse filtro.' : 'Nenhum gasto registrado ainda.'}
         </p>
       </>
     )

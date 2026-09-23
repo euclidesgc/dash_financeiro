@@ -17,6 +17,9 @@ export function getExpenses(query: ExpensesQuery): Promise<ExpensesResponse> {
   if (query.to !== null) {
     params.set('to', query.to)
   }
+  if (query.account !== null) {
+    params.set('account_id', query.account)
+  }
   return apiRequest<ExpensesResponse>(`/api/transactions/expenses?${params.toString()}`)
 }
 

@@ -29,7 +29,7 @@ test('opens the expenses page and lists only the spending', async ({ page }) => 
   await expect(page.getByText('TED PARA POUPANCA')).toHaveCount(0)
   await expect(page.getByText('SALARIO')).toHaveCount(0)
 
-  await expect(page.getByText(/Página 1 de 1 · [23] gastos/)).toBeVisible()
+  await expect(page.getByText(/Página 1 de 1 · [34] gastos/)).toBeVisible()
   await expect(page.getByRole('button', { name: 'Anterior', exact: true })).toBeDisabled()
   await expect(page.getByRole('button', { name: 'Próxima' })).toBeDisabled()
 })
@@ -93,13 +93,13 @@ test('filters the expenses by month and by date range and keeps the period on re
 
   await expect(
     page
-      .getByText('Página 1 de 1 · 2 gastos · R$ 234,90 no período')
-      .or(page.getByText('Página 1 de 1 · 3 gastos · R$ 284,90 no período')),
+      .getByText('Página 1 de 1 · 3 gastos · R$ 279,90 no período')
+      .or(page.getByText('Página 1 de 1 · 4 gastos · R$ 329,90 no período')),
   ).toBeVisible()
   await expect(page.getByRole('button', { name: 'Todo o período' })).toBeDisabled()
 
   await page.goto('/app/expenses?month=2026-10')
-  await expect(page.getByText('Nenhum gasto nesse período.')).toBeVisible()
+  await expect(page.getByText('Nenhum gasto para esse filtro.')).toBeVisible()
   await expect(page.getByText('outubro de 2026')).toBeVisible()
 
   await page.getByRole('button', { name: 'Mês anterior' }).click()
@@ -132,6 +132,50 @@ test('filters the expenses by month and by date range and keeps the period on re
   await expect
     .poll(async () => page.getByRole('listitem').count())
     .toBeGreaterThanOrEqual(2)
+})
+
+test('filters the expenses by account and keeps the account on reload', async ({ page }) => {
+  await page.goto('/app/login')
+  await page.getByLabel('Login').fill(LOGIN)
+  await page.getByLabel('Senha').fill(PASSWORD)
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page).toHaveURL(/\/app\/?$/)
+
+  await page.getByRole('link', { name: 'Gastos' }).click()
+  await expect(page).toHaveURL(/\/app\/expenses$/)
+
+  const accountSelect = page.getByLabel('Conta', { exact: true })
+  await expect(accountSelect).toHaveValue('')
+
+  await accountSelect.selectOption({ label: 'Cartão de teste · Emissor de teste (Cartão)' })
+  await expect(page).toHaveURL(/account=acc-fixture-2/)
+  const items = page.getByRole('listitem')
+  await expect(items).toHaveCount(1)
+  await expect(items).toContainText('FARMACIA CENTRAL')
+  await expect(items).toContainText('-R$ 45,00')
+  await expect(page.getByText('Página 1 de 1 · 1 gasto · R$ 45,00 no período')).toBeVisible()
+
+  await page.reload()
+  await expect(page.getByRole('listitem')).toHaveCount(1)
+  await expect(page.getByRole('listitem')).toContainText('FARMACIA CENTRAL')
+  await expect(accountSelect).toHaveValue('acc-fixture-2')
+
+  await page.goto('/app/expenses?account=acc-fixture-2&month=2026-09')
+  await expect(page.getByText('Nenhum gasto para esse filtro.')).toBeVisible()
+
+  await page.getByRole('button', { name: 'Todo o período' }).click()
+  await expect(page).not.toHaveURL(/month=/)
+  await expect(page).toHaveURL(/account=acc-fixture-2/)
+  await expect(page.getByRole('listitem')).toHaveCount(1)
+
+  await accountSelect.selectOption({ label: 'Todas as contas' })
+  await expect(page).not.toHaveURL(/account=/)
+  await expect.poll(() => page.getByRole('listitem').count()).toBeGreaterThanOrEqual(3)
+
+  await page.goto('/app/expenses?account=nao-existe')
+  await expect(page).not.toHaveURL(/account=/)
+  await expect(accountSelect).toHaveValue('')
+  await expect.poll(() => page.getByRole('listitem').count()).toBeGreaterThanOrEqual(3)
 })
 
 test('goes back to the balances page', async ({ page }) => {

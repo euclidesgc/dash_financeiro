@@ -8,6 +8,7 @@ export interface Expense {
   account_type: 'BANK' | 'CREDIT' | null
   category: string | null
   amount_cents: number
+  account_id: string | null
 }
 
 export interface ExpensesResponse {
@@ -27,6 +28,18 @@ export interface ExpensesQuery {
   order: ExpenseOrder
   from: string | null
   to: string | null
+  account: string | null
+}
+
+export interface ExpenseAccount {
+  id: string
+  name: string | null
+  institution: string | null
+  type: 'BANK' | 'CREDIT' | null
+}
+
+export interface ExpenseAccountsResponse {
+  accounts: ExpenseAccount[]
 }
 
 export type Period =
