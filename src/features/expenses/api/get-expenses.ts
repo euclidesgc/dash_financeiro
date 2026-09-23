@@ -1,23 +1,27 @@
 import { keepPreviousData, queryOptions, useQuery } from '@tanstack/react-query'
 import { apiRequest } from '@/lib/api-client'
-import type { ExpensesResponse } from '@/features/expenses/types/expense'
+import type { ExpensesQuery, ExpensesResponse } from '@/features/expenses/types/expense'
 
 export const PAGE_SIZE = 20
 
-export function getExpenses(page: number): Promise<ExpensesResponse> {
-  return apiRequest<ExpensesResponse>(
-    `/api/transactions/expenses?page=${String(page)}&page_size=${String(PAGE_SIZE)}`,
-  )
+export function getExpenses(query: ExpensesQuery): Promise<ExpensesResponse> {
+  const params = new URLSearchParams({
+    page: String(query.page),
+    page_size: String(PAGE_SIZE),
+    sort: query.sort,
+    order: query.order,
+  })
+  return apiRequest<ExpensesResponse>(`/api/transactions/expenses?${params.toString()}`)
 }
 
-export function expensesQueryOptions(page: number) {
+export function expensesQueryOptions(query: ExpensesQuery) {
   return queryOptions({
-    queryKey: ['expenses', { page }],
-    queryFn: () => getExpenses(page),
+    queryKey: ['expenses', query],
+    queryFn: () => getExpenses(query),
     placeholderData: keepPreviousData,
   })
 }
 
-export function useExpenses(page: number) {
-  return useQuery(expensesQueryOptions(page))
+export function useExpenses(query: ExpensesQuery) {
+  return useQuery(expensesQueryOptions(query))
 }

@@ -61,5 +61,26 @@
     "razao_social": "",
     "cnpj": "",
     "recebedor": ""
+  },
+  {
+    "id": "e2e-t-4",
+    "data": "2026-09-01",
+    "conta_id": "acc-fixture-1",
+    "descricao": "POSTO CENTRAL",
+    "valor": -150.0,
+    "tipo": "DEBIT",
+    "categoria_pluggy": "Housing",
+    "categoria": "Housing",
+    "parcela_atual": null,
+    "parcela_total": null,
+    "eh_transferencia": false,
+    "motivo_transferencia": "",
+    "eh_saque": false,
+    "eh_estorno": false,
+    "estornada_por": "",
+    "nome_fantasia": "",
+    "razao_social": "",
+    "cnpj": "",
+    "recebedor": ""
   }
 ]

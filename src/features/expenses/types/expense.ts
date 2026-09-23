@@ -16,3 +16,12 @@ export interface ExpensesResponse {
   page_size: number
   total: number
 }
+
+export type ExpenseSort = 'date' | 'amount' | 'category'
+export type ExpenseOrder = 'asc' | 'desc'
+
+export interface ExpensesQuery {
+  page: number
+  sort: ExpenseSort
+  order: ExpenseOrder
+}

@@ -1,6 +1,6 @@
 import { http, HttpResponse } from 'msw'
 import type { SyncStatus } from '@/features/sync/types/sync-status'
-import type { Expense } from '@/features/expenses/types/expense'
+import type { Expense, ExpenseOrder, ExpenseSort } from '@/features/expenses/types/expense'
 
 export const fakeUser = { login: 'teste' }
 
@@ -76,6 +76,32 @@ function generateFakeExpenses(): Expense[] {
         amount_cents: -1000 * id,
       }
     }
+    if (index === 3) {
+      return {
+        id,
+        date,
+        description: `GASTO ${String(id)}`,
+        payee_name: null,
+        account_name: 'Conta corrente',
+        account_institution: 'Banco de teste',
+        account_type: 'BANK',
+        category: 'Transporte',
+        amount_cents: -1000 * id,
+      }
+    }
+    if (index === 4) {
+      return {
+        id,
+        date,
+        description: `GASTO ${String(id)}`,
+        payee_name: null,
+        account_name: 'Conta corrente',
+        account_institution: 'Banco de teste',
+        account_type: 'BANK',
+        category: 'Compras',
+        amount_cents: -120000,
+      }
+    }
     return {
       id,
       date,
@@ -91,6 +117,30 @@ function generateFakeExpenses(): Expense[] {
 }
 
 export const fakeExpenses: Expense[] = generateFakeExpenses()
+
+function sortExpenses(items: Expense[], sort: ExpenseSort, order: ExpenseOrder): Expense[] {
+  const direction = order === 'desc' ? -1 : 1
+  return [...items].sort((a, b) => {
+    let comparison = 0
+    if (sort === 'date') {
+      comparison = a.date < b.date ? -1 : a.date > b.date ? 1 : 0
+      comparison *= direction
+    } else if (sort === 'amount') {
+      comparison = (Math.abs(a.amount_cents) - Math.abs(b.amount_cents)) * direction
+    } else {
+      if (a.category === null && b.category === null) {
+        comparison = 0
+      } else if (a.category === null) {
+        comparison = 1
+      } else if (b.category === null) {
+        comparison = -1
+      } else {
+        comparison = a.category.localeCompare(b.category, 'pt-BR') * direction
+      }
+    }
+    return comparison !== 0 ? comparison : b.id - a.id
+  })
+}
 
 let signedIn = false
 
@@ -136,8 +186,11 @@ export const handlers = [
     const url = new URL(request.url)
     const page = Number.parseInt(url.searchParams.get('page') ?? '1', 10) || 1
     const pageSize = Number.parseInt(url.searchParams.get('page_size') ?? '20', 10) || 20
+    const sort = (url.searchParams.get('sort') ?? 'date') as ExpenseSort
+    const order = (url.searchParams.get('order') ?? 'desc') as ExpenseOrder
+    const items = sortExpenses(fakeExpenses, sort, order)
     return HttpResponse.json({
-      items: fakeExpenses.slice((page - 1) * pageSize, page * pageSize),
+      items: items.slice((page - 1) * pageSize, page * pageSize),
       page,
       page_size: pageSize,
       total: fakeExpenses.length,

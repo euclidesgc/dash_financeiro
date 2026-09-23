@@ -17,7 +17,7 @@ export function ExpensesRoute(): React.JSX.Element {
       <main className="mx-auto max-w-2xl p-8">
         <h1 className="text-2xl font-bold">Gastos</h1>
         <p className="mt-2 text-gray-600">
-          Todos os gastos das suas contas e cartões, do mais recente ao mais antigo.
+          Todos os gastos das suas contas e cartões.
         </p>
         <ExpensesList />
       </main>
