@@ -18,6 +18,8 @@ function groupsOf(n: number): CategoryGroup[] {
       label: `Categoria ${String(i)}`,
       count: i,
       total_cents: -1000 * (n - i + 1),
+      limit_cents: null,
+      signal: null,
     }
   })
 }
@@ -26,7 +28,12 @@ function respondWith(groups: CategoryGroup[]): void {
   const total_cents = groups.reduce((sum, group) => sum + group.total_cents, 0)
   server.use(
     http.get('/api/transactions/expenses/by-category', () =>
-      HttpResponse.json({ groups, total_cents }),
+      HttpResponse.json({
+        groups,
+        total_cents,
+        over_limit_count: groups.filter((g) => g.signal === 'over').length,
+        signal_scope: 'none',
+      }),
     ),
   )
 }
@@ -51,8 +58,8 @@ afterEach(() => {
 
 test('shows the heading and one row per group in the order received', async () => {
   respondWith([
-    { category: 'Compras', label: 'Compras', count: 42, total_cents: -948490 },
-    { category: 'Transporte', label: 'Transporte', count: 1, total_cents: -42000 },
+    { category: 'Compras', label: 'Compras', count: 42, total_cents: -948490, limit_cents: null, signal: null },
+    { category: 'Transporte', label: 'Transporte', count: 1, total_cents: -42000, limit_cents: null, signal: null },
   ])
 
   renderWithProviders(<CategoryTotals query={ALL} />)
@@ -192,8 +199,8 @@ test('shows the error and retries', async () => {
 
 test('uses the label received for the uncategorised group', async () => {
   respondWith([
-    { category: null, label: 'Sem categoria', count: 1, total_cents: -43000 },
-    { category: 'Não classificado', label: 'Sem categoria', count: 1, total_cents: -100 },
+    { category: null, label: 'Sem categoria', count: 1, total_cents: -43000, limit_cents: null, signal: null },
+    { category: 'Não classificado', label: 'Sem categoria', count: 1, total_cents: -100, limit_cents: null, signal: null },
   ])
 
   renderWithProviders(<CategoryTotals query={ALL} />)
