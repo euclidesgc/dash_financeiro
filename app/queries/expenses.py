@@ -22,6 +22,7 @@ _SORT_SQL: dict[Sort, str] = {
 }
 
 _SELECT = """SELECT t.id, t.date, t.description, t.payee, t.category, t.amount_cents,
+       t.account_id,
        a.name AS account_name, a.institution AS account_institution, a.type AS account_type
 FROM transactions AS t LEFT JOIN accounts AS a ON a.id = t.account_id"""
 
@@ -58,7 +59,9 @@ def _category_rank_clause() -> tuple[str, list[str | int]]:
     return sql, params
 
 
-def _where(date_from: str | None, date_to: str | None) -> tuple[str, list[str]]:
+def _where(
+    date_from: str | None, date_to: str | None, account_id: str | None
+) -> tuple[str, list[str]]:
     sql = f"WHERE {SPENDING}"
     params: list[str] = []
     if date_from is not None:
@@ -67,6 +70,9 @@ def _where(date_from: str | None, date_to: str | None) -> tuple[str, list[str]]:
     if date_to is not None:
         sql += " AND t.date <= ?"
         params.append(date_to)
+    if account_id is not None:
+        sql += " AND t.account_id = ?"
+        params.append(account_id)
     return sql, params
 
 
@@ -86,9 +92,10 @@ def list_expenses(
     order: Order = "desc",
     date_from: str | None = None,
     date_to: str | None = None,
+    account_id: str | None = None,
 ) -> ExpensesPage:
     offset = (page - 1) * page_size
-    where, where_params = _where(date_from, date_to)
+    where, where_params = _where(date_from, date_to, account_id)
     sql, order_params = _page_sql(sort, order, where)
     rows = conn.execute(sql, (*where_params, *order_params, page_size, offset)).fetchall()
     total, total_cents = conn.execute(f"{_TOTAL} {where}", where_params).fetchone()
@@ -112,6 +119,7 @@ def list_expenses(
                 "account_type": row["account_type"],
                 "category": categories.get(raw_category, raw_category) if raw_category else None,
                 "amount_cents": row["amount_cents"],
+                "account_id": row["account_id"],
             }
         )
     return ExpensesPage(items=items, total=total, total_cents=int(total_cents))

@@ -16,6 +16,17 @@ LOGIN = "teste"
 PASSWORD = "senha-teste-9k2"
 DATA = Path(__file__).parent / "data"
 
+CREDIT_ACCOUNT = {
+    "id": "sync-acc-2",
+    "type": "CREDIT",
+    "subtype": "CREDIT_CARD",
+    "name": "Cartão de sincronização",
+    "marketingName": "Banco de teste",
+    "balance": 0.0,
+    "currencyCode": "BRL",
+    "updatedAt": "2026-09-05T12:00:00.000Z",
+}
+
 
 @pytest.fixture()
 def client(tmp_path, monkeypatch):
@@ -63,12 +74,12 @@ def _transaction(id: str, date: str, amount: float, **overrides: Any) -> dict[st
     return row
 
 
-def _load(rows: list[dict[str, Any]]) -> None:
+def _load(rows: list[dict[str, Any]], accounts: list[dict[str, Any]] | None = None) -> None:
     conn = connect()
     ingest(
         conn,
         transactions=rows,
-        accounts=load_accounts(str(DATA / "sync_accounts.json")),
+        accounts=[*load_accounts(str(DATA / "sync_accounts.json")), *(accounts or [])],
         source="teste",
     )
     conn.close()
@@ -251,8 +262,10 @@ def test_the_response_has_the_contract_fields(client):
         "account_type",
         "category",
         "amount_cents",
+        "account_id",
     }
     assert item["amount_cents"] == -5000
+    assert item["account_id"] == "sync-acc-1"
     assert "total_cents" in body
     assert isinstance(body["total_cents"], int)
 
@@ -623,3 +636,159 @@ def test_the_openapi_lists_from_and_to_as_dates(client):
             if option.get("type") == "string" and option.get("format") == "date"
         ]
         assert date_options, f"{name} deveria aceitar uma data ISO"
+
+
+def _load_account_filter_fixture(extra: list[dict[str, Any]] | None = None) -> None:
+    _load(
+        [
+            _transaction("bank-1", "2026-09-01", -50.0),
+            _transaction("bank-2", "2026-09-10", -120.0),
+            _transaction("card-1", "2026-09-02", -30.0, conta_id="sync-acc-2"),
+            _transaction("card-2", "2026-08-20", -80.0, conta_id="sync-acc-2"),
+            *(extra or []),
+        ],
+        accounts=[CREDIT_ACCOUNT],
+    )
+
+
+def test_without_account_id_the_spending_of_every_account_comes_back(client):
+    _load_account_filter_fixture()
+    _sign_in(client)
+
+    response = client.get("/api/transactions/expenses")
+
+    body = response.json()
+    assert body["total"] == 4
+    assert [item["description"] for item in body["items"]] == [
+        "GASTO bank-2",
+        "GASTO card-1",
+        "GASTO bank-1",
+        "GASTO card-2",
+    ]
+
+
+def test_account_id_keeps_only_that_account(client):
+    _load_account_filter_fixture()
+    _sign_in(client)
+
+    response = client.get("/api/transactions/expenses", params={"account_id": "sync-acc-2"})
+
+    body = response.json()
+    assert [item["description"] for item in body["items"]] == ["GASTO card-1", "GASTO card-2"]
+    assert body["total"] == 2
+    assert body["total_cents"] == -11000
+    assert all(item["account_id"] == "sync-acc-2" for item in body["items"])
+
+
+def test_total_and_total_cents_cover_the_whole_account_filter_not_the_page(client):
+    _load_account_filter_fixture()
+    _sign_in(client)
+
+    response = client.get(
+        "/api/transactions/expenses", params={"account_id": "sync-acc-2", "page_size": 1}
+    )
+
+    body = response.json()
+    assert len(body["items"]) == 1
+    assert body["total"] == 2
+    assert body["total_cents"] == -11000
+
+
+def test_account_id_and_period_combine_with_and(client):
+    _load_account_filter_fixture()
+    _sign_in(client)
+
+    response = client.get(
+        "/api/transactions/expenses",
+        params={"account_id": "sync-acc-2", "from": "2026-09-01", "to": "2026-09-30"},
+    )
+
+    body = response.json()
+    assert [item["description"] for item in body["items"]] == ["GASTO card-1"]
+    assert body["total"] == 1
+    assert body["total_cents"] == -3000
+
+
+def test_sorting_respects_the_account(client):
+    _load_account_filter_fixture()
+    _sign_in(client)
+
+    response = client.get(
+        "/api/transactions/expenses",
+        params={"account_id": "sync-acc-1", "sort": "amount", "order": "asc"},
+    )
+
+    amounts = [item["amount_cents"] for item in response.json()["items"]]
+    assert amounts == [-5000, -12000]
+
+
+def test_a_transfer_of_the_filtered_account_stays_out_of_total_cents(client):
+    _load_account_filter_fixture(
+        extra=[
+            _transaction(
+                "transfer-1",
+                "2026-09-05",
+                -500.0,
+                conta_id="sync-acc-2",
+                eh_transferencia=True,
+            )
+        ]
+    )
+    _sign_in(client)
+
+    response = client.get("/api/transactions/expenses", params={"account_id": "sync-acc-2"})
+
+    body = response.json()
+    assert body["total"] == 2
+    assert body["total_cents"] == -11000
+
+
+def test_an_unknown_account_id_answers_an_empty_page(client):
+    _load_account_filter_fixture()
+    _sign_in(client)
+
+    response = client.get("/api/transactions/expenses", params={"account_id": "nao-existe"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["items"] == []
+    assert body["total"] == 0
+    assert body["total_cents"] == 0
+
+
+def test_an_empty_account_id_answers_422(client):
+    _load_account_filter_fixture()
+    _sign_in(client)
+
+    response = client.get("/api/transactions/expenses", params={"account_id": ""})
+
+    assert response.status_code == 422
+
+
+def test_each_item_carries_the_ingested_account_id(client):
+    _load_account_filter_fixture()
+    _sign_in(client)
+
+    response = client.get("/api/transactions/expenses")
+
+    items = {item["description"]: item for item in response.json()["items"]}
+    assert items["GASTO bank-1"]["account_id"] == "sync-acc-1"
+    assert items["GASTO card-1"]["account_id"] == "sync-acc-2"
+
+
+def test_the_openapi_lists_account_id_as_an_optional_string(client):
+    _sign_in(client)
+
+    response = client.get("/openapi.json")
+
+    parameters = response.json()["paths"]["/api/transactions/expenses"]["get"]["parameters"]
+    by_name = {parameter["name"]: parameter for parameter in parameters}
+    parameter = by_name["account_id"]
+    assert parameter["in"] == "query"
+    assert not parameter.get("required", False)
+    string_options = [
+        option
+        for option in parameter["schema"]["anyOf"]
+        if option.get("type") == "string" and option.get("minLength") == 1
+    ]
+    assert string_options

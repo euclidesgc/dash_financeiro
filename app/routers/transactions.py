@@ -20,6 +20,7 @@ class Expense(BaseModel):
     account_type: Literal["BANK", "CREDIT"] | None
     category: str | None
     amount_cents: int
+    account_id: str | None
 
 
 class ExpensesResponse(BaseModel):
@@ -38,6 +39,7 @@ def expenses(
     order: Annotated[Order, Query()] = "desc",
     from_: Annotated[date | None, Query(alias="from")] = None,
     to: Annotated[date | None, Query()] = None,
+    account_id: Annotated[str | None, Query(min_length=1)] = None,
 ) -> ExpensesResponse:
     if from_ is not None and to is not None and to < from_:
         raise HTTPException(
@@ -53,6 +55,7 @@ def expenses(
             order=order,
             date_from=from_.isoformat() if from_ else None,
             date_to=to.isoformat() if to else None,
+            account_id=account_id,
         )
     finally:
         conn.close()
