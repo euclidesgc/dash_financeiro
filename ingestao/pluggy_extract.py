@@ -21,7 +21,7 @@ from datetime import date, datetime
 from typing import Any, cast
 
 API = "https://api.pluggy.ai"
-ENV_PATH = "infra/local/.env"
+ENV_PATH = ".env"
 RAW = "data/raw"
 ITEM_FILE = "data/item_id.txt"
 ITENS_FILE = "data/item_ids.txt"

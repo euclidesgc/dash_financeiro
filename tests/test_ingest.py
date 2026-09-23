@@ -41,6 +41,24 @@ def test_source_reads_both_the_envelope_and_the_bare_list(tmp_path):
     assert [a["id"] for a in load_accounts(str(tmp_path / "accounts_*.json"))] == ["b", "a"]
 
 
+def test_source_keeps_one_row_per_account_and_the_latest_snapshot_wins(tmp_path):
+    newer = tmp_path / "accounts_a_new-item.json"
+    newer.write_text(
+        json.dumps({"results": [{"id": "a", "name": "new", "updatedAt": "2026-09-22T00:59:00Z"}]})
+    )
+    older = tmp_path / "accounts_b_old-item.json"
+    older.write_text(
+        json.dumps(
+            [
+                {"id": "a", "name": "old", "updatedAt": "2026-09-05T14:54:00Z"},
+                {"id": "b", "name": "b"},
+            ]
+        )
+    )
+    loaded = load_accounts(str(tmp_path / "accounts_*.json"))
+    assert sorted((a["id"], a["name"]) for a in loaded) == [("a", "new"), ("b", "b")]
+
+
 def test_rejects_the_offending_line_and_writes_nothing(conn, accounts):
     transactions = load_transactions(str(FIXTURES / "transacoes_invalidas.json"))
     result = ingest(conn, transactions=transactions, accounts=accounts, source="fixture")

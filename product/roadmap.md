@@ -638,3 +638,11 @@ número.
 - **Custo mensal de transporte sem o carro**, e se há outro carro na casa.
 - **Taxa dos cartões** (R$ 16.744,62): rotativo ou parcelado muda a posição deles
   na escada.
+
+- [ ] `045-a-extracao-busca-so-o-que-falta` — `ingestao/pluggy_extract.py extrair`
+  declara `--desde` e nunca o usa: cada conta é paginada inteira, sem `dateFrom`,
+  e a flag é um botão desligado. Ou a flag vira `dateFrom` na chamada à API, ou
+  sai. Cai sozinho se o `037` substituir o extrator pelo botão do painel; até
+  lá, o dono roda o comando com um argumento que não faz nada.
+  **Depende de:** nada. Some com a fase 2 do `037`.
+
