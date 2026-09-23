@@ -16,7 +16,7 @@ Decisões registradas aqui (a SPEC deixou ao plano, ou o plano encontrou ao ler 
 
 Só Python. Ao final: a tabela `transactions` tem `category_auto TEXT` e `category_source TEXT NOT NULL DEFAULT 'auto'` (só `'auto'` ou `'manual'`), toda linha pré-existente sai com `category_auto = category`; a ingestão grava `category_auto` sempre com o que a fonte mandou e só sobrescreve `category` quando `category_source = 'auto'`; a suíte de migração e de ingestão prova os dois lados.
 
-- [ ] T1.1 — Migração `019_category_manual.sql` e numeração
+- [x] T1.1 — Migração `019_category_manual.sql` e numeração
   - Arquivos: `app/migrations/sql/019_category_manual.sql` (criar); `app/migrations/NUMBERING.md` (alterar)
   - O que fazer:
     - `019_category_manual.sql`, três comandos, nesta ordem: `ALTER TABLE transactions ADD COLUMN category_auto TEXT;` · `ALTER TABLE transactions ADD COLUMN category_source TEXT NOT NULL DEFAULT 'auto' CHECK (category_source IN ('auto', 'manual'));` · `UPDATE transactions SET category_auto = category;`. Nada mais no arquivo.
@@ -24,7 +24,7 @@ Só Python. Ao final: a tabela `transactions` tem `category_auto TEXT` e `catego
   - Skills: —
   - Complexidade: baixa
 
-- [ ] T1.2 — Ingestão grava `category_auto` e preserva `category` manual
+- [x] T1.2 — Ingestão grava `category_auto` e preserva `category` manual
   - Arquivos: `app/ingest/loader.py` (alterar)
   - O que fazer:
     - `_TRANSACTION_COLUMNS` ganha `"category_auto"` logo depois de `"category"`. `_transaction_row` devolve `"category_auto": raw.get("categoria")` (o mesmo valor de `"category"`). `category_source` **não** entra na tupla nem no dicionário.
@@ -33,7 +33,7 @@ Só Python. Ao final: a tabela `transactions` tem `category_auto TEXT` e `catego
   - Skills: —
   - Complexidade: média
 
-- [ ] T1.3 — Testes da fase 1
+- [x] T1.3 — Testes da fase 1
   - Arquivos: `tests/test_migrations.py` (alterar); `tests/test_ingest.py` (alterar)
   - O que fazer (unit-testing):
     - `tests/test_migrations.py`: `EXPECTED_MIGRATIONS` ganha `"019_category_manual.sql"` no fim; `test_a_fresh_base_applies_the_sixteen_real_migrations` vira `test_a_fresh_base_applies_the_seventeen_real_migrations` e afirma `"migrations applied: 17" in result.stdout`. Casos novos:
@@ -49,13 +49,13 @@ Só Python. Ao final: a tabela `transactions` tem `category_auto TEXT` e `catego
 
 ### Critérios de aceite da fase 1
 
-- [ ] CA1.1 — `bash scripts/lint.sh` sai com código 0. (comando)
-- [ ] CA1.2 — `uv run pytest tests/test_migrations.py tests/test_ingest.py tests/test_sync.py tests/test_sync_api.py tests/test_expenses_api.py` passa; os 2 testes novos nomeados em T1.3 existem em `tests/test_migrations.py`, os 4 novos existem em `tests/test_ingest.py`, `test_a_fresh_base_applies_the_seventeen_real_migrations` existe e `test_a_fresh_base_applies_the_sixteen_real_migrations` não existe mais; os 11 testes já existentes em `tests/test_ingest.py` (`test_source_reads_both_the_envelope_and_the_bare_list` … `test_refund_carries_the_identifier_of_the_debit_it_cancels`) continuam com o mesmo nome. (comando)
-- [ ] CA1.3 — `bash scripts/gates/gates_runner.sh` sai com código 0. (comando)
-- [ ] CA1.4 — `app/migrations/sql/019_category_manual.sql` existe e contém, nesta ordem, `ADD COLUMN category_auto TEXT`, `ADD COLUMN category_source TEXT NOT NULL DEFAULT 'auto' CHECK (category_source IN ('auto', 'manual'))` e `UPDATE transactions SET category_auto = category`; `app/migrations/NUMBERING.md` contém "a próxima migração é `020`" e não contém "é `019`"; nenhum outro arquivo em `app/migrations/sql/` muda. (estrutural)
-- [ ] CA1.5 — `app/ingest/loader.py`: `_TRANSACTION_COLUMNS` contém `"category_auto"` imediatamente depois de `"category"` e não contém `"category_source"`; `_transaction_row` contém `"category_auto": raw.get("categoria")`; existe `_TRANSACTION_OVERRIDES` contendo `CASE WHEN transactions.category_source = 'manual' THEN transactions.category ELSE excluded.category END`; `def _upsert(table: str, columns: tuple[str, ...], key: str, overrides: dict[str, str] | None = None) -> str` existe; a chamada `_upsert("transactions", _TRANSACTION_COLUMNS, "pluggy_id", _TRANSACTION_OVERRIDES)` existe e `_upsert("accounts", _ACCOUNT_COLUMNS, "id")` não muda; `_ACCOUNT_COLUMNS`, `_account_row`, `_fail`, `_record_run` e `_count_present` mantêm o texto de hoje. (estrutural)
-- [ ] CA1.6 — Uma base migrada tem `category_source` com padrão `'auto'` e recusa outro valor (`test_category_source_defaults_to_auto_and_only_accepts_auto_or_manual`); linha anterior à `019` sai com `category_auto == category` (`test_a_base_migrated_before_019_copies_category_into_category_auto`); linha nova entra `auto` com `category_auto == category` (`test_a_new_row_enters_as_auto_with_category_auto_equal_to_category`); reingestão com categoria diferente troca as duas colunas quando `auto` (`test_reingesting_a_changed_category_updates_category_and_category_auto_when_auto`); quando `manual`, `category` fica e `category_auto` segue a fonte (`test_reingesting_keeps_a_manual_category_and_still_follows_the_source_in_category_auto`, `test_reingesting_a_manual_row_with_the_same_source_category_changes_nothing`). (comportamental)
-- [ ] CA1.7 — `uv run pytest --cov=app.ingest.loader --cov-report=term tests/test_ingest.py tests/test_sync.py` reporta ≥ 80% em `app/ingest/loader.py`. (comando)
+- [x] CA1.1 — `bash scripts/lint.sh` sai com código 0. (comando)
+- [x] CA1.2 — `uv run pytest tests/test_migrations.py tests/test_ingest.py tests/test_sync.py tests/test_sync_api.py tests/test_expenses_api.py` passa; os 2 testes novos nomeados em T1.3 existem em `tests/test_migrations.py`, os 4 novos existem em `tests/test_ingest.py`, `test_a_fresh_base_applies_the_seventeen_real_migrations` existe e `test_a_fresh_base_applies_the_sixteen_real_migrations` não existe mais; os 11 testes já existentes em `tests/test_ingest.py` (`test_source_reads_both_the_envelope_and_the_bare_list` … `test_refund_carries_the_identifier_of_the_debit_it_cancels`) continuam com o mesmo nome. (comando)
+- [x] CA1.3 — `bash scripts/gates/gates_runner.sh` sai com código 0. (comando)
+- [x] CA1.4 — `app/migrations/sql/019_category_manual.sql` existe e contém, nesta ordem, `ADD COLUMN category_auto TEXT`, `ADD COLUMN category_source TEXT NOT NULL DEFAULT 'auto' CHECK (category_source IN ('auto', 'manual'))` e `UPDATE transactions SET category_auto = category`; `app/migrations/NUMBERING.md` contém "a próxima migração é `020`" e não contém "é `019`"; nenhum outro arquivo em `app/migrations/sql/` muda. (estrutural)
+- [x] CA1.5 — `app/ingest/loader.py`: `_TRANSACTION_COLUMNS` contém `"category_auto"` imediatamente depois de `"category"` e não contém `"category_source"`; `_transaction_row` contém `"category_auto": raw.get("categoria")`; existe `_TRANSACTION_OVERRIDES` contendo `CASE WHEN transactions.category_source = 'manual' THEN transactions.category ELSE excluded.category END`; `def _upsert(table: str, columns: tuple[str, ...], key: str, overrides: dict[str, str] | None = None) -> str` existe; a chamada `_upsert("transactions", _TRANSACTION_COLUMNS, "pluggy_id", _TRANSACTION_OVERRIDES)` existe e `_upsert("accounts", _ACCOUNT_COLUMNS, "id")` não muda; `_ACCOUNT_COLUMNS`, `_account_row`, `_fail`, `_record_run` e `_count_present` mantêm o texto de hoje. (estrutural)
+- [x] CA1.6 — Uma base migrada tem `category_source` com padrão `'auto'` e recusa outro valor (`test_category_source_defaults_to_auto_and_only_accepts_auto_or_manual`); linha anterior à `019` sai com `category_auto == category` (`test_a_base_migrated_before_019_copies_category_into_category_auto`); linha nova entra `auto` com `category_auto == category` (`test_a_new_row_enters_as_auto_with_category_auto_equal_to_category`); reingestão com categoria diferente troca as duas colunas quando `auto` (`test_reingesting_a_changed_category_updates_category_and_category_auto_when_auto`); quando `manual`, `category` fica e `category_auto` segue a fonte (`test_reingesting_keeps_a_manual_category_and_still_follows_the_source_in_category_auto`, `test_reingesting_a_manual_row_with_the_same_source_category_changes_nothing`). (comportamental)
+- [x] CA1.7 — `uv run pytest --cov=app.ingest.loader --cov-report=term tests/test_ingest.py tests/test_sync.py` reporta ≥ 80% em `app/ingest/loader.py`. (comando)
 
 ## Fase 2 — `GET /api/categories`, `PATCH /api/transactions/{id}/category` e `Expense` com `category_key`/`category_source`
 

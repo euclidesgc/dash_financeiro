@@ -61,6 +61,7 @@ EXPECTED_MIGRATIONS = [
     "014_financings.sql",
     "015_advisor_config.sql",
     "018_offers.sql",
+    "019_category_manual.sql",
 ]
 
 TABLE_NAMES = (
@@ -210,7 +211,63 @@ def test_the_refusal_da_ordem_leaves_schema_migrations_unchanged(tmp_path, conn)
     assert tables == ["marker_018"]
 
 
-def test_a_fresh_base_applies_the_sixteen_real_migrations(tmp_path):
+def test_category_source_defaults_to_auto_and_only_accepts_auto_or_manual(conn):
+    apply_migrations(conn, SQL_FOLDER)
+
+    row = conn.execute(
+        "select type from pragma_table_info('transactions') where name = 'category_auto'"
+    ).fetchone()
+    assert row[0] == "TEXT"
+
+    row = conn.execute(
+        "select type, \"notnull\", dflt_value from pragma_table_info('transactions') "
+        "where name = 'category_source'"
+    ).fetchone()
+    assert tuple(row) == ("TEXT", 1, "'auto'")
+
+    conn.execute("insert into accounts (id, balance_cents) values ('acc-1', 0)")
+    conn.execute(
+        "insert into transactions (pluggy_id, account_id, date, amount_cents) "
+        "values ('abc-1', 'acc-1', '2026-09-05', -100)"
+    )
+    assert (
+        conn.execute(
+            "select category_source from transactions where pluggy_id = 'abc-1'"
+        ).fetchone()[0]
+        == "auto"
+    )
+
+    with pytest.raises(sqlite3.IntegrityError, match="CHECK constraint failed"):
+        conn.execute("UPDATE transactions SET category_source = 'outro'")
+
+
+def test_a_base_migrated_before_019_copies_category_into_category_auto(tmp_path, conn):
+    folder = tmp_path / "sql"
+    folder.mkdir()
+    for name in EXPECTED_MIGRATIONS[:-1]:
+        _write_sql(folder, name, (ROOT / "app" / "migrations" / "sql" / name).read_text())
+    apply_migrations(conn, folder)
+
+    conn.execute("insert into accounts (id, balance_cents) values ('acc-1', 0)")
+    conn.execute(
+        "insert into transactions (pluggy_id, account_id, date, amount_cents, category) "
+        "values ('abc-1', 'acc-1', '2026-09-05', -100, 'Groceries')"
+    )
+
+    _write_sql(
+        folder,
+        "019_category_manual.sql",
+        (ROOT / "app" / "migrations" / "sql" / "019_category_manual.sql").read_text(),
+    )
+    apply_migrations(conn, folder)
+
+    row = conn.execute(
+        "select category_auto, category_source from transactions where pluggy_id = 'abc-1'"
+    ).fetchone()
+    assert tuple(row) == ("Groceries", "auto")
+
+
+def test_a_fresh_base_applies_the_seventeen_real_migrations(tmp_path):
     result = subprocess.run(
         [sys.executable, "-m", "app.migrate"],
         cwd=ROOT,
@@ -224,7 +281,7 @@ def test_a_fresh_base_applies_the_sixteen_real_migrations(tmp_path):
     )
 
     assert result.returncode == 0
-    assert "migrations applied: 16" in result.stdout
+    assert "migrations applied: 17" in result.stdout
 
 
 def _base_que_pulou(conn, folder):

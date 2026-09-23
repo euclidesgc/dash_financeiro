@@ -32,6 +32,7 @@ _TRANSACTION_COLUMNS = (
     "type",
     "category_pluggy",
     "category",
+    "category_auto",
     "installment_current",
     "installment_total",
     "is_transfer",
@@ -54,6 +55,16 @@ STALE_CONSOLIDATED = (
     "consolidado sem os campos de nome do beneficiário: rode "
     "ingestao/pluggy_consolidate.py de novo antes de carregar"
 )
+
+# Reason: a categoria ajustada manualmente pelo dono sobrevive à reingestão
+# (R6) — o CASE só cede a coluna category à fonte quando category_source
+# ainda é 'auto'.
+_TRANSACTION_OVERRIDES: dict[str, str] = {
+    "category": (
+        "CASE WHEN transactions.category_source = 'manual' "
+        "THEN transactions.category ELSE excluded.category END"
+    )
+}
 
 _REQUIRED_TRANSACTION_FIELDS = (
     ("id", "missing_pluggy_id"),
@@ -142,7 +153,7 @@ def ingest(
             [tuple(row[column] for column in _ACCOUNT_COLUMNS) for row in account_rows],
         )
         conn.executemany(
-            _upsert("transactions", _TRANSACTION_COLUMNS, "pluggy_id"),
+            _upsert("transactions", _TRANSACTION_COLUMNS, "pluggy_id", _TRANSACTION_OVERRIDES),
             [tuple(row[column] for column in _TRANSACTION_COLUMNS) for row in transaction_rows],
         )
         accounts_present = _count_present(
@@ -374,6 +385,7 @@ def _transaction_row(
         "type": raw.get("tipo"),
         "category_pluggy": raw.get("categoria_pluggy"),
         "category": raw.get("categoria"),
+        "category_auto": raw.get("categoria"),
         "installment_current": raw.get("parcela_atual"),
         "installment_total": raw.get("parcela_total"),
         "is_transfer": int(bool(raw.get("eh_transferencia"))),
@@ -392,9 +404,16 @@ def _transaction_row(
     }, None
 
 
-def _upsert(table: str, columns: tuple[str, ...], key: str) -> str:
+def _upsert(
+    table: str, columns: tuple[str, ...], key: str, overrides: dict[str, str] | None = None
+) -> str:
     placeholders = ", ".join("?" * len(columns))
-    updates = ", ".join(f"{column} = excluded.{column}" for column in columns if column != key)
+    chosen = overrides or {}
+    updates = ", ".join(
+        f"{column} = {chosen.get(column, f'excluded.{column}')}"
+        for column in columns
+        if column != key
+    )
     return (
         f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({placeholders}) "
         f"ON CONFLICT({key}) DO UPDATE SET {updates}"
