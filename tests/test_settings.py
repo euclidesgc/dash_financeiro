@@ -11,7 +11,17 @@ from app.main import create_app
 from app.migrate import SQL_FOLDER
 from app.migrations.runner import apply_migrations
 from app.settings import store
-from app.settings.catalog import CARD_RATE, MEDIAN, RESERVE, SETTLEMENT, TRANSPORT
+from app.settings.catalog import (
+    BY_NAME,
+    CARD_RATE,
+    CENTS,
+    GOAL,
+    MEDIAN,
+    MONTHLY_CEILING,
+    RESERVE,
+    SETTLEMENT,
+    TRANSPORT,
+)
 from app.settings.typed import MAX_DIGITS, InvalidValueError, parse_money, parse_months, parse_rate
 
 LOGIN = "teste"
@@ -255,6 +265,51 @@ def client(tmp_path, monkeypatch):
     with TestClient(app, follow_redirects=False) as opened:
         opened.post("/login", data={"login": LOGIN, "senha": PASSWORD})
         yield opened
+
+
+def test_put_writes_an_integer_that_value_reads_back(conn):
+    store.put(conn, MONTHLY_CEILING, 500000)
+
+    assert store.value(conn, MONTHLY_CEILING) == 500000
+    found = _facts(conn)[MONTHLY_CEILING]
+    assert found["source"] == "humano"
+    assert found["unit"] == "centavos"
+
+
+def test_put_with_none_deletes_the_row(conn):
+    store.put(conn, MONTHLY_CEILING, 500000)
+    store.put(conn, MONTHLY_CEILING, None)
+
+    assert store.value(conn, MONTHLY_CEILING) is None
+    assert MONTHLY_CEILING not in _facts(conn)
+
+
+def test_put_refuses_a_name_outside_the_catalogue(conn):
+    with pytest.raises(InvalidValueError):
+        store.put(conn, "inexistente", 1)
+
+    assert _facts(conn) == {}
+
+
+def test_put_keeps_the_validity_already_there(conn):
+    store.write(conn, SETTLEMENT, "35.000,00", valid_until="2026-12-31")
+
+    store.put(conn, SETTLEMENT, 3600000)
+
+    found = _facts(conn)[SETTLEMENT]
+    assert found["value"] == 3600000
+    assert found["valid_until"] == "2026-12-31"
+
+
+def test_the_monthly_ceiling_is_a_stored_goal_in_cents_without_default():
+    item = BY_NAME[MONTHLY_CEILING]
+
+    assert item["unit"] == CENTS
+    assert item["kind"] == GOAL
+    assert item["stored"] is True
+    assert item["default"] is None
+    assert item["screen"] == "/app/expenses"
+    assert item["label"] == "Teto mensal de gasto"
 
 
 def test_the_payoff_balance_typed_in_one_screen_is_read_by_the_other(client):

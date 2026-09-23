@@ -57,6 +57,12 @@ export function resetCategories(): void {
   fakeCategories.splice(0, fakeCategories.length, ...generateFakeCategories())
 }
 
+export const fakePlan: { monthly_ceiling_cents: number | null } = { monthly_ceiling_cents: null }
+
+export function resetPlan(): void {
+  fakePlan.monthly_ceiling_cents = null
+}
+
 function slugify(label: string): string {
   return foldText(label).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'categoria'
 }
@@ -398,6 +404,37 @@ export const handlers = [
       over_limit_count: groups.filter((g) => g.signal === 'over').length,
       signal_scope: scope,
     })
+  }),
+
+  http.get('/api/plan/ceiling', () => {
+    return HttpResponse.json({ monthly_ceiling_cents: fakePlan.monthly_ceiling_cents })
+  }),
+
+  http.put('/api/plan/ceiling', async ({ request }) => {
+    const body = (await request.json()) as { monthly_ceiling_cents: number | null }
+    if (body.monthly_ceiling_cents !== null && body.monthly_ceiling_cents <= 0) {
+      return HttpResponse.json(
+        { detail: 'O teto precisa ser maior que zero.' },
+        { status: 422 },
+      )
+    }
+    fakePlan.monthly_ceiling_cents = body.monthly_ceiling_cents
+    return HttpResponse.json({ monthly_ceiling_cents: fakePlan.monthly_ceiling_cents })
+  }),
+
+  http.get('/api/transactions/expenses/month-signal', ({ request }) => {
+    const url = new URL(request.url)
+    const from = url.searchParams.get('from')
+    const to = url.searchParams.get('to')
+    const scope = isWholeMonth(from, to) ? 'month' : 'none'
+    const spent_cents = Math.abs(
+      filterExpenses(url).reduce((sum, item) => sum + item.amount_cents, 0),
+    )
+    const ceiling_cents = fakePlan.monthly_ceiling_cents
+    const signal = scope === 'month' ? signalFor(spent_cents, ceiling_cents) : null
+    const remaining_cents =
+      scope === 'month' && ceiling_cents !== null ? ceiling_cents - spent_cents : null
+    return HttpResponse.json({ scope, spent_cents, ceiling_cents, signal, remaining_cents })
   }),
 
   http.get('/api/categories', () => {

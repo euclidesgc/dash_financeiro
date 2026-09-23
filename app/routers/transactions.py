@@ -5,7 +5,15 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from app.db import connect
-from app.queries.expenses import Order, Sort, get_expense, list_expenses, sum_by_category
+from app.plan.ceiling import month_signal, read_ceiling
+from app.queries.expenses import (
+    Order,
+    Sort,
+    get_expense,
+    list_expenses,
+    sum_by_category,
+    sum_expenses,
+)
 from app.queries.similar import count_similar
 from app.taxonomy.limits import Scope, Signal, is_whole_month, signal_for
 from app.taxonomy.override import (
@@ -59,6 +67,14 @@ class CategoryTotalsResponse(BaseModel):
     total_cents: int
     over_limit_count: int
     signal_scope: Scope
+
+
+class MonthSignalResponse(BaseModel):
+    scope: Scope
+    spent_cents: int
+    ceiling_cents: int | None
+    signal: Signal | None
+    remaining_cents: int | None
 
 
 class CategoryUpdate(BaseModel):
@@ -165,6 +181,32 @@ def expenses_by_category(
         total_cents=sum(g.total_cents for g in groups),
         over_limit_count=sum(1 for item in items if item.signal == "over"),
         signal_scope=scope,
+    )
+
+
+@router.get("/expenses/month-signal")
+def month_signal_of_period(
+    from_: Annotated[date | None, Query(alias="from")] = None,
+    to: Annotated[date | None, Query()] = None,
+) -> MonthSignalResponse:
+    date_from, date_to = _date_bounds(from_, to)
+    conn = connect()
+    try:
+        total = sum_expenses(conn, date_from=date_from, date_to=date_to)
+        ceiling = read_ceiling(conn)
+    finally:
+        conn.close()
+    result = month_signal(
+        spent_cents=abs(total),
+        ceiling_cents=ceiling,
+        whole_month=is_whole_month(date_from, date_to),
+    )
+    return MonthSignalResponse(
+        scope=result.scope,
+        spent_cents=result.spent_cents,
+        ceiling_cents=result.ceiling_cents,
+        signal=result.signal,
+        remaining_cents=result.remaining_cents,
     )
 
 

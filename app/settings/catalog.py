@@ -14,6 +14,7 @@ SETTLEMENT = "quitacao-cdc"
 TRANSPORT = "transporte-sem-carro"
 RESERVE = "reserva-meses"
 MEDIAN = "mediana-meses"
+MONTHLY_CEILING = "teto-mensal"
 
 # Reason: these are the defaults the code used as constants before there was
 # a place to inform them. They live here because a default and the value
@@ -25,6 +26,7 @@ MEDIAN_MONTHS = 6
 DEBTS_SCREEN = "/dividas"
 SIMULATOR_SCREEN = "/simulador"
 SETTINGS_SCREEN = "/configuracao"
+EXPENSES_SCREEN = "/app/expenses"
 
 # Reason: the order is the order of how much the answer moves the
 # projection, and it is the order the advisor asks in — a rate decides where
@@ -111,6 +113,22 @@ CATALOG = (
             "os dois não são independentes"
         ),
         "default": MEDIAN_MONTHS,
+        "stored": True,
+    },
+    {
+        "name": MONTHLY_CEILING,
+        "label": "Teto mensal de gasto",
+        "question": "quanto, no máximo, você quer gastar por mês",
+        "help": (
+            "O total de gasto que um mês fechado pode alcançar para o plano de recuperação "
+            "seguir de pé. Nasce vazio: os números do plano definem déficit e renda, não um "
+            "teto de gasto, e só você decide esse valor."
+        ),
+        "unit": CENTS,
+        "kind": GOAL,
+        "screen": EXPENSES_SCREEN,
+        "moves": "o sinal do mês na página de gastos",
+        "default": None,
         "stored": True,
     },
 )
