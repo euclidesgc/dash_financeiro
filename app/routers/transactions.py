@@ -4,7 +4,7 @@ from fastapi import APIRouter, Query
 from pydantic import BaseModel
 
 from app.db import connect
-from app.queries.expenses import list_expenses
+from app.queries.expenses import Order, Sort, list_expenses
 
 router = APIRouter(prefix="/api/transactions")
 
@@ -32,10 +32,12 @@ class ExpensesResponse(BaseModel):
 def expenses(
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    sort: Annotated[Sort, Query()] = "date",
+    order: Annotated[Order, Query()] = "desc",
 ) -> ExpensesResponse:
     conn = connect()
     try:
-        found = list_expenses(conn, page=page, page_size=page_size)
+        found = list_expenses(conn, page=page, page_size=page_size, sort=sort, order=order)
     finally:
         conn.close()
     return ExpensesResponse(

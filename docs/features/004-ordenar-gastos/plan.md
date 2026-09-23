@@ -16,7 +16,7 @@ Decisões registradas aqui (a SPEC deixou ao plano; escolhido o mais simples):
 
 Só Python. Ao final: `GET /api/transactions/expenses` aceita `sort` (`date | amount | category`, padrão `date`) e `order` (`asc | desc`, padrão `desc`), ordena em SQL antes de `LIMIT/OFFSET`, com "Sem categoria" sempre por último e a ordem de categoria seguindo o rótulo pt-BR; valor fora da lista responde 422; a suíte Python prova tudo.
 
-- [ ] T1.1 — Ordenação na consulta paginada, com lista branca e `CASE` por rótulo de categoria
+- [x] T1.1 — Ordenação na consulta paginada, com lista branca e `CASE` por rótulo de categoria
   - Arquivos: `app/queries/expenses.py` (alterar)
   - O que fazer:
     - `import unicodedata`; `from typing import Any, Literal`.
@@ -29,7 +29,7 @@ Só Python. Ao final: `GET /api/transactions/expenses` aceita `sort` (`date | am
   - Skills: —
   - Complexidade: média
 
-- [ ] T1.2 — Router aceita `sort` e `order` validados por `Literal`
+- [x] T1.2 — Router aceita `sort` e `order` validados por `Literal`
   - Arquivos: `app/routers/transactions.py` (alterar)
   - O que fazer:
     - `from app.queries.expenses import Order, Sort, list_expenses`.
@@ -37,7 +37,7 @@ Só Python. Ao final: `GET /api/transactions/expenses` aceita `sort` (`date | am
   - Skills: api-requests
   - Complexidade: baixa
 
-- [ ] T1.3 — Testes da fase 1
+- [x] T1.3 — Testes da fase 1
   - Arquivos: `tests/test_expenses_api.py` (alterar)
   - O que fazer: reaproveitar `client`, `_sign_in`, `_transaction` e `_load`. Helper local `_descriptions(client, query: str) -> list[str]` que faz `GET /api/transactions/expenses?{query}` e devolve `[item["description"] for item in items]`. Casos (api-requests, unit-testing):
     - `test_the_default_order_is_date_desc_then_id_desc` — gastos em `2026-08-01`, `2026-08-03`, `2026-08-03`; sem `sort`/`order`, as datas vêm `["2026-08-03", "2026-08-03", "2026-08-01"]` e, entre os dois de `08-03`, o de `id` maior primeiro; `?sort=date&order=desc` devolve a mesma lista.
@@ -57,13 +57,13 @@ Só Python. Ao final: `GET /api/transactions/expenses` aceita `sort` (`date | am
 
 ### Critérios de aceite da fase 1
 
-- [ ] CA1.1 — `bash scripts/lint.sh` sai com código 0. (comando)
-- [ ] CA1.2 — `uv run pytest tests/test_expenses_api.py tests/test_sync_api.py tests/test_accounts_api.py tests/test_auth_api.py` passa, e cada nome de teste listado em T1.3 existe em `tests/test_expenses_api.py`, junto com os doze da fatia 003 (`test_expenses_without_session_answers_401` … `test_the_response_has_the_contract_fields`). (comando)
-- [ ] CA1.3 — `bash scripts/gates/gates_runner.sh` sai com código 0. (comando)
-- [ ] CA1.4 — `app/queries/expenses.py` define `Sort = Literal["date", "amount", "category"]`, `Order = Literal["asc", "desc"]`, `_ORDER_SQL`, `_SORT_SQL` (com as chaves `"date"`, `"amount"`, `"category"` e a substring `CASE WHEN t.category IS NULL OR t.category = '' THEN 1 ELSE 0 END`), `def _category_rank_clause() -> tuple[str, list[str | int]]`, `def _page_sql(sort: Sort, order: Order) -> tuple[str, list[str | int]]` e `def list_expenses(conn: sqlite3.Connection, *, page: int, page_size: int, sort: Sort = "date", order: Order = "desc") -> ExpensesPage`; importa `unicodedata`; contém `, t.id DESC` e `LIMIT ? OFFSET ?`; não contém a string `ORDER BY t.date DESC`, nem `amount_cents < 0`, nem `commit(`; o único `.format(` do arquivo recebe apenas `_ORDER_SQL[order]` e o resultado de `_category_rank_clause()`. (estrutural)
-- [ ] CA1.5 — `app/routers/transactions.py` importa `Order` e `Sort` de `app.queries.expenses`, e `def expenses(` declara `sort: Annotated[Sort, Query()] = "date"` e `order: Annotated[Order, Query()] = "desc"` e chama `list_expenses(conn, page=page, page_size=page_size, sort=sort, order=order)`; a rota é `def`, não `async def`; `SELECT`, `INSERT` e `commit(` não aparecem no arquivo; `ExpensesResponse` continua com exatamente `items`, `page`, `page_size`, `total`. (estrutural)
-- [ ] CA1.6 — Sem `sort`/`order`, as datas vêm `["2026-08-03", "2026-08-03", "2026-08-01"]` (`test_the_default_order_is_date_desc_then_id_desc`); `?sort=amount&order=desc` devolve `[-30000, -12000, -5000]` (`test_sort_amount_desc_puts_the_biggest_spending_first`); `?sort=category&order=desc` devolve `["Supermercado", "Casa", None]` (`test_sort_category_desc_reverses_the_labels_and_keeps_uncategorised_last`); `?sort=amount&order=desc&page=2` de 25 gastos devolve `[-5000, -4000, -3000, -2000, -1000]` (`test_sorting_applies_before_pagination`); `?sort=payee` e `?order=up` respondem 422 (`test_unknown_sort_and_order_answer_422`). (comportamental)
-- [ ] CA1.7 — `uv run pytest --cov=app.queries.expenses --cov=app.routers.transactions --cov-report=term tests/test_expenses_api.py` reporta ≥ 80% em `app/queries/expenses.py` e `app/routers/transactions.py`. (comando)
+- [x] CA1.1 — `bash scripts/lint.sh` sai com código 0. (comando)
+- [x] CA1.2 — `uv run pytest tests/test_expenses_api.py tests/test_sync_api.py tests/test_accounts_api.py tests/test_auth_api.py` passa, e cada nome de teste listado em T1.3 existe em `tests/test_expenses_api.py`, junto com os doze da fatia 003 (`test_expenses_without_session_answers_401` … `test_the_response_has_the_contract_fields`). (comando)
+- [x] CA1.3 — `bash scripts/gates/gates_runner.sh` sai com código 0. (comando)
+- [x] CA1.4 — `app/queries/expenses.py` define `Sort = Literal["date", "amount", "category"]`, `Order = Literal["asc", "desc"]`, `_ORDER_SQL`, `_SORT_SQL` (com as chaves `"date"`, `"amount"`, `"category"` e a substring `CASE WHEN t.category IS NULL OR t.category = '' THEN 1 ELSE 0 END`), `def _category_rank_clause() -> tuple[str, list[str | int]]`, `def _page_sql(sort: Sort, order: Order) -> tuple[str, list[str | int]]` e `def list_expenses(conn: sqlite3.Connection, *, page: int, page_size: int, sort: Sort = "date", order: Order = "desc") -> ExpensesPage`; importa `unicodedata`; contém `, t.id DESC` e `LIMIT ? OFFSET ?`; não contém a string `ORDER BY t.date DESC`, nem `amount_cents < 0`, nem `commit(`; o único `.format(` do arquivo recebe apenas `_ORDER_SQL[order]` e o resultado de `_category_rank_clause()`. (estrutural)
+- [x] CA1.5 — `app/routers/transactions.py` importa `Order` e `Sort` de `app.queries.expenses`, e `def expenses(` declara `sort: Annotated[Sort, Query()] = "date"` e `order: Annotated[Order, Query()] = "desc"` e chama `list_expenses(conn, page=page, page_size=page_size, sort=sort, order=order)`; a rota é `def`, não `async def`; `SELECT`, `INSERT` e `commit(` não aparecem no arquivo; `ExpensesResponse` continua com exatamente `items`, `page`, `page_size`, `total`. (estrutural)
+- [x] CA1.6 — Sem `sort`/`order`, as datas vêm `["2026-08-03", "2026-08-03", "2026-08-01"]` (`test_the_default_order_is_date_desc_then_id_desc`); `?sort=amount&order=desc` devolve `[-30000, -12000, -5000]` (`test_sort_amount_desc_puts_the_biggest_spending_first`); `?sort=category&order=desc` devolve `["Supermercado", "Casa", None]` (`test_sort_category_desc_reverses_the_labels_and_keeps_uncategorised_last`); `?sort=amount&order=desc&page=2` de 25 gastos devolve `[-5000, -4000, -3000, -2000, -1000]` (`test_sorting_applies_before_pagination`); `?sort=payee` e `?order=up` respondem 422 (`test_unknown_sort_and_order_answer_422`). (comportamental)
+- [x] CA1.7 — `uv run pytest --cov=app.queries.expenses --cov=app.routers.transactions --cov-report=term tests/test_expenses_api.py` reporta ≥ 80% em `app/queries/expenses.py` e `app/routers/transactions.py`. (comando)
 
 ## Fase 2 — Controles de ordenação na tela, mocks, testes de componente e e2e
 
