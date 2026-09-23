@@ -41,12 +41,12 @@ export const fakeAccounts = [
 
 function generateFakeCategories(): CatalogueCategory[] {
   return [
-    { key: 'Food', label: 'Alimentação', is_system: true, usage_count: 1 },
-    { key: 'Shopping', label: 'Compras', is_system: true, usage_count: 40 },
-    { key: 'lazer', label: 'Lazer', is_system: false, usage_count: 3 },
-    { key: 'pet-shop', label: 'Pet shop', is_system: false, usage_count: 0 },
-    { key: 'Groceries', label: 'Supermercado', is_system: true, usage_count: 0 },
-    { key: 'Transport', label: 'Transporte', is_system: true, usage_count: 1 },
+    { key: 'Food', label: 'Alimentação', is_system: true, usage_count: 1, monthly_limit_cents: 80000 },
+    { key: 'Shopping', label: 'Compras', is_system: true, usage_count: 40, monthly_limit_cents: 150000 },
+    { key: 'lazer', label: 'Lazer', is_system: false, usage_count: 3, monthly_limit_cents: null },
+    { key: 'pet-shop', label: 'Pet shop', is_system: false, usage_count: 0, monthly_limit_cents: null },
+    { key: 'Groceries', label: 'Supermercado', is_system: true, usage_count: 0, monthly_limit_cents: null },
+    { key: 'Transport', label: 'Transporte', is_system: true, usage_count: 1, monthly_limit_cents: null },
   ]
 }
 
@@ -385,7 +385,13 @@ export const handlers = [
       key = `${slugify(trimmed)}-${String(suffix)}`
       suffix += 1
     }
-    const item: CatalogueCategory = { key, label: trimmed, is_system: false, usage_count: 0 }
+    const item: CatalogueCategory = {
+      key,
+      label: trimmed,
+      is_system: false,
+      usage_count: 0,
+      monthly_limit_cents: null,
+    }
     fakeCategories.push(item)
     return HttpResponse.json(item, { status: 201 })
   }),
@@ -402,6 +408,22 @@ export const handlers = [
       return error
     }
     item.label = trimmed
+    return HttpResponse.json(item)
+  }),
+
+  http.put('/api/categories/:key/limit', async ({ params, request }) => {
+    const item = fakeCategories.find((category) => category.key === params.key)
+    if (item === undefined) {
+      return HttpResponse.json({ detail: 'Categoria não encontrada.' }, { status: 404 })
+    }
+    const body = (await request.json()) as { monthly_limit_cents: number | null }
+    if (body.monthly_limit_cents !== null && body.monthly_limit_cents <= 0) {
+      return HttpResponse.json(
+        { detail: 'O limite precisa ser maior que zero.' },
+        { status: 422 },
+      )
+    }
+    item.monthly_limit_cents = body.monthly_limit_cents
     return HttpResponse.json(item)
   }),
 

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from app.taxonomy.seed import UNCATEGORISED
 
 _SELECT = (
-    "SELECT c.name, c.label, c.is_system, count(t.id) AS usage_count "
+    "SELECT c.name, c.label, c.is_system, c.monthly_limit_cents, count(t.id) AS usage_count "
     "FROM categories AS c LEFT JOIN transactions AS t ON t.category = c.name"
 )
 
@@ -15,6 +15,7 @@ class CategoryRow:
     label: str
     is_system: bool
     usage_count: int
+    monthly_limit_cents: int | None
 
 
 def _row(row: sqlite3.Row) -> CategoryRow:
@@ -23,6 +24,9 @@ def _row(row: sqlite3.Row) -> CategoryRow:
         label=row["label"],
         is_system=bool(row["is_system"]),
         usage_count=int(row["usage_count"]),
+        monthly_limit_cents=None
+        if row["monthly_limit_cents"] is None
+        else int(row["monthly_limit_cents"]),
     )
 
 
