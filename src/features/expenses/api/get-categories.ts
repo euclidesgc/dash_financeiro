@@ -10,8 +10,6 @@ export function categoriesQueryOptions() {
   return queryOptions({
     queryKey: ['categories'],
     queryFn: getCategories,
-    // The catalogue is the seed and only changes with a deploy.
-    staleTime: Infinity,
   })
 }
 

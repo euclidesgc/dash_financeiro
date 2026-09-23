@@ -19,6 +19,9 @@ export function useUpdateCategory() {
 
   return useMutation({
     mutationFn: updateCategory,
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['expenses'] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['expenses'] })
+      void queryClient.invalidateQueries({ queryKey: ['categories'] })
+    },
   })
 }

@@ -2,6 +2,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router'
 import type { RouteObject } from 'react-router'
 import { paths } from '@/config/paths'
 import { ProtectedRoute } from '@/lib/auth'
+import { CategoriesRoute } from '@/app/routes/categories'
 import { DashboardRoute } from '@/app/routes/dashboard'
 import { ExpensesRoute } from '@/app/routes/expenses'
 import { LoginRoute } from '@/app/routes/login'
@@ -21,6 +22,14 @@ export const routes: RouteObject[] = [
     element: (
       <ProtectedRoute>
         <ExpensesRoute />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: paths.categories,
+    element: (
+      <ProtectedRoute>
+        <CategoriesRoute />
       </ProtectedRoute>
     ),
   },

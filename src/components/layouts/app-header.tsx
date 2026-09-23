@@ -26,6 +26,9 @@ export function AppHeader({
             <NavLink to={paths.expenses} className={navLinkClassName}>
               Gastos
             </NavLink>
+            <NavLink to={paths.categories} className={navLinkClassName}>
+              Categorias
+            </NavLink>
           </nav>
         </div>
         <div className="flex items-center gap-4">
