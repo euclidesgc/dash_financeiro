@@ -6,7 +6,7 @@ prova o caminho de ponta a ponta (tela React → API FastAPI → SQLite) e as ou
 | # | Fatia | O usuário consegue… | Origem | Depende de | Status |
 |---|---|---|---|---|---|
 | 001 | `login-e-saldos` | entrar no painel e ver o saldo de hoje de cada conta | Pedido de 22/09 | — | in-review |
-| 002 | `atualizar-registros` | apertar um botão e ter todos os registros bancários atualizados na base, vendo quando foi a última atualização | Pedido de 22/09 | 001 | in-progress |
+| 002 | `atualizar-registros` | apertar um botão e ter todos os registros bancários atualizados na base, vendo quando foi a última atualização | Pedido de 22/09 | 001 | in-review |
 | 003 | `lista-de-gastos` | ver uma lista paginada com todos os gastos de todas as contas | Pedido de 22/09 | 001 | planned |
 | 004 | `ordenar-gastos` | ordenar os gastos por data, valor ou categoria | Pedido de 22/09 | 003 | planned |
 | 005 | `filtrar-por-periodo` | filtrar os gastos por período (mês, intervalo de datas) | Pedido de 22/09 | 003 | planned |
@@ -27,3 +27,8 @@ prova o caminho de ponta a ponta (tela React → API FastAPI → SQLite) e as ou
 | # | Fatia | Resolução necessária | Origem | Depende de | Status |
 |---|---|---|---|---|---|
 | 017 | `jinja-router-extraction` | manter a lógica de consulta única quando uma tela migra de Jinja para React, em vez de reescrever SQL | bug | 001 | planned |
+| 018 | `sync-runs-source-field` | rastrear origem do disparo (tela vs comando diário) em `sync_runs.source` em vez de só guardar o caminho do arquivo lido | 002 | — | planned |
+| 019 | `pluggy-extract-env-handling` | embrulhar leitura de `.env` e `SystemExit` em `ingestao/pluggy_extract.py` em função limpa, não chamar direto do serviço | 002 | — | planned |
+| 020 | `jinja-sync-button-exclusive-lock` | fazer o botão Jinja `/sincronizar` passar pela trava de execução única de `app/sync/exclusive.py` | 002 | — | planned |
+| 021 | `pluggy-connections-editable-ui` | mover lista de conexões Pluggy de `data/item_ids.txt` para tela editável (norma 26) | 002 | — | planned |
+| 022 | `setup-secrets-pluggy-credentials` | atualizar `docs/setup-secrets.md` para citar `PLUGGY_CLIENT_ID` e `PLUGGY_CLIENT_SECRET` | 002 | — | planned |
