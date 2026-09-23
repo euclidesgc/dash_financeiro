@@ -137,7 +137,7 @@ Ao final: o cabeçalho de `/app/` e `/app/expenses` é o mesmo `AppHeader`, com 
 
 Ao final: a lista tem "Página X de Y · N gastos" com "Anterior" e "Próxima" que trocam `?page` sem perder a lista anterior; URL com página além da última cai na última; o fluxo login → "Gastos" → lista → "Saldos" é provado com API mockada e, contra o FastAPI real, pelo Playwright.
 
-- [ ] T3.1 — `Pagination` e lista folheável com correção de página
+- [x] T3.1 — `Pagination` e lista folheável com correção de página
   - Arquivos: `src/features/expenses/components/pagination.tsx` (criar); `src/features/expenses/components/expenses-list.tsx` (alterar)
   - O que fazer:
     - `pagination.tsx`: `export function Pagination({ page, pages, total, isFetching, onChange }: { page: number; pages: number; total: number; isFetching: boolean; onChange: (page: number) => void }): React.JSX.Element` — `<nav aria-label="Paginação">` pela receita "Paginação". À esquerda, texto "Página {page} de {pages} · {total} gasto" quando `total === 1`, senão "… · {total} gastos". À direita, dois `<Button variant="secondary" type="button">`: "Anterior" (`disabled` quando `page <= 1 || isFetching`, `onClick` → `onChange(page - 1)`) e "Próxima" (`disabled` quando `page >= pages || isFetching`, `onClick` → `onChange(page + 1)`).
@@ -145,13 +145,13 @@ Ao final: a lista tem "Página X de Y · N gastos" com "Anterior" e "Próxima" q
   - Skills: ui-components, interface-design, client-state, component-robustness
   - Complexidade: média
 
-- [ ] T3.2 — Jornada Playwright de gastos
+- [x] T3.2 — Jornada Playwright de gastos
   - Arquivos: `e2e/expenses.spec.ts` (criar)
   - O que fazer: `test.describe.configure({ mode: 'serial' })` com comentário de porquê (mesma base SQLite que o `sync.spec.ts` escreve). Teste `opens the expenses page and lists only the spending`: login com `e2e`/`senha-e2e-9k2` (mesmos passos de `sync.spec.ts`); `expect(page).toHaveURL(/\/app\/?$/)`; clica `getByRole('link', { name: 'Gastos' })`; `toHaveURL(/\/app\/expenses$/)`; `heading level 1` "Gastos" visível; link "Gastos" tem `aria-current="page"` (`toHaveAttribute('aria-current', 'page')`); `listitem` contendo "MERCADO DO BAIRRO" visível, com "02/09/2026" e "-R$ 84,90"; `getByText('TED PARA POUPANCA')` e `getByText('SALARIO')` com `toHaveCount(0)`; texto casando `/Página 1 de 1 · [12] gastos?/` visível; botões "Anterior" e "Próxima" desabilitados. Teste `goes back to the balances page`: depois dos passos acima, clica `link` "Saldos" → `heading level 1` "Saldos de hoje" visível e `toHaveURL(/\/app\/?$/)`.
   - Skills: e2e-testing
   - Complexidade: baixa
 
-- [ ] T3.3 — Testes da fase 3
+- [x] T3.3 — Testes da fase 3
   - Arquivos: `src/features/expenses/components/__tests__/expenses-list.test.tsx` (alterar); `src/features/expenses/components/__tests__/pagination.test.tsx` (criar); `src/app/__tests__/expenses.test.tsx` (criar)
   - O que fazer:
     - `pagination.test.tsx` (component-testing): `shows page, pages and the plural total` (`page=1 pages=3 total=45` → "Página 1 de 3 · 45 gastos"); `uses the singular for one expense` (`total=1` → "Página 1 de 1 · 1 gasto"); `disables "Anterior" on the first page` e `disables "Próxima" on the last page`; `disables both while fetching` (`isFetching` → ambos `disabled`); `calls onChange with the neighbour page` (clique em "Próxima" → `onChange(2)`; em "Anterior" com `page=2` → `onChange(1)`).
@@ -162,13 +162,13 @@ Ao final: a lista tem "Página X de Y · N gastos" com "Anterior" e "Próxima" q
 
 ### Critérios de aceite da fase 3
 
-- [ ] CA3.1 — `pnpm lint`, `pnpm typecheck`, `pnpm test` e `pnpm build` saem com código 0; `bash scripts/lint.sh`, `uv run pytest` e `bash scripts/gates/gates_runner.sh` também. (comando)
-- [ ] CA3.2 — `pnpm test:e2e` sai com código 0 com os testes `opens the expenses page and lists only the spending` e `goes back to the balances page` em `e2e/expenses.spec.ts`, além dos de `e2e/sync.spec.ts` e `e2e/login-and-balances.spec.ts`; `e2e/expenses.spec.ts` contém `test.describe.configure({ mode: 'serial' })`. (comando, estrutural)
-- [ ] CA3.3 — `src/features/expenses/components/pagination.tsx` exporta `Pagination({ page, pages, total, isFetching, onChange }: { page: number; pages: number; total: number; isFetching: boolean; onChange: (page: number) => void })`, contém `<nav aria-label="Paginação"`, os textos "Página ", " de ", " gasto", " gastos", "Anterior" e "Próxima", e os dois botões são `<Button variant="secondary"` com `disabled` ligado a `isFetching`. (estrutural)
-- [ ] CA3.4 — `expenses-list.tsx` usa `setSearchParams` de `useSearchParams`, chama `setSearchParams({ page: String(pages) }, { replace: true })` dentro de um `useEffect` e passa `isPlaceholderData` como `isFetching` para `<Pagination`; a chamada de `onChange` não usa `replace`; `<Pagination` só é renderizado com `total > 0`. (estrutural)
-- [ ] CA3.5 — Piso visual, lido no código: o `<nav>` de `pagination.tsx` usa as classes de "Paginação" do `docs/design.md` (`flex-wrap`, `justify-between`, `gap-4`) e o texto usa `text-sm text-gray-600`; nenhum arquivo em `src/features/expenses/` contém `style={{`, `<a href` ou `!important`. (estrutural)
-- [ ] CA3.6 — Em `?page=9` com 45 gastos, a URL vira `?page=3` e a lista mostra "Página 3 de 3 · 45 gastos" (`falls back to the last page when the URL is past the end`); ao clicar em "Próxima" a URL vira `?page=2` e a API é chamada com `page=2` (`"Próxima" moves to page 2 in the URL and in the API`); sem sessão, `/expenses` cai em "Entrar" (`redirects to the login page without a session`). (comportamental)
-- [ ] CA3.7 — Os testes nomeados em T3.3 existem nos arquivos indicados; `npx vitest run --coverage` reporta ≥ 80% de linhas em `src/features/expenses/components/pagination.tsx` e `src/features/expenses/components/expenses-list.tsx`. (comando)
+- [x] CA3.1 — `pnpm lint`, `pnpm typecheck`, `pnpm test` e `pnpm build` saem com código 0; `bash scripts/lint.sh`, `uv run pytest` e `bash scripts/gates/gates_runner.sh` também. (comando)
+- [x] CA3.2 — `pnpm test:e2e` sai com código 0 com os testes `opens the expenses page and lists only the spending` e `goes back to the balances page` em `e2e/expenses.spec.ts`, além dos de `e2e/sync.spec.ts` e `e2e/login-and-balances.spec.ts`; `e2e/expenses.spec.ts` contém `test.describe.configure({ mode: 'serial' })`. (comando, estrutural)
+- [x] CA3.3 — `src/features/expenses/components/pagination.tsx` exporta `Pagination({ page, pages, total, isFetching, onChange }: { page: number; pages: number; total: number; isFetching: boolean; onChange: (page: number) => void })`, contém `<nav aria-label="Paginação"`, os textos "Página ", " de ", " gasto", " gastos", "Anterior" e "Próxima", e os dois botões são `<Button variant="secondary"` com `disabled` ligado a `isFetching`. (estrutural)
+- [x] CA3.4 — `expenses-list.tsx` usa `setSearchParams` de `useSearchParams`, chama `setSearchParams({ page: String(pages) }, { replace: true })` dentro de um `useEffect` e passa `isPlaceholderData` como `isFetching` para `<Pagination`; a chamada de `onChange` não usa `replace`; `<Pagination` só é renderizado com `total > 0`. (estrutural)
+- [x] CA3.5 — Piso visual, lido no código: o `<nav>` de `pagination.tsx` usa as classes de "Paginação" do `docs/design.md` (`flex-wrap`, `justify-between`, `gap-4`) e o texto usa `text-sm text-gray-600`; nenhum arquivo em `src/features/expenses/` contém `style={{`, `<a href` ou `!important`. (estrutural)
+- [x] CA3.6 — Em `?page=9` com 45 gastos, a URL vira `?page=3` e a lista mostra "Página 3 de 3 · 45 gastos" (`falls back to the last page when the URL is past the end`); ao clicar em "Próxima" a URL vira `?page=2` e a API é chamada com `page=2` (`"Próxima" moves to page 2 in the URL and in the API`); sem sessão, `/expenses` cai em "Entrar" (`redirects to the login page without a session`). (comportamental)
+- [x] CA3.7 — Os testes nomeados em T3.3 existem nos arquivos indicados; `npx vitest run --coverage` reporta ≥ 80% de linhas em `src/features/expenses/components/pagination.tsx` e `src/features/expenses/components/expenses-list.tsx`. (comando)
 
 ## DoD da entrega
 

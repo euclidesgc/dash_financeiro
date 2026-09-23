@@ -1,11 +1,18 @@
-import { http, HttpResponse } from 'msw'
+import { http, HttpResponse, delay } from 'msw'
 import { expect, test } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { screen, within } from '@testing-library/react'
+import { useLocation } from 'react-router'
 
 import { ExpensesList } from '@/features/expenses/components/expenses-list'
 import { renderWithProviders } from '@/testing/test-utils'
 import { server } from '@/testing/mocks/server'
+import { fakeExpenses } from '@/testing/mocks/handlers'
+
+function LocationProbe(): React.JSX.Element {
+  const location = useLocation()
+  return <span data-testid="search">{location.search}</span>
+}
 
 test('shows the loading state', () => {
   renderWithProviders(<ExpensesList />, { route: '/expenses' })
@@ -124,4 +131,78 @@ test('treats an invalid page as the first', async () => {
 
   expect(screen.getAllByRole('listitem')).toHaveLength(20)
   expect(screen.getByText('MERCADO DO BAIRRO')).toBeInTheDocument()
+})
+
+test('shows the pagination summary', async () => {
+  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+
+  expect(await screen.findByText('Página 1 de 3 · 45 gastos')).toBeInTheDocument()
+})
+
+test('hides the pagination when empty', async () => {
+  server.use(
+    http.get('/api/transactions/expenses', () =>
+      HttpResponse.json({ items: [], page: 1, page_size: 20, total: 0 }),
+    ),
+  )
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+
+  await screen.findByText('Nenhum gasto registrado ainda.')
+  expect(screen.queryByRole('navigation', { name: 'Paginação' })).not.toBeInTheDocument()
+})
+
+test('"Próxima" moves to page 2 in the URL and in the API', async () => {
+  renderWithProviders(
+    <>
+      <ExpensesList />
+      <LocationProbe />
+    </>,
+    { route: '/expenses' },
+  )
+
+  await screen.findByRole('list')
+
+  await userEvent.click(screen.getByRole('button', { name: 'Próxima' }))
+
+  expect(await screen.findByText('Página 2 de 3 · 45 gastos')).toBeInTheDocument()
+  expect(screen.getByTestId('search')).toHaveTextContent('?page=2')
+  const items = screen.getAllByRole('listitem')
+  expect(within(items[0]).getByText('GASTO 25')).toBeInTheDocument()
+})
+
+test('keeps the previous rows while the next page loads', async () => {
+  server.use(
+    http.get('/api/transactions/expenses', async ({ request }) => {
+      const url = new URL(request.url)
+      const page = Number.parseInt(url.searchParams.get('page') ?? '1', 10) || 1
+      if (page === 2) {
+        await delay(50)
+      }
+      const pageSize = 20
+      return HttpResponse.json({
+        items: fakeExpenses.slice((page - 1) * pageSize, page * pageSize),
+        page,
+        page_size: pageSize,
+        total: fakeExpenses.length,
+      })
+    }),
+  )
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+
+  await screen.findByRole('list')
+
+  await userEvent.click(screen.getByRole('button', { name: 'Próxima' }))
+
+  expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Próxima' })).toBeDisabled()
+
+  expect(await screen.findByText('Página 2 de 3 · 45 gastos')).toBeInTheDocument()
+})
+
+test('falls back to the last page when the URL is past the end', async () => {
+  renderWithProviders(<ExpensesList />, { route: '/expenses?page=9' })
+
+  expect(await screen.findByText('Página 3 de 3 · 45 gastos')).toBeInTheDocument()
 })
