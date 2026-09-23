@@ -2,16 +2,11 @@ import { useId, useState } from 'react'
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { useCategoryTotals } from '@/features/expenses/api/get-category-totals'
-import type { CategorySignal, CategoryTotalsQuery } from '@/features/expenses/types/expense'
+import type { CategoryTotalsQuery } from '@/features/expenses/types/expense'
+import { SIGNAL_LABELS } from '@/features/expenses/utils/signal-labels'
 import { formatMoney } from '@/utils/format-money'
 
 const VISIBLE_GROUPS = 8
-
-const SIGNAL_LABELS: Record<CategorySignal, { text: string; className: string }> = {
-  within: { text: 'Dentro', className: 'bg-green-100 text-green-800' },
-  warning: { text: 'Atenção', className: 'bg-amber-100 text-amber-800' },
-  over: { text: 'Acima', className: 'bg-red-100 text-red-800' },
-}
 
 function limitText(totalCents: number, limitCents: number): string {
   const spent = Math.abs(totalCents)

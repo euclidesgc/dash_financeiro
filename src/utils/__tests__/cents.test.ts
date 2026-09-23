@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { fromCents, toCents } from '../limit-cents'
+import { fromCents, toCents } from '../cents'
 
 test('toCents turns an empty string into null', () => {
   expect(toCents('')).toBeNull()

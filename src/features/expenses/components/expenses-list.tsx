@@ -7,6 +7,7 @@ import { useExpenses } from '@/features/expenses/api/get-expenses'
 import { AccountSelect } from '@/features/expenses/components/account-select'
 import { CategoryTotals } from '@/features/expenses/components/category-totals'
 import { ExpenseItem } from '@/features/expenses/components/expense-item'
+import { MonthCeiling } from '@/features/expenses/components/month-ceiling'
 import { Pagination } from '@/features/expenses/components/pagination'
 import { PeriodControls } from '@/features/expenses/components/period-controls'
 import { SearchInput } from '@/features/expenses/components/search-input'
@@ -212,6 +213,7 @@ export function ExpensesList(): React.JSX.Element {
           onOrderToggle={handleOrderToggle}
         />
       </div>
+      {period.kind === 'month' ? <MonthCeiling query={{ from, to }} /> : null}
       <CategoryTotals query={filters} />
     </>
   )

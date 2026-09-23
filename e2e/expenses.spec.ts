@@ -302,6 +302,54 @@ test('shows the signal of each category against its limit only in a whole month 
   await expect(page.getByText('Sinal só por mês', { exact: true })).toHaveCount(0)
 })
 
+test('shows the month against its ceiling, edits the ceiling inline and leaves the base as it found it', async ({
+  page,
+}) => {
+  await page.goto('/app/login')
+  await page.getByLabel('Login').fill(LOGIN)
+  await page.getByLabel('Senha').fill(PASSWORD)
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page).toHaveURL(/\/app\/?$/)
+
+  await page.goto('/app/expenses?month=2026-08')
+  const block = page.getByRole('region', { name: 'Teto do mês' })
+  await expect(page.getByRole('heading', { level: 2, name: 'Teto do mês' })).toBeVisible()
+  await expect(block).toContainText('Sem teto definido.')
+  const field = block.getByLabel('Teto mensal (R$)')
+  await expect(field).toBeFocused()
+
+  await field.fill('100')
+  await field.press('Enter')
+  await expect(block).toContainText('R$ 105,00 de R$ 100,00 · 105%')
+  await expect(block.getByText('Acima', { exact: true })).toBeVisible()
+  await expect(block).toContainText('Passou R$ 5,00')
+  await expect(block.getByLabel('Teto mensal (R$)')).toHaveCount(0)
+
+  await block.getByRole('button', { name: 'Definir teto do mês' }).click()
+  await expect(block.getByLabel('Teto mensal (R$)')).toHaveValue('100.00')
+  await block.getByLabel('Teto mensal (R$)').fill('200')
+  await block.getByLabel('Teto mensal (R$)').press('Enter')
+  await expect(block).toContainText('R$ 105,00 de R$ 200,00 · 53%')
+  await expect(block.getByText('Dentro', { exact: true })).toBeVisible()
+  await expect(block).toContainText('Sobram R$ 95,00')
+
+  await page.reload()
+  await expect(page.getByRole('region', { name: 'Teto do mês' })).toContainText(
+    'R$ 105,00 de R$ 200,00 · 53%',
+  )
+
+  await page.goto('/app/expenses?from=2026-08-01&to=2026-08-20')
+  await expect(page.getByRole('heading', { level: 2, name: 'Por categoria' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 2, name: 'Teto do mês' })).toHaveCount(0)
+
+  await page.goto('/app/expenses?month=2026-08')
+  await block.getByRole('button', { name: 'Definir teto do mês' }).click()
+  await block.getByLabel('Teto mensal (R$)').fill('')
+  await block.getByLabel('Teto mensal (R$)').press('Enter')
+  await expect(block).toContainText('Sem teto definido.')
+  await expect(block).not.toContainText('%')
+})
+
 test('goes back to the balances page', async ({ page }) => {
   await page.goto('/app/login')
   await page.getByLabel('Login').fill(LOGIN)
