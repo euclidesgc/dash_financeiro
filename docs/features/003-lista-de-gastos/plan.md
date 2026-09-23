@@ -18,7 +18,7 @@ Decisões registradas aqui (a SPEC deixou ao plano; escolhido o mais simples):
 
 Só Python. Ao final: `GET /api/transactions/expenses?page=N&page_size=M` responde a página de gastos (predicado `SPENDING`, ordem `date DESC, id DESC`, rótulo de categoria em pt-BR, nome do recebedor quando houver) com `total`; o backend do e2e nasce com três lançamentos; a suíte Python prova tudo.
 
-- [ ] T1.1 — Consulta paginada de gastos com rótulos resolvidos
+- [x] T1.1 — Consulta paginada de gastos com rótulos resolvidos
   - Arquivos: `app/queries/expenses.py` (criar)
   - O que fazer:
     - `from app.queries.spending import SPENDING`; `from app.taxonomy.seed import category_labels`; `from app.payees.names import labels`.
@@ -29,7 +29,7 @@ Só Python. Ao final: `GET /api/transactions/expenses?page=N&page_size=M` respon
   - Skills: —
   - Complexidade: média
 
-- [ ] T1.2 — Router `transactions` e registro no app
+- [x] T1.2 — Router `transactions` e registro no app
   - Arquivos: `app/routers/transactions.py` (criar); `app/main.py` (alterar)
   - O que fazer:
     - `app/routers/transactions.py`: `router = APIRouter(prefix="/api/transactions")`; `class Expense(BaseModel): id: int; date: str; description: str | None; payee_name: str | None; account_name: str | None; account_institution: str | None; account_type: Literal["BANK", "CREDIT"] | None; category: str | None; amount_cents: int`; `class ExpensesResponse(BaseModel): items: list[Expense]; page: int; page_size: int; total: int`. `@router.get("/expenses")` `def expenses(page: Annotated[int, Query(ge=1)] = 1, page_size: Annotated[int, Query(ge=1, le=100)] = 20) -> ExpensesResponse`: `conn = connect()`; `try: found = list_expenses(conn, page=page, page_size=page_size)` `finally: conn.close()`; devolve `ExpensesResponse(items=[Expense(**item) for item in found.items], page=page, page_size=page_size, total=found.total)`. Rota `def` (norma 31). As strings `SELECT`, `INSERT` e `commit(` não aparecem no arquivo (norma 30). Sem sessão o guard existente já devolve 401.
@@ -37,7 +37,7 @@ Só Python. Ao final: `GET /api/transactions/expenses?page=N&page_size=M` respon
   - Skills: api-requests
   - Complexidade: baixa
 
-- [ ] T1.3 — Backend do e2e com lançamentos
+- [x] T1.3 — Backend do e2e com lançamentos
   - Arquivos: `tests/data/e2e_transactions.json` (criar); `scripts/e2e-backend.sh` (alterar)
   - O que fazer:
     - `tests/data/e2e_transactions.json`: lista com três objetos no formato de `tests/data/sync_transactions.json` (mesmas chaves), todos com `"conta_id": "acc-fixture-1"`: `{"id": "e2e-t-1", "data": "2026-09-02", "descricao": "MERCADO DO BAIRRO", "valor": -84.9, "tipo": "DEBIT", "categoria_pluggy": "Groceries", "categoria": "Groceries", "eh_transferencia": false, "eh_estorno": false, "estornada_por": "", …}`; `{"id": "e2e-t-2", "data": "2026-09-03", "descricao": "TED PARA POUPANCA", "valor": -500.0, "eh_transferencia": true, "motivo_transferencia": "conta propria", …}`; `{"id": "e2e-t-3", "data": "2026-09-05", "descricao": "SALARIO", "valor": 6000.0, "tipo": "CREDIT", …}`. Demais campos: `parcela_atual`/`parcela_total` `null`, strings vazias.
@@ -45,7 +45,7 @@ Só Python. Ao final: `GET /api/transactions/expenses?page=N&page_size=M` respon
   - Skills: e2e-testing
   - Complexidade: baixa
 
-- [ ] T1.4 — Testes da fase 1
+- [x] T1.4 — Testes da fase 1
   - Arquivos: `tests/test_expenses_api.py` (criar)
   - O que fazer:
     - Fixture `client(tmp_path, monkeypatch)` igual à de `tests/test_sync_api.py` (env `DASH_ENV_FILE=/dev/null`, `DASH_DB_PATH`, `SESSION_SECRET`, `DASH_TRANSACTIONS_PATH`/`DASH_ACCOUNTS_GLOB` apontando para `tests/data/sync_*.json`, `create_app()`, `seed_user`, `seed_taxonomy`, `TestClient(app, follow_redirects=False)`); `_sign_in(client)`; helper `_transaction(id: str, date: str, amount: float, **overrides) -> dict[str, Any]` que devolve o dict consolidado com as chaves de `tests/data/sync_transactions.json` (`conta_id` `"sync-acc-1"`, `descricao` `f"GASTO {id}"`, `categoria` `""`, `eh_transferencia` `False`, `eh_estorno` `False`, `estornada_por` `""`, `nome_fantasia` `""`, …) sobrescrito por `overrides`; helper `_load(rows)` que abre `connect()`, chama `ingest(conn, transactions=rows, accounts=load_accounts(str(DATA / "sync_accounts.json")), source="teste")` e fecha.
@@ -67,14 +67,14 @@ Só Python. Ao final: `GET /api/transactions/expenses?page=N&page_size=M` respon
 
 ### Critérios de aceite da fase 1
 
-- [ ] CA1.1 — `bash scripts/lint.sh` sai com código 0. (comando)
-- [ ] CA1.2 — `uv run pytest tests/test_expenses_api.py tests/test_sync_api.py tests/test_accounts_api.py tests/test_auth_api.py` passa, e cada nome de teste listado em T1.4 existe em `tests/test_expenses_api.py`. (comando)
-- [ ] CA1.3 — `bash scripts/gates/gates_runner.sh` sai com código 0. (comando)
-- [ ] CA1.4 — Existe `app/queries/expenses.py` com `ExpensesPage` (dataclass com `items: list[dict[str, Any]]` e `total: int`) e `list_expenses(conn: sqlite3.Connection, *, page: int, page_size: int) -> ExpensesPage`; o arquivo importa `SPENDING` de `app.queries.spending`, `category_labels` de `app.taxonomy.seed` e `labels` de `app.payees.names`; a string `amount_cents < 0` não aparece nele; contém `LEFT JOIN accounts`, `ORDER BY t.date DESC, t.id DESC` e `LIMIT ? OFFSET ?`; não contém `commit(`. (estrutural)
-- [ ] CA1.5 — `app/routers/transactions.py` define `router = APIRouter(prefix="/api/transactions")`, `Expense` e `ExpensesResponse` com os campos de T1.2, e `def expenses(page: Annotated[int, Query(ge=1)] = 1, page_size: Annotated[int, Query(ge=1, le=100)] = 20) -> ExpensesResponse` em `@router.get("/expenses")`; a rota é `def`, não `async def`; as strings `SELECT`, `INSERT` e `commit(` não aparecem no arquivo; `app/main.py` inclui `transactions.router`. (estrutural)
-- [ ] CA1.6 — `GET /api/transactions/expenses` sem sessão responde 401 (`test_expenses_without_session_answers_401`); com transferência, estorno, lançamento estornado e entrada na base, só o gasto volta e `total == 1` (`test_only_spending_rows_come_back`); `page=3` de 25 gastos responde 200 com `items: []` e `total: 25` (`test_a_page_past_the_end_is_empty_with_the_right_total`). (comportamental)
-- [ ] CA1.7 — `tests/data/e2e_transactions.json` tem três objetos com `conta_id` `"acc-fixture-1"`, descrições `"MERCADO DO BAIRRO"` (`valor` `-84.9`), `"TED PARA POUPANCA"` (`valor` `-500.0`, `eh_transferencia` `true`) e `"SALARIO"` (`valor` `6000.0`); `scripts/e2e-backend.sh` chama `load_transactions("tests/data/e2e_transactions.json")` dentro do `ingest(...)` e mantém `DELETE FROM sync_runs`. (estrutural)
-- [ ] CA1.8 — `uv run pytest --cov=app.queries.expenses --cov=app.routers.transactions --cov-report=term tests/test_expenses_api.py` reporta ≥ 80% em `app/queries/expenses.py` e `app/routers/transactions.py`. (comando)
+- [x] CA1.1 — `bash scripts/lint.sh` sai com código 0. (comando)
+- [x] CA1.2 — `uv run pytest tests/test_expenses_api.py tests/test_sync_api.py tests/test_accounts_api.py tests/test_auth_api.py` passa, e cada nome de teste listado em T1.4 existe em `tests/test_expenses_api.py`. (comando)
+- [x] CA1.3 — `bash scripts/gates/gates_runner.sh` sai com código 0. (comando)
+- [x] CA1.4 — Existe `app/queries/expenses.py` com `ExpensesPage` (dataclass com `items: list[dict[str, Any]]` e `total: int`) e `list_expenses(conn: sqlite3.Connection, *, page: int, page_size: int) -> ExpensesPage`; o arquivo importa `SPENDING` de `app.queries.spending`, `category_labels` de `app.taxonomy.seed` e `labels` de `app.payees.names`; a string `amount_cents < 0` não aparece nele; contém `LEFT JOIN accounts`, `ORDER BY t.date DESC, t.id DESC` e `LIMIT ? OFFSET ?`; não contém `commit(`. (estrutural)
+- [x] CA1.5 — `app/routers/transactions.py` define `router = APIRouter(prefix="/api/transactions")`, `Expense` e `ExpensesResponse` com os campos de T1.2, e `def expenses(page: Annotated[int, Query(ge=1)] = 1, page_size: Annotated[int, Query(ge=1, le=100)] = 20) -> ExpensesResponse` em `@router.get("/expenses")`; a rota é `def`, não `async def`; as strings `SELECT`, `INSERT` e `commit(` não aparecem no arquivo; `app/main.py` inclui `transactions.router`. (estrutural)
+- [x] CA1.6 — `GET /api/transactions/expenses` sem sessão responde 401 (`test_expenses_without_session_answers_401`); com transferência, estorno, lançamento estornado e entrada na base, só o gasto volta e `total == 1` (`test_only_spending_rows_come_back`); `page=3` de 25 gastos responde 200 com `items: []` e `total: 25` (`test_a_page_past_the_end_is_empty_with_the_right_total`). (comportamental)
+- [x] CA1.7 — `tests/data/e2e_transactions.json` tem três objetos com `conta_id` `"acc-fixture-1"`, descrições `"MERCADO DO BAIRRO"` (`valor` `-84.9`), `"TED PARA POUPANCA"` (`valor` `-500.0`, `eh_transferencia` `true`) e `"SALARIO"` (`valor` `6000.0`); `scripts/e2e-backend.sh` chama `load_transactions("tests/data/e2e_transactions.json")` dentro do `ingest(...)` e mantém `DELETE FROM sync_runs`. (estrutural)
+- [x] CA1.8 — `uv run pytest --cov=app.queries.expenses --cov=app.routers.transactions --cov-report=term tests/test_expenses_api.py` reporta ≥ 80% em `app/queries/expenses.py` e `app/routers/transactions.py`. (comando)
 
 ## Fase 2 — Cabeçalho com navegação, rota `/expenses` e lista de gastos com estados
 
