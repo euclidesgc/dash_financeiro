@@ -5,7 +5,7 @@ prova o caminho de ponta a ponta (tela React → API FastAPI → SQLite) e as ou
 
 | # | Fatia | O usuário consegue… | Origem | Depende de | Status |
 |---|---|---|---|---|---|
-| 001 | `login-e-saldos` | entrar no painel e ver o saldo de hoje de cada conta | Pedido de 22/09 | — | planned |
+| 001 | `login-e-saldos` | entrar no painel e ver o saldo de hoje de cada conta | Pedido de 22/09 | — | in-progress |
 | 002 | `atualizar-registros` | apertar um botão e ter todos os registros bancários atualizados na base, vendo quando foi a última atualização | Pedido de 22/09 | 001 | planned |
 | 003 | `lista-de-gastos` | ver uma lista paginada com todos os gastos de todas as contas | Pedido de 22/09 | 001 | planned |
 | 004 | `ordenar-gastos` | ordenar os gastos por data, valor ou categoria | Pedido de 22/09 | 003 | planned |
