@@ -27,3 +27,8 @@ venv/
 .debug/
 coverage/
 .vitest/
+
+node_modules/
+dist/
+playwright-report/
+test-results/

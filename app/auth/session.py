@@ -1,4 +1,5 @@
 from itsdangerous import BadSignature, TimestampSigner
+from starlette.responses import Response
 
 COOKIE_NAME = "dash_session"
 MAX_AGE_SECONDS = 43200
@@ -40,3 +41,23 @@ def read_cookie(
     if epoch is not None and int(carried) != epoch:
         return None
     return login
+
+
+def attach_session(response: Response, login: str, *, secret: str, epoch: int) -> None:
+    response.set_cookie(
+        COOKIE_NAME,
+        issue_cookie(login, secret=secret, epoch=epoch),
+        max_age=MAX_AGE_SECONDS,
+        path="/",
+        httponly=True,
+        samesite="Lax",  # type: ignore[arg-type]  # wire casing "SameSite=Lax" is pinned by test_login.py; typeshed only accepts lowercase
+    )
+
+
+def detach_session(response: Response) -> None:
+    response.delete_cookie(
+        COOKIE_NAME,
+        path="/",
+        httponly=True,
+        samesite="Lax",  # type: ignore[arg-type]  # wire casing "SameSite=Lax" is pinned by test_login.py; typeshed only accepts lowercase
+    )

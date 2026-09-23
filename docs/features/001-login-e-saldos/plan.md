@@ -15,7 +15,7 @@ Decisões registradas aqui (a SPEC deixou a escolha ao plano; escolhido o mais s
 
 Só Python. Ao final: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`, `GET /api/accounts/balances` respondem JSON; `GET /app/*` devolve a SPA quando compilada e 503 quando não; o login Jinja continua funcionando com a mesma lógica extraída.
 
-- [ ] T1.1 — Extrair a verificação de credencial e a emissão/remoção do cookie para módulos de `app/auth`, e fazer o router Jinja usá-los
+- [x] T1.1 — Extrair a verificação de credencial e a emissão/remoção do cookie para módulos de `app/auth`, e fazer o router Jinja usá-los
   - Arquivos: `app/auth/attempt.py` (criar); `app/auth/session.py` (alterar); `app/routers/auth.py` (alterar); `tests/test_login.py` (alterar)
   - O que fazer:
     - `app/auth/attempt.py`: constantes `REJECTED_MESSAGE = "Login ou senha inválidos."` e `THROTTLED_MESSAGE = "Muitas tentativas seguidas. Tente novamente mais tarde."` (movidas de `app/routers/auth.py`, com o comentário de porquê); `@dataclass(frozen=True) class LoginOutcome: accepted: bool; epoch: int; retry_after: int`; `def attempt_login(conn: sqlite3.Connection, ip: str, login: str, password: str) -> LoginOutcome` que: chama `blocked_seconds(conn, ip)` e, se `> 0`, devolve `LoginOutcome(False, 0, waiting)`; consulta `SELECT password_hash, session_epoch FROM users WHERE login = ?`; usa `verify_absent_user(password)` quando a linha não existe e `verify_password(password, row["password_hash"])` quando existe (mantendo o comentário de tempo constante); em recusa chama `record_failure(conn, ip)` e devolve `LoginOutcome(False, 0, 0)`; em aceite chama `record_success(conn, ip)` e devolve `LoginOutcome(True, int(row["session_epoch"]), 0)`.
@@ -25,7 +25,7 @@ Só Python. Ao final: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api
   - Skills: authentication, security
   - Complexidade: média
 
-- [ ] T1.2 — Guard com prefixo público e API JSON de autenticação
+- [x] T1.2 — Guard com prefixo público e API JSON de autenticação
   - Arquivos: `app/auth/guard.py` (alterar); `app/routers/auth_api.py` (criar)
   - O que fazer:
     - `app/auth/guard.py`: `PUBLIC_PATHS = frozenset({"/login", "/api/auth/login"})`; novo `PUBLIC_PREFIXES = ("/app",)`; em `require_session`, é público se `path in PUBLIC_PATHS` ou `path == p or path.startswith(p + "/")` para algum `p` em `PUBLIC_PREFIXES` (assim `/app` e `/app/x` são públicos, `/apple` não). Comentário de porquê: o shell da SPA não devolve dado; o dado está em `/api/*`, que continua exigindo sessão (invariante 24).
@@ -33,7 +33,7 @@ Só Python. Ao final: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api
   - Skills: authentication, routing, error-handling
   - Complexidade: média
 
-- [ ] T1.3 — Consulta e endpoint de saldos
+- [x] T1.3 — Consulta e endpoint de saldos
   - Arquivos: `app/queries/balances.py` (criar); `app/routers/accounts.py` (criar)
   - O que fazer:
     - `app/queries/balances.py`: `BALANCES = "SELECT id, name, institution, type, subtype, balance_cents, updated_at FROM accounts ORDER BY type, name"`; `def list_balances(conn: sqlite3.Connection) -> list[sqlite3.Row]` que executa e devolve `fetchall()`.
@@ -41,7 +41,7 @@ Só Python. Ao final: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api
   - Skills: api-requests
   - Complexidade: baixa
 
-- [ ] T1.4 — Servir a SPA compilada sob `/app` e registrar os routers novos
+- [x] T1.4 — Servir a SPA compilada sob `/app` e registrar os routers novos
   - Arquivos: `app/spa.py` (criar); `app/main.py` (alterar); `.gitignore` (alterar)
   - O que fazer:
     - `app/spa.py`: `SPA_MISSING = "SPA não compilada: rode pnpm build"`; `def mount_spa(app: FastAPI, dist: Path) -> None`: se `(dist / "assets").is_dir()`, `app.mount("/app/assets", StaticFiles(directory=dist / "assets"), name="spa-assets")`; sempre registra `@app.get("/app")` e `@app.get("/app/{path:path}")` (mesma função `def spa_index() -> Response`) que devolve `FileResponse(dist / "index.html", media_type="text/html")` se o arquivo existir, senão `JSONResponse({"detail": SPA_MISSING}, status_code=503)`. A verificação de existência é por requisição (o `dist/` pode nascer com o servidor de pé). Comentário de porquê no mount condicional: `StaticFiles` recusa diretório inexistente na construção, e o CI Python roda sem `pnpm build`.
@@ -50,7 +50,7 @@ Só Python. Ao final: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api
   - Skills: routing
   - Complexidade: baixa
 
-- [ ] T1.5 — Testes da fase 1
+- [x] T1.5 — Testes da fase 1
   - Arquivos: `tests/test_auth_api.py` (criar); `tests/test_accounts_api.py` (criar); `tests/test_spa.py` (criar)
   - O que fazer: fixture `client` igual à de `tests/test_login.py` (`DASH_ENV_FILE=/dev/null`, `DASH_DB_PATH` em `tmp_path`, `SESSION_SECRET`, `seed_user`, `TestClient(follow_redirects=False)`). Casos:
     - `tests/test_auth_api.py`: `test_login_answers_204_and_sets_the_same_cookie_as_the_html_form` (204, sem corpo, `set-cookie` contém `dash_session=`, `HttpOnly`, `SameSite=Lax`, `Path=/`, `Max-Age=43200`); `test_wrong_password_answers_401_with_the_generic_message` (`{"detail":"Login ou senha inválidos."}`, sem `set-cookie`); `test_unknown_login_gets_the_same_401_message`; `test_the_sixth_failure_answers_429_with_retry_after` (`MAX_FAILURES` erros, depois 429 com `{"detail":"Muitas tentativas seguidas. Tente novamente mais tarde."}` e `retry-after` entre 1 e `WINDOW_SECONDS`); `test_login_without_session_is_public` (POST sem cookie não recebe 401 do guard, e sim 401/204 do próprio endpoint — provado com corpo inválido de credencial vindo com a mensagem genérica); `test_login_with_missing_fields_answers_422` (body `{}`); `test_me_without_session_answers_401` (`{"detail":"nao autenticado"}`); `test_me_with_session_returns_the_login` (`{"login":"teste"}`); `test_logout_expires_the_cookie_and_invalidates_the_previous_session` (204, `Max-Age=0` no `set-cookie`; reenviar o cookie antigo em `GET /api/auth/me` dá 401); `test_the_html_login_still_works_with_the_extracted_logic` (`POST /login` form continua 302 para `/` — guarda contra regressão de T1.1).
@@ -61,16 +61,16 @@ Só Python. Ao final: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api
 
 ### Critérios de aceite da fase 1
 
-- [ ] CA1.1 — `bash scripts/lint.sh` sai com código 0. (comando)
-- [ ] CA1.2 — `uv run pytest tests/test_login.py tests/test_auth_api.py tests/test_accounts_api.py tests/test_spa.py tests/test_session.py tests/test_rate_limit.py` passa, e cada nome de teste listado em T1.5 existe no arquivo indicado. (comando)
-- [ ] CA1.3 — `bash scripts/gates/gates_runner.sh` sai com código 0. (comando)
-- [ ] CA1.4 — Existe `app/auth/attempt.py` com `LoginOutcome` (dataclass congelada com `accepted: bool`, `epoch: int`, `retry_after: int`), `attempt_login(conn: sqlite3.Connection, ip: str, login: str, password: str) -> LoginOutcome`, `REJECTED_MESSAGE = "Login ou senha inválidos."` e `THROTTLED_MESSAGE = "Muitas tentativas seguidas. Tente novamente mais tarde."`. `app/routers/auth.py` não contém a string `SELECT`, não importa `app.auth.password` nem `app.auth.rate_limit`, e não define as duas mensagens. (estrutural)
-- [ ] CA1.5 — `app/auth/session.py` exporta `attach_session(response, login, *, secret, epoch) -> None` e `detach_session(response) -> None`; `set_cookie`/`delete_cookie` de `dash_session` aparecem apenas nesse arquivo em `app/`. (estrutural)
-- [ ] CA1.6 — `app/auth/guard.py` tem `PUBLIC_PATHS = frozenset({"/login", "/api/auth/login"})` e `PUBLIC_PREFIXES = ("/app",)`; `/apple` sem sessão redireciona para `/login` (teste `test_apple_is_not_public`). (estrutural, comportamental)
-- [ ] CA1.7 — `app/routers/auth_api.py` expõe `POST /api/auth/login` (204 + cookie; 401 `{"detail":"Login ou senha inválidos."}`; 429 `{"detail":"Muitas tentativas seguidas. Tente novamente mais tarde."}` com `Retry-After`), `POST /api/auth/logout` (204, `Max-Age=0`) e `GET /api/auth/me` (200 `{"login": str}`), com modelos `LoginRequest` e `MeResponse`. (comportamental)
-- [ ] CA1.8 — `app/queries/balances.py` define `BALANCES` com `ORDER BY type, name` e `list_balances(conn)`; `app/routers/accounts.py` expõe `GET /api/accounts/balances` devolvendo `BalancesResponse` com `AccountBalance(id, name, institution, type, subtype, balance_cents: int, updated_at: str | None)`; a string `SELECT` não aparece em `app/routers/accounts.py`. (estrutural)
-- [ ] CA1.9 — `app/spa.py` define `mount_spa(app: FastAPI, dist: Path) -> None`; `app/main.py` chama `mount_spa(app, Path("dist"))` e inclui `auth_api.router` e `accounts.router`; `.gitignore` contém `node_modules/`, `dist/`, `playwright-report/` e `test-results/`. (estrutural)
-- [ ] CA1.10 — `uv run pytest --cov=app/auth --cov=app/routers/auth_api.py --cov=app/routers/accounts.py --cov=app/queries/balances.py --cov=app/spa.py --cov-report=term tests/test_login.py tests/test_auth_api.py tests/test_accounts_api.py tests/test_spa.py` reporta ≥ 80% em cada um desses arquivos. (comando)
+- [x] CA1.1 — `bash scripts/lint.sh` sai com código 0. (comando)
+- [x] CA1.2 — `uv run pytest tests/test_login.py tests/test_auth_api.py tests/test_accounts_api.py tests/test_spa.py tests/test_session.py tests/test_rate_limit.py` passa, e cada nome de teste listado em T1.5 existe no arquivo indicado. (comando)
+- [x] CA1.3 — `bash scripts/gates/gates_runner.sh` sai com código 0. (comando)
+- [x] CA1.4 — Existe `app/auth/attempt.py` com `LoginOutcome` (dataclass congelada com `accepted: bool`, `epoch: int`, `retry_after: int`), `attempt_login(conn: sqlite3.Connection, ip: str, login: str, password: str) -> LoginOutcome`, `REJECTED_MESSAGE = "Login ou senha inválidos."` e `THROTTLED_MESSAGE = "Muitas tentativas seguidas. Tente novamente mais tarde."`. `app/routers/auth.py` não contém a string `SELECT`, não importa `app.auth.password` nem `app.auth.rate_limit`, e não define as duas mensagens. (estrutural)
+- [x] CA1.5 — `app/auth/session.py` exporta `attach_session(response, login, *, secret, epoch) -> None` e `detach_session(response) -> None`; `set_cookie`/`delete_cookie` de `dash_session` aparecem apenas nesse arquivo em `app/`. (estrutural)
+- [x] CA1.6 — `app/auth/guard.py` tem `PUBLIC_PATHS = frozenset({"/login", "/api/auth/login"})` e `PUBLIC_PREFIXES = ("/app",)`; `/apple` sem sessão redireciona para `/login` (teste `test_apple_is_not_public`). (estrutural, comportamental)
+- [x] CA1.7 — `app/routers/auth_api.py` expõe `POST /api/auth/login` (204 + cookie; 401 `{"detail":"Login ou senha inválidos."}`; 429 `{"detail":"Muitas tentativas seguidas. Tente novamente mais tarde."}` com `Retry-After`), `POST /api/auth/logout` (204, `Max-Age=0`) e `GET /api/auth/me` (200 `{"login": str}`), com modelos `LoginRequest` e `MeResponse`. (comportamental)
+- [x] CA1.8 — `app/queries/balances.py` define `BALANCES` com `ORDER BY type, name` e `list_balances(conn)`; `app/routers/accounts.py` expõe `GET /api/accounts/balances` devolvendo `BalancesResponse` com `AccountBalance(id, name, institution, type, subtype, balance_cents: int, updated_at: str | None)`; a string `SELECT` não aparece em `app/routers/accounts.py`. (estrutural)
+- [x] CA1.9 — `app/spa.py` define `mount_spa(app: FastAPI, dist: Path) -> None`; `app/main.py` chama `mount_spa(app, Path("dist"))` e inclui `auth_api.router` e `accounts.router`; `.gitignore` contém `node_modules/`, `dist/`, `playwright-report/` e `test-results/`. (estrutural)
+- [x] CA1.10 — `uv run pytest --cov=app.auth --cov=app.routers.auth_api --cov=app.routers.accounts --cov=app.queries.balances --cov=app.spa --cov-report=term tests/test_login.py tests/test_auth_api.py tests/test_accounts_api.py tests/test_spa.py` reporta ≥ 80% em `app/routers/auth_api.py`, `app/routers/accounts.py`, `app/queries/balances.py`, `app/spa.py` e no agregado de `app/auth`. (comando)
 
 ## Fase 2 — Scaffold da SPA e tela de Entrar
 

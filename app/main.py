@@ -6,8 +6,10 @@ from app.auth.guard import install_guard
 from app.config import resolve_session_secret
 from app.migrate import run_migrations
 from app.routers import (
+    accounts,
     advisor,
     auth,
+    auth_api,
     cards,
     commitments,
     debts,
@@ -33,6 +35,7 @@ from app.routers.render import (
     unit_value,
 )
 from app.settings import limits
+from app.spa import mount_spa
 
 STYLESHEETS_FOLDER = Path(__file__).resolve().parent / "static" / "css"
 
@@ -63,6 +66,8 @@ def create_app() -> FastAPI:
     app.state.session_secret = resolve_session_secret()
     install_guard(app)
     app.include_router(auth.router)
+    app.include_router(auth_api.router)
+    app.include_router(accounts.router)
     app.include_router(cards.router)
     app.include_router(summary.router)
     app.include_router(spending.router)
@@ -76,4 +81,5 @@ def create_app() -> FastAPI:
     app.include_router(offers.router)
     app.include_router(advisor.router)
     app.include_router(health.router)
+    mount_spa(app, Path("dist"))
     return app

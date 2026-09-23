@@ -3,11 +3,11 @@ from argon2 import PasswordHasher
 from fastapi.testclient import TestClient
 
 from app.auth import password as password_module
+from app.auth.attempt import REJECTED_MESSAGE
 from app.auth.rate_limit import MAX_FAILURES, WINDOW_SECONDS
 from app.auth.seed import seed_user
 from app.db import connect
 from app.main import create_app
-from app.routers.auth import REJECTED_MESSAGE
 
 LOGIN = "teste"
 PASSWORD = "senha-teste-9k2"
