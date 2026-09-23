@@ -159,13 +159,13 @@ Ao final: `pnpm dev` sobe a SPA em `http://127.0.0.1:5173/app/`, `/app/login` mo
 
 Ao final: `/app/` lista contas e cartões com os quatro estados; `pnpm build` gera `dist/` e o FastAPI o serve em `http://127.0.0.1:8000/app/`; o Playwright prova login → saldos → sair contra o backend real.
 
-- [ ] T3.1 — Formatadores de dinheiro e data
+- [x] T3.1 — Formatadores de dinheiro e data
   - Arquivos: `src/utils/format-money.ts` (criar); `src/utils/format-date-time.ts` (criar)
   - O que fazer: `export function formatMoney(cents: number): string` = `new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cents / 100)` (formatter criado uma vez no módulo). `export function formatDateTime(iso: string | null): string | null`: `null` → `null`; string inválida (`Number.isNaN(Date.parse(iso))`) → `null`; válida → `new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(iso))`.
   - Skills: unit-testing
   - Complexidade: baixa
 
-- [ ] T3.2 — Feature `accounts`: tipo, chamada de saldos, item e lista com os quatro estados
+- [x] T3.2 — Feature `accounts`: tipo, chamada de saldos, item e lista com os quatro estados
   - Arquivos: `src/features/accounts/types/account-balance.ts` (criar); `src/features/accounts/api/get-balances.ts` (criar); `src/features/accounts/components/balance-item.tsx` (criar); `src/features/accounts/components/balances-list.tsx` (criar); `src/app/routes/dashboard.tsx` (alterar)
   - O que fazer:
     - `account-balance.ts`: `export type AccountType = 'BANK' | 'CREDIT'`; `export type AccountBalance = { id: string; name: string | null; institution: string | null; type: AccountType | null; subtype: string | null; balance_cents: number; updated_at: string | null }`; `export type BalancesResponse = { accounts: AccountBalance[] }`.
@@ -176,7 +176,7 @@ Ao final: `/app/` lista contas e cartões com os quatro estados; `pnpm build` ge
   - Skills: api-requests, interface-design, error-handling, component-robustness
   - Complexidade: média
 
-- [ ] T3.3 — Backend de e2e e configuração do Playwright
+- [x] T3.3 — Backend de e2e e configuração do Playwright
   - Arquivos: `scripts/e2e-backend.sh` (criar); `playwright.config.ts` (criar); `e2e/login-and-balances.spec.ts` (criar)
   - O que fazer:
     - `scripts/e2e-backend.sh`: `set -euo pipefail`; `E2E_DIR=$(mktemp -d)`; exporta `DASH_ENV_FILE=/dev/null`, `DASH_DB_PATH="$E2E_DIR/dash.sqlite"`, `SESSION_SECRET=e2e-secret`; roda `uv run python -c` que faz `run_migrations()`, `seed_user(conn, "e2e", "senha-e2e-9k2")` e `ingest(conn, transactions=[], accounts=load_accounts("tests/fixtures/accounts_fixture.json"), source="e2e")`, saindo com 1 se `status != "ok"`; `trap 'rm -rf "$E2E_DIR"' EXIT`; `exec uv run uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000`. Se `--factory` não for aceito pela versão de uvicorn instalada, criar `app/asgi.py` com `app = create_app()` e apontar para `app.asgi:app` (registrar no plano como decidido: prefira `--factory`).
@@ -185,7 +185,7 @@ Ao final: `/app/` lista contas e cartões com os quatro estados; `pnpm build` ge
   - Skills: e2e-testing
   - Complexidade: alta
 
-- [ ] T3.4 — Testes da fase 3
+- [x] T3.4 — Testes da fase 3
   - Arquivos: `src/utils/__tests__/format-money.test.ts` (criar); `src/utils/__tests__/format-date-time.test.ts` (criar); `src/features/accounts/components/__tests__/balances-list.test.tsx` (criar); `src/app/__tests__/login-to-balances.test.tsx` (criar)
   - O que fazer:
     - `format-money.test.ts` (unit-testing): `formats a positive amount` (`123456` → contém "1.234,56" e "R$"); `formats a negative amount` (`-54321` → contém "-" e "543,21"); `formats zero` ("0,00"); `keeps the cents` (`5` → "0,05"). Comparar com o espaço não separável normalizado (`replace(/ /g, ' ')`).
@@ -197,16 +197,16 @@ Ao final: `/app/` lista contas e cartões com os quatro estados; `pnpm build` ge
 
 ### Critérios de aceite da fase 3
 
-- [ ] CA3.1 — `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` saem com código 0; `bash scripts/lint.sh`, `uv run pytest` e `bash scripts/gates/gates_runner.sh` também. (comando)
-- [ ] CA3.2 — `pnpm test:e2e` sai com código 0, com os testes `signs in, sees the balances and signs out` e `rejects the wrong password` em `e2e/login-and-balances.spec.ts`. (comando)
-- [ ] CA3.3 — Depois de `pnpm build`, `uv run pytest tests/test_spa.py` passa e `dist/index.html` existe; `git status --porcelain` não lista `dist/` nem `node_modules/`. (comando)
-- [ ] CA3.4 — `src/utils/format-money.ts` exporta `formatMoney(cents: number): string`; `src/utils/format-date-time.ts` exporta `formatDateTime(iso: string | null): string | null`; ambos usam `Intl` com locale `'pt-BR'`. (estrutural)
-- [ ] CA3.5 — `src/features/accounts/api/get-balances.ts` exporta `getBalances(): Promise<BalancesResponse>`, `balancesQueryOptions` (queryKey `['accounts','balances']`) e `useBalances()`; `src/features/accounts/types/account-balance.ts` exporta `AccountType = 'BANK' | 'CREDIT'` e `AccountBalance` com `balance_cents: number` e `updated_at: string | null`. (estrutural)
-- [ ] CA3.6 — `balances-list.tsx` contém os textos literais "Carregando saldos…" (num elemento com `role="status"`), "Nenhuma conta sincronizada ainda. Rode a sincronização para trazer suas contas da Pluggy.", "Não foi possível carregar os saldos." e "Tentar de novo"; o erro é renderizado por `<Alert>` com `action` que chama `refetch`. (estrutural)
-- [ ] CA3.7 — `balance-item.tsx` contém "Conta", "Cartão", "Atualizado em" e "Sem data de atualização"; aplica `text-red-700` quando `balance_cents < 0` e `text-gray-900` caso contrário; o selo usa `bg-gray-100 text-gray-700` para `BANK` e `bg-amber-100 text-amber-800` para `CREDIT` com as classes de "Selo de status"; o valor tem `tabular-nums font-medium`; o bloco da esquerda tem `min-w-0` e o nome `truncate`. (estrutural)
-- [ ] CA3.8 — Piso visual: a lista em `balances-list.tsx` usa as classes de "Lista" do `docs/design.md`; o vazio usa as classes de "Vazio"; o carregando usa as de "Carregando"; `dashboard.tsx` renderiza `<BalancesList />` dentro do `<main>` do contêiner de página, abaixo do texto de apoio; nenhum arquivo em `src/` contém `style={{`, `<a href` ou `!important`. (estrutural)
-- [ ] CA3.9 — `scripts/e2e-backend.sh` exporta `DASH_ENV_FILE=/dev/null`, usa `DASH_DB_PATH` num diretório de `mktemp -d`, chama `seed_user` com login `e2e`, ingere `tests/fixtures/accounts_fixture.json` e sobe uvicorn em `127.0.0.1:8000`; `playwright.config.ts` tem dois `webServer` e `baseURL: 'http://127.0.0.1:5173/app'`. (estrutural)
-- [ ] CA3.10 — Os testes nomeados em T3.4 existem nos arquivos indicados; `pnpm test -- --coverage` reporta ≥ 80% de linhas em `src/utils/format-money.ts`, `src/utils/format-date-time.ts`, `src/features/accounts/components/balances-list.tsx`, `src/features/accounts/components/balance-item.tsx` e `src/lib/auth.tsx`. (comando)
+- [x] CA3.1 — `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` saem com código 0; `bash scripts/lint.sh`, `uv run pytest` e `bash scripts/gates/gates_runner.sh` também. (comando)
+- [x] CA3.2 — `pnpm test:e2e` sai com código 0, com os testes `signs in, sees the balances and signs out` e `rejects the wrong password` em `e2e/login-and-balances.spec.ts`. (comando)
+- [x] CA3.3 — Depois de `pnpm build`, `uv run pytest tests/test_spa.py` passa e `dist/index.html` existe; `git status --porcelain` não lista `dist/` nem `node_modules/`. (comando)
+- [x] CA3.4 — `src/utils/format-money.ts` exporta `formatMoney(cents: number): string`; `src/utils/format-date-time.ts` exporta `formatDateTime(iso: string | null): string | null`; ambos usam `Intl` com locale `'pt-BR'`. (estrutural)
+- [x] CA3.5 — `src/features/accounts/api/get-balances.ts` exporta `getBalances(): Promise<BalancesResponse>`, `balancesQueryOptions` (queryKey `['accounts','balances']`) e `useBalances()`; `src/features/accounts/types/account-balance.ts` exporta `AccountType = 'BANK' | 'CREDIT'` e `AccountBalance` com `balance_cents: number` e `updated_at: string | null`. (estrutural)
+- [x] CA3.6 — `balances-list.tsx` contém os textos literais "Carregando saldos…" (num elemento com `role="status"`), "Nenhuma conta sincronizada ainda. Rode a sincronização para trazer suas contas da Pluggy.", "Não foi possível carregar os saldos." e "Tentar de novo"; o erro é renderizado por `<Alert>` com `action` que chama `refetch`. (estrutural)
+- [x] CA3.7 — `balance-item.tsx` contém "Conta", "Cartão", "Atualizado em" e "Sem data de atualização"; aplica `text-red-700` quando `balance_cents < 0` e `text-gray-900` caso contrário; o selo usa `bg-gray-100 text-gray-700` para `BANK` e `bg-amber-100 text-amber-800` para `CREDIT` com as classes de "Selo de status"; o valor tem `tabular-nums font-medium`; o bloco da esquerda tem `min-w-0` e o nome `truncate`. (estrutural)
+- [x] CA3.8 — Piso visual: a lista em `balances-list.tsx` usa as classes de "Lista" do `docs/design.md`; o vazio usa as classes de "Vazio"; o carregando usa as de "Carregando"; `dashboard.tsx` renderiza `<BalancesList />` dentro do `<main>` do contêiner de página, abaixo do texto de apoio; nenhum arquivo em `src/` contém `style={{`, `<a href` ou `!important`. (estrutural)
+- [x] CA3.9 — `scripts/e2e-backend.sh` exporta `DASH_ENV_FILE=/dev/null`, usa `DASH_DB_PATH` num diretório de `mktemp -d`, chama `seed_user` com login `e2e`, ingere `tests/fixtures/accounts_fixture.json` e sobe uvicorn em `127.0.0.1:8000`; `playwright.config.ts` tem dois `webServer` e `baseURL: 'http://127.0.0.1:5173/app'`. (estrutural)
+- [x] CA3.10 — Os testes nomeados em T3.4 existem nos arquivos indicados; `pnpm test -- --coverage` reporta ≥ 80% de linhas em `src/utils/format-money.ts`, `src/utils/format-date-time.ts`, `src/features/accounts/components/balances-list.tsx`, `src/features/accounts/components/balance-item.tsx` e `src/lib/auth.tsx`. (comando)
 
 ## DoD da entrega
 

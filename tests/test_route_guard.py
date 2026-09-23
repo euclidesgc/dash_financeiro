@@ -12,6 +12,7 @@ PUBLIC = {
     ("POST", "/login"),
     ("POST", "/api/auth/login"),
     ("GET", "/app"),
+    ("GET", "/app/assets"),
     ("GET", "/app/{path:path}"),
 }
 

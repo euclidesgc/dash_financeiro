@@ -4,16 +4,20 @@ export const fakeUser = { login: 'teste' }
 
 export const fakeAccounts = [
   {
-    type: 'BANK',
+    id: 'acc-bank-1',
     name: 'Conta corrente',
-    provider: 'Banco de teste',
+    institution: 'Banco de teste',
+    type: 'BANK',
+    subtype: 'CHECKING_ACCOUNT',
     balance_cents: 123456,
     updated_at: '2026-09-05T21:36:27.516Z',
   },
   {
-    type: 'CREDIT',
+    id: 'acc-credit-1',
     name: 'Cartão',
-    provider: 'Emissor de teste',
+    institution: 'Emissor de teste',
+    type: 'CREDIT',
+    subtype: 'CREDIT_CARD',
     balance_cents: -54321,
     updated_at: null,
   },
