@@ -15,6 +15,7 @@ export interface ExpensesResponse {
   page: number
   page_size: number
   total: number
+  total_cents: number
 }
 
 export type ExpenseSort = 'date' | 'amount' | 'category'
@@ -24,4 +25,11 @@ export interface ExpensesQuery {
   page: number
   sort: ExpenseSort
   order: ExpenseOrder
+  from: string | null
+  to: string | null
 }
+
+export type Period =
+  | { kind: 'all' }
+  | { kind: 'month'; month: string }
+  | { kind: 'range'; from: string | null; to: string | null }

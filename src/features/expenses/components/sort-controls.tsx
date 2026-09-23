@@ -22,7 +22,7 @@ export function SortControls({
   const selectId = useId()
 
   return (
-    <div className="mt-6 flex flex-wrap items-end gap-3">
+    <>
       <div className="flex flex-col gap-1">
         <label htmlFor={selectId} className="block text-sm font-medium text-gray-900">
           Ordenar por
@@ -53,6 +53,6 @@ export function SortControls({
       >
         {order === 'desc' ? 'Decrescente' : 'Crescente'}
       </Button>
-    </div>
+    </>
   )
 }

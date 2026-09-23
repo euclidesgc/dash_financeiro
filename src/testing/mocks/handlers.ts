@@ -188,12 +188,18 @@ export const handlers = [
     const pageSize = Number.parseInt(url.searchParams.get('page_size') ?? '20', 10) || 20
     const sort = (url.searchParams.get('sort') ?? 'date') as ExpenseSort
     const order = (url.searchParams.get('order') ?? 'desc') as ExpenseOrder
-    const items = sortExpenses(fakeExpenses, sort, order)
+    const from = url.searchParams.get('from')
+    const to = url.searchParams.get('to')
+    const filtered = fakeExpenses.filter(
+      (item) => (from === null || item.date >= from) && (to === null || item.date <= to),
+    )
+    const items = sortExpenses(filtered, sort, order)
     return HttpResponse.json({
       items: items.slice((page - 1) * pageSize, page * pageSize),
       page,
       page_size: pageSize,
-      total: fakeExpenses.length,
+      total: filtered.length,
+      total_cents: filtered.reduce((sum, item) => sum + item.amount_cents, 0),
     })
   }),
 ]
