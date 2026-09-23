@@ -10,6 +10,7 @@ from app.db import connect
 from app.debts.ladder import rebuild
 from app.ingest.loader import IngestResult, ingest
 from app.ingest.source import load_accounts, load_transactions
+from app.sync.fetch import PluggyFetchError, fetch_from_pluggy
 from app.taxonomy.classify import classify_all
 
 FILE = "arquivo"
@@ -48,6 +49,10 @@ def synchronise(conn: sqlite3.Connection, *, today: date | None = None) -> SyncO
                 + " e ".join(missing)
                 + " no ambiente. Enquanto não houver, o painel lê o arquivo já consolidado."
             )
+        try:
+            fetch_from_pluggy(config)
+        except PluggyFetchError as failure:
+            return _record_failed(conn, PLUGGY, str(failure))
     try:
         transactions = load_transactions(config.transactions_path)
         accounts = load_accounts(config.accounts_glob)
@@ -90,8 +95,11 @@ def _demote(conn: sqlite3.Connection, run_id: int | None, failure: Exception) ->
 
 
 def _record_failure(conn: sqlite3.Connection, source: str, failure: Exception) -> SyncOutcome:
+    return _record_failed(conn, source, f"fonte ilegível: {type(failure).__name__}")
+
+
+def _record_failed(conn: sqlite3.Connection, source: str, message: str) -> SyncOutcome:
     now = datetime.now(UTC).isoformat()
-    message = f"fonte ilegível: {type(failure).__name__}"
     conn.execute(
         "INSERT INTO sync_runs (started_at, finished_at, source, status, message) "
         "VALUES (?, ?, ?, 'failed', ?)",
@@ -147,6 +155,7 @@ def days_since(run: dict[str, Any] | None, today: date) -> int | None:
     return None if when is None else (today - when.date()).days
 
 
+_PLUGGY = re.compile(r"^pluggy: (.+)$", re.S)
 _REJECTED = re.compile(r"rejected=(\d+)")
 _PRESENT = re.compile(r"accepted=(\d+) present=(\d+)")
 _WRITE = re.compile(r"erro de escrita: (\w+)")
@@ -160,6 +169,9 @@ def readable(message: str | None) -> str:
     # failure (RF-18).
     if not message:
         return "sem detalhe registrado."
+    pluggy = _PLUGGY.match(message)
+    if pluggy:
+        return pluggy.group(1)
     rejected = _REJECTED.search(message)
     if rejected:
         count = int(rejected.group(1))

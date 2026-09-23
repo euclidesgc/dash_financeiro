@@ -245,3 +245,31 @@ def test_the_message_does_not_promise_the_previous_state():
 
     assert "Parte das telas pode estar desatualizada" in said
     assert "mostram o estado anterior" not in said
+
+
+def test_with_the_pluggy_source_a_fetch_failure_records_a_failed_run(taxonomy_conn, monkeypatch):
+    import app.sync as sync
+
+    monkeypatch.setenv("DASH_SYNC_SOURCE", "pluggy")
+    monkeypatch.setenv("PLUGGY_CLIENT_ID", "id-falso")
+    monkeypatch.setenv("PLUGGY_CLIENT_SECRET", "segredo-falso")
+
+    def explode(config):
+        raise sync.PluggyFetchError(
+            "pluggy: a Pluggy não respondeu; verifique a conexão com a internet e tente de novo."
+        )
+
+    monkeypatch.setattr(sync, "fetch_from_pluggy", explode)
+    before = len(runs(taxonomy_conn))
+
+    outcome = synchronise(taxonomy_conn, today=REFERENCE)
+
+    assert outcome.status == "failed"
+    assert len(runs(taxonomy_conn)) == before + 1
+    row = taxonomy_conn.execute("SELECT source FROM sync_runs ORDER BY id DESC LIMIT 1").fetchone()
+    assert row["source"] == "pluggy"
+    assert readable(_message(taxonomy_conn)).startswith("a Pluggy não respondeu")
+
+
+def test_the_pluggy_prefix_is_removed_by_readable():
+    assert readable("pluggy: x") == "x"
