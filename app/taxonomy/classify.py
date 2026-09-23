@@ -112,8 +112,9 @@ def _record_categories(conn: sqlite3.Connection, fallback_group_id: int) -> None
         "SELECT DISTINCT category FROM transactions WHERE category IS NOT NULL AND category != ''"
     ).fetchall()
     conn.executemany(
-        "INSERT INTO categories (name, group_id) VALUES (?, ?) ON CONFLICT (name) DO NOTHING",
-        [(row["category"], fallback_group_id) for row in rows],
+        "INSERT INTO categories (name, group_id, label) VALUES (?, ?, ?) "
+        "ON CONFLICT (name) DO NOTHING",
+        [(row["category"], fallback_group_id, row["category"]) for row in rows],
     )
 
 

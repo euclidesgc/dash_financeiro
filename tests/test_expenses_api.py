@@ -1454,3 +1454,16 @@ def test_the_openapi_lists_patch_category(client):
     response = client.get("/openapi.json")
 
     assert "patch" in response.json()["paths"]["/api/transactions/{transaction_id}/category"]
+
+
+def test_renaming_a_category_reflects_in_the_list_and_in_by_category(client):
+    _sign_in(client)
+    _load([_transaction("g1", "2026-09-01", -60.0, categoria="Groceries")])
+
+    response = client.patch("/api/categories/Groceries", json={"label": "Mercado"})
+
+    assert response.status_code == 200
+    expenses = client.get("/api/transactions/expenses").json()["items"]
+    assert expenses[0]["category"] == "Mercado"
+    assert expenses[0]["category_key"] == "Groceries"
+    assert _group_tuples(_by_category(client)) == [("Groceries", "Mercado", 1, -6000)]

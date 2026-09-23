@@ -126,6 +126,8 @@ test('opens the select with focus and the options in order for an automatic row'
     'Sem categoria',
     'Alimentação',
     'Compras',
+    'Lazer',
+    'Pet shop',
     'Supermercado',
     'Transporte',
   ])

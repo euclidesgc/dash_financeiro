@@ -1,7 +1,7 @@
 from app.routers import rules as rules_router
 from app.routers import spending as spending_router
 from app.taxonomy.classify import classify_all
-from app.taxonomy.seed import category_labels, load_seed, seed_taxonomy
+from app.taxonomy.seed import load_seed, seed_labels, seed_taxonomy
 from tests.conftest import load, transaction
 
 NAMED_CATEGORIES = 76
@@ -33,9 +33,9 @@ def test_the_categories_seed_declares_seventy_seven_entries_inside_the_twelve_gr
         assert set(entry) == {"name", "label", "group"}
         assert entry["group"] in declared_groups
 
-    assert category_labels() == {entry["name"]: entry["label"] for entry in categories}
-    assert spending_router.LABELS == category_labels()
-    assert rules_router.LABELS == category_labels()
+    assert seed_labels() == {entry["name"]: entry["label"] for entry in categories}
+    assert spending_router.LABELS == seed_labels()
+    assert rules_router.LABELS == seed_labels()
 
 
 def test_the_seeded_tree_covers_every_category_without_an_orphan_group(taxonomy_conn):
@@ -46,6 +46,20 @@ def test_the_seeded_tree_covers_every_category_without_an_orphan_group(taxonomy_
 
     assert total == ALL_CATEGORIES
     assert orphans == 0
+
+
+def test_the_seed_writes_the_label_of_every_category(taxonomy_conn):
+    seed_taxonomy(taxonomy_conn)
+
+    labels = {
+        row["name"]: row["label"]
+        for row in taxonomy_conn.execute("SELECT name, label FROM categories")
+    }
+    assert labels == seed_labels()
+    assert (
+        taxonomy_conn.execute("SELECT count(*) FROM categories WHERE is_system = 1").fetchone()[0]
+        == ALL_CATEGORIES
+    )
 
 
 def test_every_category_rule_agrees_with_the_tree_it_points_at(taxonomy_conn):

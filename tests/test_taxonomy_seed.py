@@ -18,12 +18,17 @@ MISMATCHED_GROUP = (
 )
 
 MIGRATION_012 = (SQL_FOLDER / "012_taxonomy_tree.sql").read_text(encoding="utf-8")
+MIGRATION_020 = (SQL_FOLDER / "020_category_labels.sql").read_text(encoding="utf-8")
 
 
 @pytest.fixture
 def seeded(taxonomy_conn):
     seed_taxonomy(taxonomy_conn)
     return taxonomy_conn
+
+
+def label_of(conn, name):
+    return conn.execute("SELECT label FROM categories WHERE name = ?", (name,)).fetchone()[0]
 
 
 def test_a_second_and_a_third_seed_leave_every_count_untouched(seeded):
@@ -190,6 +195,9 @@ def test_the_taxonomy_tree_migracao_drops_categories_and_only_classify_all_puts_
     assert names_before == {entry["name"] for entry in declared}
 
     taxonomy_conn.executescript(MIGRATION_012)
+    # Reason: 012 drops and recreates categories without label/is_system;
+    # 020 must run again so the columns _record_categories writes exist.
+    taxonomy_conn.executescript(MIGRATION_020)
     taxonomy_conn.commit()
     assert taxonomy_conn.execute("SELECT count(*) FROM categories").fetchone()[0] == 0
 
@@ -202,3 +210,42 @@ def test_the_taxonomy_tree_migracao_drops_categories_and_only_classify_all_puts_
     names_after = {row[0] for row in taxonomy_conn.execute("SELECT name FROM categories")}
     assert names_after == names_before
     assert changed == 0
+
+
+def test_reseeding_keeps_a_label_the_owner_renamed(seeded):
+    seeded.execute("UPDATE categories SET label = 'Mercado' WHERE name = 'Groceries'")
+    seeded.commit()
+
+    seed_taxonomy(seeded)
+
+    assert label_of(seeded, "Groceries") == "Mercado"
+
+
+def test_reseeding_names_a_category_recorded_before_the_seed(taxonomy_conn):
+    taxonomy_conn.execute(
+        "INSERT INTO category_groups (name, position, is_fallback) VALUES ('Outros', 1, 1)"
+    )
+    taxonomy_conn.execute(
+        "INSERT INTO categories (name, group_id, label) VALUES ('Groceries', 1, 'Groceries')"
+    )
+    taxonomy_conn.commit()
+
+    seed_taxonomy(taxonomy_conn)
+
+    assert label_of(taxonomy_conn, "Groceries") == "Supermercado"
+
+
+def test_reseeding_keeps_a_category_the_owner_created(seeded):
+    seeded.execute(
+        "INSERT INTO categories (name, group_id, label, is_system) VALUES "
+        "('pet-shop', (SELECT id FROM category_groups WHERE is_fallback = 1), 'Pet shop', 0)"
+    )
+    seeded.commit()
+
+    seed_taxonomy(seeded)
+
+    row = seeded.execute(
+        "SELECT label, is_system FROM categories WHERE name = 'pet-shop'"
+    ).fetchone()
+    assert tuple(row) == ("Pet shop", 0)
+    assert seeded.execute("SELECT count(*) FROM categories").fetchone()[0] == 78

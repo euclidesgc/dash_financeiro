@@ -14,6 +14,7 @@ from app.migrations.runner import (
     apply_migrations,
     reconcile_skipped,
 )
+from app.taxonomy.seed import seed_labels
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -62,6 +63,7 @@ EXPECTED_MIGRATIONS = [
     "015_advisor_config.sql",
     "018_offers.sql",
     "019_category_manual.sql",
+    "020_category_labels.sql",
 ]
 
 TABLE_NAMES = (
@@ -244,7 +246,7 @@ def test_category_source_defaults_to_auto_and_only_accepts_auto_or_manual(conn):
 def test_a_base_migrated_before_019_copies_category_into_category_auto(tmp_path, conn):
     folder = tmp_path / "sql"
     folder.mkdir()
-    for name in EXPECTED_MIGRATIONS[:-1]:
+    for name in EXPECTED_MIGRATIONS[:-2]:
         _write_sql(folder, name, (ROOT / "app" / "migrations" / "sql" / name).read_text())
     apply_migrations(conn, folder)
 
@@ -267,7 +269,46 @@ def test_a_base_migrated_before_019_copies_category_into_category_auto(tmp_path,
     assert tuple(row) == ("Groceries", "auto")
 
 
-def test_a_fresh_base_applies_the_seventeen_real_migrations(tmp_path):
+def test_a_base_migrated_before_020_gets_the_seed_labels_and_is_system(tmp_path, conn):
+    folder = tmp_path / "sql"
+    folder.mkdir()
+    for name in EXPECTED_MIGRATIONS[:-1]:
+        _write_sql(folder, name, (ROOT / "app" / "migrations" / "sql" / name).read_text())
+    apply_migrations(conn, folder)
+
+    conn.execute(
+        "INSERT INTO category_groups (name, position, is_fallback) VALUES ('Outros', 1, 1)"
+    )
+    for key in seed_labels():
+        conn.execute("INSERT INTO categories (name, group_id) VALUES (?, 1)", (key,))
+    conn.execute("INSERT INTO categories (name, group_id) VALUES ('Zzz', 1)")
+    conn.commit()
+
+    _write_sql(
+        folder,
+        "020_category_labels.sql",
+        (ROOT / "app" / "migrations" / "sql" / "020_category_labels.sql").read_text(),
+    )
+    apply_migrations(conn, folder)
+
+    labels = {
+        row["name"]: row["label"] for row in conn.execute("SELECT name, label FROM categories")
+    }
+    assert labels == {**seed_labels(), "Zzz": "Zzz"}
+    assert conn.execute("SELECT count(*) FROM categories WHERE is_system != 1").fetchone()[0] == 0
+
+    label_info = conn.execute(
+        "select type, \"notnull\", dflt_value from pragma_table_info('categories') where name = 'label'"
+    ).fetchone()
+    assert tuple(label_info) == ("TEXT", 1, "''")
+    is_system_info = conn.execute(
+        "select type, \"notnull\", dflt_value from pragma_table_info('categories') "
+        "where name = 'is_system'"
+    ).fetchone()
+    assert tuple(is_system_info) == ("INTEGER", 1, "1")
+
+
+def test_a_fresh_base_applies_the_eighteen_real_migrations(tmp_path):
     result = subprocess.run(
         [sys.executable, "-m", "app.migrate"],
         cwd=ROOT,
@@ -281,7 +322,7 @@ def test_a_fresh_base_applies_the_seventeen_real_migrations(tmp_path):
     )
 
     assert result.returncode == 0
-    assert "migrations applied: 17" in result.stdout
+    assert "migrations applied: 18" in result.stdout
 
 
 def _base_que_pulou(conn, folder):

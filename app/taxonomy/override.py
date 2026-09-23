@@ -17,7 +17,7 @@ class UnknownCategoryError(ValueError):
 
 
 def set_manual(conn: sqlite3.Connection, transaction_id: int, category: str | None) -> None:
-    if category is not None and category not in {c.key for c in pickable_categories()}:
+    if category is not None and category not in {c.key for c in pickable_categories(conn)}:
         raise UnknownCategoryError(category)
     _require(conn, transaction_id)
     _write(

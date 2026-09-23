@@ -12,7 +12,7 @@ from app.queries.period import default_period
 from app.queries.series import MONTHS
 from app.routers.reference import screen_date
 from app.taxonomy.classify import classify_all
-from app.taxonomy.seed import category_labels, load_seed, seed_taxonomy
+from app.taxonomy.seed import load_seed, seed_labels, seed_taxonomy
 from tests.conftest import ACCOUNT, load, transaction
 
 LOGIN = "teste"
@@ -178,7 +178,7 @@ def test_a_category_already_in_portuguese_shows_its_name_once(client, window):
 
 def test_a_category_whose_label_differs_from_its_name_shows_both(client, vocabulary):
     key = vocabulary["floor_category"]
-    label = category_labels()[key]
+    label = seed_labels()[key]
     table = client.get(TABLE, params={"eixo": CATEGORY})
     row = next(part for part in table.text.split("<tr") if f">{label}<" in part)
 
