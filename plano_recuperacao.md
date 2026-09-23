@@ -1,6 +1,6 @@
 # Plano de recuperação
 
-**Revisão 8 — 10/09/2026. O dinheiro caiu e as dívidas caras foram quitadas no mesmo dia.**
+**Revisão 9 — 22/09/2026. Primeira quinzena medida nos extratos: o saldo está à frente do previsto, o consumo não.**
 
 **Decisão tomada:** consignado do **Itaú** (contrato 3208248470). Entraram **R$ 32.000** em 10/09,
 em **60 parcelas de R$ 1.211,85** descontadas do salário a partir de outubro/2026, a **2,82% ao mês**
@@ -19,6 +19,77 @@ para a casa ser alugada, e o aluguel financia a mudança para um lugar mais bara
 
 ---
 
+# 0. ACOMPANHAMENTO — 22/09/2026
+
+Medido nos extratos sincronizados em 22/09 (2.073 lançamentos, quatro conexões em dia).
+Janela: 08/09 a 22/09. Saldo somado das contas: **R$ 6.741,30** (Itaú 6.734,07; CAIXA, Nubank
+e Mercado Pago zerados).
+
+## Onde o plano acertou
+
+- **O cheque especial morreu.** Última cobrança R$ 806,32 em 09/09; desde 10/09 a conta do Itaú
+  não volta ao negativo.
+- **Reforma: R$ 7.007,01 já saíram** (madeireira R$ 2.670,66; marketplace R$ 3.169,01; design
+  R$ 379; Taeco R$ 438,34; mão de obra R$ 350). **Sobram R$ 2.992,99** dos R$ 10.000.
+- **Setembro fecha acima do previsto.** A Revisão 8 previa R$ 2.980,83 em 30/09. Com a segunda
+  parte do salário (~R$ 3.253), o resto da reforma e oito dias de consumo, a conta chega ao fim do
+  mês **entre R$ 5.000 e R$ 5.700** — ou R$ 1.200 a menos se o consignado já descontar em 29/09.
+
+## Onde desviou
+
+**1. Consumo: R$ 3.732,85 em 15 dias — 77% do teto do mês inteiro.** O teto de consumo é
+R$ 4.841,89 por mês (cartão R$ 2.592,07 + livre R$ 2.249,82). Nesse ritmo setembro fecha em
+R$ 7.466 — **R$ 2.600 acima**.
+
+| | | |
+|---|---|---|
+| Débito e Pix da conta | R$ 2.255,89 | pet R$ 700; Pix a pessoas R$ 627; Vivo, farmácia, posto, mercado |
+| Compras novas no cartão | R$ 1.476,96 | Anhanguera R$ 500; farmácia R$ 160; assinaturas ~R$ 200; jogos R$ 60 |
+
+(As parcelas antigas — R$ 1.614,45 — não entram aqui: a Revisão 8 já as conta na coluna "cartão
+Itaú". MYCON e Solfácil também não: são fixos.)
+
+**2. O parcelamento do Itaú foi maior do que a Revisão 8 registrou.** O extrato mostra crédito de
+**R$ 8.579,27** ("PARCELAM. TODAS FATURAS") e **4 parcelas de R$ 2.348,27** — de outubro a janeiro
+—, não 4× R$ 926,18 da fatura vencida. Custo: R$ 813,81 mais R$ 257,11 de encargos. As parcelas
+antigas do Black (R$ 4.499,67 de outubro a maio) continuam listadas pela Pluggy. **A fatura de
+outubro decide**: se vier perto de **R$ 5.030** (2.348,27 + parcelas antigas 1.614 + compras novas
+1.104), as duas coisas coexistem e a coluna "cartão Itaú" da seção 3 está **R$ 1.422 baixa** de
+outubro a janeiro — outubro cai de −R$ 206,52 para cerca de **−R$ 1.630**. Se vier perto de
+R$ 3.450, o parcelamento absorveu as parcelas antigas e a tabela quase não muda.
+
+**3. Uma compra parcelada nova**: Mourão e Camargo (ração), 5× R$ 109,80, em 19/09. Pequena, mas
+é a regra da seção 1 quebrada — que seja a única.
+
+**4. Nubank paga dois dias depois do vencimento**: R$ 161,57 de multa, juros e IOF. A Pluggy
+mostra o saldo do cartão em R$ 3.593,68, e os lançamentos só explicam ~R$ 1.400 (compras de
+setembro, encargos e as parcelas de outubro). **Confira no app** se a fatura de outubro está perto
+de R$ 1.100 — se estiver perto de R$ 3.500, algo da fatura de setembro não foi baixado.
+
+## O que outubro já tem contratado
+
+| | |
+|---|---|
+| Consignado (sai do salário) | R$ 1.211,85 |
+| Fixos (CEF 16/10, Safra, condomínio, MYCON, Solfácil) | R$ 4.725,49 |
+| Fatura Itaú Black | R$ 3.450 a 5.030 |
+| Faturas Nubank, Mercado Pago, Passaí | ~R$ 1.420 |
+| **Antes do cartão essencial e do livre** | **R$ 10.800 a 12.400** |
+| Salário de mês comum | R$ 9.996,08 |
+
+Outubro só fecha com o que sobrar de setembro. Os R$ 5.000 a 5.700 de 30/09 cobrem o buraco
+(R$ 800 a 2.400) **e** mais um mês de consumo no teto — desde que setembro pare de gastar agora.
+
+## O que fazer agora
+
+1. **Até 30/09: remédio, comida e gasolina.** O teto do mês já foi.
+2. **Nenhum parcelado novo.** Mourão foi o primeiro e é o último.
+3. **Guarde a fatura de outubro do Black** quando fechar (dia 8): ela diz qual das duas leituras
+   do parcelamento vale, e a seção 3 se refaz com ela.
+4. **Mantenha R$ 2.460 na CAIXA antes de 16/10** — a prestação regular volta.
+
+---
+
 # 1. PARA ONDE FOI O DINHEIRO — 10/09
 
 | | plano | aconteceu |
@@ -28,7 +99,7 @@ para a casa ser alugada, e o aluguel financia a mudança para um lugar mais bara
 | ~~Cheque especial da CAIXA~~ | R$ 876,94 | ✅ R$ 876,94 |
 | ~~Fatura do Nubank, inteira~~ | R$ 2.425,59 | ✅ R$ 2.425,59 — R$ 479,81 saíram do saldo que já estava no Nubank |
 | ~~Prestações CEF de agosto e setembro~~ | R$ 5.254,10 | ✅ R$ 5.266,27 — vencimentos de 16/08 e 16/09 |
-| Reforma: deck e pintura | R$ 10.000,00 | ⏳ ainda não saiu |
+| Reforma: deck e pintura | R$ 10.000,00 | ⏳ R$ 7.007,01 saíram até 22/09; sobram R$ 2.992,99 |
 | Contas de setembro pagas no mesmo dia | — | R$ 1.137,89 — condomínio, Solfácil, fatura Passai, entrada do parcelamento Itaú, um Pix |
 | **= Sobra em caixa, depois da reforma** | **R$ 2.707,23** | **R$ 1.230,66** |
 
@@ -38,13 +109,13 @@ R$ 12,17 de mora na CEF.
 
 **As três decisões que acompanhavam:**
 
-- ~~**Parcele a fatura do Itaú em 4×**~~ ✅ Feito em 10/09: entrada de R$ 341,86 e 4 parcelas de
-  **cerca de R$ 926,18** (estimativa a 2,42% ao mês com IOF; a fatura de outubro confirma). A fatura
-  vencida era de R$ 3.798,48. As 4× R$ 2.302,90 da Revisão 7 parcelavam o saldo inteiro do cartão
-  (R$ 8.666,70), que inclui parcelas de compras antigas: esses R$ 6.114,12 vêm nas faturas normais
-  até maio/27 e estão na coluna "cartão Itaú" da seção 3.
+- ~~**Parcele a fatura do Itaú em 4×**~~ ✅ Feito em 10/09: entrada de R$ 341,86 e **4× R$ 2.348,27**
+  sobre R$ 8.579,27 — o extrato de 11/09 diz "PARCELAM. TODAS FATURAS", o saldo inteiro, não só a
+  fatura vencida de R$ 3.798,48 que a Revisão 8 supôs. Se as parcelas antigas do Black continuarem
+  nas faturas normais, a coluna "cartão Itaú" da seção 3 está R$ 1.422 baixa de outubro a janeiro
+  (seção 0, desvio 2).
 - ~~**Não parcele o Nubank**~~ ✅ Paga inteira.
-- **Nenhuma compra parcelada nova** até a dívida morrer. Cumprido desde 05/09, e continua valendo.
+- **Nenhuma compra parcelada nova** até a dívida morrer. Quebrada uma vez, em 19/09 (5× R$ 109,80); continua valendo.
 
 ---
 
@@ -175,7 +246,7 @@ Não se aplica: o consignado saiu em 10/09.
 
 # 6. COMO CHEGAMOS AQUI
 
-O plano mudou sete vezes, e cada mudança veio de um número que apareceu:
+O plano mudou oito vezes, e cada mudança veio de um número que apareceu:
 
 | revisão | o que mudou |
 |---|---|
@@ -186,7 +257,8 @@ O plano mudou sete vezes, e cada mudança veio de um número que apareceu:
 | 5 | Suas duas prestações em atraso: R$ 5.254,10. O empréstimo subiu para R$ 22.000. |
 | 6 | A proposta da CEF, com taxa real de **3,92%** (não os 2,99% anunciados), mais barata que os 4,72% do Itaú. Decisão: CAIXA. |
 | 7 | Reforma dentro, R$ 5.000 de férias reservados, e o plano B. |
-| **8** | **O dinheiro caiu: consignado do Itaú a 2,82%, dívidas caras quitadas em 10/09. A renda foi recalculada pelo salário real, e o MYCON e a Solfácil entraram nos fixos.** |
+| 8 | O dinheiro caiu: consignado do Itaú a 2,82%, dívidas caras quitadas em 10/09. A renda foi recalculada pelo salário real, e o MYCON e a Solfácil entraram nos fixos. |
+| **9** | **Primeira quinzena medida: saldo à frente do previsto, consumo em 77% do teto mensal em 15 dias, parcelamento do Itaú maior do que o registrado, e um parcelado novo.** |
 
 O que se manteve do começo ao fim: **o corte de gasto é a condição, não o
 complemento.** Nenhum empréstimo, em nenhum banco, em nenhum prazo, fecha um
@@ -209,14 +281,14 @@ buraco de R$ 5.105 por mês.
 
 ## Próximos passos
 
-- **Reforma:** os R$ 10.000 ainda não saíram; a tabela conta com eles em setembro.
+- **Reforma:** R$ 7.007,01 saíram até 22/09; a tabela conta os R$ 10.000 inteiros em setembro.
 - **CAIXA:** o débito agendado de R$ 2.455,52 ("AG PRESTACAO HABITACAO") é da parcela de 16/09, que
   o boleto já pagou. Com a conta zerada, ele não passa. Não mande dinheiro para a CAIXA até ele
   sumir; se continuar lá depois do dia 15, ligue. A parcela de 16/10 precisa de R$ 2.460 na conta
   da CAIXA antes do vencimento.
 - **Contracheque de 29/09:** o contrato permite descontar a primeira parcela já no mês anterior ao
   repasse. Se vier R$ 1.211,85 a menos, é isso, e setembro fecha R$ 1.211,85 mais baixo.
-- **Fatura do Black de outubro:** confirma o valor das 4 parcelas do parcelamento.
+- **Fatura do Black de outubro:** decide se as parcelas antigas coexistem com as 4× R$ 2.348,27 (seção 0, desvio 2).
 
 ---
 
