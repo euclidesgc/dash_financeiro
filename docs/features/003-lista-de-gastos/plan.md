@@ -80,7 +80,7 @@ Só Python. Ao final: `GET /api/transactions/expenses?page=N&page_size=M` respon
 
 Ao final: o cabeçalho de `/app/` e `/app/expenses` é o mesmo `AppHeader`, com "Saldos" e "Gastos" e o ativo marcado; `/app/expenses` mostra `<h1>` "Gastos", o texto de apoio e a lista da página lida de `?page` (carregando, vazio, erro e com dados), cada linha com data, descrição, recebedor, conta, selo de categoria e valor. Ainda sem botões de paginação.
 
-- [ ] T2.1 — `AppHeader` compartilhado, caminho `expenses` e rota protegida
+- [x] T2.1 — `AppHeader` compartilhado, caminho `expenses` e rota protegida
   - Arquivos: `src/components/layouts/app-header.tsx` (criar); `src/config/paths.ts` (alterar); `src/app/router.tsx` (alterar); `src/app/routes/expenses.tsx` (criar); `src/app/routes/dashboard.tsx` (alterar); `docs/design.md` (alterar)
   - O que fazer:
     - `paths.ts`: acrescentar `expenses: '/expenses'`.
@@ -93,7 +93,7 @@ Ao final: o cabeçalho de `/app/` e `/app/expenses` é o mesmo `AppHeader`, com 
   - Skills: ui-components, routing, interface-design
   - Complexidade: média
 
-- [ ] T2.2 — Feature `expenses`: tipos, consulta, `formatDate`, mocks e zona de lint
+- [x] T2.2 — Feature `expenses`: tipos, consulta, `formatDate`, mocks e zona de lint
   - Arquivos: `src/features/expenses/types/expense.ts` (criar); `src/features/expenses/api/get-expenses.ts` (criar); `src/utils/format-date.ts` (criar); `src/testing/mocks/handlers.ts` (alterar); `eslint.config.js` (alterar)
   - O que fazer:
     - `expense.ts`: `export type Expense = { id: number; date: string; description: string | null; payee_name: string | null; account_name: string | null; account_institution: string | null; account_type: 'BANK' | 'CREDIT' | null; category: string | null; amount_cents: number }`; `export type ExpensesResponse = { items: Expense[]; page: number; page_size: number; total: number }`.
@@ -104,7 +104,7 @@ Ao final: o cabeçalho de `/app/` e `/app/expenses` é o mesmo `AppHeader`, com 
   - Skills: api-requests, unit-testing, api-mocking, project-structure
   - Complexidade: baixa
 
-- [ ] T2.3 — `ExpenseItem` e `ExpensesList` com os quatro estados e página na URL
+- [x] T2.3 — `ExpenseItem` e `ExpensesList` com os quatro estados e página na URL
   - Arquivos: `src/features/expenses/components/expense-item.tsx` (criar); `src/features/expenses/components/expenses-list.tsx` (criar)
   - O que fazer:
     - `expense-item.tsx`: `export function ExpenseItem({ expense }: { expense: Expense }): React.JSX.Element` — um `<li>` pela receita "Linha de lançamento". Esquerda, empilhado: descrição (ou "Sem descrição" quando nula); nome de quem recebeu, só quando `payee_name` não é nulo; linha da conta com `account_name` e `account_institution` unidos por " · ", parte nula omitida, ambas nulas mostra "Conta desconhecida". Direita, empilhado e alinhado à direita: `formatDate(date)`; selo (receita "Selo de status", par cinza) com `category` ou "Sem categoria"; valor `formatMoney(amount_cents)` pela receita "Valor monetário" (`text-red-700` quando `amount_cents < 0`, senão `text-gray-900`).
@@ -112,7 +112,7 @@ Ao final: o cabeçalho de `/app/` e `/app/expenses` é o mesmo `AppHeader`, com 
   - Skills: interface-design, error-handling, client-state, component-robustness
   - Complexidade: média
 
-- [ ] T2.4 — Testes da fase 2
+- [x] T2.4 — Testes da fase 2
   - Arquivos: `src/components/layouts/__tests__/app-header.test.tsx` (criar); `src/utils/__tests__/format-date.test.ts` (criar); `src/features/expenses/components/__tests__/expenses-list.test.tsx` (criar)
   - O que fazer:
     - `app-header.test.tsx` (component-testing, `renderWithProviders` com `route`): `marks "Saldos" as current on the dashboard` (`route: '/'` → link "Saldos" tem `aria-current="page"` e "Gastos" não tem); `marks "Gastos" as current on the expenses page` (`route: '/expenses'` → o inverso); `renders the login and the action` (`userLogin="teste"` e `action={<button type="button">Sair</button>}` → texto "teste" e botão "Sair" presentes); `links point to the routes` ("Saldos" tem `href="/"` e "Gastos" `href="/expenses"`).
@@ -123,15 +123,15 @@ Ao final: o cabeçalho de `/app/` e `/app/expenses` é o mesmo `AppHeader`, com 
 
 ### Critérios de aceite da fase 2
 
-- [ ] CA2.1 — `pnpm lint`, `pnpm typecheck`, `pnpm test` e `pnpm build` saem com código 0. (comando)
-- [ ] CA2.2 — `src/config/paths.ts` exporta `expenses: '/expenses'`; `src/app/router.tsx` tem uma rota `path: paths.expenses` cujo `element` é `<ExpensesRoute />` dentro de `<ProtectedRoute>`; `src/app/routes/expenses.tsx` exporta `ExpensesRoute(): React.JSX.Element`, define `document.title = 'Gastos · dash_financeiro'` e renderiza `<AppHeader`, um `<h1>` com "Gastos", o texto "Todos os gastos das suas contas e cartões, do mais recente ao mais antigo." e `<ExpensesList />`. (estrutural)
-- [ ] CA2.3 — `src/components/layouts/app-header.tsx` exporta `AppHeader({ userLogin, action }: { userLogin?: string; action?: ReactNode })`, contém `<nav aria-label="Principal"`, dois `NavLink` com os textos "Saldos" (com `end`) e "Gastos" apontando para `paths.dashboard` e `paths.expenses`, e não importa de `@/features` nem de `@/app`; `src/app/routes/dashboard.tsx` não contém `<header` e renderiza `<AppHeader userLogin={data?.login} action={<LogoutButton />} />`. (estrutural)
-- [ ] CA2.4 — `src/features/expenses/types/expense.ts` exporta `Expense` e `ExpensesResponse` com os campos de T2.2; `src/features/expenses/api/get-expenses.ts` exporta `PAGE_SIZE = 20`, `getExpenses(page: number): Promise<ExpensesResponse>` chamando `/api/transactions/expenses?page=${page}&page_size=${PAGE_SIZE}`, `expensesQueryOptions(page)` com `queryKey: ['expenses', { page }]` e `placeholderData: keepPreviousData`, e `useExpenses(page)`; `src/utils/format-date.ts` exporta `formatDate(iso: string): string` e não contém `new Date`. (estrutural)
-- [ ] CA2.5 — `expenses-list.tsx` contém os textos literais "Carregando gastos…", "Nenhum gasto registrado ainda.", "Não foi possível carregar os gastos." e "Tentar de novo"; o carregando tem `role="status"`; o erro é renderizado por `<Alert>` com `action` que chama `refetch`; a página vem de `useSearchParams` e nunca de `useState`. `expense-item.tsx` contém "Sem descrição", "Sem categoria" e "Conta desconhecida", renderiza `formatDate(` e `formatMoney(` e aplica `text-red-700` quando `amount_cents < 0`. (estrutural)
-- [ ] CA2.6 — Piso visual, lido no código: `expenses.tsx` usa o contêiner de página e o `<h1>` usa as classes de "Título de página" do `docs/design.md`; a lista usa as classes de "Lista"; cada `<li>` de `expense-item.tsx` usa as classes de "Linha de lançamento" (bloco da esquerda com `min-w-0 flex-1` e `truncate`, bloco da direita com `shrink-0` e `items-end`); o selo usa as classes de "Selo de status" com `bg-gray-100 text-gray-700`; o `<nav>` de `app-header.tsx` usa as classes de "Navegação do cabeçalho" e aplica `underline` ao ativo; nenhum arquivo em `src/` contém `style={{`, `<a href` ou `!important`. (estrutural)
-- [ ] CA2.7 — `docs/design.md` tem, em "Padrões acrescentados pelas entregas", as linhas "Navegação do cabeçalho", "Linha de lançamento" e "Paginação" com fatia `003`. (estrutural)
-- [ ] CA2.8 — `src/testing/mocks/handlers.ts` exporta `fakeExpenses` com 45 itens, o primeiro com `description: 'MERCADO DO BAIRRO'` e `amount_cents: -8490`, e registra `GET /api/transactions/expenses` lendo `page` e `page_size` da URL; `eslint.config.js` tem a zona `target: './src/features/expenses'` com `except: ['./expenses']`; `src/features/expenses/**` não importa de `@/features/auth`, `@/features/accounts`, `@/features/sync` nem de `@/app` (basta `pnpm lint` passar). (estrutural)
-- [ ] CA2.9 — Os testes nomeados em T2.4 existem nos arquivos indicados; `npx vitest run --coverage` reporta ≥ 80% de linhas em `src/components/layouts/app-header.tsx`, `src/utils/format-date.ts`, `src/features/expenses/api/get-expenses.ts`, `src/features/expenses/components/expense-item.tsx` e `src/features/expenses/components/expenses-list.tsx`. (comando)
+- [x] CA2.1 — `pnpm lint`, `pnpm typecheck`, `pnpm test` e `pnpm build` saem com código 0. (comando)
+- [x] CA2.2 — `src/config/paths.ts` exporta `expenses: '/expenses'`; `src/app/router.tsx` tem uma rota `path: paths.expenses` cujo `element` é `<ExpensesRoute />` dentro de `<ProtectedRoute>`; `src/app/routes/expenses.tsx` exporta `ExpensesRoute(): React.JSX.Element`, define `document.title = 'Gastos · dash_financeiro'` e renderiza `<AppHeader`, um `<h1>` com "Gastos", o texto "Todos os gastos das suas contas e cartões, do mais recente ao mais antigo." e `<ExpensesList />`. (estrutural)
+- [x] CA2.3 — `src/components/layouts/app-header.tsx` exporta `AppHeader({ userLogin, action }: { userLogin?: string; action?: ReactNode })`, contém `<nav aria-label="Principal"`, dois `NavLink` com os textos "Saldos" (com `end`) e "Gastos" apontando para `paths.dashboard` e `paths.expenses`, e não importa de `@/features` nem de `@/app`; `src/app/routes/dashboard.tsx` não contém `<header` e renderiza `<AppHeader userLogin={data?.login} action={<LogoutButton />} />`. (estrutural)
+- [x] CA2.4 — `src/features/expenses/types/expense.ts` exporta `Expense` e `ExpensesResponse` com os campos de T2.2; `src/features/expenses/api/get-expenses.ts` exporta `PAGE_SIZE = 20`, `getExpenses(page: number): Promise<ExpensesResponse>` chamando `/api/transactions/expenses?page=${page}&page_size=${PAGE_SIZE}`, `expensesQueryOptions(page)` com `queryKey: ['expenses', { page }]` e `placeholderData: keepPreviousData`, e `useExpenses(page)`; `src/utils/format-date.ts` exporta `formatDate(iso: string): string` e não contém `new Date`. (estrutural)
+- [x] CA2.5 — `expenses-list.tsx` contém os textos literais "Carregando gastos…", "Nenhum gasto registrado ainda.", "Não foi possível carregar os gastos." e "Tentar de novo"; o carregando tem `role="status"`; o erro é renderizado por `<Alert>` com `action` que chama `refetch`; a página vem de `useSearchParams` e nunca de `useState`. `expense-item.tsx` contém "Sem descrição", "Sem categoria" e "Conta desconhecida", renderiza `formatDate(` e `formatMoney(` e aplica `text-red-700` quando `amount_cents < 0`. (estrutural)
+- [x] CA2.6 — Piso visual, lido no código: `expenses.tsx` usa o contêiner de página e o `<h1>` usa as classes de "Título de página" do `docs/design.md`; a lista usa as classes de "Lista"; cada `<li>` de `expense-item.tsx` usa as classes de "Linha de lançamento" (bloco da esquerda com `min-w-0 flex-1` e `truncate`, bloco da direita com `shrink-0` e `items-end`); o selo usa as classes de "Selo de status" com `bg-gray-100 text-gray-700`; o `<nav>` de `app-header.tsx` usa as classes de "Navegação do cabeçalho" e aplica `underline` ao ativo; nenhum arquivo em `src/` contém `style={{`, `<a href` ou `!important`. (estrutural)
+- [x] CA2.7 — `docs/design.md` tem, em "Padrões acrescentados pelas entregas", as linhas "Navegação do cabeçalho", "Linha de lançamento" e "Paginação" com fatia `003`. (estrutural)
+- [x] CA2.8 — `src/testing/mocks/handlers.ts` exporta `fakeExpenses` com 45 itens, o primeiro com `description: 'MERCADO DO BAIRRO'` e `amount_cents: -8490`, e registra `GET /api/transactions/expenses` lendo `page` e `page_size` da URL; `eslint.config.js` tem a zona `target: './src/features/expenses'` com `except: ['./expenses']`; `src/features/expenses/**` não importa de `@/features/auth`, `@/features/accounts`, `@/features/sync` nem de `@/app` (basta `pnpm lint` passar). (estrutural)
+- [x] CA2.9 — Os testes nomeados em T2.4 existem nos arquivos indicados; `npx vitest run --coverage` reporta ≥ 80% de linhas em `src/components/layouts/app-header.tsx`, `src/utils/format-date.ts`, `src/features/expenses/api/get-expenses.ts`, `src/features/expenses/components/expense-item.tsx` e `src/features/expenses/components/expenses-list.tsx`. (comando)
 
 ## Fase 3 — Paginação, integração e e2e
 

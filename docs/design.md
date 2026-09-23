@@ -37,3 +37,6 @@ Fonte única da aparência. Este arquivo é seu: `/br:init` cria uma vez e nunca
 | Cabeçalho de app | `<header className="border-b border-gray-200">` com `mx-auto flex max-w-2xl items-center justify-between p-4`; nome do painel à esquerda, ação à direita | 001 |
 | Painel de situação | `<section className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-md border border-gray-200 p-4">`; texto à esquerda em `min-w-0`, ação à direita | 002 |
 | Selo de erro | par `bg-red-100 text-red-800` para o selo de status | 002 |
+| Navegação do cabeçalho | `<nav aria-label="Principal" className="flex items-center gap-4">`; `NavLink` com `text-sm font-medium underline-offset-4 hover:underline`; ativo (`aria-current="page"`) `text-gray-900 underline`; inativo `text-gray-600` | 003 |
+| Linha de lançamento | item da receita "Lista" com `items-start`; esquerda `min-w-0 flex-1` empilhando `font-medium truncate` (descrição), `text-sm text-gray-600 truncate` (recebedor, conta); direita `flex shrink-0 flex-col items-end gap-1` com `text-sm text-gray-600 tabular-nums` (data), selo, valor monetário | 003 |
+| Paginação | `<nav aria-label="Paginação" className="mt-6 flex flex-wrap items-center justify-between gap-4">`; texto `text-sm text-gray-600`; dois botões secundários | 003 |
