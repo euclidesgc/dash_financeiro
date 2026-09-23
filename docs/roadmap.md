@@ -7,7 +7,7 @@ prova o caminho de ponta a ponta (tela React → API FastAPI → SQLite) e as ou
 |---|---|---|---|---|---|
 | 001 | `login-e-saldos` | entrar no painel e ver o saldo de hoje de cada conta | Pedido de 22/09 | — | in-review |
 | 002 | `atualizar-registros` | apertar um botão e ter todos os registros bancários atualizados na base, vendo quando foi a última atualização | Pedido de 22/09 | 001 | in-review |
-| 003 | `lista-de-gastos` | ver uma lista paginada com todos os gastos de todas as contas | Pedido de 22/09 | 001 | planned |
+| 003 | `lista-de-gastos` | ver uma lista paginada com todos os gastos de todas as contas | Pedido de 22/09 | 001 | in-progress |
 | 004 | `ordenar-gastos` | ordenar os gastos por data, valor ou categoria | Pedido de 22/09 | 003 | planned |
 | 005 | `filtrar-por-periodo` | filtrar os gastos por período (mês, intervalo de datas) | Pedido de 22/09 | 003 | planned |
 | 006 | `filtrar-por-conta` | filtrar os gastos por banco ou conta | Pedido de 22/09 | 003 | planned |
