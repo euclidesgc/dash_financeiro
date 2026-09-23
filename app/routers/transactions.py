@@ -6,9 +6,11 @@ from pydantic import BaseModel
 
 from app.db import connect
 from app.queries.expenses import Order, Sort, get_expense, list_expenses, sum_by_category
+from app.queries.similar import count_similar
 from app.taxonomy.override import (
     UnknownCategoryError,
     UnknownTransactionError,
+    apply_to_similar,
     restore_auto,
     set_manual,
 )
@@ -57,6 +59,18 @@ class CategoryTotalsResponse(BaseModel):
 class CategoryUpdate(BaseModel):
     mode: Literal["manual", "auto"]
     category: str | None = None
+
+
+class SimilarResponse(BaseModel):
+    count: int
+
+
+class ApplyToSimilarBody(BaseModel):
+    category: str | None
+
+
+class ApplyToSimilarResponse(BaseModel):
+    updated: int
 
 
 def _date_bounds(from_: date | None, to: date | None) -> tuple[str | None, str | None]:
@@ -159,3 +173,32 @@ def update_category(transaction_id: int, body: CategoryUpdate) -> Expense:
     if item is None:
         raise HTTPException(status_code=404, detail=UNKNOWN_EXPENSE)
     return Expense(**item)
+
+
+@router.get("/{transaction_id}/similar")
+def similar(transaction_id: int) -> SimilarResponse:
+    conn = connect()
+    try:
+        if get_expense(conn, transaction_id) is None:
+            raise HTTPException(status_code=404, detail=UNKNOWN_EXPENSE)
+        count = count_similar(conn, transaction_id)
+    finally:
+        conn.close()
+    return SimilarResponse(count=count)
+
+
+@router.post("/{transaction_id}/category/apply-to-similar")
+def apply_category_to_similar(
+    transaction_id: int, body: ApplyToSimilarBody
+) -> ApplyToSimilarResponse:
+    conn = connect()
+    try:
+        try:
+            updated = apply_to_similar(conn, transaction_id, body.category)
+        except UnknownTransactionError as error:
+            raise HTTPException(status_code=404, detail=UNKNOWN_EXPENSE) from error
+        except UnknownCategoryError as error:
+            raise HTTPException(status_code=422, detail=UNKNOWN_CATEGORY) from error
+    finally:
+        conn.close()
+    return ApplyToSimilarResponse(updated=updated)

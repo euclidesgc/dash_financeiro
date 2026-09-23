@@ -1467,3 +1467,195 @@ def test_renaming_a_category_reflects_in_the_list_and_in_by_category(client):
     assert expenses[0]["category"] == "Mercado"
     assert expenses[0]["category_key"] == "Groceries"
     assert _group_tuples(_by_category(client)) == [("Groceries", "Mercado", 1, -6000)]
+
+
+SIMILAR_ROWS = [
+    _transaction("o", "2026-09-01", -45.0, descricao="FARMACIA CENTRAL", categoria="Healthcare"),
+    _transaction("s1", "2026-08-15", -30.0, descricao="FARMACIA CENTRAL"),
+    _transaction("s2", "2026-07-08", -20.0, descricao="Farmácia Central"),
+    _transaction("x", "2026-09-02", -10.0, descricao="MERCADO"),
+]
+
+
+def _ids(client: TestClient) -> dict[str, int]:
+    items = client.get("/api/transactions/expenses").json()["items"]
+    return {item["description"]: item["id"] for item in items}
+
+
+def _items(client: TestClient) -> list[dict[str, Any]]:
+    return client.get("/api/transactions/expenses").json()["items"]
+
+
+def _id_of(pluggy_id: str) -> int:
+    conn = connect()
+    row = conn.execute("SELECT id FROM transactions WHERE pluggy_id = ?", (pluggy_id,)).fetchone()
+    conn.close()
+    return int(row["id"])
+
+
+def test_similar_without_session_answers_401(client):
+    response = client.get("/api/transactions/1/similar")
+
+    assert response.status_code == 401
+
+
+def test_similar_of_an_unknown_expense_answers_404(client):
+    _sign_in(client)
+
+    response = client.get("/api/transactions/999999/similar")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Gasto não encontrado."}
+
+
+def test_similar_counts_by_description_on_an_unclassified_base(client):
+    _load(SIMILAR_ROWS)
+    _sign_in(client)
+    o_id = _id_of("o")
+    conn = connect()
+    payee = _payee_of(conn, "o")
+    conn.close()
+
+    response = client.get(f"/api/transactions/{o_id}/similar")
+
+    assert not payee
+    assert response.json() == {"count": 2}
+
+
+def test_similar_counts_by_payee_after_a_patch(client):
+    _load(SIMILAR_ROWS)
+    _sign_in(client)
+    o_id = _id_of("o")
+    _patch(client, o_id, {"mode": "manual", "category": "Groceries"})
+    conn = connect()
+    payee = _payee_of(conn, "o")
+    conn.close()
+
+    response = client.get(f"/api/transactions/{o_id}/similar")
+
+    assert payee
+    assert response.json() == {"count": 2}
+
+
+def test_apply_to_similar_without_session_answers_401(client):
+    response = client.post(
+        "/api/transactions/1/category/apply-to-similar", json={"category": "Groceries"}
+    )
+
+    assert response.status_code == 401
+
+
+def test_apply_to_similar_of_an_unknown_expense_answers_404(client):
+    _sign_in(client)
+
+    response = client.post(
+        "/api/transactions/999999/category/apply-to-similar", json={"category": "Groceries"}
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Gasto não encontrado."}
+
+
+def test_apply_to_similar_refuses_an_unknown_category_with_422(client):
+    _load(SIMILAR_ROWS)
+    _sign_in(client)
+    o_id = _id_of("o")
+
+    for category in ("Inexistente", "Não classificado"):
+        response = client.post(
+            f"/api/transactions/{o_id}/category/apply-to-similar", json={"category": category}
+        )
+        assert response.status_code == 422
+        assert response.json() == {"detail": "Categoria desconhecida."}
+
+    assert all(item["category_source"] != "manual" for item in _items(client))
+
+
+def test_apply_to_similar_without_category_answers_422_from_pydantic(client):
+    _load(SIMILAR_ROWS)
+    _sign_in(client)
+    o_id = _id_of("o")
+
+    response = client.post(f"/api/transactions/{o_id}/category/apply-to-similar", json={})
+
+    assert response.status_code == 422
+    assert isinstance(response.json()["detail"], list)
+
+
+def test_apply_to_similar_marks_the_similar_rows_manual_and_leaves_the_origin(client):
+    _load(SIMILAR_ROWS)
+    _sign_in(client)
+    o_id = _id_of("o")
+    _patch(client, o_id, {"mode": "manual", "category": "Groceries"})
+
+    response = client.post(
+        f"/api/transactions/{o_id}/category/apply-to-similar", json={"category": "Groceries"}
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"updated": 2}
+    items = {item["description"]: item for item in _items(client)}
+    for key in ("FARMACIA CENTRAL", "Farmácia Central"):
+        if items[key]["id"] == o_id:
+            continue
+        assert items[key]["category_key"] == "Groceries"
+        assert items[key]["category"] == "Supermercado" or items[key]["category"] is not None
+        assert items[key]["category_source"] == "manual"
+    assert items["MERCADO"]["category_source"] == "auto"
+    origin = (
+        items["FARMACIA CENTRAL"]
+        if items["FARMACIA CENTRAL"]["id"] == o_id
+        else items["Farmácia Central"]
+    )
+    assert origin["category_key"] == "Groceries"
+    assert origin["category_source"] == "manual"
+
+
+def test_apply_to_similar_with_null_clears_the_category_of_the_similar_rows(client):
+    _load(SIMILAR_ROWS)
+    _sign_in(client)
+    o_id = _id_of("o")
+
+    response = client.post(
+        f"/api/transactions/{o_id}/category/apply-to-similar", json={"category": None}
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"updated": 2}
+    items = {item["id"]: item for item in _items(client)}
+    for item in items.values():
+        if item["id"] == o_id:
+            continue
+        if item["description"] in ("FARMACIA CENTRAL", "Farmácia Central"):
+            assert item["category"] is None
+            assert item["category_key"] is None
+            assert item["category_source"] == "manual"
+
+
+def test_applied_categories_survive_reingesting_the_same_source(client):
+    _load(SIMILAR_ROWS)
+    _sign_in(client)
+    o_id = _id_of("o")
+    client.post(
+        f"/api/transactions/{o_id}/category/apply-to-similar", json={"category": "Groceries"}
+    )
+
+    _load(SIMILAR_ROWS)
+
+    items = {item["description"]: item for item in _items(client)}
+    for key in ("FARMACIA CENTRAL", "Farmácia Central"):
+        item = items[key]
+        if item["id"] == o_id:
+            continue
+        assert item["category_key"] == "Groceries"
+        assert item["category_source"] == "manual"
+
+
+def test_the_openapi_lists_similar_and_apply_to_similar(client):
+    _sign_in(client)
+
+    response = client.get("/openapi.json")
+
+    paths = response.json()["paths"]
+    assert "get" in paths["/api/transactions/{transaction_id}/similar"]
+    assert "post" in paths["/api/transactions/{transaction_id}/category/apply-to-similar"]

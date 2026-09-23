@@ -285,6 +285,19 @@ export function groupByCategory(items: Expense[]): CategoryGroup[] {
   })
 }
 
+function similarTo(item: Expense): Expense[] {
+  return fakeExpenses.filter(
+    (other) =>
+      other.id !== item.id &&
+      other.amount_cents < 0 &&
+      (item.payee_name !== null
+        ? other.payee_name === item.payee_name
+        : item.description !== null &&
+          other.description !== null &&
+          foldText(other.description) === foldText(item.description)),
+  )
+}
+
 let signedIn = false
 
 export function resetSession(): void {
@@ -445,5 +458,36 @@ export const handlers = [
       item.category_source = 'auto'
     }
     return HttpResponse.json(item)
+  }),
+
+  http.get('/api/transactions/:id/similar', ({ params }) => {
+    const item = fakeExpenses.find((expense) => expense.id === Number(params.id))
+    if (item === undefined) {
+      return HttpResponse.json({ detail: 'Gasto não encontrado.' }, { status: 404 })
+    }
+    return HttpResponse.json({ count: similarTo(item).length })
+  }),
+
+  http.post('/api/transactions/:id/category/apply-to-similar', async ({ params, request }) => {
+    const item = fakeExpenses.find((expense) => expense.id === Number(params.id))
+    if (item === undefined) {
+      return HttpResponse.json({ detail: 'Gasto não encontrado.' }, { status: 404 })
+    }
+    const body = (await request.json()) as { category: string | null }
+    const found = fakeCategories.find((category) => category.key === body.category)
+    if (body.category !== null && found === undefined) {
+      return HttpResponse.json({ detail: 'Categoria desconhecida.' }, { status: 422 })
+    }
+    let updated = 0
+    for (const other of similarTo(item)) {
+      if (!autoCategories.has(other.id)) {
+        autoCategories.set(other.id, { category: other.category, category_key: other.category_key })
+      }
+      other.category = found?.label ?? null
+      other.category_key = body.category
+      other.category_source = 'manual'
+      updated += 1
+    }
+    return HttpResponse.json({ updated })
   }),
 ]
