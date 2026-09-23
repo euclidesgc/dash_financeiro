@@ -147,12 +147,12 @@ Ao final: a página "Gastos" tem, como primeiro controle da barra, o campo "Cont
 
 ## DoD da entrega
 
-- [ ] DoD1 — Todas as tarefas e critérios do plano marcados
-- [ ] DoD2 — Suíte de testes inteira passa
-- [ ] DoD3 — Lint do projeto inteiro sem erros nem avisos
-- [ ] DoD4 — Tipos de todos os `tsconfig` sem erros
-- [ ] DoD5 — Console dos testes sem erro nem aviso
-- [ ] DoD6 — `build` passa
-- [ ] DoD7 — Nenhum import entre features nem contra o fluxo compartilhado → features → app
-- [ ] DoD8 — Nenhum `console.log`, `TODO`, `// @debug`, `.only(` ou `.skip(` no diff da branch
-- [ ] DoD9 — Nenhuma worktree ou branch temporária sobrando
+- [x] DoD1 — Todas as tarefas e critérios do plano marcados
+- [x] DoD2 — Suíte de testes inteira passa
+- [x] DoD3 — Lint do projeto inteiro sem erros nem avisos
+- [x] DoD4 — Tipos de todos os `tsconfig` sem erros
+- [x] DoD5 — Console dos testes sem erro nem aviso
+- [x] DoD6 — `build` passa
+- [x] DoD7 — Nenhum import entre features nem contra o fluxo compartilhado → features → app
+- [x] DoD8 — Nenhum `console.log`, `TODO`, `// @debug`, `.only(` ou `.skip(` no diff da branch
+- [x] DoD9 — Nenhuma worktree ou branch temporária sobrando
