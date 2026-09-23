@@ -15,7 +15,7 @@ prova o caminho de ponta a ponta (tela React → API FastAPI → SQLite) e as ou
 | 008 | `total-por-categoria` | ver os gastos do período agrupados por categoria, com o total de cada uma | Pedido de 22/09 | 005 | in-review |
 | 009 | `ajustar-categoria` | trocar a categoria de um gasto, e a troca sobreviver à próxima atualização | Pedido de 22/09 | 003 | in-review |
 | 010 | `criar-categoria` | criar, renomear e apagar categorias | Pedido de 22/09 | 009 | in-review |
-| 011 | `categoria-para-parecidos` | aplicar a mesma categoria a todos os gastos parecidos de uma vez | Pedido de 22/09 | 009 | in-progress |
+| 011 | `categoria-para-parecidos` | aplicar a mesma categoria a todos os gastos parecidos de uma vez | Pedido de 22/09 | 009 | in-review |
 | 012 | `limite-por-categoria` | definir um limite mensal para cada categoria | Pedido de 22/09 | 010 | planned |
 | 013 | `sinal-por-categoria` | ver, em cada categoria, se está dentro, acima ou abaixo do limite no período | Pedido de 22/09 | 008, 012 | planned |
 | 014 | `sinal-do-mes` | ver se o total do mês está dentro, acima ou abaixo do teto do plano de recuperação | Pedido de 22/09 | 005 | planned |
