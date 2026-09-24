@@ -1,3 +1,5 @@
+export type NotExpenseReason = 'own_transfer' | 'refund' | 'other'
+
 export interface Expense {
   id: number
   date: string
@@ -11,6 +13,7 @@ export interface Expense {
   category_source: 'auto' | 'manual'
   amount_cents: number
   account_id: string | null
+  not_expense_reason: NotExpenseReason | null
 }
 
 export interface ExpensesResponse {

@@ -8,6 +8,7 @@ import type {
   Expense,
   ExpenseOrder,
   ExpenseSort,
+  NotExpenseReason,
 } from '@/features/expenses/types/expense'
 
 export const fakeUser = { login: 'teste' }
@@ -107,6 +108,7 @@ function generateFakeExpenses(): Expense[] {
         category: 'Compras',
         category_key: 'Shopping',
         category_source: 'auto',
+        not_expense_reason: null,
         amount_cents: -8490,
       }
     }
@@ -123,6 +125,7 @@ function generateFakeExpenses(): Expense[] {
         category: 'Alimentação',
         category_key: 'Food',
         category_source: 'auto',
+        not_expense_reason: null,
         amount_cents: -1000 * id,
       }
     }
@@ -139,6 +142,7 @@ function generateFakeExpenses(): Expense[] {
         category: null,
         category_key: null,
         category_source: 'auto',
+        not_expense_reason: null,
         amount_cents: -1000 * id,
       }
     }
@@ -155,6 +159,7 @@ function generateFakeExpenses(): Expense[] {
         category: 'Transporte',
         category_key: 'Transport',
         category_source: 'auto',
+        not_expense_reason: null,
         amount_cents: -1000 * id,
       }
     }
@@ -171,6 +176,7 @@ function generateFakeExpenses(): Expense[] {
         category: 'Compras',
         category_key: 'Shopping',
         category_source: 'auto',
+        not_expense_reason: null,
         amount_cents: -120000,
       }
     }
@@ -187,6 +193,7 @@ function generateFakeExpenses(): Expense[] {
         category: 'Compras',
         category_key: 'Shopping',
         category_source: 'auto',
+        not_expense_reason: null,
         amount_cents: -1000 * id,
       }
     }
@@ -202,6 +209,7 @@ function generateFakeExpenses(): Expense[] {
       category: 'Compras',
       category_key: 'Shopping',
       category_source: 'auto',
+      not_expense_reason: null,
       amount_cents: -1000 * id,
     }
   })
@@ -246,6 +254,7 @@ export function filterExpenses(url: URL): Expense[] {
   const accountId = url.searchParams.get('account_id')
   const rawTerm = url.searchParams.get('q')?.trim() ?? ''
   const term = rawTerm.length >= 2 ? foldText(rawTerm) : null
+  const view = url.searchParams.get('view')
   return fakeExpenses.filter(
     (item) =>
       (from === null || item.date >= from) &&
@@ -253,7 +262,8 @@ export function filterExpenses(url: URL): Expense[] {
       (accountId === null || item.account_id === accountId) &&
       (term === null ||
         foldText(item.description ?? '').includes(term) ||
-        foldText(item.payee_name ?? '').includes(term)),
+        foldText(item.payee_name ?? '').includes(term)) &&
+      (view === 'excluded' ? item.not_expense_reason !== null : item.not_expense_reason === null),
   )
 }
 
@@ -552,6 +562,31 @@ export const handlers = [
       }
       item.category_source = 'auto'
     }
+    return HttpResponse.json(item)
+  }),
+
+  http.put('/api/transactions/:id/not-expense', async ({ params, request }) => {
+    const item = fakeExpenses.find((expense) => expense.id === Number(params.id))
+    if (item === undefined) {
+      return HttpResponse.json({ detail: 'Gasto não encontrado.' }, { status: 404 })
+    }
+    const body = (await request.json()) as { reason?: string }
+    if (
+      body.reason === undefined ||
+      !(['own_transfer', 'refund', 'other'] as string[]).includes(body.reason)
+    ) {
+      return HttpResponse.json({ detail: 'Motivo inválido.' }, { status: 422 })
+    }
+    item.not_expense_reason = body.reason as NotExpenseReason
+    return HttpResponse.json(item)
+  }),
+
+  http.delete('/api/transactions/:id/not-expense', ({ params }) => {
+    const item = fakeExpenses.find((expense) => expense.id === Number(params.id))
+    if (item === undefined) {
+      return HttpResponse.json({ detail: 'Gasto não encontrado.' }, { status: 404 })
+    }
+    item.not_expense_reason = null
     return HttpResponse.json(item)
   }),
 

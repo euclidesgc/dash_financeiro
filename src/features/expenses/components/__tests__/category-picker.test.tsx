@@ -41,6 +41,7 @@ const BASE: Expense = {
   category_key: 'Shopping',
   category_source: 'auto',
   amount_cents: -4400,
+  not_expense_reason: null,
 }
 
 interface PatchCall {
