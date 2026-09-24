@@ -5,7 +5,7 @@ from app.commitments.live import released_cash
 from app.commitments.live import totals as commitment_totals
 from app.projection.monthly import complete_months, median
 from app.queries.crossings import crossing
-from app.queries.spending import SPENDING
+from app.queries.spending import INCOME, SPENDING
 from app.settings.catalog import RESERVE, RESERVE_MONTHS
 from app.settings.store import value
 
@@ -15,8 +15,8 @@ CUT_SLUG = "corte"
 _LABEL = "SELECT label FROM crossings WHERE slug = ?"
 
 _INCOME = (
-    "SELECT COALESCE(SUM(amount_cents), 0) AS total FROM transactions "
-    "WHERE substr(date, 1, 7) = ? AND amount_cents > 0 AND is_transfer = 0 AND is_refund = 0"
+    f"SELECT COALESCE(SUM(amount_cents), 0) AS total FROM transactions "
+    f"WHERE substr(date, 1, 7) = ? AND {INCOME}"
 )
 _SPENDING = (
     f"SELECT COALESCE(SUM(amount_cents), 0) AS total FROM transactions "

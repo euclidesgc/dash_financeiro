@@ -19,12 +19,23 @@ function LocationProbe(): React.JSX.Element {
   return <span data-testid="search">{location.search}</span>
 }
 
+function matchesViewForSpy(item: Expense, view: string | null): boolean {
+  if (view === 'income') {
+    return item.amount_cents > 0 && item.not_expense_reason === null
+  }
+  if (view === 'excluded') {
+    return item.not_expense_reason !== null
+  }
+  return item.amount_cents < 0 && item.not_expense_reason === null
+}
+
 function filterForSpy(
   items: Expense[],
   from: string | null,
   to: string | null,
   accountId: string | null,
   term: string | null,
+  view: string | null,
 ): Expense[] {
   return items.filter(
     (item) =>
@@ -33,7 +44,8 @@ function filterForSpy(
       (accountId === null || item.account_id === accountId) &&
       (term === null ||
         foldText(item.description ?? '').includes(term) ||
-        foldText(item.payee_name ?? '').includes(term)),
+        foldText(item.payee_name ?? '').includes(term)) &&
+      matchesViewForSpy(item, view),
   )
 }
 
@@ -75,7 +87,8 @@ function spyOnExpensesRequests(): URLSearchParams[] {
       const accountId = url.searchParams.get('account_id')
       const rawTerm = url.searchParams.get('q')?.trim() ?? ''
       const term = rawTerm.length >= 2 ? foldText(rawTerm) : null
-      const filtered = filterForSpy(fakeExpenses, from, to, accountId, term)
+      const view = url.searchParams.get('view')
+      const filtered = filterForSpy(fakeExpenses, from, to, accountId, term, view)
       const items = sortForSpy(filtered, sort, order)
       return HttpResponse.json({
         items: items.slice((page - 1) * pageSize, page * pageSize),
@@ -284,12 +297,13 @@ test('keeps the previous rows while the next page loads', async () => {
         await delay(50)
       }
       const pageSize = 20
+      const filtered = fakeExpenses.filter((item) => matchesViewForSpy(item, null))
       return HttpResponse.json({
-        items: fakeExpenses.slice((page - 1) * pageSize, page * pageSize),
+        items: filtered.slice((page - 1) * pageSize, page * pageSize),
         page,
         page_size: pageSize,
-        total: fakeExpenses.length,
-        total_cents: fakeExpenses.reduce((sum, item) => sum + item.amount_cents, 0),
+        total: filtered.length,
+        total_cents: filtered.reduce((sum, item) => sum + item.amount_cents, 0),
       })
     }),
   )

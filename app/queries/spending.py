@@ -6,9 +6,12 @@ import sqlite3
 # reads this one string — repeated per query, it gets forgotten in one of
 # them, and the panel then lies on a single axis, which is the most
 # expensive way to be wrong.
-OUTFLOW = "amount_cents < 0 AND is_transfer = 0 AND is_refund = 0 AND refunded_by IS NULL"
+_CLEAN = "is_transfer = 0 AND is_refund = 0 AND refunded_by IS NULL"
+OUTFLOW = f"amount_cents < 0 AND {_CLEAN}"
+INFLOW = f"amount_cents > 0 AND {_CLEAN}"
 SPENDING = f"{OUTFLOW} AND not_expense_reason IS NULL"
-EXCLUDED = f"{OUTFLOW} AND not_expense_reason IS NOT NULL"
+INCOME = f"{INFLOW} AND not_expense_reason IS NULL"
+EXCLUDED = f"amount_cents <> 0 AND {_CLEAN} AND not_expense_reason IS NOT NULL"
 
 _TOTAL_SPENDING = f"SELECT coalesce(sum(amount_cents), 0) FROM transactions WHERE {SPENDING}"
 

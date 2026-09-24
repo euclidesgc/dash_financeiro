@@ -8,11 +8,9 @@ from app.commitments.live import totals as committed_totals
 from app.commitments.schedule import median_day
 from app.projection.monthly import monthly
 from app.projection.position import positions
+from app.queries.spending import INCOME
 
-_INCOME_DAYS = (
-    "SELECT date FROM transactions "
-    "WHERE amount_cents > 0 AND is_transfer = 0 AND is_refund = 0 AND date <= ?"
-)
+_INCOME_DAYS = f"SELECT date FROM transactions WHERE {INCOME} AND date <= ?"
 
 
 def forecast(conn: sqlite3.Connection, *, today: date | None = None) -> dict[str, Any]:

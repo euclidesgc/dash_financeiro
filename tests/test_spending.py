@@ -3,7 +3,7 @@ import pytest
 from app.db import connect
 from app.ingest.loader import ingest
 from app.migrate import run_migrations
-from app.queries.spending import date_window, total_spending_cents
+from app.queries.spending import EXCLUDED, INCOME, INFLOW, date_window, total_spending_cents
 
 ACCOUNT = {
     "id": "acc-1",
@@ -89,6 +89,44 @@ def test_a_row_marked_as_not_expense_leaves_the_total(loaded):
 
     assert total_spending_cents(loaded) == -1050
     assert total_spending_cents(loaded, start="2025-09-01") == 0
+
+
+def count(conn, predicate) -> int:
+    return conn.execute(f"SELECT count(*) FROM transactions WHERE {predicate}").fetchone()[0]
+
+
+def test_income_keeps_only_the_clean_positive_rows(loaded):
+    assert count(loaded, INCOME) == 1
+    assert count(loaded, INFLOW) == 1
+
+
+def test_a_positive_row_with_refunded_by_leaves_income_and_inflow(loaded):
+    loaded.execute("UPDATE transactions SET refunded_by = 't-x' WHERE pluggy_id = 't-salario'")
+    loaded.commit()
+
+    assert count(loaded, INCOME) == 0
+    assert count(loaded, INFLOW) == 0
+
+
+def test_a_positive_row_marked_as_not_income_leaves_income_but_stays_an_inflow(loaded):
+    loaded.execute(
+        "UPDATE transactions SET not_expense_reason = 'other' WHERE pluggy_id = 't-salario'"
+    )
+    loaded.commit()
+
+    assert count(loaded, INCOME) == 0
+    assert count(loaded, INFLOW) == 1
+
+
+def test_excluded_covers_a_marked_outflow_and_a_marked_inflow_but_not_a_marked_transfer(loaded):
+    loaded.execute(
+        "UPDATE transactions SET not_expense_reason = 'own_transfer' "
+        "WHERE pluggy_id IN ('t-mercado', 't-salario', 't-transferencia')"
+    )
+    loaded.commit()
+
+    assert count(loaded, EXCLUDED) == 2
+    assert total_spending_cents(loaded) == -1050
 
 
 def test_date_window_without_dates_is_empty():

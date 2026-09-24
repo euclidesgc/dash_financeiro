@@ -6,7 +6,7 @@ from app.db import fold
 from app.taxonomy.catalogue import create_category
 from app.taxonomy.classify import classify_all, residue
 from app.taxonomy.override import (
-    NotAnOutflowError,
+    NotCountableError,
     UnknownCategoryError,
     UnknownTransactionError,
     clear_not_expense,
@@ -203,30 +203,49 @@ def test_set_and_clear_not_expense_refuse_an_unknown_transaction(taxonomy_conn, 
         clear_not_expense(taxonomy_conn, id + 1000)
 
 
-def test_set_not_expense_refuses_a_transfer_a_refund_and_an_income(taxonomy_conn, seed):
+def test_set_not_expense_refuses_a_transfer_and_a_refund_of_either_sign(taxonomy_conn, seed):
     prepared(taxonomy_conn, seed)
     load(
         taxonomy_conn,
         [
-            transaction("t-transfer", "2026-09-02", -20.0, eh_transferencia=True),
-            transaction("t-refund", "2026-09-03", 20.0, eh_estorno=True),
-            transaction("t-income", "2026-09-04", 100.0),
+            transaction("t-transfer-out", "2026-09-02", -20.0, eh_transferencia=True),
+            transaction("t-transfer-in", "2026-09-02", 20.0, eh_transferencia=True),
+            transaction("t-refund-in", "2026-09-03", 20.0, eh_estorno=True),
+            transaction("t-refund-out", "2026-09-03", -20.0, eh_estorno=True),
         ],
     )
     classify_all(taxonomy_conn)
     taxonomy_conn.commit()
 
-    for pluggy_id in ("t-transfer", "t-refund", "t-income"):
+    for pluggy_id in ("t-transfer-out", "t-transfer-in", "t-refund-in", "t-refund-out"):
         row = taxonomy_conn.execute(
             "SELECT id FROM transactions WHERE pluggy_id = ?", (pluggy_id,)
         ).fetchone()
         other_id = int(row["id"])
 
-        with pytest.raises(NotAnOutflowError) as excinfo:
+        with pytest.raises(NotCountableError) as excinfo:
             set_not_expense(taxonomy_conn, other_id, "other")
 
         assert excinfo.value.transaction_id == other_id
         assert reason_of(taxonomy_conn, other_id) is None
+
+
+def test_set_not_expense_on_an_income_writes_the_reason(taxonomy_conn, seed):
+    prepared(taxonomy_conn, seed)
+    load(taxonomy_conn, [transaction("t-income", "2026-09-04", 100.0)])
+    classify_all(taxonomy_conn)
+    taxonomy_conn.commit()
+
+    row = taxonomy_conn.execute(
+        "SELECT id FROM transactions WHERE pluggy_id = ?", ("t-income",)
+    ).fetchone()
+    other_id = int(row["id"])
+
+    set_not_expense(taxonomy_conn, other_id, "other")
+    assert reason_of(taxonomy_conn, other_id) == "other"
+
+    clear_not_expense(taxonomy_conn, other_id)
+    assert reason_of(taxonomy_conn, other_id) is None
 
 
 def test_the_residue_stops_counting_a_row_marked_as_not_expense(taxonomy_conn, seed):

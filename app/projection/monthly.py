@@ -2,7 +2,7 @@ import sqlite3
 from datetime import date
 from typing import Any, cast
 
-from app.queries.spending import SPENDING
+from app.queries.spending import INCOME, SPENDING
 from app.settings.catalog import MEDIAN, MEDIAN_MONTHS
 from app.settings.store import value
 
@@ -11,8 +11,8 @@ _MONTHS_SEEN = (
     "WHERE substr(date, 1, 7) < ? ORDER BY month"
 )
 _INCOME = (
-    "SELECT COALESCE(SUM(amount_cents), 0) AS total FROM transactions "
-    "WHERE substr(date, 1, 7) = ? AND amount_cents > 0 AND is_transfer = 0 AND is_refund = 0"
+    f"SELECT COALESCE(SUM(amount_cents), 0) AS total FROM transactions "
+    f"WHERE substr(date, 1, 7) = ? AND {INCOME}"
 )
 _SPENDING = (
     f"SELECT COALESCE(SUM(amount_cents), 0) AS total FROM transactions "
