@@ -26,6 +26,7 @@ export interface ExpensesResponse {
 
 export type ExpenseSort = 'date' | 'amount' | 'category'
 export type ExpenseOrder = 'asc' | 'desc'
+export type ExpenseView = 'expenses' | 'excluded'
 
 export interface ExpensesQuery {
   page: number
@@ -35,6 +36,7 @@ export interface ExpensesQuery {
   to: string | null
   account: string | null
   search: string | null
+  view: ExpenseView
 }
 
 export type CategorySignal = 'within' | 'warning' | 'over'
@@ -55,7 +57,7 @@ export interface CategoryTotalsResponse {
   signal_scope: 'month' | 'none'
 }
 
-export type CategoryTotalsQuery = Pick<ExpensesQuery, 'from' | 'to' | 'account' | 'search'>
+export type CategoryTotalsQuery = Pick<ExpensesQuery, 'from' | 'to' | 'account' | 'search' | 'view'>
 
 export interface Category {
   key: string

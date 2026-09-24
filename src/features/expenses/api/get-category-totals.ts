@@ -16,6 +16,9 @@ export function getCategoryTotals(query: CategoryTotalsQuery): Promise<CategoryT
   if (query.search !== null) {
     params.set('q', query.search)
   }
+  if (query.view === 'excluded') {
+    params.set('view', 'excluded')
+  }
   return apiRequest<CategoryTotalsResponse>(
     `/api/transactions/expenses/by-category?${params.toString()}`,
   )

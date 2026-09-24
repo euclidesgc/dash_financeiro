@@ -1,6 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { Alert } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { useClearNotExpense } from '@/features/expenses/api/clear-not-expense'
 import { useExpenseAccounts } from '@/features/expenses/api/get-accounts'
 import { useCategories } from '@/features/expenses/api/get-categories'
 import { useExpenses } from '@/features/expenses/api/get-expenses'
@@ -12,10 +14,12 @@ import { Pagination } from '@/features/expenses/components/pagination'
 import { PeriodControls } from '@/features/expenses/components/period-controls'
 import { SearchInput } from '@/features/expenses/components/search-input'
 import { SortControls } from '@/features/expenses/components/sort-controls'
+import { ViewSelect } from '@/features/expenses/components/view-select'
 import type {
   CategoryTotalsQuery,
   ExpenseOrder,
   ExpenseSort,
+  ExpenseView,
   Period,
 } from '@/features/expenses/types/expense'
 import { currentMonth, readPeriod, shiftMonth, toDateBounds, writePeriod } from '@/features/expenses/utils/period'
@@ -50,6 +54,19 @@ function readAccount(value: string | null): string | null {
 function readSearch(value: string | null): string | null {
   const term = (value ?? '').trim()
   return term.length >= 2 ? term : null
+}
+
+function readView(value: string | null): ExpenseView {
+  return value === 'excluded' ? 'excluded' : 'expenses'
+}
+
+function writeView(params: URLSearchParams, view: ExpenseView): void {
+  params.delete('page')
+  if (view === 'expenses') {
+    params.delete('view')
+  } else {
+    params.set('view', 'excluded')
+  }
 }
 
 function writeSearch(params: URLSearchParams, text: string): boolean {
@@ -99,12 +116,19 @@ export function ExpensesList(): React.JSX.Element {
   const { from, to } = toDateBounds(period)
   const account = readAccount(searchParams.get('account'))
   const search = readSearch(searchParams.get('q'))
+  const view = readView(searchParams.get('view'))
   const accounts = useExpenseAccounts()
   const categories = useCategories()
   const accountKnown = accounts.data
     ? accounts.data.accounts.some((item) => item.id === account)
     : true
-  const filters: CategoryTotalsQuery = { from, to, account: accountKnown ? account : null, search }
+  const filters: CategoryTotalsQuery = {
+    from,
+    to,
+    account: accountKnown ? account : null,
+    search,
+    view,
+  }
   const { data, isPending, isError, isPlaceholderData, refetch } = useExpenses({
     page,
     sort,
@@ -112,6 +136,15 @@ export function ExpensesList(): React.JSX.Element {
     ...filters,
   })
   const pages = data ? Math.max(1, Math.ceil(data.total / data.page_size)) : 1
+  const [lastExcluded, setLastExcluded] = useState<{
+    id: number
+    description: string | null
+  } | null>(null)
+  const undo = useClearNotExpense()
+
+  useEffect(() => {
+    setLastExcluded(null)
+  }, [view])
 
   useEffect(() => {
     if (data && data.total > 0 && page > pages) {
@@ -181,6 +214,12 @@ export function ExpensesList(): React.JSX.Element {
     setSearchParams(params, { replace: true })
   }
 
+  function handleViewChange(next: ExpenseView): void {
+    const params = new URLSearchParams(searchParams)
+    writeView(params, next)
+    setSearchParams(params, { replace: true })
+  }
+
   function handleSearchCommit(text: string): void {
     const params = new URLSearchParams(searchParams)
     if (writeSearch(params, text)) {
@@ -212,11 +251,60 @@ export function ExpensesList(): React.JSX.Element {
           onSortChange={handleSortChange}
           onOrderToggle={handleOrderToggle}
         />
+        <ViewSelect value={view} onChange={handleViewChange} />
       </div>
-      {period.kind === 'month' ? <MonthCeiling query={{ from, to }} /> : null}
+      {period.kind === 'month' && view === 'expenses' ? <MonthCeiling query={{ from, to }} /> : null}
       <CategoryTotals query={filters} />
     </>
   )
+
+  function handleUndo(id: number): void {
+    if (undo.isPending) return
+    undo.mutate(id, {
+      onSuccess: () => {
+        setLastExcluded(null)
+      },
+    })
+  }
+
+  const notice =
+    lastExcluded === null ? null : undo.isError ? (
+      <div
+        role="alert"
+        className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-md border border-red-200 bg-red-50 p-3"
+      >
+        <p className="text-sm text-red-800">Não foi possível desfazer.</p>
+        <Button
+          variant="secondary"
+          type="button"
+          disabled={undo.isPending}
+          onClick={() => {
+            handleUndo(lastExcluded.id)
+          }}
+        >
+          Tentar de novo
+        </Button>
+      </div>
+    ) : (
+      <div
+        role="status"
+        className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-md border border-green-200 bg-green-50 p-3"
+      >
+        <p className="text-sm text-green-800">
+          {`${lastExcluded.description ?? 'Sem descrição'} não conta mais como gasto.`}
+        </p>
+        <Button
+          variant="secondary"
+          type="button"
+          disabled={undo.isPending}
+          onClick={() => {
+            handleUndo(lastExcluded.id)
+          }}
+        >
+          {undo.isPending ? 'Desfazendo…' : 'Desfazer'}
+        </Button>
+      </div>
+    )
 
   if (isPending) {
     return (
@@ -243,11 +331,18 @@ export function ExpensesList(): React.JSX.Element {
 
   if (data.total === 0) {
     const filtered = period.kind !== 'all' || account !== null || search !== null
+    const emptyText =
+      view === 'excluded'
+        ? 'Nenhum lançamento marcado como não-gasto.'
+        : filtered
+          ? 'Nenhum gasto para esse filtro.'
+          : 'Nenhum gasto registrado ainda.'
     return (
       <>
         {header}
+        {notice}
         <p className="mt-6 rounded-md border border-dashed border-gray-300 p-6 text-center text-gray-600">
-          {filtered ? 'Nenhum gasto para esse filtro.' : 'Nenhum gasto registrado ainda.'}
+          {emptyText}
         </p>
       </>
     )
@@ -256,6 +351,7 @@ export function ExpensesList(): React.JSX.Element {
   return (
     <>
       {header}
+      {notice}
       <ul className="mt-6 divide-y divide-gray-200">
         {data.items.map((expense) => (
           <ExpenseItem
@@ -263,6 +359,11 @@ export function ExpensesList(): React.JSX.Element {
             expense={expense}
             categories={categories.data?.categories ?? []}
             categoriesReady={categories.isSuccess}
+            view={view}
+            onExcluded={(excluded) => {
+              undo.reset()
+              setLastExcluded(excluded)
+            }}
           />
         ))}
       </ul>
@@ -272,6 +373,7 @@ export function ExpensesList(): React.JSX.Element {
         total={data.total}
         totalCents={data.total_cents}
         isFetching={isPlaceholderData}
+        noun={view === 'excluded' ? { one: 'lançamento', many: 'lançamentos' } : undefined}
         onChange={(next) => {
           const params = new URLSearchParams(searchParams)
           params.set('page', String(next))

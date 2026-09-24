@@ -1613,3 +1613,199 @@ test('shows the month signal against the fake ceiling', async () => {
   expect(screen.getByText('Atenção', { exact: true })).toBeInTheDocument()
   expect(screen.getByText(/Sobram R\$ 15,10/)).toBeInTheDocument()
 })
+
+async function markFirstRowAsNotExpense(): Promise<void> {
+  const list = await screen.findByRole('list')
+  const row = within(list).getAllByRole('listitem')[0]
+  await userEvent.click(
+    within(row).getByRole('button', { name: 'Marcar MERCADO DO BAIRRO como não-gasto' }),
+  )
+  await userEvent.click(within(row).getByRole('button', { name: 'Confirmar' }))
+}
+
+test('marking a row as not an expense removes it, drops the totals and shows the undo notice', async () => {
+  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+
+  await markFirstRowAsNotExpense()
+
+  const notice = await screen.findByRole('status')
+  expect(notice).toHaveTextContent('MERCADO DO BAIRRO não conta mais como gasto.')
+  expect(within(notice).getByRole('button', { name: 'Desfazer' })).toBeInTheDocument()
+
+  await waitFor(() => {
+    expect(screen.queryByText('MERCADO DO BAIRRO')).not.toBeInTheDocument()
+  })
+
+  await waitFor(() => {
+    const rows = categoryRows()
+    const compras = rows.find((row) => cellsOf(row)[0] === 'Compras')
+    expect(compras).toBeDefined()
+    if (compras) {
+      const cells = within(compras).getAllByRole('cell')
+      expect(cells[1]).toHaveTextContent('41 gasto')
+      expect(cells[2]).toHaveTextContent('R$ 9.400,00')
+    }
+  })
+
+  expect(await screen.findByText(/44 gastos/)).toBeInTheDocument()
+})
+
+test('"Desfazer" brings the row back and removes the notice', async () => {
+  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+
+  await markFirstRowAsNotExpense()
+
+  const notice = await screen.findByRole('status')
+  await userEvent.click(within(notice).getByRole('button', { name: 'Desfazer' }))
+
+  await waitFor(() => {
+    expect(screen.getByText('MERCADO DO BAIRRO')).toBeInTheDocument()
+  })
+  expect(
+    screen.queryByText('MERCADO DO BAIRRO não conta mais como gasto.'),
+  ).not.toBeInTheDocument()
+  expect(await screen.findByText(/45 gastos/)).toBeInTheDocument()
+})
+
+test('a failed undo turns the notice into an alert with "Tentar de novo"', async () => {
+  let attempt = 0
+  server.use(
+    http.delete('/api/transactions/:id/not-expense', ({ params }) => {
+      attempt += 1
+      if (attempt === 1) {
+        return HttpResponse.json({ detail: 'erro' }, { status: 500 })
+      }
+      const item = fakeExpenses.find((expense) => expense.id === Number(params.id))
+      if (item) {
+        item.not_expense_reason = null
+      }
+      return HttpResponse.json(item)
+    }),
+  )
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+
+  await markFirstRowAsNotExpense()
+
+  const notice = await screen.findByRole('status')
+  await userEvent.click(within(notice).getByRole('button', { name: 'Desfazer' }))
+
+  const alert = await screen.findByRole('alert')
+  expect(alert).toHaveTextContent('Não foi possível desfazer.')
+
+  await userEvent.click(within(alert).getByRole('button', { name: 'Tentar de novo' }))
+
+  await waitFor(() => {
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+  await waitFor(() => {
+    expect(screen.getByText('MERCADO DO BAIRRO')).toBeInTheDocument()
+  })
+})
+
+test('marking the last row of a filter shows the notice above the empty state', async () => {
+  renderWithProviders(<ExpensesList />, { route: '/expenses?month=2026-08' })
+
+  await markFirstRowAsNotExpense()
+
+  const notice = await screen.findByRole('status')
+  expect(notice).toHaveTextContent('MERCADO DO BAIRRO não conta mais como gasto.')
+  expect(screen.getByText('Nenhum gasto para esse filtro.')).toBeInTheDocument()
+})
+
+test('?view=excluded with no marks shows the excluded empty state and no month ceiling', async () => {
+  renderWithProviders(<ExpensesList />, { route: '/expenses?view=excluded&month=2026-08' })
+
+  expect(
+    await screen.findByText('Nenhum lançamento marcado como não-gasto.'),
+  ).toBeInTheDocument()
+  expect(screen.queryByText('Teto do mês')).not.toBeInTheDocument()
+  expect(screen.getByLabelText('Mostrar')).toHaveValue('excluded')
+})
+
+test('?view=excluded lists the marked rows with the reason badge and "Voltar a ser gasto" returns them', async () => {
+  fakeExpenses[0].not_expense_reason = 'own_transfer'
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses?view=excluded' })
+
+  const items = await screen.findAllByRole('listitem')
+  expect(items).toHaveLength(1)
+  const row = within(items[0])
+  expect(row.getByText('MERCADO DO BAIRRO')).toBeInTheDocument()
+  expect(row.getByText('Transferência entre minhas contas')).toBeInTheDocument()
+  expect(
+    screen.queryByRole('button', { name: /^Trocar categoria de / }),
+  ).not.toBeInTheDocument()
+  expect(
+    await screen.findByText('Página 1 de 1 · 1 lançamento · R$ 84,90 no período'),
+  ).toBeInTheDocument()
+
+  await userEvent.click(
+    screen.getByRole('button', { name: 'Voltar MERCADO DO BAIRRO a ser gasto' }),
+  )
+
+  await waitFor(() => {
+    expect(screen.getByText('Nenhum lançamento marcado como não-gasto.')).toBeInTheDocument()
+  })
+})
+
+test('an unknown view falls back to the expenses view', async () => {
+  const calls = spyOnExpensesRequests()
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses?view=x' })
+
+  await screen.findByRole('list')
+
+  expect(screen.getByLabelText('Mostrar')).toHaveValue('expenses')
+  expect(screen.getAllByRole('listitem')).toHaveLength(20)
+
+  await waitFor(() => {
+    expect(calls.at(-1)?.get('view')).toBeNull()
+  })
+})
+
+test('changing "Mostrar" writes view=excluded, drops the page and sends view to the API', async () => {
+  const calls = spyOnExpensesRequests()
+
+  renderWithProviders(
+    <>
+      <ExpensesList />
+      <LocationProbe />
+    </>,
+    { route: '/expenses?page=2' },
+  )
+
+  await screen.findByRole('list')
+
+  await userEvent.selectOptions(screen.getByLabelText('Mostrar'), 'excluded')
+
+  await waitFor(() => {
+    const search = screen.getByTestId('search').textContent
+    expect(search).toContain('view=excluded')
+    expect(search).not.toContain('page=')
+  })
+
+  await waitFor(() => {
+    expect(calls.at(-1)?.get('view')).toBe('excluded')
+  })
+
+  await userEvent.selectOptions(screen.getByLabelText('Mostrar'), 'expenses')
+
+  await waitFor(() => {
+    expect(screen.getByTestId('search').textContent).not.toContain('view=')
+  })
+})
+
+test('changing the view clears the undo notice', async () => {
+  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+
+  await markFirstRowAsNotExpense()
+
+  await screen.findByRole('status')
+
+  await userEvent.selectOptions(screen.getByLabelText('Mostrar'), 'excluded')
+
+  await waitFor(() => {
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+})

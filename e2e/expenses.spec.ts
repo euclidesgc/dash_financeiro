@@ -350,6 +350,66 @@ test('shows the month against its ceiling, edits the ceiling inline and leaves t
   await expect(block).not.toContainText('%')
 })
 
+test('marks an expense as not an expense, undoes it, lists it under "Não são gastos" and leaves the base as it found it', async ({
+  page,
+}) => {
+  await page.goto('/app/login')
+  await page.getByLabel('Login').fill(LOGIN)
+  await page.getByLabel('Senha').fill(PASSWORD)
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page).toHaveURL(/\/app\/?$/)
+
+  await page.goto('/app/expenses?month=2026-08')
+  await expect(page.getByText('Página 1 de 1 · 2 gastos · R$ 105,00 no período')).toBeVisible()
+  const row = page.getByRole('listitem').filter({ hasText: 'AÇOUGUE SÃO JORGE' })
+
+  await row.getByRole('button', { name: 'Marcar AÇOUGUE SÃO JORGE como não-gasto' }).click()
+  const reason = row.getByLabel('Motivo')
+  await expect(reason).toBeFocused()
+  await expect(reason).toHaveValue('own_transfer')
+  await row.getByRole('button', { name: 'Confirmar' }).click()
+
+  const notice = page
+    .getByRole('status')
+    .filter({ hasText: 'AÇOUGUE SÃO JORGE não conta mais como gasto.' })
+  await expect(notice).toBeVisible()
+  await expect(page.getByRole('listitem')).toHaveCount(1)
+  await expect(page.getByText('Página 1 de 1 · 1 gasto · R$ 45,00 no período')).toBeVisible()
+  await expect(page.getByRole('table', { name: 'Por categoria' })).not.toContainText('Supermercado')
+
+  await notice.getByRole('button', { name: 'Desfazer' }).click()
+  await expect(notice).toHaveCount(0)
+  await expect(page.getByText('Página 1 de 1 · 2 gastos · R$ 105,00 no período')).toBeVisible()
+  await expect(row).toBeVisible()
+
+  await row.getByRole('button', { name: 'Marcar AÇOUGUE SÃO JORGE como não-gasto' }).click()
+  await expect(reason).toBeFocused()
+  await expect(reason).toHaveValue('own_transfer')
+  await row.getByRole('button', { name: 'Confirmar' }).click()
+  await expect(page.getByText('Página 1 de 1 · 1 gasto · R$ 45,00 no período')).toBeVisible()
+
+  await page.getByLabel('Mostrar').selectOption('excluded')
+  await expect(page).toHaveURL(/view=excluded/)
+  await expect(page.getByRole('listitem')).toHaveCount(1)
+  await expect(page.getByRole('listitem')).toContainText('AÇOUGUE SÃO JORGE')
+  await expect(
+    page.getByRole('listitem').getByText('Transferência entre minhas contas', { exact: true }),
+  ).toBeVisible()
+  await expect(page.getByText('Página 1 de 1 · 1 lançamento · R$ 60,00 no período')).toBeVisible()
+  await expect(page.getByRole('heading', { level: 2, name: 'Teto do mês' })).toHaveCount(0)
+
+  await page.reload()
+  await expect(page.getByLabel('Mostrar')).toHaveValue('excluded')
+  await expect(page.getByRole('listitem')).toHaveCount(1)
+
+  await page.getByRole('button', { name: 'Voltar AÇOUGUE SÃO JORGE a ser gasto' }).click()
+  await expect(page.getByText('Nenhum lançamento marcado como não-gasto.')).toBeVisible()
+
+  await page.getByLabel('Mostrar').selectOption('expenses')
+  await expect(page).not.toHaveURL(/view=/)
+  await expect(page.getByText('Página 1 de 1 · 2 gastos · R$ 105,00 no período')).toBeVisible()
+})
+
 test('goes back to the balances page', async ({ page }) => {
   await page.goto('/app/login')
   await page.getByLabel('Login').fill(LOGIN)
