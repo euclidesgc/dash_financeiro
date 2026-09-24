@@ -7,6 +7,22 @@ import { REASON_OPTIONS } from '@/features/expenses/utils/reason-labels'
 
 const ROW_CLASSES = 'mt-1 flex flex-wrap items-center justify-end gap-2'
 
+const MARK_TEXT: Record<
+  'expenses' | 'income',
+  { button: string; ariaLabel: (name: string) => string; error: string }
+> = {
+  expenses: {
+    button: 'Não é gasto',
+    ariaLabel: (name) => `Marcar ${name} como não-gasto`,
+    error: 'Não foi possível marcar como não-gasto.',
+  },
+  income: {
+    button: 'Não é entrada',
+    ariaLabel: (name) => `Marcar ${name} como não-entrada`,
+    error: 'Não foi possível marcar como não-entrada.',
+  },
+}
+
 export function NotExpenseControl({
   expense,
   view,
@@ -34,7 +50,7 @@ export function NotExpenseControl({
         {undo.isError ? (
           <>
             <p role="alert" className="mt-1 text-sm text-red-700">
-              Não foi possível voltar a contar como gasto.
+              Não foi possível voltar a contar.
             </p>
             <Button
               variant="secondary"
@@ -50,31 +66,33 @@ export function NotExpenseControl({
           <Button
             variant="secondary"
             type="button"
-            aria-label={`Voltar ${name} a ser gasto`}
+            aria-label={`Voltar ${name} a contar`}
             disabled={undo.isPending}
             onClick={() => {
               if (undo.isPending) return
               undo.mutate(expense.id)
             }}
           >
-            {undo.isPending ? 'Salvando…' : 'Voltar a ser gasto'}
+            {undo.isPending ? 'Salvando…' : 'Voltar a contar'}
           </Button>
         )}
       </div>
     )
   }
 
+  const text = MARK_TEXT[view]
+
   if (!editing) {
     return (
       <Button
         variant="secondary"
         type="button"
-        aria-label={`Marcar ${name} como não-gasto`}
+        aria-label={text.ariaLabel(name)}
         onClick={() => {
           setEditing(true)
         }}
       >
-        Não é gasto
+        {text.button}
       </Button>
     )
   }
@@ -110,7 +128,7 @@ export function NotExpenseControl({
       {mutation.isError ? (
         <div className="flex basis-full flex-wrap items-center justify-end gap-2">
           <p role="alert" className="mt-1 text-sm text-red-700">
-            Não foi possível marcar como não-gasto.
+            {text.error}
           </p>
           <Button
             variant="secondary"

@@ -4,6 +4,7 @@ import type { ExpenseView } from '@/features/expenses/types/expense'
 const VIEW_OPTIONS: { value: ExpenseView; label: string }[] = [
   { value: 'expenses', label: 'Gastos' },
   { value: 'excluded', label: 'Não são gastos' },
+  { value: 'income', label: 'Entradas' },
 ]
 
 export function ViewSelect({

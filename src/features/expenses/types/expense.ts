@@ -26,7 +26,7 @@ export interface ExpensesResponse {
 
 export type ExpenseSort = 'date' | 'amount' | 'category'
 export type ExpenseOrder = 'asc' | 'desc'
-export type ExpenseView = 'expenses' | 'excluded'
+export type ExpenseView = 'expenses' | 'excluded' | 'income'
 
 export interface ExpensesQuery {
   page: number
@@ -58,6 +58,14 @@ export interface CategoryTotalsResponse {
 }
 
 export type CategoryTotalsQuery = Pick<ExpensesQuery, 'from' | 'to' | 'account' | 'search' | 'view'>
+
+export type PeriodResultQuery = Pick<ExpensesQuery, 'from' | 'to' | 'account' | 'search'>
+
+export interface PeriodResultResponse {
+  income_cents: number
+  spending_cents: number
+  balance_cents: number
+}
 
 export interface Category {
   key: string
