@@ -8,8 +8,17 @@ export interface User {
   login: string
 }
 
-export function getMe(): Promise<User> {
-  return apiRequest<User>('/api/auth/me')
+export async function getMe(): Promise<User | null> {
+  try {
+    return await apiRequest<User>('/api/auth/me')
+  } catch (error) {
+    // A 401 here is the normal answer for "nobody is signed in". Resolving it
+    // replaces the cached user; as an error the stale user would survive.
+    if (error instanceof ApiError && error.status === 401) {
+      return null
+    }
+    throw error
+  }
 }
 
 export const meQueryOptions = queryOptions({
@@ -23,7 +32,7 @@ export function useUser() {
 }
 
 export function ProtectedRoute({ children }: { children: ReactNode }): React.JSX.Element {
-  const { isPending, error } = useUser()
+  const { isPending, error, data } = useUser()
 
   if (isPending) {
     return (
@@ -34,10 +43,11 @@ export function ProtectedRoute({ children }: { children: ReactNode }): React.JSX
   }
 
   if (error) {
-    if (error instanceof ApiError && error.status === 401) {
-      return <Navigate to={paths.login} replace />
-    }
     throw error
+  }
+
+  if (!data) {
+    return <Navigate to={paths.login} replace />
   }
 
   return <>{children}</>

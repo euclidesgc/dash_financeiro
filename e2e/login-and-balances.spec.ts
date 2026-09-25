@@ -38,3 +38,34 @@ test('rejects the wrong password', async ({ page }) => {
   await expect(page.getByRole('alert')).toHaveText('Login ou senha inválidos.')
   await expect(page).toHaveURL(/\/app\/login$/)
 })
+
+test('a session that ends while the app is open goes to the login page and stays there', async ({
+  page,
+}) => {
+  await page.clock.install()
+  await page.goto('/app/login')
+  await page.getByLabel('Login').fill(LOGIN)
+  await page.getByLabel('Senha').fill(PASSWORD)
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Saldos de hoje' })).toBeVisible()
+
+  const loggedOut = await page.request.post('/api/auth/logout')
+  expect(loggedOut.ok()).toBe(true)
+  await page.clock.fastForward('01:00')
+
+  const visited: string[] = []
+  page.on('framenavigated', (frame) => {
+    if (frame === page.mainFrame()) visited.push(new URL(frame.url()).pathname)
+  })
+  await page.getByRole('link', { name: 'Gastos' }).click()
+
+  await expect(page.getByRole('heading', { level: 1, name: 'Entrar' })).toBeVisible()
+  await page.clock.fastForward('00:05')
+  await expect(page).toHaveURL(/\/app\/login$/)
+  expect(visited.filter((path) => path === '/app/').length).toBe(0)
+
+  await page.getByLabel('Login').fill(LOGIN)
+  await page.getByLabel('Senha').fill(PASSWORD)
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Saldos de hoje' })).toBeVisible()
+})
