@@ -69,3 +69,18 @@ test('a session that ends while the app is open goes to the login page and stays
   await page.getByRole('button', { name: 'Entrar' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Saldos de hoje' })).toBeVisible()
 })
+
+test('opens the app without the trailing slash and shows a Portuguese page for an unknown path', async ({
+  page,
+}) => {
+  await page.goto('/app')
+  await expect(page.getByRole('heading', { level: 1, name: 'Entrar' })).toBeVisible()
+
+  await page.goto('/app/nao-existe')
+  await expect(page.getByRole('heading', { level: 1, name: 'Página não encontrada' })).toBeVisible()
+  await expect(page.getByText('Unexpected Application Error')).toHaveCount(0)
+
+  await page.getByRole('link', { name: 'Voltar para o início' }).click()
+  await expect(page).toHaveURL(/\/app\/login$/)
+  await expect(page.getByRole('heading', { level: 1, name: 'Entrar' })).toBeVisible()
+})

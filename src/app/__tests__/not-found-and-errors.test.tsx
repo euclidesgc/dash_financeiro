@@ -3,9 +3,10 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { createMemoryRouter, RouterProvider } from 'react-router'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 
 import { router as appRouter, routes } from '@/app/router'
+import { RouteError } from '@/app/routes/route-error'
 import { queryClient as appQueryClient } from '@/lib/react-query'
 import { server } from '@/testing/mocks/server'
 
@@ -71,4 +72,34 @@ test('a user query that keeps failing shows a Portuguese error with a retry', as
   await userEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }))
 
   expect(await screen.findByRole('heading', { name: 'Entrar' })).toBeInTheDocument()
+})
+
+function BrokenScreen(): React.JSX.Element {
+  throw new Error('broken screen')
+}
+
+test('a screen that throws while rendering shows a Portuguese error with a way back', async () => {
+  const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+  const router = createMemoryRouter(
+    [
+      {
+        errorElement: <RouteError />,
+        children: [
+          { path: '/', element: <p>Início</p> },
+          { path: '/broken', element: <BrokenScreen /> },
+        ],
+      },
+    ],
+    { initialEntries: ['/broken'] },
+  )
+
+  render(<RouterProvider router={router} />)
+
+  expect(await screen.findByRole('heading', { name: 'Algo deu errado' })).toBeInTheDocument()
+  expect(screen.queryByText(/Unexpected Application Error/)).not.toBeInTheDocument()
+
+  await userEvent.click(screen.getByRole('link', { name: 'Voltar para o início' }))
+
+  expect(await screen.findByText('Início')).toBeInTheDocument()
+  consoleError.mockRestore()
 })
