@@ -2,7 +2,6 @@ import re
 import sqlite3
 
 from app.db import connect
-from app.ingest.normalize import normalize_description
 from app.queries.spending import SPENDING
 
 MATCH_DESCRIPTION = "description"
@@ -21,7 +20,6 @@ class MissingFallbackError(RuntimeError):
 
 
 def classify_all(conn: sqlite3.Connection) -> int:
-    _fill_payees(conn)
     fallback = _fallback(conn)
     _record_categories(conn, fallback[1])
     expressions, categories = _rules(conn)
@@ -91,16 +89,6 @@ def _fallback(conn: sqlite3.Connection) -> _Target:
         if row is None:
             raise MissingFallbackError(table)
     return (None, group[0], nature[0], essentiality[0])
-
-
-def _fill_payees(conn: sqlite3.Connection) -> None:
-    rows = conn.execute(
-        "SELECT id, description FROM transactions WHERE payee IS NULL OR payee = ''"
-    ).fetchall()
-    conn.executemany(
-        "UPDATE transactions SET payee = ? WHERE id = ?",
-        [(normalize_description(row["description"]), row["id"]) for row in rows],
-    )
 
 
 def _record_categories(conn: sqlite3.Connection, fallback_group_id: int) -> None:

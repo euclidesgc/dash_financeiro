@@ -68,9 +68,13 @@ def test_count_similar_falls_back_to_the_folded_description_when_the_payee_is_nu
     taxonomy_conn, seed
 ):
     prepared(taxonomy_conn, seed, BASE_ROWS, classify=False)
+    taxonomy_conn.execute(
+        "UPDATE transactions SET payee = NULL WHERE pluggy_id IN ('o', 's1', 's2')"
+    )
+    taxonomy_conn.commit()
     o = id_of(taxonomy_conn, "o")
 
-    assert not row_of(taxonomy_conn, o)["payee"]
+    assert row_of(taxonomy_conn, o)["payee"] is None
     assert count_similar(taxonomy_conn, o) == 2
 
 

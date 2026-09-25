@@ -10,7 +10,6 @@ from app.ingest.loader import ingest
 from app.ingest.source import load_accounts
 from app.main import create_app
 from app.payees.names import name_it
-from app.taxonomy.classify import _fill_payees
 from app.taxonomy.seed import seed_taxonomy
 
 LOGIN = "teste"
@@ -89,6 +88,13 @@ def _load(rows: list[dict[str, Any]], accounts: list[dict[str, Any]] | None = No
 def _descriptions(client: TestClient, query: str) -> list[str]:
     response = client.get(f"/api/transactions/expenses?{query}")
     return [item["description"] for item in response.json()["items"]]
+
+
+def _clear_payees() -> None:
+    conn = connect()
+    conn.execute("UPDATE transactions SET payee = NULL")
+    conn.commit()
+    conn.close()
 
 
 def _payee_of(conn, id: str) -> str:
@@ -218,10 +224,6 @@ def test_the_merchant_name_becomes_the_payee_name(client):
             _transaction("without-merchant", "2026-09-02", -20.0),
         ]
     )
-    conn = connect()
-    _fill_payees(conn)
-    conn.commit()
-    conn.close()
     _sign_in(client)
 
     response = client.get("/api/transactions/expenses")
@@ -848,6 +850,7 @@ def test_q_matches_the_description_ignoring_accents(client):
 
 def test_q_matches_the_description_ignoring_case(client):
     _load_search_fixture()
+    _clear_payees()
     _sign_in(client)
 
     assert _descriptions(client, "q=MERCADO") == ["Pagamento mercado"]
@@ -855,10 +858,6 @@ def test_q_matches_the_description_ignoring_case(client):
 
 def test_q_matches_the_payee_name_from_the_merchant_name(client):
     _load_search_fixture()
-    conn = connect()
-    _fill_payees(conn)
-    conn.commit()
-    conn.close()
     _sign_in(client)
 
     assert _descriptions(client, "q=bairro") == ["COMPRA 123"]
@@ -867,8 +866,6 @@ def test_q_matches_the_payee_name_from_the_merchant_name(client):
 def test_the_owner_nickname_wins_over_the_merchant_name_in_the_search(client):
     _load_search_fixture()
     conn = connect()
-    _fill_payees(conn)
-    conn.commit()
     name_it(conn, _payee_of(conn, "bairro"), "Padaria da Esquina", "dono")
     conn.close()
     _sign_in(client)
@@ -881,6 +878,7 @@ def test_the_owner_nickname_wins_over_the_merchant_name_in_the_search(client):
 
 def test_without_a_payee_key_the_merchant_name_is_not_searched(client):
     _load_search_fixture()
+    _clear_payees()
     _sign_in(client)
 
     response = client.get("/api/transactions/expenses?q=bairro")
@@ -1011,10 +1009,6 @@ def test_a_null_description_does_not_break_the_search(client):
 
 def test_sorting_respects_the_search(client):
     _load_search_fixture()
-    conn = connect()
-    _fill_payees(conn)
-    conn.commit()
-    conn.close()
     _sign_in(client)
 
     without_q = client.get("/api/transactions/expenses?sort=amount&order=asc").json()
@@ -1565,6 +1559,7 @@ def test_similar_of_an_unknown_expense_answers_404(client):
 
 def test_similar_counts_by_description_on_an_unclassified_base(client):
     _load(SIMILAR_ROWS)
+    _clear_payees()
     _sign_in(client)
     o_id = _id_of("o")
     conn = connect()
