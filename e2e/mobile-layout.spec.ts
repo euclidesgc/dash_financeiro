@@ -66,6 +66,15 @@ test('every screen fits a 375 px phone without horizontal scroll', async ({ page
     await expectNoHorizontalScroll(page)
   }
 
+  await navigation.getByRole('link', { name: 'Gastos' }).click()
+  const accountSelect = page.getByLabel('Conta', { exact: true })
+  await expect(accountSelect).toBeEnabled()
+  await expect(accountSelect.locator('option').nth(1)).toBeAttached()
+  const accountBox = await accountSelect.boundingBox()
+  expect(accountBox?.x ?? 0).toBeGreaterThanOrEqual(0)
+  expect((accountBox?.x ?? 0) + (accountBox?.width ?? Infinity)).toBeLessThanOrEqual(PHONE.width)
+  await expectNoHorizontalScroll(page)
+
   await page.goto('/app/nao-existe')
   await expect(page.getByRole('heading', { level: 1, name: 'Página não encontrada' })).toBeVisible()
   await expectNoHorizontalScroll(page)
