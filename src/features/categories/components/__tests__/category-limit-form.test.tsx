@@ -227,3 +227,34 @@ test('submitting twice while pending sends one call', async () => {
   })
   release()
 })
+
+test('a pt-BR amount like "1.500,00" saves 150000 cents instead of removing the limit', async () => {
+  const user = userEvent.setup()
+  const onDone = vi.fn()
+  const calls = spyOnPut()
+  renderWithProviders(<CategoryLimitForm category={shopping} onDone={onDone} />)
+
+  const input = screen.getByLabelText('Limite mensal (R$)')
+  await user.clear(input)
+  await user.type(input, '1.500,00')
+  await user.click(screen.getByRole('button', { name: 'Salvar' }))
+
+  await waitFor(() => {
+    expect(calls).toEqual([{ key: 'Shopping', body: { monthly_limit_cents: 150000 } }])
+  })
+})
+
+test('a negative limit asks for a value greater than zero', async () => {
+  const user = userEvent.setup()
+  const onDone = vi.fn()
+  const calls = spyOnPut()
+  renderWithProviders(<CategoryLimitForm category={shopping} onDone={onDone} />)
+
+  const input = screen.getByLabelText('Limite mensal (R$)')
+  await user.clear(input)
+  await user.type(input, '-5')
+  await user.click(screen.getByRole('button', { name: 'Salvar' }))
+
+  expect(await screen.findByText('Informe um valor maior que zero.')).toBeInTheDocument()
+  expect(calls).toHaveLength(0)
+})

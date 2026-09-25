@@ -225,3 +225,49 @@ test('saving invalidates the plan and the expenses queries', async () => {
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['expenses'] }))
   })
 })
+
+test('a pt-BR amount like "1.500,00" saves 150000 cents instead of removing the ceiling', async () => {
+  const user = userEvent.setup()
+  const onDone = vi.fn()
+  const calls = spyOnPut()
+  renderWithProviders(<CeilingForm ceilingCents={20000} onDone={onDone} />)
+
+  const input = screen.getByLabelText('Teto mensal (R$)')
+  await user.clear(input)
+  await user.type(input, '1.500,00')
+  await user.click(screen.getByRole('button', { name: 'Salvar' }))
+
+  await waitFor(() => {
+    expect(calls).toEqual([{ body: { monthly_ceiling_cents: 150000 } }])
+  })
+})
+
+test('text that is not an amount shows an error and never removes the ceiling', async () => {
+  const user = userEvent.setup()
+  const onDone = vi.fn()
+  const calls = spyOnPut()
+  renderWithProviders(<CeilingForm ceilingCents={20000} onDone={onDone} />)
+
+  const input = screen.getByLabelText('Teto mensal (R$)')
+  await user.clear(input)
+  await user.type(input, '15,00,0')
+  await user.click(screen.getByRole('button', { name: 'Salvar' }))
+
+  expect(await screen.findByText('Use o formato 1.500,00.')).toBeInTheDocument()
+  expect(calls).toHaveLength(0)
+  expect(onDone).not.toHaveBeenCalled()
+})
+
+test('saving an empty field asks for a value instead of closing silently', async () => {
+  const user = userEvent.setup()
+  const onDone = vi.fn()
+  const calls = spyOnPut()
+  renderWithProviders(<CeilingForm ceilingCents={20000} onDone={onDone} />)
+
+  await user.clear(screen.getByLabelText('Teto mensal (R$)'))
+  await user.click(screen.getByRole('button', { name: 'Salvar' }))
+
+  expect(await screen.findByText('Informe um valor.')).toBeInTheDocument()
+  expect(calls).toHaveLength(0)
+  expect(onDone).not.toHaveBeenCalled()
+})
