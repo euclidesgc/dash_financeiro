@@ -6,7 +6,7 @@ import pytest
 from app.db import connect
 from app.ingest.loader import ingest
 from app.ingest.normalize import normalize_description
-from app.ingest.source import load_accounts, load_transactions
+from app.ingest.source import load_accounts, load_discarded, load_transactions
 from app.ingest.trigger import COMMAND, SCREEN
 from app.migrate import run_migrations
 
@@ -105,6 +105,33 @@ def test_updates_the_row_that_the_source_changed(conn, accounts):
     ingest(conn, transactions=transactions, accounts=accounts, source="fixture", trigger=COMMAND)
     row = conn.execute("SELECT description, amount_cents FROM transactions").fetchone()
     assert (row["description"], row["amount_cents"]) == ("DESCRICAO CORRIGIDA", -1100)
+
+
+def test_a_discarded_transaction_leaves_the_base_and_the_others_stay(conn, accounts):
+    transactions = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))[:2]
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture", trigger=COMMAND)
+    gone = transactions[1]["id"]
+
+    result = ingest(
+        conn,
+        transactions=transactions[:1],
+        accounts=accounts,
+        source="fixture",
+        trigger=COMMAND,
+        discarded=[gone],
+    )
+
+    assert result.status == "ok"
+    remaining = [row["pluggy_id"] for row in conn.execute("SELECT pluggy_id FROM transactions")]
+    assert remaining == [transactions[0]["id"]]
+
+
+def test_the_discarded_list_sits_beside_the_consolidated_file(tmp_path):
+    source = tmp_path / "transacoes.json"
+    source.write_text("[]", encoding="utf-8")
+    assert load_discarded(str(source)) == []
+    (tmp_path / "descartadas.json").write_text(json.dumps(["tx-9"]), encoding="utf-8")
+    assert load_discarded(str(source)) == ["tx-9"]
 
 
 def test_card_balance_is_stored_as_debt(conn):
