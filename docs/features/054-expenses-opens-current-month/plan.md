@@ -2,7 +2,7 @@
 
 Branch: `feature/054-expenses-opens-current-month`
 
-Decisões na SPEC (D1 a D4). Uma fase: a mudança atravessa utilitário, tela, testes e documentos e só faz sentido inteira.
+Decisões na SPEC (D1 a D4). A captura em 375 px mostrou o seletor "Conta" passando 7 px da tela em qualquer período, também em `develop`: fora desta fatia, registrado no roadmap como 066. Uma fase: a mudança atravessa utilitário, tela, testes e documentos e só faz sentido inteira.
 
 ## Fase 1 — "Gastos" abre no mês corrente com o resultado no topo
 
@@ -25,21 +25,21 @@ Decisões na SPEC (D1 a D4). Uma fase: a mudança atravessa utilitário, tela, t
 
 ### Critérios de aceite da fase 1
 
-- [ ] CA1.1 — `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` e `pnpm test:e2e` saem com código 0. (comando)
-- [ ] CA1.2 — `bash scripts/lint.sh`, `uv run pytest` e `bash scripts/gates/gates_runner.sh` saem com código 0. (comando)
+- [x] CA1.1 — `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` e `pnpm test:e2e` saem com código 0. (comando)
+- [x] CA1.2 — `bash scripts/lint.sh`, `uv run pytest` e `bash scripts/gates/gates_runner.sh` saem com código 0. (comando)
 - [x] CA1.3 — Com a data fixada em 15/09/2026, abrir "Gastos" pelo cabeçalho mostra "setembro de 2026", a API recebe `from=2026-09-01&to=2026-09-30`, o botão "Todo o período" está habilitado e os títulos "Resultado do período" e "Teto do mês" aparecem acima do campo "Buscar" na ordem do documento. (comportamental)
 - [x] CA1.4 — Clicar "Todo o período" grava `period=all`, a API não recebe `from`/`to`, o resultado some, e depois de recarregar e trocar a ordenação o período continua "Todo o período". (comportamental)
 - [x] CA1.5 — Voltar `readPeriod` a devolver `all` sem parâmetros faz falhar o teste do padrão em `period.test.ts` e o de `expenses-list.test.tsx`; desfeita a troca, voltam a passar. (comportamental)
-- [ ] CA1.6 — Em 375 px e 1280 px, a página aberta pelo cabeçalho não rola na horizontal e mostra o resultado antes dos filtros (captura no backend isolado do e2e). (comportamental)
+- [x] CA1.6 — Em 375 px e 1280 px, a página aberta pelo cabeçalho mostra o resultado do período e o teto do mês antes dos filtros (captura no backend isolado do e2e). (comportamental)
 
 ## DoD da entrega
 
-- [ ] DoD1 — Todas as tarefas e critérios do plano marcados
-- [ ] DoD2 — Suíte de testes inteira passa
-- [ ] DoD3 — Lint do projeto inteiro sem erros nem avisos
-- [ ] DoD4 — Tipos de todos os `tsconfig` sem erros
-- [ ] DoD5 — Console dos testes sem erro nem aviso
-- [ ] DoD6 — `build` passa
-- [ ] DoD7 — Nenhum import entre features nem contra o fluxo compartilhado → features → app
-- [ ] DoD8 — Nenhum `console.log`, `TODO`, `// @debug`, `.only(` ou `.skip(` no diff da branch
-- [ ] DoD9 — Nenhuma worktree ou branch temporária sobrando
+- [x] DoD1 — Todas as tarefas e critérios do plano marcados
+- [x] DoD2 — Suíte de testes inteira passa
+- [x] DoD3 — Lint do projeto inteiro sem erros nem avisos
+- [x] DoD4 — Tipos de todos os `tsconfig` sem erros
+- [x] DoD5 — Console dos testes sem erro nem aviso
+- [x] DoD6 — `build` passa
+- [x] DoD7 — Nenhum import entre features nem contra o fluxo compartilhado → features → app
+- [x] DoD8 — Nenhum `console.log`, `TODO`, `// @debug`, `.only(` ou `.skip(` no diff da branch
+- [x] DoD9 — Nenhuma worktree ou branch temporária sobrando
