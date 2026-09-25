@@ -267,6 +267,8 @@ def test_the_response_has_the_contract_fields(client):
         "account_institution",
         "account_type",
         "category",
+        "category_key",
+        "category_source",
         "amount_cents",
         "account_id",
     }
@@ -1265,3 +1267,190 @@ def test_the_openapi_lists_by_category_with_four_optional_parameters(client):
     for parameter in parameters:
         assert parameter["in"] == "query"
         assert not parameter.get("required", False)
+
+
+def _patch(client: TestClient, id: int, body: dict[str, Any]) -> Any:
+    return client.patch(f"/api/transactions/{id}/category", json=body)
+
+
+def _first_id(client: TestClient) -> int:
+    return client.get("/api/transactions/expenses").json()["items"][0]["id"]
+
+
+def test_each_expense_carries_category_key_and_category_source(client):
+    _load(
+        [
+            _transaction("known", "2026-09-01", -10.0, categoria="Groceries"),
+            _transaction("unset", "2026-09-02", -20.0, categoria=""),
+        ]
+    )
+    _sign_in(client)
+
+    response = client.get("/api/transactions/expenses")
+
+    items = {item["description"]: item for item in response.json()["items"]}
+    known = items["GASTO known"]
+    unset = items["GASTO unset"]
+    assert known["category_key"] == "Groceries"
+    assert known["category_source"] == "auto"
+    assert unset["category_key"] is None
+    assert unset["category_source"] == "auto"
+    assert "category_key" in set(known)
+    assert "category_source" in set(known)
+
+
+def test_patch_category_without_session_answers_401(client):
+    _load([_transaction("g1", "2026-09-01", -60.0, categoria="Groceries", descricao="ACOUGUE")])
+
+    response = _patch(client, 1, {"mode": "manual", "category": "Healthcare"})
+
+    assert response.status_code == 401
+    assert response.json() == {"detail": "nao autenticado"}
+
+
+def test_patch_manual_category_answers_the_updated_expense_and_the_list_and_the_groups_follow(
+    client,
+):
+    _load([_transaction("g1", "2026-09-01", -60.0, categoria="Groceries", descricao="ACOUGUE")])
+    _sign_in(client)
+    id = _first_id(client)
+
+    response = _patch(client, id, {"mode": "manual", "category": "Healthcare"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["category"] == "Plano de saúde"
+    assert body["category_key"] == "Healthcare"
+    assert body["category_source"] == "manual"
+
+    item = client.get("/api/transactions/expenses").json()["items"][0]
+    assert item["category"] == "Plano de saúde"
+    assert item["category_key"] == "Healthcare"
+    assert item["category_source"] == "manual"
+
+    groups = client.get("/api/transactions/expenses/by-category").json()["groups"]
+    assert [(g["category"], g["label"], g["count"], g["total_cents"]) for g in groups] == [
+        ("Healthcare", "Plano de saúde", 1, -6000)
+    ]
+
+
+def test_patch_manual_null_clears_the_category(client):
+    _load([_transaction("g1", "2026-09-01", -60.0, categoria="Groceries", descricao="ACOUGUE")])
+    _sign_in(client)
+    id = _first_id(client)
+
+    response = _patch(client, id, {"mode": "manual", "category": None})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["category"] is None
+    assert body["category_key"] is None
+    assert body["category_source"] == "manual"
+
+    groups = client.get("/api/transactions/expenses/by-category").json()["groups"]
+    assert [(g["category"], g["label"], g["count"], g["total_cents"]) for g in groups] == [
+        (None, "Sem categoria", 1, -6000)
+    ]
+
+
+def test_patch_auto_returns_to_the_source_category(client):
+    _load([_transaction("g1", "2026-09-01", -60.0, categoria="Groceries", descricao="ACOUGUE")])
+    _sign_in(client)
+    id = _first_id(client)
+    _patch(client, id, {"mode": "manual", "category": "Healthcare"})
+
+    response = _patch(client, id, {"mode": "auto"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["category"] == "Supermercado"
+    assert body["category_key"] == "Groceries"
+    assert body["category_source"] == "auto"
+
+
+def test_patch_refuses_an_unknown_category_with_422(client):
+    _load([_transaction("g1", "2026-09-01", -60.0, categoria="Groceries", descricao="ACOUGUE")])
+    _sign_in(client)
+    id = _first_id(client)
+
+    response = _patch(client, id, {"mode": "manual", "category": "Inexistente"})
+
+    assert response.status_code == 422
+    assert response.json() == {"detail": "Categoria desconhecida."}
+    item = client.get("/api/transactions/expenses").json()["items"][0]
+    assert item["category"] == "Supermercado"
+    assert item["category_source"] == "auto"
+
+
+def test_patch_refuses_the_uncategorised_key_with_422(client):
+    _load([_transaction("g1", "2026-09-01", -60.0, categoria="Groceries", descricao="ACOUGUE")])
+    _sign_in(client)
+    id = _first_id(client)
+
+    response = _patch(client, id, {"mode": "manual", "category": "Não classificado"})
+
+    assert response.status_code == 422
+    assert response.json() == {"detail": "Categoria desconhecida."}
+
+
+def test_patch_an_unknown_expense_answers_404(client):
+    _sign_in(client)
+
+    response = _patch(client, 999999, {"mode": "manual", "category": "Healthcare"})
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Gasto não encontrado."}
+
+
+def test_patch_with_an_invalid_mode_answers_422(client):
+    _load([_transaction("g1", "2026-09-01", -60.0, categoria="Groceries", descricao="ACOUGUE")])
+    _sign_in(client)
+    id = _first_id(client)
+
+    response = _patch(client, id, {"mode": "outro"})
+
+    assert response.status_code == 422
+    assert isinstance(response.json()["detail"], list)
+
+
+def test_a_manual_category_survives_reingesting_the_same_source(client):
+    base = [_transaction("g1", "2026-09-01", -60.0, categoria="Groceries", descricao="ACOUGUE")]
+    _load(base)
+    _sign_in(client)
+    id = _first_id(client)
+    _patch(client, id, {"mode": "manual", "category": "Healthcare"})
+
+    _load(base)
+
+    item = client.get("/api/transactions/expenses").json()["items"][0]
+    assert item["category"] == "Plano de saúde"
+    assert item["category_source"] == "manual"
+
+    _patch(client, id, {"mode": "auto"})
+    _load(base)
+
+    item = client.get("/api/transactions/expenses").json()["items"][0]
+    assert item["category"] == "Supermercado"
+    assert item["category_source"] == "auto"
+
+
+def test_a_manual_category_still_follows_the_source_after_going_back_to_auto(client):
+    _load([_transaction("g1", "2026-09-01", -60.0, categoria="Groceries", descricao="ACOUGUE")])
+    _sign_in(client)
+    id = _first_id(client)
+    _patch(client, id, {"mode": "manual", "category": "Healthcare"})
+    _patch(client, id, {"mode": "auto"})
+
+    _load([_transaction("g1", "2026-09-01", -60.0, categoria="Housing", descricao="ACOUGUE")])
+
+    item = client.get("/api/transactions/expenses").json()["items"][0]
+    assert item["category"] == "Casa"
+    assert item["category_source"] == "auto"
+
+
+def test_the_openapi_lists_patch_category(client):
+    _sign_in(client)
+
+    response = client.get("/openapi.json")
+
+    assert "patch" in response.json()["paths"]["/api/transactions/{transaction_id}/category"]

@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useSearchParams } from 'react-router'
 import { Alert } from '@/components/ui/alert'
 import { useExpenseAccounts } from '@/features/expenses/api/get-accounts'
+import { useCategories } from '@/features/expenses/api/get-categories'
 import { useExpenses } from '@/features/expenses/api/get-expenses'
 import { AccountSelect } from '@/features/expenses/components/account-select'
 import { CategoryTotals } from '@/features/expenses/components/category-totals'
@@ -98,6 +99,7 @@ export function ExpensesList(): React.JSX.Element {
   const account = readAccount(searchParams.get('account'))
   const search = readSearch(searchParams.get('q'))
   const accounts = useExpenseAccounts()
+  const categories = useCategories()
   const accountKnown = accounts.data
     ? accounts.data.accounts.some((item) => item.id === account)
     : true
@@ -254,7 +256,12 @@ export function ExpensesList(): React.JSX.Element {
       {header}
       <ul className="mt-6 divide-y divide-gray-200">
         {data.items.map((expense) => (
-          <ExpenseItem key={expense.id} expense={expense} />
+          <ExpenseItem
+            key={expense.id}
+            expense={expense}
+            categories={categories.data?.categories ?? []}
+            categoriesReady={categories.isSuccess}
+          />
         ))}
       </ul>
       <Pagination

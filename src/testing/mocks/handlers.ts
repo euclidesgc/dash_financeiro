@@ -1,7 +1,9 @@
 import { http, HttpResponse } from 'msw'
 import type { SyncStatus } from '@/features/sync/types/sync-status'
 import type {
+  Category,
   CategoryGroup,
+  CategoryUpdateBody,
   Expense,
   ExpenseOrder,
   ExpenseSort,
@@ -37,6 +39,13 @@ export const fakeAccounts = [
   },
 ]
 
+export const fakeCategories: Category[] = [
+  { key: 'Food', label: 'Alimentação' },
+  { key: 'Shopping', label: 'Compras' },
+  { key: 'Groceries', label: 'Supermercado' },
+  { key: 'Transport', label: 'Transporte' },
+]
+
 export const fakeSyncStatus: SyncStatus = {
   running: false,
   last_run: { finished_at: '2026-09-22T11:15:00+00:00', status: 'ok', reason: null },
@@ -60,6 +69,8 @@ function generateFakeExpenses(): Expense[] {
         account_type: 'BANK',
         account_id: 'acc-bank-1',
         category: 'Compras',
+        category_key: 'Shopping',
+        category_source: 'auto',
         amount_cents: -8490,
       }
     }
@@ -74,6 +85,8 @@ function generateFakeExpenses(): Expense[] {
         account_type: 'BANK',
         account_id: 'acc-bank-1',
         category: 'Alimentação',
+        category_key: 'Food',
+        category_source: 'auto',
         amount_cents: -1000 * id,
       }
     }
@@ -88,6 +101,8 @@ function generateFakeExpenses(): Expense[] {
         account_type: 'BANK',
         account_id: 'acc-bank-1',
         category: null,
+        category_key: null,
+        category_source: 'auto',
         amount_cents: -1000 * id,
       }
     }
@@ -102,6 +117,8 @@ function generateFakeExpenses(): Expense[] {
         account_type: 'BANK',
         account_id: 'acc-bank-1',
         category: 'Transporte',
+        category_key: 'Transport',
+        category_source: 'auto',
         amount_cents: -1000 * id,
       }
     }
@@ -116,6 +133,8 @@ function generateFakeExpenses(): Expense[] {
         account_type: 'BANK',
         account_id: 'acc-bank-1',
         category: 'Compras',
+        category_key: 'Shopping',
+        category_source: 'auto',
         amount_cents: -120000,
       }
     }
@@ -130,6 +149,8 @@ function generateFakeExpenses(): Expense[] {
         account_type: 'CREDIT',
         account_id: 'acc-credit-1',
         category: 'Compras',
+        category_key: 'Shopping',
+        category_source: 'auto',
         amount_cents: -1000 * id,
       }
     }
@@ -143,12 +164,21 @@ function generateFakeExpenses(): Expense[] {
       account_type: 'BANK',
       account_id: 'acc-bank-1',
       category: 'Compras',
+      category_key: 'Shopping',
+      category_source: 'auto',
       amount_cents: -1000 * id,
     }
   })
 }
 
 export const fakeExpenses: Expense[] = generateFakeExpenses()
+
+const autoCategories = new Map<number, { category: string | null; category_key: string | null }>()
+
+export function resetExpenses(): void {
+  fakeExpenses.splice(0, fakeExpenses.length, ...generateFakeExpenses())
+  autoCategories.clear()
+}
 
 function sortExpenses(items: Expense[], sort: ExpenseSort, order: ExpenseOrder): Expense[] {
   const direction = order === 'desc' ? -1 : 1
@@ -290,5 +320,38 @@ export const handlers = [
       groups,
       total_cents: groups.reduce((sum, group) => sum + group.total_cents, 0),
     })
+  }),
+
+  http.get('/api/categories', () => {
+    return HttpResponse.json({ categories: fakeCategories })
+  }),
+
+  http.patch('/api/transactions/:id/category', async ({ params, request }) => {
+    const id = Number(params.id)
+    const item = fakeExpenses.find((expense) => expense.id === id)
+    if (item === undefined) {
+      return HttpResponse.json({ detail: 'Gasto não encontrado.' }, { status: 404 })
+    }
+    const body = (await request.json()) as CategoryUpdateBody
+    if (body.mode === 'manual') {
+      const found = fakeCategories.find((category) => category.key === body.category)
+      if (body.category !== null && found === undefined) {
+        return HttpResponse.json({ detail: 'Categoria desconhecida.' }, { status: 422 })
+      }
+      if (!autoCategories.has(id)) {
+        autoCategories.set(id, { category: item.category, category_key: item.category_key })
+      }
+      item.category = found?.label ?? null
+      item.category_key = body.category
+      item.category_source = 'manual'
+    } else {
+      const auto = autoCategories.get(id)
+      if (auto !== undefined) {
+        item.category = auto.category
+        item.category_key = auto.category_key
+      }
+      item.category_source = 'auto'
+    }
+    return HttpResponse.json(item)
   }),
 ]

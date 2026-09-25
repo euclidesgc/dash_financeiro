@@ -133,6 +133,64 @@ def test_amount_keeps_the_sign_the_consolidator_already_normalised(conn, account
     assert row["transfer_reason"] != ""
 
 
+def row(conn):
+    return conn.execute(
+        "SELECT category, category_auto, category_source FROM transactions "
+        "WHERE pluggy_id = 'fix-duplicada'"
+    ).fetchone()
+
+
+def test_a_new_row_enters_as_auto_with_category_auto_equal_to_category(conn, accounts):
+    transactions = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))[:2]
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    assert tuple(row(conn)) == ("Shopping", "Shopping", "auto")
+
+
+def test_reingesting_a_changed_category_updates_category_and_category_auto_when_auto(
+    conn, accounts
+):
+    transactions = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))[:2]
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    transactions[0]["categoria"] = "Groceries"
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    assert tuple(row(conn)) == ("Groceries", "Groceries", "auto")
+
+
+def test_reingesting_keeps_a_manual_category_and_still_follows_the_source_in_category_auto(
+    conn, accounts
+):
+    transactions = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))[:2]
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    conn.execute(
+        "UPDATE transactions SET category = 'Housing', category_source = 'manual' "
+        "WHERE pluggy_id = 'fix-duplicada'"
+    )
+    conn.commit()
+    transactions[0]["categoria"] = "Groceries"
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    assert tuple(row(conn)) == ("Housing", "Groceries", "manual")
+    updated = conn.execute(
+        "SELECT description, amount_cents FROM transactions WHERE pluggy_id = 'fix-duplicada'"
+    ).fetchone()
+    assert (updated["description"], updated["amount_cents"]) == (
+        transactions[0]["descricao"],
+        int(round(transactions[0]["valor"] * 100)),
+    )
+
+
+def test_reingesting_a_manual_row_with_the_same_source_category_changes_nothing(conn, accounts):
+    transactions = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))[:2]
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    conn.execute(
+        "UPDATE transactions SET category = 'Housing', category_source = 'manual' "
+        "WHERE pluggy_id = 'fix-duplicada'"
+    )
+    conn.commit()
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    assert tuple(row(conn)) == ("Housing", "Shopping", "manual")
+    assert conn.execute("SELECT count(*) FROM sync_runs WHERE status = 'ok'").fetchone()[0] == 2
+
+
 def test_refund_carries_the_identifier_of_the_debit_it_cancels(conn, accounts):
     refund = {
         "id": "d4714f41",

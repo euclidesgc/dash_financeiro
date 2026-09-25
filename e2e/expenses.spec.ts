@@ -29,7 +29,7 @@ test('opens the expenses page and lists only the spending', async ({ page }) => 
   await expect(page.getByText('TED PARA POUPANCA')).toHaveCount(0)
   await expect(page.getByText('SALARIO')).toHaveCount(0)
 
-  await expect(page.getByText(/Página 1 de 1 · [45] gastos/)).toBeVisible()
+  await expect(page.getByText('Página 1 de 1 · 4 gastos')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Anterior', exact: true })).toBeDisabled()
   await expect(page.getByRole('button', { name: 'Próxima' })).toBeDisabled()
 })
@@ -91,11 +91,7 @@ test('filters the expenses by month and by date range and keeps the period on re
   await page.getByRole('link', { name: 'Gastos' }).click()
   await expect(page).toHaveURL(/\/app\/expenses$/)
 
-  await expect(
-    page
-      .getByText('Página 1 de 1 · 4 gastos · R$ 339,90 no período')
-      .or(page.getByText('Página 1 de 1 · 5 gastos · R$ 389,90 no período')),
-  ).toBeVisible()
+  await expect(page.getByText('Página 1 de 1 · 4 gastos · R$ 339,90 no período')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Todo o período' })).toBeDisabled()
 
   await page.goto('/app/expenses?month=2026-10')

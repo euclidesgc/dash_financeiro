@@ -1,11 +1,21 @@
 import json
 import sqlite3
+import unicodedata
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
 
 from app.db import connect
 
 SEED_PATH = Path(__file__).resolve().parent / "seed.json"
+
+UNCATEGORISED = "Não classificado"
+
+
+@dataclass(frozen=True)
+class Category:
+    key: str
+    label: str
 
 
 def load_seed(path: Path | None = None) -> dict[str, Any]:
@@ -19,6 +29,19 @@ def message(key: str, value: object, seed: dict[str, Any] | None = None) -> str:
 
 def category_labels() -> dict[str, str]:
     return {entry["name"]: entry["label"] for entry in load_seed()["categories"]}
+
+
+def label_sort_key(label: str) -> str:
+    return unicodedata.normalize("NFKD", label).encode("ascii", "ignore").decode("ascii").casefold()
+
+
+def pickable_categories() -> list[Category]:
+    categories = [
+        Category(key=entry["name"], label=entry["label"])
+        for entry in load_seed()["categories"]
+        if entry["name"] != UNCATEGORISED
+    ]
+    return sorted(categories, key=lambda category: label_sort_key(category.label))
 
 
 def seed_taxonomy(conn: sqlite3.Connection, seed: dict[str, Any] | None = None) -> None:
