@@ -71,7 +71,7 @@ export function CategoryItem({ category }: { category: Category }): React.JSX.El
               <Button
                 type="button"
                 variant="secondary"
-                aria-label={`Definir limite de ${category.label}`}
+                aria-label={`${category.monthly_limit_cents === null ? 'Definir' : 'Alterar'} limite de ${category.label}`}
                 onClick={() => { setMode('limit'); }}
               >
                 Limite

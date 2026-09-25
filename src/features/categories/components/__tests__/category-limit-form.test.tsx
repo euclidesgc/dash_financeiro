@@ -57,33 +57,34 @@ test('opens with the current limit, focus and the money field attributes', () =>
   renderWithProviders(<CategoryLimitForm category={shopping} onDone={onDone} />)
 
   const input = screen.getByLabelText('Limite mensal (R$)')
-  expect(input).toHaveValue(1500)
+  expect(input).toHaveValue('1.500,00')
   expect(input).toHaveFocus()
-  expect(input).toHaveAttribute('type', 'number')
-  expect(input).toHaveAttribute('step', '0.01')
-  expect(input).toHaveAttribute('min', '0.01')
+  expect(input).toHaveAttribute('type', 'text')
   expect(input).toHaveAttribute('inputmode', 'decimal')
 
   expect(screen.getByRole('button', { name: 'Salvar' })).toHaveAttribute('type', 'submit')
   expect(screen.getByRole('button', { name: 'Cancelar' })).toHaveAttribute('type', 'button')
 })
 
-test('an empty field plus Enter sends null and calls onDone', async () => {
+test('"Remover limite" sends null and calls onDone', async () => {
   const user = userEvent.setup()
   const onDone = vi.fn()
   const calls = spyOnPut()
   renderWithProviders(<CategoryLimitForm category={shopping} onDone={onDone} />)
 
-  const input = screen.getByLabelText('Limite mensal (R$)')
-  await user.clear(input)
-  const form = input.closest('form')
-  if (form === null) throw new Error('form not found')
-  fireEvent.submit(form)
+  await user.click(screen.getByRole('button', { name: 'Remover limite' }))
 
   await waitFor(() => {
-    expect(calls[0]).toEqual({ key: 'Shopping', body: { monthly_limit_cents: null } })
+    expect(calls).toEqual([{ key: 'Shopping', body: { monthly_limit_cents: null } }])
   })
   expect(onDone).toHaveBeenCalledTimes(1)
+})
+
+test('without a saved limit there is no "Remover limite"', () => {
+  const onDone = vi.fn()
+  renderWithProviders(<CategoryLimitForm category={{ ...shopping, monthly_limit_cents: null }} onDone={onDone} />)
+
+  expect(screen.queryByRole('button', { name: 'Remover limite' })).not.toBeInTheDocument()
 })
 
 test('"Salvar" sends the cents, shows "Salvando…" with both buttons disabled and then calls onDone', async () => {
@@ -123,7 +124,7 @@ test('zero shows the field error without calling the API and keeps the value', a
 
   expect(await screen.findByText('Informe um valor maior que zero.')).toBeInTheDocument()
   expect(input).toHaveAttribute('aria-invalid', 'true')
-  expect(input).toHaveValue(0)
+  expect(input).toHaveValue('0')
   expect(calls).toHaveLength(0)
   expect(onDone).not.toHaveBeenCalled()
 })
@@ -136,7 +137,7 @@ test('more than two decimals shows the field error without calling the API', asy
 
   const input = screen.getByLabelText('Limite mensal (R$)')
   await user.clear(input)
-  await user.type(input, '1.999')
+  await user.type(input, '1,999')
   await user.click(screen.getByRole('button', { name: 'Salvar' }))
 
   expect(await screen.findByText('Use no máximo duas casas decimais.')).toBeInTheDocument()
@@ -160,7 +161,7 @@ test('a 422 from the server goes next to the field and keeps the typed value', a
   await user.click(screen.getByRole('button', { name: 'Salvar' }))
 
   expect(await screen.findByText('O limite precisa ser maior que zero.')).toBeInTheDocument()
-  expect(input).toHaveValue(5)
+  expect(input).toHaveValue('5')
   expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   expect(onDone).not.toHaveBeenCalled()
 })
@@ -180,7 +181,7 @@ test('a 500 shows the generic alert and keeps the typed value', async () => {
     'Não foi possível salvar o limite. Tente de novo.',
   )
   expect(screen.getByLabelText('Limite mensal (R$)')).toBeInTheDocument()
-  expect(screen.getByLabelText('Limite mensal (R$)')).toHaveValue(5)
+  expect(screen.getByLabelText('Limite mensal (R$)')).toHaveValue('5')
   expect(onDone).not.toHaveBeenCalled()
 })
 
@@ -226,4 +227,35 @@ test('submitting twice while pending sends one call', async () => {
     expect(calls).toHaveLength(1)
   })
   release()
+})
+
+test('a pt-BR amount like "1.500,00" saves 150000 cents instead of removing the limit', async () => {
+  const user = userEvent.setup()
+  const onDone = vi.fn()
+  const calls = spyOnPut()
+  renderWithProviders(<CategoryLimitForm category={shopping} onDone={onDone} />)
+
+  const input = screen.getByLabelText('Limite mensal (R$)')
+  await user.clear(input)
+  await user.type(input, '1.500,00')
+  await user.click(screen.getByRole('button', { name: 'Salvar' }))
+
+  await waitFor(() => {
+    expect(calls).toEqual([{ key: 'Shopping', body: { monthly_limit_cents: 150000 } }])
+  })
+})
+
+test('a negative limit asks for a value greater than zero', async () => {
+  const user = userEvent.setup()
+  const onDone = vi.fn()
+  const calls = spyOnPut()
+  renderWithProviders(<CategoryLimitForm category={shopping} onDone={onDone} />)
+
+  const input = screen.getByLabelText('Limite mensal (R$)')
+  await user.clear(input)
+  await user.type(input, '-5')
+  await user.click(screen.getByRole('button', { name: 'Salvar' }))
+
+  expect(await screen.findByText('Informe um valor maior que zero.')).toBeInTheDocument()
+  expect(calls).toHaveLength(0)
 })

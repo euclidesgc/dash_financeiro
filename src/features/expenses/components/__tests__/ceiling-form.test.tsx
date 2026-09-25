@@ -47,33 +47,34 @@ test('opens with the current ceiling, focus and the money field attributes', () 
   renderWithProviders(<CeilingForm ceilingCents={20000} onDone={onDone} />)
 
   const input = screen.getByLabelText('Teto mensal (R$)')
-  expect(input).toHaveValue(200)
+  expect(input).toHaveValue('200,00')
   expect(input).toHaveFocus()
-  expect(input).toHaveAttribute('type', 'number')
-  expect(input).toHaveAttribute('step', '0.01')
-  expect(input).toHaveAttribute('min', '0.01')
+  expect(input).toHaveAttribute('type', 'text')
   expect(input).toHaveAttribute('inputmode', 'decimal')
 
   expect(screen.getByRole('button', { name: 'Salvar' })).toHaveAttribute('type', 'submit')
   expect(screen.getByRole('button', { name: 'Cancelar' })).toHaveAttribute('type', 'button')
 })
 
-test('an empty field plus Enter sends null and calls onDone', async () => {
+test('"Remover teto" sends null and calls onDone', async () => {
   const user = userEvent.setup()
   const onDone = vi.fn()
   const calls = spyOnPut()
   renderWithProviders(<CeilingForm ceilingCents={20000} onDone={onDone} />)
 
-  const input = screen.getByLabelText('Teto mensal (R$)')
-  await user.clear(input)
-  const form = input.closest('form')
-  if (form === null) throw new Error('form not found')
-  fireEvent.submit(form)
+  await user.click(screen.getByRole('button', { name: 'Remover teto' }))
 
   await waitFor(() => {
-    expect(calls[0]).toEqual({ body: { monthly_ceiling_cents: null } })
+    expect(calls).toEqual([{ body: { monthly_ceiling_cents: null } }])
   })
   expect(onDone).toHaveBeenCalledTimes(1)
+})
+
+test('without a saved ceiling there is no "Remover teto"', () => {
+  const onDone = vi.fn()
+  renderWithProviders(<CeilingForm ceilingCents={null} onDone={onDone} />)
+
+  expect(screen.queryByRole('button', { name: 'Remover teto' })).not.toBeInTheDocument()
 })
 
 test('"Salvar" sends the cents, shows "Salvando…" with both buttons disabled and then calls onDone', async () => {
@@ -113,7 +114,7 @@ test('zero shows the field error without calling the API and keeps the value', a
 
   expect(await screen.findByText('Informe um valor maior que zero.')).toBeInTheDocument()
   expect(input).toHaveAttribute('aria-invalid', 'true')
-  expect(input).toHaveValue(0)
+  expect(input).toHaveValue('0')
   expect(calls).toHaveLength(0)
   expect(onDone).not.toHaveBeenCalled()
 })
@@ -126,7 +127,7 @@ test('more than two decimals shows the field error without calling the API', asy
 
   const input = screen.getByLabelText('Teto mensal (R$)')
   await user.clear(input)
-  await user.type(input, '1.999')
+  await user.type(input, '1,999')
   await user.click(screen.getByRole('button', { name: 'Salvar' }))
 
   expect(await screen.findByText('Use no máximo duas casas decimais.')).toBeInTheDocument()
@@ -150,7 +151,7 @@ test('a 422 from the server goes next to the field and keeps the typed value', a
   await user.click(screen.getByRole('button', { name: 'Salvar' }))
 
   expect(await screen.findByText('O teto precisa ser maior que zero.')).toBeInTheDocument()
-  expect(input).toHaveValue(5)
+  expect(input).toHaveValue('5')
   expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   expect(onDone).not.toHaveBeenCalled()
 })
@@ -170,7 +171,7 @@ test('a 500 shows the generic alert and keeps the typed value', async () => {
     'Não foi possível salvar o teto. Tente de novo.',
   )
   expect(screen.getByLabelText('Teto mensal (R$)')).toBeInTheDocument()
-  expect(screen.getByLabelText('Teto mensal (R$)')).toHaveValue(5)
+  expect(screen.getByLabelText('Teto mensal (R$)')).toHaveValue('5')
   expect(onDone).not.toHaveBeenCalled()
 })
 
@@ -224,4 +225,50 @@ test('saving invalidates the plan and the expenses queries', async () => {
   await waitFor(() => {
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['expenses'] }))
   })
+})
+
+test('a pt-BR amount like "1.500,00" saves 150000 cents instead of removing the ceiling', async () => {
+  const user = userEvent.setup()
+  const onDone = vi.fn()
+  const calls = spyOnPut()
+  renderWithProviders(<CeilingForm ceilingCents={20000} onDone={onDone} />)
+
+  const input = screen.getByLabelText('Teto mensal (R$)')
+  await user.clear(input)
+  await user.type(input, '1.500,00')
+  await user.click(screen.getByRole('button', { name: 'Salvar' }))
+
+  await waitFor(() => {
+    expect(calls).toEqual([{ body: { monthly_ceiling_cents: 150000 } }])
+  })
+})
+
+test('text that is not an amount shows an error and never removes the ceiling', async () => {
+  const user = userEvent.setup()
+  const onDone = vi.fn()
+  const calls = spyOnPut()
+  renderWithProviders(<CeilingForm ceilingCents={20000} onDone={onDone} />)
+
+  const input = screen.getByLabelText('Teto mensal (R$)')
+  await user.clear(input)
+  await user.type(input, '15,00,0')
+  await user.click(screen.getByRole('button', { name: 'Salvar' }))
+
+  expect(await screen.findByText('Use o formato 1.500,00.')).toBeInTheDocument()
+  expect(calls).toHaveLength(0)
+  expect(onDone).not.toHaveBeenCalled()
+})
+
+test('saving an empty field asks for a value instead of closing silently', async () => {
+  const user = userEvent.setup()
+  const onDone = vi.fn()
+  const calls = spyOnPut()
+  renderWithProviders(<CeilingForm ceilingCents={20000} onDone={onDone} />)
+
+  await user.clear(screen.getByLabelText('Teto mensal (R$)'))
+  await user.click(screen.getByRole('button', { name: 'Salvar' }))
+
+  expect(await screen.findByText('Informe um valor.')).toBeInTheDocument()
+  expect(calls).toHaveLength(0)
+  expect(onDone).not.toHaveBeenCalled()
 })

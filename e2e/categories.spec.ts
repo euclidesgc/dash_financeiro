@@ -49,16 +49,21 @@ test('creates, uses, renames and deletes a category and leaves the base as it fo
   await petShop.getByRole('button', { name: 'Definir limite de Pet shop' }).click()
   const limitField = petShop.getByLabel('Limite mensal (R$)')
   await expect(limitField).toHaveValue('')
-  await limitField.fill('120.50')
+  await limitField.fill('1.500,00')
   await limitField.press('Enter')
-  await expect(petShop).toContainText('Limite: R$ 120,50')
+  await expect(petShop).toContainText('Limite: R$ 1.500,00')
   await expect(petShop.getByLabel('Limite mensal (R$)')).toHaveCount(0)
 
   await page.reload()
+  await expect(petShop).toContainText('Limite: R$ 1.500,00')
+
+  await petShop.getByRole('button', { name: 'Alterar limite de Pet shop' }).click()
+  await expect(petShop.getByLabel('Limite mensal (R$)')).toHaveValue('1.500,00')
+  await petShop.getByLabel('Limite mensal (R$)').fill('120.50')
+  await petShop.getByLabel('Limite mensal (R$)').press('Enter')
   await expect(petShop).toContainText('Limite: R$ 120,50')
 
-  await petShop.getByRole('button', { name: 'Definir limite de Pet shop' }).click()
-  await expect(petShop.getByLabel('Limite mensal (R$)')).toHaveValue('120.50')
+  await petShop.getByRole('button', { name: 'Alterar limite de Pet shop' }).click()
   await petShop.getByLabel('Limite mensal (R$)').fill('0')
   await petShop.getByLabel('Limite mensal (R$)').press('Enter')
   await expect(petShop.getByText('Informe um valor maior que zero.')).toBeVisible()
@@ -66,6 +71,12 @@ test('creates, uses, renames and deletes a category and leaves the base as it fo
 
   await petShop.getByLabel('Limite mensal (R$)').fill('')
   await petShop.getByLabel('Limite mensal (R$)').press('Enter')
+  await expect(petShop.getByText('Informe um valor.')).toBeVisible()
+  await page.reload()
+  await expect(petShop).toContainText('Limite: R$ 120,50')
+
+  await petShop.getByRole('button', { name: 'Alterar limite de Pet shop' }).click()
+  await petShop.getByRole('button', { name: 'Remover limite' }).click()
   await expect(petShop).toContainText('Sem limite')
   await page.reload()
   await expect(petShop).toContainText('Sem limite')

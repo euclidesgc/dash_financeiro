@@ -92,12 +92,12 @@ export function MonthCeiling({ query }: { query: MonthSignalQuery }): React.JSX.
             </div>
             <Button
               variant="secondary"
-              aria-label="Definir teto do mês"
+              aria-label="Alterar teto do mês"
               onClick={() => {
                 setEditing(true)
               }}
             >
-              Definir teto
+              Alterar teto
             </Button>
           </>
         ) : (

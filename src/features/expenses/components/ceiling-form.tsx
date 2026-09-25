@@ -7,7 +7,7 @@ import { ApiError } from '@/lib/api-client'
 import { useSetPlanCeiling } from '@/features/expenses/api/set-plan-ceiling'
 import { ceilingSchema } from '@/features/expenses/types/ceiling-schema'
 import type { CeilingInput } from '@/features/expenses/types/ceiling-schema'
-import { fromCents, toCents } from '@/utils/cents'
+import { formatMoneyInput, parseMoneyText } from '@/utils/money-text'
 
 function isCeilingError(error: unknown): error is ApiError {
   return error instanceof ApiError && error.status === 422
@@ -27,18 +27,18 @@ export function CeilingForm({
     formState: { errors },
   } = useForm<CeilingInput>({
     resolver: zodResolver(ceilingSchema),
-    defaultValues: { ceiling: fromCents(ceilingCents) },
+    defaultValues: { ceiling: formatMoneyInput(ceilingCents) },
   })
   const mutation = useSetPlanCeiling()
   const id = useId()
   const errorId = `${id}-error`
   const isSubmitting = useRef(false)
 
-  const onSubmit = handleSubmit((input) => {
+  function save(cents: number | null): void {
     if (isSubmitting.current) return
     isSubmitting.current = true
     mutation.mutate(
-      { monthly_ceiling_cents: toCents(input.ceiling) },
+      { monthly_ceiling_cents: cents },
       {
         onSuccess: onDone,
         onError: (error) => {
@@ -49,7 +49,13 @@ export function CeilingForm({
         },
       },
     )
+  }
+
+  const onSubmit = handleSubmit((input) => {
+    const amount = parseMoneyText(input.ceiling)
+    if (amount.ok) save(amount.cents)
   })
+  const isRemoving = mutation.isPending && mutation.variables.monthly_ceiling_cents === null
 
   return (
     <div className="w-full">
@@ -64,9 +70,7 @@ export function CeilingForm({
           </label>
           <input
             id={id}
-            type="number"
-            step="0.01"
-            min="0.01"
+            type="text"
             inputMode="decimal"
             autoComplete="off"
             autoFocus
@@ -84,10 +88,22 @@ export function CeilingForm({
             </p>
           ) : null}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button type="submit" disabled={mutation.isPending}>
-            {mutation.isPending ? 'Salvando…' : 'Salvar'}
+            {mutation.isPending && !isRemoving ? 'Salvando…' : 'Salvar'}
           </Button>
+          {ceilingCents !== null ? (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                save(null)
+              }}
+              disabled={mutation.isPending}
+            >
+              {isRemoving ? 'Removendo…' : 'Remover teto'}
+            </Button>
+          ) : null}
           <Button type="button" variant="secondary" onClick={onDone} disabled={mutation.isPending}>
             Cancelar
           </Button>

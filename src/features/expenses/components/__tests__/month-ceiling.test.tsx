@@ -142,7 +142,7 @@ test('without a ceiling shows the invitation with the form open and focused, no 
   ).toBeInTheDocument()
   const field = screen.getByLabelText('Teto mensal (R$)')
   expect(field).toHaveFocus()
-  expect(field).toHaveValue(null)
+  expect(field).toHaveValue('')
   expect(screen.queryByText('Dentro', { exact: true })).not.toBeInTheDocument()
   expect(screen.queryByText('Atenção', { exact: true })).not.toBeInTheDocument()
   expect(screen.queryByText('Acima', { exact: true })).not.toBeInTheDocument()
@@ -170,17 +170,17 @@ test('"Cancelar" without a ceiling hides the form and "Definir teto" reopens it'
   expect(screen.getByLabelText('Teto mensal (R$)')).toHaveFocus()
 })
 
-test('"Definir teto" opens the form with the current value and "Cancelar" restores the panel', async () => {
+test('"Alterar teto" opens the form with the current value and "Cancelar" restores the panel', async () => {
   const user = userEvent.setup()
   respondWith({})
   renderWithProviders(<MonthCeiling query={MONTH} />)
 
   await screen.findByText('R$ 105,00 de R$ 100,00 · 105%')
 
-  await user.click(screen.getByRole('button', { name: 'Definir teto do mês' }))
+  await user.click(screen.getByRole('button', { name: 'Alterar teto do mês' }))
 
   const field = screen.getByLabelText('Teto mensal (R$)')
-  expect(field).toHaveValue(100)
+  expect(field).toHaveValue('100,00')
   expect(screen.queryByText('105%')).not.toBeInTheDocument()
 
   await user.click(screen.getByRole('button', { name: 'Cancelar' }))
@@ -223,7 +223,7 @@ test('saving shows the numbers of the new response', async () => {
 
   await screen.findByText('R$ 105,00 de R$ 100,00 · 105%')
 
-  await user.click(screen.getByRole('button', { name: 'Definir teto do mês' }))
+  await user.click(screen.getByRole('button', { name: 'Alterar teto do mês' }))
   const field = screen.getByLabelText('Teto mensal (R$)')
   await user.clear(field)
   await user.type(field, '200{Enter}')
@@ -231,4 +231,15 @@ test('saving shows the numbers of the new response', async () => {
   expect(await screen.findByText('R$ 105,00 de R$ 200,00 · 53%')).toBeInTheDocument()
   expect(within(screen.getByRole('region')).getByText('Dentro', { exact: true })).toBeInTheDocument()
   expect(screen.getByText(/Sobram R\$ 95,00/)).toBeInTheDocument()
+})
+
+test('with a ceiling already set the button says "Alterar teto"', async () => {
+  respondWith({})
+  renderWithProviders(<MonthCeiling query={MONTH} />)
+
+  await screen.findByText('R$ 105,00 de R$ 100,00 · 105%')
+
+  expect(screen.getByRole('button', { name: 'Alterar teto do mês' })).toHaveTextContent(
+    'Alterar teto',
+  )
 })

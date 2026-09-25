@@ -7,7 +7,7 @@ import { ApiError } from '@/lib/api-client'
 import { useSetCategoryLimit } from '@/features/categories/api/set-category-limit'
 import { categoryLimitSchema } from '@/features/categories/types/category-limit-schema'
 import type { CategoryLimitInput } from '@/features/categories/types/category-limit-schema'
-import { fromCents, toCents } from '@/utils/cents'
+import { formatMoneyInput, parseMoneyText } from '@/utils/money-text'
 import type { Category } from '@/types/category'
 
 function isLimitError(error: unknown): error is ApiError {
@@ -28,18 +28,18 @@ export function CategoryLimitForm({
     formState: { errors },
   } = useForm<CategoryLimitInput>({
     resolver: zodResolver(categoryLimitSchema),
-    defaultValues: { limit: fromCents(category.monthly_limit_cents) },
+    defaultValues: { limit: formatMoneyInput(category.monthly_limit_cents) },
   })
   const mutation = useSetCategoryLimit()
   const id = useId()
   const errorId = `${id}-error`
   const isSubmitting = useRef(false)
 
-  const onSubmit = handleSubmit((input) => {
+  function save(cents: number | null): void {
     if (isSubmitting.current) return
     isSubmitting.current = true
     mutation.mutate(
-      { key: category.key, monthly_limit_cents: toCents(input.limit) },
+      { key: category.key, monthly_limit_cents: cents },
       {
         onSuccess: onDone,
         onError: (error) => {
@@ -50,7 +50,13 @@ export function CategoryLimitForm({
         },
       },
     )
+  }
+
+  const onSubmit = handleSubmit((input) => {
+    const amount = parseMoneyText(input.limit)
+    if (amount.ok) save(amount.cents)
   })
+  const isRemoving = mutation.isPending && mutation.variables.monthly_limit_cents === null
 
   return (
     <div className="w-full">
@@ -65,9 +71,7 @@ export function CategoryLimitForm({
           </label>
           <input
             id={id}
-            type="number"
-            step="0.01"
-            min="0.01"
+            type="text"
             inputMode="decimal"
             autoComplete="off"
             autoFocus
@@ -85,10 +89,22 @@ export function CategoryLimitForm({
             </p>
           ) : null}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button type="submit" disabled={mutation.isPending}>
-            {mutation.isPending ? 'Salvando…' : 'Salvar'}
+            {mutation.isPending && !isRemoving ? 'Salvando…' : 'Salvar'}
           </Button>
+          {category.monthly_limit_cents !== null ? (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                save(null)
+              }}
+              disabled={mutation.isPending}
+            >
+              {isRemoving ? 'Removendo…' : 'Remover limite'}
+            </Button>
+          ) : null}
           <Button type="button" variant="secondary" onClick={onDone} disabled={mutation.isPending}>
             Cancelar
           </Button>
