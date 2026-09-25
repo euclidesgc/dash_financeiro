@@ -134,6 +134,8 @@ def test_an_empty_base_answers_an_empty_first_page(client):
         "page_size": 20,
         "total": 0,
         "total_cents": 0,
+        "outflow_cents": 0,
+        "inflow_cents": 0,
     }
 
 

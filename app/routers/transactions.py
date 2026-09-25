@@ -58,6 +58,8 @@ class ExpensesResponse(BaseModel):
     page_size: int
     total: int
     total_cents: int
+    outflow_cents: int
+    inflow_cents: int
 
 
 class CategoryGroup(BaseModel):
@@ -160,6 +162,8 @@ def expenses(
         page_size=page_size,
         total=found.total,
         total_cents=found.total_cents,
+        outflow_cents=found.outflow_cents,
+        inflow_cents=found.inflow_cents,
     )
 
 

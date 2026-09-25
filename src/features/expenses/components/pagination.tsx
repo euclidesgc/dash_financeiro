@@ -6,7 +6,9 @@ export function Pagination({
   page,
   pages,
   total,
-  totalCents,
+  outflowCents,
+  inflowCents,
+  splitFlows = false,
   isFetching,
   onChange,
   noun = EXPENSE_NOUN,
@@ -14,7 +16,9 @@ export function Pagination({
   page: number
   pages: number
   total: number
-  totalCents: number
+  outflowCents: number
+  inflowCents: number
+  splitFlows?: boolean
   isFetching: boolean
   onChange: (page: number) => void
   noun?: CountNoun
@@ -23,7 +27,10 @@ export function Pagination({
     <nav aria-label="Paginação" className="mt-6 flex flex-wrap items-center justify-between gap-4">
       <p className="text-sm text-gray-600">
         Página {page} de {pages} · {formatCount(total, noun)} ·{' '}
-        {formatMoney(Math.abs(totalCents))} no período
+        {splitFlows
+          ? `${formatMoney(Math.abs(outflowCents))} em saídas e ${formatMoney(inflowCents)} em entradas`
+          : formatMoney(Math.abs(outflowCents) + inflowCents)}{' '}
+        no período
       </p>
       <div className="flex gap-2">
         <Button

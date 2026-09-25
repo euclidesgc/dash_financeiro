@@ -14,17 +14,17 @@ Decisões registradas aqui (a causa está em `investigation.md`):
 
 Ao final: na visão "Não são gastos", o rodapé mostra quanto saiu e quanto entrou no período, separados.
 
-- [ ] T1.1 — Totais separados na API
+- [x] T1.1 — Totais separados na API
   - Arquivos: `app/queries/expenses.py`, `app/routers/transactions.py` (alterar)
   - O que fazer: a consulta de total devolve contagem, soma com sinal, soma das saídas e soma das entradas; `ExpensesPage` e `ExpensesResponse` ganham `outflow_cents` e `inflow_cents`.
   - Skills: python-schemas-pydantic-v2
   - Complexidade: baixa
-- [ ] T1.2 — Rodapé com os dois lados
+- [x] T1.2 — Rodapé com os dois lados
   - Arquivos: `src/features/expenses/types/expense.ts`, `src/testing/mocks/handlers.ts`, `src/features/expenses/components/pagination.tsx`, `src/features/expenses/components/expenses-list.tsx` (alterar)
   - O que fazer: tipo e API simulada com os dois campos; `Pagination` recebe `outflowCents`, `inflowCents` e `splitFlows`; com `splitFlows` mostra "R$ X em saídas e R$ Y em entradas no período", sem ele mostra `|saídas| + entradas`; a lista liga `splitFlows` na visão "Não são gastos".
   - Skills: component-robustness, interface-design, api-mocking
   - Complexidade: baixa
-- [ ] T1.3 — Testes
+- [x] T1.3 — Testes
   - Arquivos: `tests/test_expenses_api.py`, `src/features/expenses/components/__tests__/expenses-list.test.tsx`, `src/features/expenses/components/__tests__/pagination.test.tsx` (alterar)
   - O que fazer: os testes de regressão passam; o teste do componente cobre os dois modos do rodapé e o lado zero.
   - Skills: component-testing
@@ -32,19 +32,19 @@ Ao final: na visão "Não são gastos", o rodapé mostra quanto saiu e quanto en
 
 ### Critérios de aceite da fase 1
 
-- [ ] CA1.1 — `uv run pytest` e `pnpm test` saem com código 0, e no commit `686e9e4` os testes `test_view_excluded_answers_the_outflows_and_the_inflows_apart` e `?view=excluded shows what went out and what came in apart, not their difference` falhavam. (comando)
-- [ ] CA1.2 — `bash scripts/lint.sh`, `pnpm lint`, `pnpm typecheck` e `pnpm build` saem com código 0. (comando)
-- [ ] CA1.3 — As somas de saídas e de entradas são feitas no SQL de `app/queries/expenses.py`, e `src/features/expenses/components/pagination.tsx` não chama `Math.abs` sobre a soma com sinal. (estrutural)
-- [ ] CA1.4 — Com −R$ 1.000,00 e +R$ 1.000,00 marcados, a visão "Não são gastos" mostra `R$ 1.000,00 em saídas e R$ 1.000,00 em entradas no período`; a visão "Gastos" continua mostrando `R$ X no período`. (comportamental)
+- [x] CA1.1 — `uv run pytest` e `pnpm test` saem com código 0, e no commit `686e9e4` os testes `test_view_excluded_answers_the_outflows_and_the_inflows_apart` e `?view=excluded shows what went out and what came in apart, not their difference` falhavam. (comando)
+- [x] CA1.2 — `bash scripts/lint.sh`, `pnpm lint`, `pnpm typecheck` e `pnpm build` saem com código 0. (comando)
+- [x] CA1.3 — As somas de saídas e de entradas são feitas no SQL de `app/queries/expenses.py`, e `src/features/expenses/components/pagination.tsx` não chama `Math.abs` sobre a soma com sinal. (estrutural)
+- [x] CA1.4 — Com −R$ 1.000,00 e +R$ 1.000,00 marcados, a visão "Não são gastos" mostra `R$ 1.000,00 em saídas e R$ 1.000,00 em entradas no período`; a visão "Gastos" continua mostrando `R$ X no período`. (comportamental)
 
 ## DoD da entrega
 
-- [ ] DoD1 — Todas as tarefas e critérios do plano marcados
-- [ ] DoD2 — Suíte de testes inteira passa
-- [ ] DoD3 — Lint do projeto inteiro sem erros nem avisos
-- [ ] DoD4 — Tipos de todos os `tsconfig` sem erros
-- [ ] DoD5 — Console dos testes sem erro nem aviso
-- [ ] DoD6 — `build` passa
-- [ ] DoD7 — Nenhum import entre features nem contra o fluxo compartilhado → features → app
-- [ ] DoD8 — Nenhum `console.log`, `TODO`, `// @debug`, `.only(` ou `.skip(` no diff da branch
-- [ ] DoD9 — Nenhuma worktree ou branch temporária sobrando
+- [x] DoD1 — Todas as tarefas e critérios do plano marcados
+- [x] DoD2 — Suíte de testes inteira passa
+- [x] DoD3 — Lint do projeto inteiro sem erros nem avisos
+- [x] DoD4 — Tipos de todos os `tsconfig` sem erros
+- [x] DoD5 — Console dos testes sem erro nem aviso
+- [x] DoD6 — `build` passa
+- [x] DoD7 — Nenhum import entre features nem contra o fluxo compartilhado → features → app
+- [x] DoD8 — Nenhum `console.log`, `TODO`, `// @debug`, `.only(` ou `.skip(` no diff da branch
+- [x] DoD9 — Nenhuma worktree ou branch temporária sobrando

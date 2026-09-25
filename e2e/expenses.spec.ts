@@ -507,7 +507,9 @@ test('marks an expense as not an expense, undoes it, lists it under "Não são g
   await expect(
     page.getByRole('listitem').getByText('Transferência entre minhas contas', { exact: true }),
   ).toBeVisible()
-  await expect(page.getByText('Página 1 de 1 · 1 lançamento · R$ 60,00 no período')).toBeVisible()
+  await expect(
+    page.getByText('Página 1 de 1 · 1 lançamento · R$ 60,00 em saídas e R$ 0,00 em entradas no período'),
+  ).toBeVisible()
   await expect(page.getByRole('heading', { level: 2, name: 'Teto do mês' })).toHaveCount(0)
 
   await page.reload()
@@ -569,7 +571,9 @@ test('lists the incomes, shows the period result, marks an income as not an inco
   await expect(page.getByRole('listitem')).toHaveCount(1)
   await expect(page.getByRole('listitem')).toContainText('SALARIO')
   await expect(page.getByRole('listitem').getByText('Outro', { exact: true })).toBeVisible()
-  await expect(page.getByText('Página 1 de 1 · 1 lançamento · R$ 6.000,00 no período')).toBeVisible()
+  await expect(
+    page.getByText('Página 1 de 1 · 1 lançamento · R$ 0,00 em saídas e R$ 6.000,00 em entradas no período'),
+  ).toBeVisible()
 
   await page.getByRole('button', { name: 'Voltar SALARIO a contar' }).click()
   await expect(page.getByText('Nenhum lançamento marcado como não-gasto.')).toBeVisible()
