@@ -26,7 +26,7 @@ prova o caminho de ponta a ponta (tela React → API FastAPI → SQLite) e as ou
 
 | # | Fatia | Resolução necessária | Origem | Depende de | Status |
 |---|---|---|---|---|---|
-| 017 | `jinja-router-extraction` | manter a lógica de consulta única quando uma tela migra de Jinja para React, em vez de reescrever SQL | bug | 001 | planned |
+| 017 | `jinja-router-extraction` | manter a lógica de consulta única quando uma tela migra de Jinja para React, em vez de reescrever SQL | bug | 001 | in-progress |
 | 018 | `sync-runs-source-field` | rastrear origem do disparo (tela vs comando diário) em `sync_runs.source` em vez de só guardar o caminho do arquivo lido | 002 | — | planned |
 | 019 | `pluggy-extract-env-handling` | embrulhar leitura de `.env` e `SystemExit` em `ingestao/pluggy_extract.py` em função limpa, não chamar direto do serviço | 002 | — | planned |
 | 020 | `jinja-sync-button-exclusive-lock` | fazer o botão Jinja `/sincronizar` passar pela trava de execução única de `app/sync/exclusive.py` | 002 | — | planned |
@@ -37,7 +37,7 @@ prova o caminho de ponta a ponta (tela React → API FastAPI → SQLite) e as ou
 | 025 | `spending-filter-predicate-unification` | unificar predicado de data duplicado em `app/queries/spending.py` (`total_spending_cents`) e `app/queries/expenses.py` (`_where`) em `spending.py`, evitando divergência na soma por categoria (008) | 005 | — | done |
 | 026 | `unify-payee-name-precedence` | consolidar precedência do nome do recebedor entre Python (`app/payees/names.py`, `_chosen`) e SQL (`app/queries/expenses.py`, `_PAYEE_NAME_SQL`), evitando divergência silenciosa se uma mudar | 007 | 025 | planned |
 | 027 | `expenses-list-mock-unification` | `filterForSpy` em `src/features/expenses/components/__tests__/expenses-list.test.tsx` duplica a lógica de filtro dos mocks; importar `filterExpenses` de `src/testing/mocks/handlers.ts` em vez de reinventar | 008 | — | planned |
-| 028 | `manual-category-classify-precedence` | o ajuste manual de categoria (`transactions.category_source = 'manual'`) não tem precedência sobre regras por descrição no agrupamento (`group_id`) usado pelas telas Jinja antigas (`app/taxonomy/classify.py`, `_match`); enquanto essas telas existirem, um gasto ajustado à mão pode aparecer em outro grupo nelas | 009 | — | in-review |
+| 028 | `manual-category-classify-precedence` | o ajuste manual de categoria (`transactions.category_source = 'manual'`) não tem precedência sobre regras por descrição no agrupamento (`group_id`) usado pelas telas Jinja antigas (`app/taxonomy/classify.py`, `_match`); enquanto essas telas existirem, um gasto ajustado à mão pode aparecer em outro grupo nelas | 009 | — | done |
 | 029 | `jinja-labels-from-schema` | `app/routers/spending.py` e `app/routers/rules.py` montam `LABELS` do seed no import e não veem rótulo renomeado nem categoria criada pelo dono; ler `categories` em requisição nas duas telas Jinja (e em `tests/test_gastos_screen.py`) | 010 | 010 | planned |
 | 030 | `shared-categories-query` | `src/features/expenses/api/get-categories.ts` e `src/features/categories/api/get-categories.ts` buscam `GET /api/categories` com a mesma chave `['categories']`; mover hook e tipo para `src/hooks/` e `src/types/` pela regra "usado por duas features → compartilhado" | 010 | 010 | planned |
 | 031 | `expense-count-label` | `pagination.tsx:19`, `category-totals.tsx:57` e `similar-offer.tsx` escrevem o plural de "gasto" cada um do seu jeito; um utilitário em `src/features/expenses/utils/` usado pelos três | 011 | — | planned |
