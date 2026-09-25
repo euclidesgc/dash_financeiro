@@ -25,7 +25,7 @@ Três consequências, e elas explicam quase todas as escolhas abaixo:
    existe distância a percorrer — a linha do tempo de 45 dias, a escada de
    dívidas, os três marcos. Onde não há distância, não há marcação.
 3. **O painel sustenta por baixo.** Quem abre está resolvendo um problema de
-   R$ 4.940,72 por mês. Sem confete, sem streak, sem parabéns, sem
+   R$ 5.661,30 por mês. Sem confete, sem streak, sem parabéns, sem
    ilustração — e sem alarme decorativo, que é a outra forma de disputar
    atenção.
 
