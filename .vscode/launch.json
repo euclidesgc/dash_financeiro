@@ -11,6 +11,26 @@
       "python": "${workspaceFolder}/.venv/bin/python",
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "Preparar a base local"
+    },
+    {
+      "name": "Front (localhost:5173/app/)",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "pnpm dev",
+      "cwd": "${workspaceFolder}",
+      "env": { "NO_COLOR": "1" },
+      "serverReadyAction": {
+        "pattern": "Local:\\s+http://localhost:([0-9]+)",
+        "uriFormat": "http://localhost:%s/app/",
+        "action": "openExternally"
+      }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Painel completo (API + front)",
+      "configurations": ["Painel (127.0.0.1:8000)", "Front (localhost:5173/app/)"],
+      "stopAll": true
     }
   ]
 }
