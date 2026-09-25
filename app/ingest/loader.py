@@ -7,6 +7,7 @@ from typing import Any
 
 from app.accounts import CREDIT
 from app.ingest.money import FractionalCentsError, to_cents
+from app.ingest.normalize import normalize_description
 
 # Reason: SQLite caps host parameters per statement, so the source is
 # compared against the database in chunks instead of one IN clause holding
@@ -156,6 +157,7 @@ def ingest(
             _upsert("transactions", _TRANSACTION_COLUMNS, "pluggy_id", _TRANSACTION_OVERRIDES),
             [tuple(row[column] for column in _TRANSACTION_COLUMNS) for row in transaction_rows],
         )
+        _fill_payees(conn)
         accounts_present = _count_present(
             conn, "accounts", "id", [row["id"] for row in account_rows]
         )
@@ -402,6 +404,19 @@ def _transaction_row(
         "merchant_cnpj": raw.get("cnpj") or None,
         "receiver_name": raw.get("recebedor") or None,
     }, None
+
+
+def _fill_payees(conn: sqlite3.Connection) -> None:
+    rows = conn.execute(
+        "SELECT id, description FROM transactions WHERE payee IS NULL OR payee = ''"
+    ).fetchall()
+    # Reason: a description that folds to nothing names no payee; storing ''
+    # would make "has a payee" counts answer too high, as with the merchant
+    # columns.
+    conn.executemany(
+        "UPDATE transactions SET payee = ? WHERE id = ?",
+        [(normalize_description(row["description"]) or None, row["id"]) for row in rows],
+    )
 
 
 def _upsert(

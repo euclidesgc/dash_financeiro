@@ -5,6 +5,7 @@ import pytest
 
 from app.db import connect
 from app.ingest.loader import ingest
+from app.ingest.normalize import normalize_description
 from app.ingest.source import load_accounts, load_transactions
 from app.migrate import run_migrations
 
@@ -243,3 +244,50 @@ def test_reingesting_keeps_the_not_expense_reason_and_still_updates_the_descript
         "SELECT not_expense_reason, description FROM transactions WHERE pluggy_id = 'fix-duplicada'"
     ).fetchone()
     assert (updated["not_expense_reason"], updated["description"]) == ("refund", "DESCRICAO NOVA")
+
+
+def test_ingest_fills_the_payee_from_the_normalized_description(conn, accounts):
+    transactions = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))[:2]
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    stored = conn.execute("SELECT description, payee FROM transactions").fetchall()
+    assert stored
+    assert [r["payee"] for r in stored] == [normalize_description(r["description"]) for r in stored]
+    assert conn.execute("SELECT status FROM sync_runs").fetchone()["status"] == "ok"
+
+
+def test_ingest_again_does_not_overwrite_an_existing_payee(conn, accounts):
+    transactions = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))[:2]
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    conn.execute("UPDATE transactions SET payee = 'MANUAL' WHERE pluggy_id = 'fix-duplicada'")
+    conn.commit()
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    payee = conn.execute(
+        "SELECT payee FROM transactions WHERE pluggy_id = 'fix-duplicada'"
+    ).fetchone()[0]
+    assert payee == "MANUAL"
+
+
+def test_ingest_leaves_the_payee_null_when_the_description_is_null(conn, accounts):
+    transactions = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))[:1]
+    transactions[0]["descricao"] = None
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    payee = conn.execute("SELECT payee FROM transactions").fetchone()[0]
+    assert payee is None
+
+
+def test_a_rejected_ingest_writes_no_payee_and_records_failed(conn, accounts):
+    transactions = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))[:2]
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    conn.execute("UPDATE transactions SET payee = NULL WHERE pluggy_id = 'fix-duplicada'")
+    conn.commit()
+    without_id = {k: v for k, v in transactions[0].items() if k != "id"}
+    result = ingest(
+        conn, transactions=[*transactions, without_id], accounts=accounts, source="fixture"
+    )
+    assert result.status == "failed"
+    payee = conn.execute(
+        "SELECT payee FROM transactions WHERE pluggy_id = 'fix-duplicada'"
+    ).fetchone()[0]
+    assert payee is None
+    last = conn.execute("SELECT status FROM sync_runs ORDER BY id DESC LIMIT 1").fetchone()
+    assert last["status"] == "failed"

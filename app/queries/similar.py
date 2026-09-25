@@ -2,8 +2,8 @@ import sqlite3
 
 from app.queries.spending import SPENDING
 
-# Reason: the description branch only holds while the origin has no payee
-# (a freshly ingested row not yet classified); SPENDING enters as an id IN
+# Reason: the description branch covers an origin with no derivable payee
+# (a description that normalizes to empty); SPENDING enters as an id IN
 # (…) subquery because the string carries no alias (debt 025).
 SIMILAR_IDS = (
     "SELECT s.id FROM transactions AS s "

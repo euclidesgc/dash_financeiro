@@ -273,3 +273,18 @@ def test_with_the_pluggy_source_a_fetch_failure_records_a_failed_run(taxonomy_co
 
 def test_the_pluggy_prefix_is_removed_by_readable():
     assert readable("pluggy: x") == "x"
+
+
+def test_synchronise_ends_with_the_payee_filled_on_every_row_with_a_description(
+    taxonomy_conn, monkeypatch
+):
+    _point_the_load_step_at_the_fixture(monkeypatch)
+
+    synchronise(taxonomy_conn, today=REFERENCE)
+
+    assert rows(taxonomy_conn) > 0
+    missing = taxonomy_conn.execute(
+        "SELECT count(*) FROM transactions "
+        "WHERE description IS NOT NULL AND (payee IS NULL OR payee = '')"
+    ).fetchone()[0]
+    assert missing == 0
