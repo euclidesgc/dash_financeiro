@@ -1,0 +1,11 @@
+{
+  "cases": [
+    { "name": "outflow without a mark", "amount_cents": -4590, "not_expense_reason": null, "views": ["expenses"] },
+    { "name": "outflow marked as own transfer", "amount_cents": -4590, "not_expense_reason": "own_transfer", "views": ["excluded"] },
+    { "name": "outflow marked as refund", "amount_cents": -4590, "not_expense_reason": "refund", "views": ["excluded"] },
+    { "name": "inflow without a mark", "amount_cents": 600000, "not_expense_reason": null, "views": ["income"] },
+    { "name": "inflow marked as other", "amount_cents": 600000, "not_expense_reason": "other", "views": ["excluded"] },
+    { "name": "zero without a mark", "amount_cents": 0, "not_expense_reason": null, "views": [] },
+    { "name": "zero marked as other", "amount_cents": 0, "not_expense_reason": "other", "views": [] }
+  ]
+}
