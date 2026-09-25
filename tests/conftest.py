@@ -58,6 +58,20 @@ def load(conn: sqlite3.Connection, rows: list[dict]) -> sqlite3.Connection:
     return conn
 
 
+def label_category(key: str, label: str) -> None:
+    conn = connect()
+    try:
+        conn.execute(
+            "INSERT INTO categories (name, group_id, label) VALUES "
+            "(?, (SELECT id FROM category_groups WHERE is_fallback = 1), ?) "
+            "ON CONFLICT (name) DO UPDATE SET label = excluded.label",
+            (key, label),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def narrowed(seed: dict, rules: list[dict]) -> dict:
     narrow = deepcopy(seed)
     narrow["rules"] = rules

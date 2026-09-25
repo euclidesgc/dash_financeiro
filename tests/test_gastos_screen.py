@@ -8,12 +8,13 @@ from app.auth.seed import seed_user
 from app.db import connect
 from app.main import create_app
 from app.queries.axes import AXES
+from app.queries.categories import category_labels
 from app.queries.period import default_period
 from app.queries.series import MONTHS
 from app.routers.reference import screen_date
 from app.taxonomy.classify import classify_all
-from app.taxonomy.seed import load_seed, seed_labels, seed_taxonomy
-from tests.conftest import ACCOUNT, load, transaction
+from app.taxonomy.seed import load_seed, seed_taxonomy
+from tests.conftest import ACCOUNT, label_category, load, transaction
 
 LOGIN = "teste"
 PASSWORD = "senha-teste-9k2"
@@ -45,6 +46,8 @@ LOOSE_AMOUNT = -5000
 TOTAL = FLOOR_AMOUNT + CUT_AMOUNT + SMALL_CUT_AMOUNT + LOOSE_AMOUNT
 ENTRIES = 4
 UNKNOWN_CATEGORY = "Categoria que nenhuma regra alcanca"
+RENAMED_LABEL = "Moradia do dono"
+CREATED_LABEL = "Feira do bairro"
 
 
 def _rows_of(html: str) -> list[str]:
@@ -178,12 +181,42 @@ def test_a_category_already_in_portuguese_shows_its_name_once(client, window):
 
 def test_a_category_whose_label_differs_from_its_name_shows_both(client, vocabulary):
     key = vocabulary["floor_category"]
-    label = seed_labels()[key]
+    conn = connect()
+    try:
+        label = category_labels(conn)[key]
+    finally:
+        conn.close()
     table = client.get(TABLE, params={"eixo": CATEGORY})
     row = next(part for part in table.text.split("<tr") if f">{label}<" in part)
 
     assert f'<span class="cell-label">{label}</span>' in row
     assert f'<span class="cell-key">{key}</span>' in row
+
+
+def test_a_renamed_category_shows_its_new_label_on_the_table_the_panel_and_the_detail(
+    client, vocabulary
+):
+    key = vocabulary["floor_category"]
+    label_category(key, RENAMED_LABEL)
+
+    table = client.get(TABLE, params={"eixo": CATEGORY})
+    panel = client.get(PANEL)
+    detail = client.get(DETAIL, params={"eixo": CATEGORY, "chave": key})
+
+    shown = f'<span class="cell-label">{RENAMED_LABEL}</span>'
+    assert shown in table.text
+    assert shown in panel.text
+    assert f">{RENAMED_LABEL}</h3>" in detail.text
+
+
+def test_a_category_the_owner_created_shows_its_label_on_the_table(client):
+    label_category(UNKNOWN_CATEGORY, CREATED_LABEL)
+
+    table = client.get(TABLE, params={"eixo": CATEGORY})
+    row = next(part for part in table.text.split("<tr") if f">{CREATED_LABEL}<" in part)
+
+    assert f'<span class="cell-label">{CREATED_LABEL}</span>' in row
+    assert f'<span class="cell-key">{UNKNOWN_CATEGORY}</span>' in row
 
 
 def test_an_open_row_sums_back_to_the_row_it_came_from(client, vocabulary):

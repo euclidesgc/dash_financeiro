@@ -1,5 +1,3 @@
-from app.routers import rules as rules_router
-from app.routers import spending as spending_router
 from app.taxonomy.classify import classify_all
 from app.taxonomy.seed import load_seed, seed_labels, seed_taxonomy
 from tests.conftest import load, transaction
@@ -34,8 +32,6 @@ def test_the_categories_seed_declares_seventy_seven_entries_inside_the_twelve_gr
         assert entry["group"] in declared_groups
 
     assert seed_labels() == {entry["name"]: entry["label"] for entry in categories}
-    assert spending_router.LABELS == seed_labels()
-    assert rules_router.LABELS == seed_labels()
 
 
 def test_the_seeded_tree_covers_every_category_without_an_orphan_group(taxonomy_conn):
