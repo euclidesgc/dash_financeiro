@@ -15,8 +15,18 @@ function LocationProbe(): React.JSX.Element {
   return <span data-testid="search">{location.search}</span>
 }
 
-function filterForSpy(items: Expense[], from: string | null, to: string | null): Expense[] {
-  return items.filter((item) => (from === null || item.date >= from) && (to === null || item.date <= to))
+function filterForSpy(
+  items: Expense[],
+  from: string | null,
+  to: string | null,
+  accountId: string | null,
+): Expense[] {
+  return items.filter(
+    (item) =>
+      (from === null || item.date >= from) &&
+      (to === null || item.date <= to) &&
+      (accountId === null || item.account_id === accountId),
+  )
 }
 
 function sortForSpy(items: Expense[], sort: ExpenseSort, order: ExpenseOrder): Expense[] {
@@ -54,7 +64,8 @@ function spyOnExpensesRequests(): URLSearchParams[] {
       const order = (url.searchParams.get('order') ?? 'desc') as ExpenseOrder
       const from = url.searchParams.get('from')
       const to = url.searchParams.get('to')
-      const filtered = filterForSpy(fakeExpenses, from, to)
+      const accountId = url.searchParams.get('account_id')
+      const filtered = filterForSpy(fakeExpenses, from, to, accountId)
       const items = sortForSpy(filtered, sort, order)
       return HttpResponse.json({
         items: items.slice((page - 1) * pageSize, page * pageSize),
@@ -105,6 +116,7 @@ test('shows the error and retries', async () => {
             account_name: 'Conta corrente',
             account_institution: 'Banco de teste',
             account_type: 'BANK',
+            account_id: 'acc-bank-1',
             category: 'Compras',
             amount_cents: -8490,
           },
@@ -578,7 +590,7 @@ test('"Mês anterior" without a month starts from the current month', async () =
 test('shows the filtered empty state with the controls', async () => {
   renderWithProviders(<ExpensesList />, { route: '/expenses?month=2026-09' })
 
-  expect(await screen.findByText('Nenhum gasto nesse período.')).toBeInTheDocument()
+  expect(await screen.findByText('Nenhum gasto para esse filtro.')).toBeInTheDocument()
   expect(screen.queryByText('Nenhum gasto registrado ainda.')).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Mês anterior' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Todo o período' })).toBeInTheDocument()
@@ -752,4 +764,183 @@ test('keeps the period controls visible in the error state', async () => {
   const alert = await screen.findByRole('alert')
   expect(alert).toHaveTextContent('Não foi possível carregar os gastos.')
   expect(screen.getByRole('button', { name: 'Mês anterior' })).toBeInTheDocument()
+})
+
+test('shows "Todas as contas" by default and calls the API without account_id', async () => {
+  const calls = spyOnExpensesRequests()
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+
+  expect(screen.getByLabelText('Conta')).toHaveValue('')
+  expect(await screen.findByText(/45 gastos/)).toBeInTheDocument()
+
+  await waitFor(() => {
+    expect(calls[0]?.get('account_id')).toBeNull()
+  })
+})
+
+test('reads the account from the URL', async () => {
+  const calls = spyOnExpensesRequests()
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses?account=acc-credit-1' })
+
+  await waitFor(() => {
+    expect(calls.at(-1)?.get('account_id')).toBe('acc-credit-1')
+  })
+
+  expect(await screen.findByText(/13 gastos/)).toBeInTheDocument()
+  await waitFor(() => {
+    expect(screen.getByLabelText('Conta')).toHaveValue('acc-credit-1')
+  })
+
+  const list = screen.getByRole('list')
+  const items = within(list).getAllByRole('listitem')
+  items.forEach((item) => {
+    expect(within(item).getByText(/Cartão · Emissor de teste/)).toBeInTheDocument()
+  })
+  expect(within(list).queryByText(/Conta corrente · Banco de teste/)).not.toBeInTheDocument()
+})
+
+test('choosing an account drops the page and keeps the period and the sorting', async () => {
+  const calls = spyOnExpensesRequests()
+
+  renderWithProviders(
+    <>
+      <ExpensesList />
+      <LocationProbe />
+    </>,
+    { route: '/expenses?page=2&sort=amount&month=2026-07' },
+  )
+
+  await screen.findByRole('list')
+  await waitFor(() => {
+    expect(screen.getByLabelText('Conta')).toBeEnabled()
+  })
+
+  await userEvent.selectOptions(screen.getByLabelText('Conta'), 'acc-credit-1')
+
+  await waitFor(() => {
+    const search = new URLSearchParams(screen.getByTestId('search').textContent)
+    expect(search.get('page')).toBeNull()
+    expect(search.get('account')).toBe('acc-credit-1')
+    expect(search.get('sort')).toBe('amount')
+    expect(search.get('month')).toBe('2026-07')
+  })
+
+  await waitFor(() => {
+    const last = calls.at(-1)
+    expect(last?.get('account_id')).toBe('acc-credit-1')
+    expect(last?.get('from')).toBe('2026-07-01')
+    expect(last?.get('to')).toBe('2026-07-31')
+    expect(last?.get('page')).toBe('1')
+  })
+})
+
+test('choosing "Todas as contas" removes the account from the URL', async () => {
+  renderWithProviders(
+    <>
+      <ExpensesList />
+      <LocationProbe />
+    </>,
+    { route: '/expenses?account=acc-credit-1' },
+  )
+
+  await screen.findByRole('list')
+  await waitFor(() => {
+    expect(screen.getByLabelText('Conta')).toHaveValue('acc-credit-1')
+  })
+
+  await userEvent.selectOptions(screen.getByLabelText('Conta'), '')
+
+  await waitFor(() => {
+    const search = new URLSearchParams(screen.getByTestId('search').textContent)
+    expect(search.get('account')).toBeNull()
+  })
+  expect(await screen.findByText(/45 gastos/)).toBeInTheDocument()
+})
+
+test('pagination keeps the account', async () => {
+  const calls = spyOnExpensesRequests()
+
+  renderWithProviders(
+    <>
+      <ExpensesList />
+      <LocationProbe />
+    </>,
+    { route: '/expenses?account=acc-bank-1' },
+  )
+
+  await screen.findByRole('list')
+  await waitFor(() => {
+    expect(calls.at(-1)?.get('account_id')).toBe('acc-bank-1')
+  })
+
+  await userEvent.click(screen.getByRole('button', { name: 'Próxima' }))
+
+  await waitFor(() => {
+    const search = new URLSearchParams(screen.getByTestId('search').textContent)
+    expect(search.get('account')).toBe('acc-bank-1')
+    expect(search.get('page')).toBe('2')
+  })
+
+  await waitFor(() => {
+    const last = calls.at(-1)
+    expect(last?.get('account_id')).toBe('acc-bank-1')
+    expect(last?.get('page')).toBe('2')
+  })
+})
+
+test('shows the filtered empty state for an account without spending in the month', async () => {
+  renderWithProviders(<ExpensesList />, { route: '/expenses?account=acc-credit-1&month=2026-09' })
+
+  expect(await screen.findByText('Nenhum gasto para esse filtro.')).toBeInTheDocument()
+  expect(screen.queryByText('Nenhum gasto registrado ainda.')).not.toBeInTheDocument()
+  expect(screen.getByLabelText('Conta')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Todo o período' })).toBeInTheDocument()
+})
+
+test('drops an unknown account from the URL once the accounts load', async () => {
+  const calls = spyOnExpensesRequests()
+
+  renderWithProviders(
+    <>
+      <ExpensesList />
+      <LocationProbe />
+    </>,
+    { route: '/expenses?account=nao-existe' },
+  )
+
+  await waitFor(() => {
+    const search = new URLSearchParams(screen.getByTestId('search').textContent)
+    expect(search.get('account')).toBeNull()
+  })
+
+  await waitFor(() => {
+    expect(calls.at(-1)?.get('account_id')).toBeNull()
+  })
+
+  expect(await screen.findByText(/45 gastos/)).toBeInTheDocument()
+  expect(screen.getByLabelText('Conta')).toHaveValue('')
+})
+
+test('keeps the expenses list when the accounts request fails', async () => {
+  server.use(http.get('/api/accounts/balances', () => HttpResponse.json({}, { status: 500 })))
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+
+  expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível carregar as contas.')
+  expect(within(screen.getByLabelText('Conta')).getAllByRole('option')).toHaveLength(1)
+  expect(await screen.findByRole('list')).toBeInTheDocument()
+  expect(await screen.findByText(/45 gastos/)).toBeInTheDocument()
+  expect(screen.queryByText('Não foi possível carregar os gastos.')).not.toBeInTheDocument()
+})
+
+test('keeps the account select visible in the error state', async () => {
+  server.use(http.get('/api/transactions/expenses', () => HttpResponse.json({}, { status: 500 })))
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+
+  const alert = await screen.findByRole('alert')
+  expect(alert).toHaveTextContent('Não foi possível carregar os gastos.')
+  expect(screen.getByLabelText('Conta')).toBeInTheDocument()
 })

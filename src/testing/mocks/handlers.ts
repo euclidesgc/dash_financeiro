@@ -46,6 +46,7 @@ function generateFakeExpenses(): Expense[] {
         account_name: 'Conta corrente',
         account_institution: 'Banco de teste',
         account_type: 'BANK',
+        account_id: 'acc-bank-1',
         category: 'Compras',
         amount_cents: -8490,
       }
@@ -59,6 +60,7 @@ function generateFakeExpenses(): Expense[] {
         account_name: 'Conta corrente',
         account_institution: 'Banco de teste',
         account_type: 'BANK',
+        account_id: 'acc-bank-1',
         category: 'Alimentação',
         amount_cents: -1000 * id,
       }
@@ -72,6 +74,7 @@ function generateFakeExpenses(): Expense[] {
         account_name: 'Conta corrente',
         account_institution: 'Banco de teste',
         account_type: 'BANK',
+        account_id: 'acc-bank-1',
         category: null,
         amount_cents: -1000 * id,
       }
@@ -85,6 +88,7 @@ function generateFakeExpenses(): Expense[] {
         account_name: 'Conta corrente',
         account_institution: 'Banco de teste',
         account_type: 'BANK',
+        account_id: 'acc-bank-1',
         category: 'Transporte',
         amount_cents: -1000 * id,
       }
@@ -98,8 +102,23 @@ function generateFakeExpenses(): Expense[] {
         account_name: 'Conta corrente',
         account_institution: 'Banco de teste',
         account_type: 'BANK',
+        account_id: 'acc-bank-1',
         category: 'Compras',
         amount_cents: -120000,
+      }
+    }
+    if (id % 3 === 0) {
+      return {
+        id,
+        date,
+        description: `GASTO ${String(id)}`,
+        payee_name: null,
+        account_name: 'Cartão',
+        account_institution: 'Emissor de teste',
+        account_type: 'CREDIT',
+        account_id: 'acc-credit-1',
+        category: 'Compras',
+        amount_cents: -1000 * id,
       }
     }
     return {
@@ -110,6 +129,7 @@ function generateFakeExpenses(): Expense[] {
       account_name: 'Conta corrente',
       account_institution: 'Banco de teste',
       account_type: 'BANK',
+      account_id: 'acc-bank-1',
       category: 'Compras',
       amount_cents: -1000 * id,
     }
@@ -190,8 +210,12 @@ export const handlers = [
     const order = (url.searchParams.get('order') ?? 'desc') as ExpenseOrder
     const from = url.searchParams.get('from')
     const to = url.searchParams.get('to')
+    const accountId = url.searchParams.get('account_id')
     const filtered = fakeExpenses.filter(
-      (item) => (from === null || item.date >= from) && (to === null || item.date <= to),
+      (item) =>
+        (from === null || item.date >= from) &&
+        (to === null || item.date <= to) &&
+        (accountId === null || item.account_id === accountId),
     )
     const items = sortExpenses(filtered, sort, order)
     return HttpResponse.json({

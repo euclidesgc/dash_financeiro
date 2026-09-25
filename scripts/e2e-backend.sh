@@ -29,7 +29,7 @@ try:
     result = ingest(
         conn,
         transactions=load_transactions("tests/data/e2e_transactions.json"),
-        accounts=load_accounts("tests/fixtures/accounts_fixture.json"),
+        accounts=load_accounts("tests/data/e2e_accounts.json"),
         source="e2e",
     )
     # Reason: the seed ingest is fixture furniture, not a real sync run; the
