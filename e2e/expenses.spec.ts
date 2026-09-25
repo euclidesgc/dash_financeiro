@@ -178,6 +178,60 @@ test('filters the expenses by month and by date range and keeps the period on re
     .toBeGreaterThanOrEqual(2)
 })
 
+test.describe('typing the dates by keyboard', () => {
+  test.use({ locale: 'pt-BR' })
+
+  test('filters the expenses by a range typed by keyboard in both fields', async ({ page }) => {
+    await page.goto('/app/login')
+    await page.getByLabel('Login').fill(LOGIN)
+    await page.getByLabel('Senha').fill(PASSWORD)
+    await page.getByRole('button', { name: 'Entrar' }).click()
+    await expect(page).toHaveURL(/\/app\/?$/)
+
+    await page.getByRole('link', { name: 'Gastos' }).click()
+    await expect(page.getByText('Página 1 de 1 · 5 gastos · R$ 369,90 no período')).toBeVisible()
+
+    await page.getByRole('button', { name: 'Próximo mês' }).click()
+    await expect(page).toHaveURL(/month=/)
+
+    // Reason: a click lands on the segment under the pointer; the left edge
+    // is the day, where a person starts typing a dd/mm/aaaa date.
+    await page.getByLabel('De', { exact: true }).click({ position: { x: 16, y: 20 } })
+    await page.keyboard.type('01092026')
+    await page.getByLabel('Até', { exact: true }).click({ position: { x: 16, y: 20 } })
+    await page.keyboard.type('02092026')
+    await page.keyboard.press('Tab')
+
+    await expect(page).toHaveURL(/from=2026-09-01/)
+    await expect(page).toHaveURL(/to=2026-09-02/)
+    await expect(page.getByLabel('De', { exact: true })).toHaveValue('2026-09-01')
+    await expect(page.getByLabel('Até', { exact: true })).toHaveValue('2026-09-02')
+    await expect(page.getByText('Página 1 de 1 · 2 gastos · R$ 234,90 no período')).toBeVisible()
+  })
+
+  test('keeps "De" and says why when "Até" is typed before it', async ({ page }) => {
+    await page.goto('/app/login')
+    await page.getByLabel('Login').fill(LOGIN)
+    await page.getByLabel('Senha').fill(PASSWORD)
+    await page.getByRole('button', { name: 'Entrar' }).click()
+    await expect(page).toHaveURL(/\/app\/?$/)
+
+    await page.goto('/app/expenses?from=2026-09-01')
+    await expect(page.getByText('Página 1 de 1 · 2 gastos · R$ 234,90 no período')).toBeVisible()
+
+    await page.getByLabel('Até', { exact: true }).click({ position: { x: 16, y: 20 } })
+    await page.keyboard.type('20082026')
+    await page.keyboard.press('Tab')
+
+    await expect(page.getByText('"Até" não pode ser antes de "De".')).toBeVisible()
+    await expect(page.getByLabel('De', { exact: true })).toHaveValue('2026-09-01')
+    await expect(page.getByLabel('Até', { exact: true })).toHaveValue('2026-08-20')
+    await expect(page).toHaveURL(/from=2026-09-01/)
+    await expect(page).not.toHaveURL(/to=/)
+    await expect(page.getByText('Página 1 de 1 · 2 gastos · R$ 234,90 no período')).toBeVisible()
+  })
+})
+
 test('filters the expenses by account and keeps the account on reload', async ({ page }) => {
   await page.goto('/app/login')
   await page.getByLabel('Login').fill(LOGIN)
