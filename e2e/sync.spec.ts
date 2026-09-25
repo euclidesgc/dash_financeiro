@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test'
 
+import { restoreSeededBase } from './restore-seeded-base'
+
 const LOGIN = 'e2e'
 const PASSWORD = 'senha-e2e-9k2'
 
@@ -7,6 +9,17 @@ const PASSWORD = 'senha-e2e-9k2'
 // shared e2e SQLite database; running them in parallel workers races on the
 // same write lock, so they run one after the other.
 test.describe.configure({ mode: 'serial' })
+
+// Reason: every test here runs a real sync, which the API cannot undo, and the
+// first one needs a base that was never synced; the seed snapshot is copied
+// back before and after each test, whether it passed or not.
+test.beforeEach(() => {
+  restoreSeededBase()
+})
+
+test.afterEach(() => {
+  restoreSeededBase()
+})
 
 test('updates the records from the balances page', async ({ page }) => {
   await page.goto('/app/login')
