@@ -31,7 +31,7 @@ prova o caminho de ponta a ponta (tela React → API FastAPI → SQLite) e as ou
 | 019 | `pluggy-extract-env-handling` | embrulhar leitura de `.env` e `SystemExit` em `ingestao/pluggy_extract.py` em função limpa, não chamar direto do serviço | 002 | — | done |
 | 020 | `jinja-sync-button-exclusive-lock` | fazer o botão Jinja `/sincronizar` passar pela trava de execução única de `app/sync/exclusive.py` | 002 | — | done |
 | 021 | `pluggy-connections-editable-ui` | mover lista de conexões Pluggy de `data/item_ids.txt` para tela editável (norma 26) | 002 | — | done |
-| 022 | `setup-secrets-pluggy-credentials` | atualizar `docs/setup-secrets.md` para citar `PLUGGY_CLIENT_ID` e `PLUGGY_CLIENT_SECRET` | 002 | — | planned |
+| 022 | `setup-secrets-pluggy-credentials` | atualizar `docs/setup-secrets.md` para citar `PLUGGY_CLIENT_ID` e `PLUGGY_CLIENT_SECRET` | 002 | — | in-review |
 | 023 | `category-labels-in-schema` | mover rótulo em pt-BR das categorias de `app/taxonomy/seed.json` para coluna `label` na tabela `categories`, de modo que SQL possa ordenar e filtrar por categoria em 004 e 006 | 003 | — | done |
 | 024 | `payee-filling-at-ingest` | preencher `payee` na própria `ingest`, na transação da carga, para que toda base (sincronização, testes, e2e) nasça com recebedor; a classificação segue no pós-carga | 003 | — | done |
 | 025 | `spending-filter-predicate-unification` | unificar predicado de data duplicado em `app/queries/spending.py` (`total_spending_cents`) e `app/queries/expenses.py` (`_where`) em `spending.py`, evitando divergência na soma por categoria (008) | 005 | — | done |
