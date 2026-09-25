@@ -111,6 +111,7 @@ BILL_PAYMENT_REASON = "pagamento de fatura"
 OWN_TRANSFER_REASON = "transferência entre contas próprias"
 SNAPSHOT_NAME = re.compile(r"^(?P<series>.+?)(?:_(?P<day>\d{4}-\d{2}-\d{2}))?(?:_p\d+)?\.json$")
 PENDING = "PENDING"
+REFUND_WORDS = frozenset({"estorno", "compra", "debito", "credito"})
 
 
 def normalizar(texto: str | None) -> str:
@@ -509,7 +510,9 @@ def marcar_por_categoria_pluggy(linhas: list[dict[str, Any]]) -> None:
 
 
 def netar_estornos(linhas: list[dict[str, Any]]) -> None:
-    """ESTORNO devolve um débito lançado antes; os dois se anulam e nenhum é gasto."""
+    """ESTORNO devolve um gasto lançado antes na mesma conta; os dois se anulam
+    e nenhum é gasto. Entre os débitos possíveis fica o do mesmo estabelecimento
+    e, depois, o mais recente."""
     for linha in linhas:
         linha["eh_estorno"] = False
         linha["estornada_por"] = ""
@@ -521,16 +524,35 @@ def netar_estornos(linhas: list[dict[str, Any]]) -> None:
             linha
             for linha in linhas
             if linha is not estorno
+            and linha["conta_id"] == estorno["conta_id"]
             and not linha["eh_estorno"]
             and not linha["estornada_por"]
+            and not linha["eh_transferencia"]
             and round(abs(linha["valor"] or 0), 2) == alvo_valor
             and (linha["valor"] or 0) < 0
             and linha["data"] <= estorno["data"]
         ]
         if candidatos:
-            original = max(candidatos, key=lambda linha: linha["data"])
+            marcas = merchant_words(estorno)
+            original = max(
+                candidatos,
+                key=lambda linha: (shares_merchant(linha, marcas), linha["data"]),
+            )
             original["estornada_por"] = estorno["id"]
             estorno["estornada_por"] = original["id"]
+
+
+def merchant_words(estorno: dict[str, Any]) -> set[str]:
+    palavras = normalizar(estorno["descricao"]).split()
+    return {palavra for palavra in palavras if len(palavra) >= 3} - REFUND_WORDS
+
+
+def shares_merchant(linha: dict[str, Any], marcas: set[str]) -> bool:
+    # Reason: the bank truncates both sides at different widths — "A P M DA
+    # SIL" refunds "A P M DA SILVA PIZZARI", "DIFERENCIADA" refunds
+    # "DIFERENCI04/12" — so a word matches when either is a prefix of the other.
+    texto = normalizar(f"{linha['descricao']} {linha['nome_fantasia']}").split()
+    return any(p.startswith(m) or m.startswith(p) for m in marcas for p in texto if len(p) >= 3)
 
 
 def detectar_recorrentes(linhas: list[dict[str, Any]]) -> list[dict[str, Any]]:
