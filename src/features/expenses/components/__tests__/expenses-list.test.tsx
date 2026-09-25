@@ -7,8 +7,7 @@ import { useLocation } from 'react-router'
 import { ExpensesList } from '@/features/expenses/components/expenses-list'
 import { renderWithProviders } from '@/testing/test-utils'
 import { server } from '@/testing/mocks/server'
-import { fakeExpenses, fakePlan, filterExpenses, foldText, groupByCategory } from '@/testing/mocks/handlers'
-import type { Expense, ExpenseOrder, ExpenseSort } from '@/features/expenses/types/expense'
+import { expensesPage, fakeExpenses, fakePlan, filterExpenses, groupByCategory } from '@/testing/mocks/handlers'
 
 afterEach(() => {
   vi.useRealTimers()
@@ -19,84 +18,13 @@ function LocationProbe(): React.JSX.Element {
   return <span data-testid="search">{location.search}</span>
 }
 
-function matchesViewForSpy(item: Expense, view: string | null): boolean {
-  if (view === 'income') {
-    return item.amount_cents > 0 && item.not_expense_reason === null
-  }
-  if (view === 'excluded') {
-    return item.not_expense_reason !== null
-  }
-  return item.amount_cents < 0 && item.not_expense_reason === null
-}
-
-function filterForSpy(
-  items: Expense[],
-  from: string | null,
-  to: string | null,
-  accountId: string | null,
-  term: string | null,
-  view: string | null,
-): Expense[] {
-  return items.filter(
-    (item) =>
-      (from === null || item.date >= from) &&
-      (to === null || item.date <= to) &&
-      (accountId === null || item.account_id === accountId) &&
-      (term === null ||
-        foldText(item.description ?? '').includes(term) ||
-        foldText(item.payee_name ?? '').includes(term)) &&
-      matchesViewForSpy(item, view),
-  )
-}
-
-function sortForSpy(items: Expense[], sort: ExpenseSort, order: ExpenseOrder): Expense[] {
-  const direction = order === 'desc' ? -1 : 1
-  return [...items].sort((a, b) => {
-    let comparison = 0
-    if (sort === 'date') {
-      comparison = (a.date < b.date ? -1 : a.date > b.date ? 1 : 0) * direction
-    } else if (sort === 'amount') {
-      comparison = (Math.abs(a.amount_cents) - Math.abs(b.amount_cents)) * direction
-    } else {
-      if (a.category === null && b.category === null) {
-        comparison = 0
-      } else if (a.category === null) {
-        comparison = 1
-      } else if (b.category === null) {
-        comparison = -1
-      } else {
-        comparison = a.category.localeCompare(b.category, 'pt-BR') * direction
-      }
-    }
-    return comparison !== 0 ? comparison : b.id - a.id
-  })
-}
-
 function spyOnExpensesRequests(): URLSearchParams[] {
   const calls: URLSearchParams[] = []
   server.use(
     http.get('/api/transactions/expenses', ({ request }) => {
       const url = new URL(request.url)
       calls.push(url.searchParams)
-      const page = Number.parseInt(url.searchParams.get('page') ?? '1', 10) || 1
-      const pageSize = Number.parseInt(url.searchParams.get('page_size') ?? '20', 10) || 20
-      const sort = (url.searchParams.get('sort') ?? 'date') as ExpenseSort
-      const order = (url.searchParams.get('order') ?? 'desc') as ExpenseOrder
-      const from = url.searchParams.get('from')
-      const to = url.searchParams.get('to')
-      const accountId = url.searchParams.get('account_id')
-      const rawTerm = url.searchParams.get('q')?.trim() ?? ''
-      const term = rawTerm.length >= 2 ? foldText(rawTerm) : null
-      const view = url.searchParams.get('view')
-      const filtered = filterForSpy(fakeExpenses, from, to, accountId, term, view)
-      const items = sortForSpy(filtered, sort, order)
-      return HttpResponse.json({
-        items: items.slice((page - 1) * pageSize, page * pageSize),
-        page,
-        page_size: pageSize,
-        total: filtered.length,
-        total_cents: filtered.reduce((sum, item) => sum + item.amount_cents, 0),
-      })
+      return HttpResponse.json(expensesPage(url))
     }),
   )
   return calls
@@ -318,15 +246,7 @@ test('keeps the previous rows while the next page loads', async () => {
       if (page === 2) {
         await delay(50)
       }
-      const pageSize = 20
-      const filtered = fakeExpenses.filter((item) => matchesViewForSpy(item, null))
-      return HttpResponse.json({
-        items: filtered.slice((page - 1) * pageSize, page * pageSize),
-        page,
-        page_size: pageSize,
-        total: filtered.length,
-        total_cents: filtered.reduce((sum, item) => sum + item.amount_cents, 0),
-      })
+      return HttpResponse.json(expensesPage(url))
     }),
   )
 

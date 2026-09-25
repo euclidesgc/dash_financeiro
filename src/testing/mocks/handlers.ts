@@ -9,6 +9,7 @@ import type {
   Expense,
   ExpenseOrder,
   ExpenseSort,
+  ExpensesResponse,
   NotExpenseReason,
 } from '@/features/expenses/types/expense'
 
@@ -317,6 +318,22 @@ export function filterExpenses(url: URL): Expense[] {
   )
 }
 
+export function expensesPage(url: URL): ExpensesResponse {
+  const page = Number.parseInt(url.searchParams.get('page') ?? '1', 10) || 1
+  const pageSize = Number.parseInt(url.searchParams.get('page_size') ?? '20', 10) || 20
+  const sort = (url.searchParams.get('sort') ?? 'date') as ExpenseSort
+  const order = (url.searchParams.get('order') ?? 'desc') as ExpenseOrder
+  const filtered = filterExpenses(url)
+  const items = sortExpenses(filtered, sort, order)
+  return {
+    items: items.slice((page - 1) * pageSize, page * pageSize),
+    page,
+    page_size: pageSize,
+    total: filtered.length,
+    total_cents: filtered.reduce((sum, item) => sum + item.amount_cents, 0),
+  }
+}
+
 function isWholeMonth(from: string | null, to: string | null): boolean {
   if (from === null || to === null || !from.endsWith('-01')) {
     return false
@@ -431,20 +448,7 @@ export const handlers = [
   }),
 
   http.get('/api/transactions/expenses', ({ request }) => {
-    const url = new URL(request.url)
-    const page = Number.parseInt(url.searchParams.get('page') ?? '1', 10) || 1
-    const pageSize = Number.parseInt(url.searchParams.get('page_size') ?? '20', 10) || 20
-    const sort = (url.searchParams.get('sort') ?? 'date') as ExpenseSort
-    const order = (url.searchParams.get('order') ?? 'desc') as ExpenseOrder
-    const filtered = filterExpenses(url)
-    const items = sortExpenses(filtered, sort, order)
-    return HttpResponse.json({
-      items: items.slice((page - 1) * pageSize, page * pageSize),
-      page,
-      page_size: pageSize,
-      total: filtered.length,
-      total_cents: filtered.reduce((sum, item) => sum + item.amount_cents, 0),
-    })
+    return HttpResponse.json(expensesPage(new URL(request.url)))
   }),
 
   http.get('/api/transactions/expenses/by-category', ({ request }) => {
