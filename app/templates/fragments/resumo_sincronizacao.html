@@ -20,8 +20,8 @@
       O que você lê abaixo tem essa idade.</p>
     {% endif %}
     {% else %}
-    <p class="lede">Nunca sincronizado. Rode <code>{{ sync['command'] }}</code> ou use o botão
-      abaixo — sem isso o painel não tem o que ler.</p>
+    <p class="lede">Nenhuma sincronização feita ainda. Use o botão abaixo para trazer suas contas
+      e lançamentos do banco — sem isso o painel não tem o que ler.</p>
     {% endif %}
   </div>
   <form method="post" action="{{ sync['action'] }}">

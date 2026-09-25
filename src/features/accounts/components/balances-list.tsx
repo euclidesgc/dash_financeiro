@@ -25,7 +25,7 @@ export function BalancesList(): React.JSX.Element {
   if (data.accounts.length === 0) {
     return (
       <p className="mt-6 rounded-md border border-dashed border-gray-300 p-6 text-center text-gray-600">
-        Nenhuma conta sincronizada ainda. Rode a sincronização para trazer suas contas da Pluggy.
+        Nenhuma conta trazida do banco ainda. Use “Atualizar agora” para buscar suas contas e cartões.
       </p>
     )
   }

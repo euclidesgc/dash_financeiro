@@ -37,7 +37,7 @@
               value="{{ item['name'] }}">Salvar</button>
     </form>
     {% if item['screen'] != action %}
-    <p class="lede">O mesmo valor se edita em <a href="{{ item['screen'] }}">{{ item['screen'] }}</a>,
+    <p class="lede">O mesmo valor se edita em <a href="{{ item['screen'] }}">{{ item['screen_label'] }}</a>,
       no contexto da decisão.</p>
     {% endif %}
   </div>
@@ -45,7 +45,7 @@
   <div class="setting-value">
     <p class="eyebrow">Onde se edita</p>
     <p class="lede">Não é uma linha aqui: o texto ao lado já explica onde. Atalho:
-      <a href="{{ item['screen'] }}">{{ item['screen'] }}</a>.</p>
+      <a href="{{ item['screen'] }}">{{ item['screen_label'] }}</a>.</p>
   </div>
   {% endif %}
 </article>

@@ -56,8 +56,8 @@ class Reading:
 def ask(question: str, context: str, *, api_key: str | None, model: str) -> Reading:
     if not api_key:
         raise AdvisorUnavailableError(
-            "A leitura da IA está indisponível: falta a chave da IA. Informe em "
-            "/configuracao. Os números da tela são os mesmos, e eles não dependem dela."
+            "A leitura da IA está indisponível: falta a chave da IA. Informe na tela "
+            "Configuração. Os números da tela são os mesmos, e eles não dependem dela."
         )
     body = {
         "systemInstruction": {"parts": [{"text": INSTRUCTION}]},

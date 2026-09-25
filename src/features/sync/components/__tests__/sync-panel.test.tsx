@@ -14,30 +14,30 @@ test('shows the loading state', () => {
   expect(screen.getByRole('status')).toHaveTextContent('Carregando situação da atualização…')
 })
 
-test('shows "Nunca atualizado" when there is no last run', async () => {
+test('shows "Nenhuma atualização feita por este painel ainda" when there is no last run', async () => {
   server.use(
     http.get('/api/sync/status', () => HttpResponse.json({ running: false, last_run: null })),
   )
 
   renderWithProviders(<SyncPanel />)
 
-  expect(await screen.findByText('Nunca atualizado')).toBeInTheDocument()
-  expect(screen.queryByText('Concluída')).not.toBeInTheDocument()
+  expect(await screen.findByText('Nenhuma atualização feita por este painel ainda')).toBeInTheDocument()
+  expect(screen.queryByText('Terminou sem erro')).not.toBeInTheDocument()
   expect(screen.queryByText('Falhou')).not.toBeInTheDocument()
 })
 
-test('shows the date and the "Concluída" badge', async () => {
+test('shows the date and the "Terminou sem erro" badge', async () => {
   renderWithProviders(<SyncPanel />)
 
   expect(await screen.findByText(/Última atualização: 22\/09\/2026/)).toBeInTheDocument()
-  expect(screen.getByText('Concluída')).toBeInTheDocument()
+  expect(screen.getByText('Terminou sem erro')).toBeInTheDocument()
 })
 
 test('says the last update came from the daily routine', async () => {
   renderWithProviders(<SyncPanel />)
 
   expect(await screen.findByText('Feita pela rotina diária')).toBeInTheDocument()
-  expect(screen.queryByText('Pedida na tela')).not.toBeInTheDocument()
+  expect(screen.queryByText('Você pediu pelo botão “Atualizar agora”')).not.toBeInTheDocument()
 })
 
 test('says the last update was asked for on the screen', async () => {
@@ -52,7 +52,7 @@ test('says the last update was asked for on the screen', async () => {
 
   renderWithProviders(<SyncPanel />)
 
-  expect(await screen.findByText('Pedida na tela')).toBeInTheDocument()
+  expect(await screen.findByText('Você pediu pelo botão “Atualizar agora”')).toBeInTheDocument()
   expect(screen.queryByText('Feita pela rotina diária')).not.toBeInTheDocument()
 })
 
@@ -69,7 +69,7 @@ test('says nothing about the origin of a run recorded without one', async () => 
   renderWithProviders(<SyncPanel />)
 
   await screen.findByText(/Última atualização: 22\/09\/2026/)
-  expect(screen.queryByText('Pedida na tela')).not.toBeInTheDocument()
+  expect(screen.queryByText('Você pediu pelo botão “Atualizar agora”')).not.toBeInTheDocument()
   expect(screen.queryByText('Feita pela rotina diária')).not.toBeInTheDocument()
 })
 

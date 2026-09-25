@@ -387,10 +387,10 @@ test('shows the signal of each category against its limit only in a whole month 
   await expect(health).not.toContainText('Dentro')
   await expect(health).not.toContainText('Atenção')
   await expect(health).not.toContainText('Acima')
-  await expect(page.getByText('Sinal só por mês', { exact: true })).toHaveCount(0)
+  await expect(page.getByText('Os avisos de limite por categoria aparecem só quando o período é um mês inteiro.', { exact: true })).toHaveCount(0)
 
   await page.goto('/app/expenses?from=2026-08-01&to=2026-08-20')
-  await expect(page.getByText('Sinal só por mês', { exact: true })).toBeVisible()
+  await expect(page.getByText('Os avisos de limite por categoria aparecem só quando o período é um mês inteiro.', { exact: true })).toBeVisible()
   await expect(page.getByRole('table', { name: 'Por categoria' })).not.toContainText('Acima')
   await expect(page.getByText(/acima do limite/)).toHaveCount(0)
 
@@ -403,7 +403,7 @@ test('shows the signal of each category against its limit only in a whole month 
   await expect(page.getByRole('table', { name: 'Por categoria' })).toBeVisible()
   await expect(page.getByRole('table', { name: 'Por categoria' })).not.toContainText('Acima')
   await expect(page.getByText(/acima do limite/)).toHaveCount(0)
-  await expect(page.getByText('Sinal só por mês', { exact: true })).toHaveCount(0)
+  await expect(page.getByText('Os avisos de limite por categoria aparecem só quando o período é um mês inteiro.', { exact: true })).toHaveCount(0)
 })
 
 test('shows the month against its ceiling, edits the ceiling inline and leaves the base as it found it', async ({
