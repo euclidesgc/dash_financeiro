@@ -2,7 +2,6 @@ import re
 import sqlite3
 
 from app.db import connect
-from app.queries.spending import SPENDING
 
 MATCH_DESCRIPTION = "description"
 MATCH_CATEGORY = "category"
@@ -39,15 +38,6 @@ def classify_all(conn: sqlite3.Connection) -> int:
         updates,
     )
     return len(updates)
-
-
-def residue(conn: sqlite3.Connection, *, start: str, end: str) -> sqlite3.Row:
-    row: sqlite3.Row = conn.execute(
-        "SELECT count(*) AS entries, coalesce(sum(amount_cents), 0) AS amount_cents "
-        f"FROM transactions WHERE rule_id IS NULL AND {SPENDING} AND date >= ? AND date <= ?",
-        (start, end),
-    ).fetchone()
-    return row
 
 
 def _match(

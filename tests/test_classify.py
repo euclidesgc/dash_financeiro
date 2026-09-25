@@ -1,6 +1,7 @@
 import pytest
 
-from app.taxonomy.classify import MissingFallbackError, classify_all, residue
+from app.queries.rules import residue
+from app.taxonomy.classify import MissingFallbackError, classify_all
 from app.taxonomy.rules import update_rule
 from app.taxonomy.seed import seed_taxonomy
 from tests.conftest import load, narrowed, rule, transaction
@@ -344,3 +345,9 @@ def test_an_auto_row_of_a_category_with_a_rule_still_follows_the_expression_rule
 
     assert state(conn, "t-shop")["match_value"] == "loja"
     assert state(conn, "t-clinic")["match_value"] == "Saude"
+
+
+def test_the_residue_without_a_window_counts_the_whole_base(taxonomy_conn, seed, vocabulary, rows):
+    conn = classified(load(taxonomy_conn, rows), seed, vocabulary, [])
+    line = residue(conn)
+    assert (line["entries"], line["amount_cents"]) == (4, -12000)

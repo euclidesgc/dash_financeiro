@@ -14,6 +14,11 @@
 # this gate charges is building the query and controlling the transaction,
 # which belong to another layer.
 #
+# The same boundary holds for the standard library driver this project
+# uses: a router that calls `conn.execute(...)`, `conn.commit()` or carries
+# an SQL string is a screen writing its own query, and the next screen that
+# answers the same question writes it again.
+#
 # Escape: `# gate7-ok` on the same line, with the reason written alongside.
 #
 # Receives the file list over stdin. Prints file:line:snippet.
@@ -31,7 +36,7 @@ while IFS= read -r file || [ -n "$file" ]; do
   # Reason: `\bupdate\(` matches `context.update(...)`, which is a dict
   # method and not query building — `\b` holds after the dot. The four
   # SQLAlchemy constructs then require that no name character comes before.
-  grep -nE '((^|[^.[:alnum:]_])(select|insert|update|delete)\(|session\.(execute|scalar|scalars|add|delete|commit|rollback|refresh|flush)|create_async_engine|async_sessionmaker|(^|[^.[:alnum:]_])sessionmaker\()' "$file" 2>/dev/null |
+  grep -nE '((^|[^.[:alnum:]_])(select|insert|update|delete)\(|session\.(execute|scalar|scalars|add|delete|commit|rollback|refresh|flush)|\.(execute|executemany|executescript|commit|rollback)\(|["'"'"'](SELECT|INSERT|UPDATE|DELETE|WITH)[[:space:]]|create_async_engine|async_sessionmaker|(^|[^.[:alnum:]_])sessionmaker\()' "$file" 2>/dev/null |
     while IFS=: read -r line content; do
       case "$content" in *"# gate7-ok"*) continue ;; esac
       printf '%s:%s:%s (router não monta consulta nem controla transação; passe pelo service)\n' \

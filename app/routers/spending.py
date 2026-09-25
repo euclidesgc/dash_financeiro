@@ -9,7 +9,7 @@ from app.db import connect
 from app.payees.names import labels as payee_labels
 from app.queries.ahead import Ahead, posted_ahead
 from app.queries.axes import AXES, ESSENTIALITY_AXIS, PAYEE_AXIS, aggregate, transactions_of
-from app.queries.crossings import crossing
+from app.queries.crossings import candidates, crossing, crossing_definitions
 from app.queries.period import (
     InvalidPeriodError,
     check_period,
@@ -17,12 +17,13 @@ from app.queries.period import (
     default_period,
     month_end,
 )
-from app.queries.reach import category_reach, holders, payee_reach
+from app.queries.reach import category_reach, correction_target, holders, payee_reach
+from app.queries.rules import residue, rules_carrying
 from app.queries.series import monthly_series
-from app.queries.spending import SPENDING, total_spending_cents
+from app.queries.spending import total_spending_cents
+from app.queries.vocabulary import fallback_term, group_name, groups, natures, terms
 from app.routers.reference import DATE_FIELD, Reference, screen_date
 from app.routers.rules import form_text
-from app.taxonomy.classify import residue
 from app.taxonomy.rules import Correction, RuleError, correct_payee
 from app.taxonomy.seed import seed_labels
 
@@ -50,22 +51,6 @@ CORRECTION_MISSING_TARGET_MESSAGE = "Nenhum lançamento selecionado para corrigi
 # that is what matches it again on the next sync; the reading label is data
 # next to it.
 LABELS: dict[str, str] = seed_labels()
-
-_CROSSINGS = "SELECT slug, label, nature, essentiality FROM crossings ORDER BY position"
-_FALLBACK_TERM = "SELECT value FROM essentialities WHERE is_fallback = 1"
-_RULES_CARRYING = "SELECT count(*) FROM category_rules WHERE essentiality = ?"
-_CANDIDATES = (
-    "SELECT category AS key, sum(amount_cents) AS amount_cents, count(*) AS entries "
-    f"FROM transactions WHERE {SPENDING} AND nature = ? AND essentiality = ? "
-    "AND date >= ? AND date <= ? GROUP BY category ORDER BY amount_cents LIMIT ?"
-)
-_TARGET = (
-    "SELECT id, payee, category, group_id, nature, essentiality FROM transactions WHERE id = ?"
-)
-_GROUPS = "SELECT id, name FROM category_groups ORDER BY position, name"
-_NATURES = "SELECT value FROM natures ORDER BY position"
-_TERMS = "SELECT value FROM essentialities ORDER BY position"
-_GROUP_NAME = "SELECT name FROM category_groups WHERE id = ?"
 
 
 @router.get(SCREEN)
@@ -312,8 +297,7 @@ def _target(conn: sqlite3.Connection, corrigir: str | None) -> sqlite3.Row | Non
     target_id = _as_int(corrigir)
     if target_id is None:
         return None
-    row: sqlite3.Row | None = conn.execute(_TARGET, (target_id,)).fetchone()
-    return row
+    return correction_target(conn, target_id)
 
 
 def _correction_context(
@@ -339,9 +323,9 @@ def _correction_context(
         "payee": payee,
         "payee_reach": payee_reach(conn, payee),
         "category_reach": category_reach(conn, category),
-        "groups": conn.execute(_GROUPS).fetchall(),
-        "natures": [row["value"] for row in conn.execute(_NATURES)],
-        "terms": [row["value"] for row in conn.execute(_TERMS)],
+        "groups": groups(conn),
+        "natures": natures(conn),
+        "terms": terms(conn),
         "current_group_id": target["group_id"],
         "current_nature": target["nature"] or "",
         "current_essentiality": target["essentiality"] or "",
@@ -364,25 +348,19 @@ def _result_context(conn: sqlite3.Connection, payee: str, result: Correction) ->
     return {
         "held": False,
         "message": CORRECTION_DONE_MESSAGE.format(
-            entries=result.entries, plural=plural, group=_group_name(conn, result.group_id)
+            entries=result.entries, plural=plural, group=group_name(conn, result.group_id)
         ),
     }
-
-
-def _group_name(conn: sqlite3.Connection, group_id: int) -> str:
-    row = conn.execute(_GROUP_NAME, (group_id,)).fetchone()
-    return str(row["name"]) if row is not None else ""
 
 
 def _panel_context(
     conn: sqlite3.Connection, start: str, end: str, reference: Reference
 ) -> dict[str, Any]:
-    fallback = conn.execute(_FALLBACK_TERM).fetchone()
+    fallback = fallback_term(conn)
     end_month = end[:MONTH_LENGTH]
     return {
         "crossings": [
-            _crossing(conn, row, fallback, start, end)
-            for row in conn.execute(_CROSSINGS).fetchall()
+            _crossing(conn, row, fallback, start, end) for row in crossing_definitions(conn)
         ],
         "series": monthly_series(conn, end_month=end_month),
         # Reason: the series always closes on `end_month` in full calendar
@@ -404,7 +382,7 @@ def _panel_context(
 def _crossing(
     conn: sqlite3.Connection,
     definition: sqlite3.Row,
-    fallback: sqlite3.Row | None,
+    fallback: str | None,
     start: str,
     end: str,
 ) -> dict[str, Any]:
@@ -414,9 +392,16 @@ def _crossing(
     # period, and an empty block is the screen going mute on the question
     # the item exists to answer — it carries the candidates for that
     # decision instead (RF-48).
-    unassigned = conn.execute(_RULES_CARRYING, (term,)).fetchone()[0] == 0
-    candidates = (
-        _candidates(conn, definition["nature"], fallback["value"], start, end)
+    unassigned = rules_carrying(conn, term) == 0
+    offered = (
+        candidates(
+            conn,
+            nature=definition["nature"],
+            term=fallback,
+            start=start,
+            end=end,
+            limit=CANDIDATES,
+        )
         if unassigned and fallback is not None
         else []
     )
@@ -428,13 +413,7 @@ def _crossing(
         "term": term,
         "nature": definition["nature"],
         "unassigned": unassigned,
-        "candidates": candidates,
-        "candidates_term": fallback["value"] if fallback is not None else "",
-        "candidates_total_cents": sum(row["amount_cents"] for row in candidates),
+        "candidates": offered,
+        "candidates_term": fallback or "",
+        "candidates_total_cents": sum(row["amount_cents"] for row in offered),
     }
-
-
-def _candidates(
-    conn: sqlite3.Connection, nature: str, term: str, start: str, end: str
-) -> list[sqlite3.Row]:
-    return conn.execute(_CANDIDATES, (nature, term, start, end, CANDIDATES)).fetchall()

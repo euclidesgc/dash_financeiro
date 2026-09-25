@@ -6,7 +6,16 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from app.db import connect
-from app.queries.spending import SPENDING
+from app.queries.rules import (
+    held_by_rule,
+    payee_samples,
+    residue,
+    rule,
+    rule_candidates,
+    rule_id_of,
+    rule_listing,
+)
+from app.queries.vocabulary import groups, natures, terms
 from app.taxonomy import classify
 from app.taxonomy.rules import RuleError, create_rule, delete_rule, update_rule
 from app.taxonomy.seed import message, seed_labels
@@ -32,54 +41,6 @@ KINDS: tuple[tuple[str, str], ...] = (
 EMPTY_MATCH_MESSAGE = "Casamento vazio: escreva o texto que a regra procura."
 UNKNOWN_KIND_MESSAGE = "Tipo de casamento inválido: {value}"
 DUPLICATE_MESSAGE = "Já existe uma regra com esse casamento: {value}"
-
-_RULES = (
-    "SELECT r.id AS id, r.match_kind AS match_kind, r.match_value AS match_value, "
-    "r.group_id AS group_id, g.name AS group_name, r.nature AS nature, "
-    "r.essentiality AS essentiality, count(t.id) AS entries, "
-    f"coalesce(sum(CASE WHEN {SPENDING} THEN t.amount_cents END), 0) AS amount_cents "
-    "FROM category_rules AS r JOIN category_groups AS g ON g.id = r.group_id "
-    "LEFT JOIN transactions AS t ON t.rule_id = r.id "
-    "GROUP BY r.id ORDER BY amount_cents, r.match_value"
-)
-
-_RULE = (
-    "SELECT id, match_kind, match_value, group_id, nature, essentiality "
-    "FROM category_rules WHERE id = ?"
-)
-
-_RULE_OF = "SELECT id FROM category_rules WHERE match_kind = ? AND match_value = ?"
-
-_REACH = "SELECT count(*) FROM transactions WHERE rule_id = ?"
-
-_RESIDUE = (
-    "SELECT count(*) AS entries, coalesce(sum(amount_cents), 0) AS amount_cents "
-    f"FROM transactions WHERE rule_id IS NULL AND {SPENDING}"
-)
-
-# Reason: a rule is not bound to a period, so neither is what is missing
-# one — the two readings of the same loose money — the category it carries
-# and the payee it paid — are the two shapes a rule can take, and the money
-# orders them.
-_CANDIDATES = (
-    "SELECT ? AS kind, category AS value, count(*) AS entries, "
-    "sum(amount_cents) AS amount_cents FROM transactions "
-    f"WHERE rule_id IS NULL AND {SPENDING} AND category IS NOT NULL AND category != '' "
-    "GROUP BY category UNION ALL "
-    "SELECT ? AS kind, payee AS value, count(*) AS entries, "
-    "sum(amount_cents) AS amount_cents FROM transactions "
-    f"WHERE rule_id IS NULL AND {SPENDING} AND payee IS NOT NULL AND payee != '' "
-    "GROUP BY payee ORDER BY amount_cents LIMIT ?"
-)
-
-_GROUPS = "SELECT id, name FROM category_groups ORDER BY position, name"
-_NATURES = "SELECT value FROM natures ORDER BY position"
-_TERMS = "SELECT value FROM essentialities ORDER BY position"
-
-_SAMPLES = (
-    "SELECT payee AS value FROM transactions WHERE payee IS NOT NULL AND payee != '' "
-    "GROUP BY payee ORDER BY count(*) DESC, payee LIMIT ?"
-)
 
 
 @router.get(SCREEN)
@@ -120,8 +81,9 @@ def write_rule(
                 refused = DUPLICATE_MESSAGE.format(value=form["match_value"])
         if refused is not None:
             return _answer(request, conn, form, notice=refused, status_code=400)
-        written = conn.execute(_RULE_OF, (form["match_kind"], form["match_value"])).fetchone()
-        return _answer(request, conn, _blank(), done=done, reach=_reach(conn, written["id"]))
+        written = rule_id_of(conn, match_kind=form["match_kind"], match_value=form["match_value"])
+        reach = None if written is None else held_by_rule(conn, written)
+        return _answer(request, conn, _blank(), done=done, reach=reach)
     finally:
         conn.close()
 
@@ -157,7 +119,7 @@ def edit_rule(
                 refused = DUPLICATE_MESSAGE.format(value=form["match_value"])
         if refused is not None:
             return _answer(request, conn, form, notice=refused, status_code=400)
-        return _answer(request, conn, _blank(), done=done, reach=_reach(conn, rule_id))
+        return _answer(request, conn, _blank(), done=done, reach=held_by_rule(conn, rule_id))
     finally:
         conn.close()
 
@@ -191,15 +153,19 @@ def _answer(
 
 
 def _context(conn: sqlite3.Connection, form: dict[str, str]) -> dict[str, Any]:
-    kinds = (classify.MATCH_CATEGORY, classify.MATCH_DESCRIPTION, CANDIDATES)
     return {
-        "rules": conn.execute(_RULES).fetchall(),
-        "residue": conn.execute(_RESIDUE).fetchone(),
-        "candidates": conn.execute(_CANDIDATES, kinds).fetchall(),
-        "groups": conn.execute(_GROUPS).fetchall(),
-        "natures": [row["value"] for row in conn.execute(_NATURES)],
-        "terms": [row["value"] for row in conn.execute(_TERMS)],
-        "samples": [row["value"] for row in conn.execute(_SAMPLES, (SAMPLES,))],
+        "rules": rule_listing(conn),
+        "residue": residue(conn),
+        "candidates": rule_candidates(
+            conn,
+            category_kind=classify.MATCH_CATEGORY,
+            payee_kind=classify.MATCH_DESCRIPTION,
+            limit=CANDIDATES,
+        ),
+        "groups": groups(conn),
+        "natures": natures(conn),
+        "terms": terms(conn),
+        "samples": payee_samples(conn, SAMPLES),
         "kinds": KINDS,
         "kind_names": dict(KINDS),
         "form": form,
@@ -226,7 +192,7 @@ def _asked(conn: sqlite3.Connection, request: Request) -> dict[str, str]:
     params = request.query_params
     asked = params.get("editar", "")
     if asked:
-        found = conn.execute(_RULE, (asked,)).fetchone()
+        found = rule(conn, asked)
         if found is not None:
             return _submitted(
                 found["id"],
@@ -283,7 +249,3 @@ def _number(raw: str) -> int | None:
         return int(raw)
     except ValueError:
         return None
-
-
-def _reach(conn: sqlite3.Connection, rule_id: int) -> int:
-    return int(conn.execute(_REACH, (rule_id,)).fetchone()[0])

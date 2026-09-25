@@ -2,7 +2,7 @@ import sqlite3
 
 from app.queries.spending import SPENDING
 
-__all__ = ("category_reach", "holders", "payee_reach", "rule_reach")
+__all__ = ("category_reach", "correction_target", "holders", "payee_reach", "rule_reach")
 
 # Reason: the preview a screen shows before writing and the reach the
 # write measures after it share this one template — two different SQL
@@ -17,6 +17,10 @@ _HOLDERS = (
     "SELECT DISTINCT r.id AS id, r.match_value AS match_value "
     "FROM transactions AS t JOIN category_rules AS r ON r.id = t.rule_id "
     "WHERE t.payee = ? AND t.category_source = 'auto' AND r.id != ? ORDER BY r.id"
+)
+
+_TARGET = (
+    "SELECT id, payee, category, group_id, nature, essentiality FROM transactions WHERE id = ?"
 )
 
 
@@ -43,3 +47,8 @@ def rule_reach(conn: sqlite3.Connection, rule_id: int) -> sqlite3.Row:
 
 def holders(conn: sqlite3.Connection, *, payee: str, rule_id: int) -> list[sqlite3.Row]:
     return conn.execute(_HOLDERS, (payee, rule_id)).fetchall()
+
+
+def correction_target(conn: sqlite3.Connection, transaction_id: int) -> sqlite3.Row | None:
+    row: sqlite3.Row | None = conn.execute(_TARGET, (transaction_id,)).fetchone()
+    return row

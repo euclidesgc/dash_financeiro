@@ -24,11 +24,13 @@ def dismiss(conn: sqlite3.Connection, series_key: str) -> None:
         (series_key, datetime.now(UTC).isoformat()),
     )
     _apply(conn, series_key, 1)
+    conn.commit()
 
 
 def resume(conn: sqlite3.Connection, series_key: str) -> None:
     conn.execute("DELETE FROM commitment_dismissals WHERE series_key = ?", (series_key,))
     _apply(conn, series_key, 0)
+    conn.commit()
 
 
 def dismissed_keys(conn: sqlite3.Connection) -> set[str]:

@@ -5,6 +5,7 @@ from datetime import date
 from app.queries.spending import SPENDING
 
 _DEFINITION = "SELECT label, nature, essentiality FROM crossings WHERE slug = ?"
+_DEFINITIONS = "SELECT slug, label, nature, essentiality FROM crossings ORDER BY position"
 
 _ROWS = (
     "SELECT category AS key, sum(amount_cents) AS amount_cents, count(*) AS entries "
@@ -45,6 +46,20 @@ def crossing(conn: sqlite3.Connection, *, slug: str, start: str, end: str) -> Cr
         # divided again by each screen that shows the crossing.
         monthly_average_cents=round(total / _months(start, end)),
     )
+
+
+def crossing_definitions(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    return conn.execute(_DEFINITIONS).fetchall()
+
+
+# Reason: the candidates a crossing offers when no rule assigns its term are
+# the crossing's own rows read under the fallback term — the same query, so
+# the block the owner decides from and the block the decision fills never
+# disagree on what a row is.
+def candidates(
+    conn: sqlite3.Connection, *, nature: str, term: str, start: str, end: str, limit: int
+) -> list[sqlite3.Row]:
+    return conn.execute(f"{_ROWS} LIMIT ?", (nature, term, start, end, limit)).fetchall()
 
 
 def _months(start: str, end: str) -> int:
