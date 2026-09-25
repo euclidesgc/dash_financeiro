@@ -124,6 +124,8 @@ test('shows the error and retries', async () => {
         page_size: 20,
         total: 1,
         total_cents: -8490,
+        outflow_cents: -8490,
+        inflow_cents: 0,
       })
     }),
   )
@@ -1264,6 +1266,8 @@ test('retrying keeps the search', async () => {
         page_size: 20,
         total: 1,
         total_cents: -8490,
+        outflow_cents: -8490,
+        inflow_cents: 0,
       })
     }),
   )
@@ -1884,9 +1888,11 @@ test('marking the last income of a filter shows the notice above "Nenhuma entrad
           page_size: 20,
           total: 1,
           total_cents: salario.amount_cents,
+          outflow_cents: 0,
+          inflow_cents: salario.amount_cents,
         })
       }
-      return HttpResponse.json({ items: [], page: 1, page_size: 20, total: 0, total_cents: 0 })
+      return HttpResponse.json({ items: [], page: 1, page_size: 20, total: 0, total_cents: 0, outflow_cents: 0, inflow_cents: 0 })
     }),
   )
 
@@ -1930,6 +1936,23 @@ test('?view=excluded lists a marked income next to a marked expense and "Voltar 
   })
 })
 
+test('?view=excluded shows what went out and what came in apart, not their difference', async () => {
+  fakeExpenses[0].amount_cents = -100000
+  fakeExpenses[0].not_expense_reason = 'own_transfer'
+  const salario = fakeExpenses.find((item) => item.id === 46)
+  if (salario !== undefined) {
+    salario.amount_cents = 100000
+    salario.not_expense_reason = 'own_transfer'
+  }
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses?view=excluded' })
+
+  const pagination = await screen.findByRole('navigation', { name: 'Paginação' })
+  expect(pagination).toHaveTextContent(
+    'Página 1 de 1 · 2 lançamentos · R$ 1.000,00 em saídas e R$ 1.000,00 em entradas no período',
+  )
+})
+
 test('shows the income loading and error texts', async () => {
   server.use(
     http.get('/api/transactions/expenses', async () => {
@@ -1960,7 +1983,7 @@ test('shows the income empty states', async () => {
 
   server.use(
     http.get('/api/transactions/expenses', () =>
-      HttpResponse.json({ items: [], page: 1, page_size: 20, total: 0, total_cents: 0 }),
+      HttpResponse.json({ items: [], page: 1, page_size: 20, total: 0, total_cents: 0, outflow_cents: 0, inflow_cents: 0 }),
     ),
   )
   renderWithProviders(<ExpensesList />, { route: '/expenses?view=income' })
@@ -2024,7 +2047,7 @@ test('?view=excluded lists the marked rows with the reason badge and "Voltar a c
     screen.queryByRole('button', { name: /^Trocar categoria de / }),
   ).not.toBeInTheDocument()
   expect(
-    await screen.findByText('Página 1 de 1 · 1 lançamento · R$ 84,90 no período'),
+    await screen.findByText('Página 1 de 1 · 1 lançamento · R$ 84,90 em saídas e R$ 0,00 em entradas no período'),
   ).toBeInTheDocument()
 
   await userEvent.click(

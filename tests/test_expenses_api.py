@@ -134,6 +134,8 @@ def test_an_empty_base_answers_an_empty_first_page(client):
         "page_size": 20,
         "total": 0,
         "total_cents": 0,
+        "outflow_cents": 0,
+        "inflow_cents": 0,
     }
 
 
@@ -292,6 +294,8 @@ def test_the_response_has_the_contract_fields(client):
     assert item["account_id"] == "sync-acc-1"
     assert "total_cents" in body
     assert isinstance(body["total_cents"], int)
+    assert isinstance(body["outflow_cents"], int)
+    assert isinstance(body["inflow_cents"], int)
 
 
 def test_the_default_order_is_date_desc_then_id_desc(client):
@@ -2055,6 +2059,31 @@ def test_view_excluded_on_a_base_without_marks_is_empty(client):
 
     by_category = _by_category(client, "view=excluded")
     assert by_category["groups"] == []
+
+
+def test_view_excluded_answers_the_outflows_and_the_inflows_apart(client):
+    _load(
+        [
+            _transaction("out-1", "2026-08-10", -1000.0, descricao="PIX ENVIADO"),
+            _transaction("in-1", "2026-08-10", 1000.0, descricao="PIX RECEBIDO"),
+            _transaction("out-2", "2026-08-12", -45.0, descricao="FARMACIA"),
+        ]
+    )
+    _sign_in(client)
+    outflow_id = _id_by_description(client, "PIX ENVIADO")
+    income = client.get("/api/transactions/expenses?view=income").json()
+    inflow_id = next(i["id"] for i in income["items"] if i["description"] == "PIX RECEBIDO")
+    _put_not_expense(client, outflow_id, {"reason": "own_transfer"})
+    _put_not_expense(client, inflow_id, {"reason": "own_transfer"})
+
+    body = client.get(f"/api/transactions/expenses?view=excluded&{MONTH}").json()
+
+    assert body["total"] == 2
+    assert body["outflow_cents"] == -100000
+    assert body["inflow_cents"] == 100000
+    spending = client.get(f"/api/transactions/expenses?{MONTH}").json()
+    assert spending["outflow_cents"] == -4500
+    assert spending["inflow_cents"] == 0
 
 
 def test_an_unknown_view_answers_422(client):

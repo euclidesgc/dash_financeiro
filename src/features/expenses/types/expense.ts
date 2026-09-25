@@ -22,6 +22,8 @@ export interface ExpensesResponse {
   page_size: number
   total: number
   total_cents: number
+  outflow_cents: number
+  inflow_cents: number
 }
 
 export type ExpenseSort = 'date' | 'amount' | 'category'

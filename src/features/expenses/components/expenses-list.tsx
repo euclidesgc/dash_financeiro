@@ -407,7 +407,9 @@ export function ExpensesList(): React.JSX.Element {
         page={page}
         pages={pages}
         total={data.total}
-        totalCents={data.total_cents}
+        outflowCents={data.outflow_cents}
+        inflowCents={data.inflow_cents}
+        splitFlows={view === 'excluded'}
         isFetching={isPlaceholderData}
         noun={text.noun}
         onChange={(next) => {

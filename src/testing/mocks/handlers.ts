@@ -335,6 +335,8 @@ export function expensesPage(url: URL): ExpensesResponse {
     page_size: pageSize,
     total: filtered.length,
     total_cents: filtered.reduce((sum, item) => sum + item.amount_cents, 0),
+    outflow_cents: filtered.reduce((sum, item) => sum + Math.min(item.amount_cents, 0), 0),
+    inflow_cents: filtered.reduce((sum, item) => sum + Math.max(item.amount_cents, 0), 0),
   }
 }
 

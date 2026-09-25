@@ -38,7 +38,12 @@ _SELECT = f"""SELECT t.id, t.date, t.description, t.payee, t.category, t.categor
        a.name AS account_name, a.institution AS account_institution, a.type AS account_type
 {_FROM}"""
 
-_TOTAL = f"SELECT count(*), coalesce(sum(t.amount_cents), 0) {_FROM}"
+_TOTAL = (
+    "SELECT count(*), coalesce(sum(t.amount_cents), 0),"
+    " coalesce(sum(CASE WHEN t.amount_cents < 0 THEN t.amount_cents END), 0),"
+    " coalesce(sum(CASE WHEN t.amount_cents > 0 THEN t.amount_cents END), 0)"
+    f" {_FROM}"
+)
 _BY_CATEGORY = (
     f"SELECT NULLIF(t.category, '') AS category, {_LABEL} AS label, count(*) AS count,"
     f" coalesce(sum(t.amount_cents), 0) AS total,"
@@ -51,6 +56,8 @@ class ExpensesPage:
     items: list[dict[str, Any]]
     total: int
     total_cents: int
+    outflow_cents: int
+    inflow_cents: int
 
 
 @dataclass(frozen=True)
@@ -129,7 +136,7 @@ def sum_expenses(
     search: str | None = None,
 ) -> int:
     where, params = _where(view, date_from, date_to, account_id, search)
-    _, total_cents = conn.execute(f"{_TOTAL} {where}", params).fetchone()
+    _, total_cents, _, _ = conn.execute(f"{_TOTAL} {where}", params).fetchone()
     return int(total_cents)
 
 
@@ -150,17 +157,17 @@ def list_expenses(
     where, where_params = _where(view, date_from, date_to, account_id, search)
     sql = _page_sql(sort, order, where)
     rows = conn.execute(sql, (*where_params, page_size, offset)).fetchall()
-    total, _ = conn.execute(f"{_TOTAL} {where}", where_params).fetchone()
-    total_cents = sum_expenses(
-        conn,
-        view=view,
-        date_from=date_from,
-        date_to=date_to,
-        account_id=account_id,
-        search=search,
-    )
+    total, total_cents, outflow_cents, inflow_cents = conn.execute(
+        f"{_TOTAL} {where}", where_params
+    ).fetchone()
     items = [_item(row) for row in rows]
-    return ExpensesPage(items=items, total=total, total_cents=int(total_cents))
+    return ExpensesPage(
+        items=items,
+        total=total,
+        total_cents=int(total_cents),
+        outflow_cents=int(outflow_cents),
+        inflow_cents=int(inflow_cents),
+    )
 
 
 def get_expense(conn: sqlite3.Connection, transaction_id: int) -> dict[str, Any] | None:
