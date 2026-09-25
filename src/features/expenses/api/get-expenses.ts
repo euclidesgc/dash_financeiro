@@ -11,6 +11,12 @@ export function getExpenses(query: ExpensesQuery): Promise<ExpensesResponse> {
     sort: query.sort,
     order: query.order,
   })
+  if (query.from !== null) {
+    params.set('from', query.from)
+  }
+  if (query.to !== null) {
+    params.set('to', query.to)
+  }
   return apiRequest<ExpensesResponse>(`/api/transactions/expenses?${params.toString()}`)
 }
 

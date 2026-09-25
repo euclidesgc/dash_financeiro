@@ -4,8 +4,10 @@ import { Alert } from '@/components/ui/alert'
 import { useExpenses } from '@/features/expenses/api/get-expenses'
 import { ExpenseItem } from '@/features/expenses/components/expense-item'
 import { Pagination } from '@/features/expenses/components/pagination'
+import { PeriodControls } from '@/features/expenses/components/period-controls'
 import { SortControls } from '@/features/expenses/components/sort-controls'
-import type { ExpenseOrder, ExpenseSort } from '@/features/expenses/types/expense'
+import type { ExpenseOrder, ExpenseSort, Period } from '@/features/expenses/types/expense'
+import { currentMonth, readPeriod, shiftMonth, toDateBounds, writePeriod } from '@/features/expenses/utils/period'
 
 const SORTS = ['date', 'amount', 'category'] as const
 const ORDERS = ['asc', 'desc'] as const
@@ -49,10 +51,14 @@ export function ExpensesList(): React.JSX.Element {
   const page = readPage(searchParams.get('page'))
   const sort = readSort(searchParams.get('sort'))
   const order = readOrder(searchParams.get('order'))
+  const period = readPeriod(searchParams)
+  const { from, to } = toDateBounds(period)
   const { data, isPending, isError, isPlaceholderData, refetch } = useExpenses({
     page,
     sort,
     order,
+    from,
+    to,
   })
   const pages = data ? Math.max(1, Math.ceil(data.total / data.page_size)) : 1
 
@@ -63,6 +69,40 @@ export function ExpensesList(): React.JSX.Element {
       setSearchParams(params, { replace: true })
     }
   }, [data, page, pages, searchParams, setSearchParams])
+
+  function commitPeriod(next: Period): void {
+    const params = new URLSearchParams(searchParams)
+    writePeriod(params, next)
+    setSearchParams(params, { replace: true })
+  }
+
+  function handleMonthChange(delta: -1 | 1): void {
+    const base = period.kind === 'month' ? period.month : currentMonth()
+    commitPeriod({ kind: 'month', month: shiftMonth(base, delta) })
+  }
+
+  function handleRangeChange(field: 'from' | 'to', value: string): void {
+    const bounds = toDateBounds(period)
+    const nextValue = value || null
+    let nextFrom = field === 'from' ? nextValue : bounds.from
+    let nextTo = field === 'to' ? nextValue : bounds.to
+    if (nextFrom !== null && nextTo !== null && nextTo < nextFrom) {
+      if (field === 'from') {
+        nextTo = null
+      } else {
+        nextFrom = null
+      }
+    }
+    commitPeriod(
+      nextFrom !== null || nextTo !== null
+        ? { kind: 'range', from: nextFrom, to: nextTo }
+        : { kind: 'all' },
+    )
+  }
+
+  function handleClear(): void {
+    commitPeriod({ kind: 'all' })
+  }
 
   function handleSortChange(next: ExpenseSort): void {
     const params = new URLSearchParams(searchParams)
@@ -76,19 +116,27 @@ export function ExpensesList(): React.JSX.Element {
     setSearchParams(params, { replace: true })
   }
 
-  const sortControls = (
-    <SortControls
-      sort={sort}
-      order={order}
-      onSortChange={handleSortChange}
-      onOrderToggle={handleOrderToggle}
-    />
+  const controls = (
+    <div className="mt-6 flex flex-wrap items-end gap-3">
+      <PeriodControls
+        period={period}
+        onMonthChange={handleMonthChange}
+        onRangeChange={handleRangeChange}
+        onClear={handleClear}
+      />
+      <SortControls
+        sort={sort}
+        order={order}
+        onSortChange={handleSortChange}
+        onOrderToggle={handleOrderToggle}
+      />
+    </div>
   )
 
   if (isPending) {
     return (
       <>
-        {sortControls}
+        {controls}
         <p role="status" className="mt-6 text-gray-600">
           Carregando gastos…
         </p>
@@ -99,7 +147,7 @@ export function ExpensesList(): React.JSX.Element {
   if (isError) {
     return (
       <>
-        {sortControls}
+        {controls}
         <Alert
           message="Não foi possível carregar os gastos."
           action={{ label: 'Tentar de novo', onClick: () => void refetch() }}
@@ -111,9 +159,9 @@ export function ExpensesList(): React.JSX.Element {
   if (data.total === 0) {
     return (
       <>
-        {sortControls}
+        {controls}
         <p className="mt-6 rounded-md border border-dashed border-gray-300 p-6 text-center text-gray-600">
-          Nenhum gasto registrado ainda.
+          {period.kind === 'all' ? 'Nenhum gasto registrado ainda.' : 'Nenhum gasto nesse período.'}
         </p>
       </>
     )
@@ -121,7 +169,7 @@ export function ExpensesList(): React.JSX.Element {
 
   return (
     <>
-      {sortControls}
+      {controls}
       <ul className="mt-6 divide-y divide-gray-200">
         {data.items.map((expense) => (
           <ExpenseItem key={expense.id} expense={expense} />
@@ -131,6 +179,7 @@ export function ExpensesList(): React.JSX.Element {
         page={page}
         pages={pages}
         total={data.total}
+        totalCents={data.total_cents}
         isFetching={isPlaceholderData}
         onChange={(next) => {
           const params = new URLSearchParams(searchParams)

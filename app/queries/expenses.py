@@ -21,18 +21,18 @@ _SORT_SQL: dict[Sort, str] = {
     ),
 }
 
-_SELECT = f"""SELECT t.id, t.date, t.description, t.payee, t.category, t.amount_cents,
+_SELECT = """SELECT t.id, t.date, t.description, t.payee, t.category, t.amount_cents,
        a.name AS account_name, a.institution AS account_institution, a.type AS account_type
-FROM transactions AS t LEFT JOIN accounts AS a ON a.id = t.account_id
-WHERE {SPENDING}"""
+FROM transactions AS t LEFT JOIN accounts AS a ON a.id = t.account_id"""
 
-_TOTAL = f"SELECT count(*) FROM transactions WHERE {SPENDING}"
+_TOTAL = "SELECT count(*), coalesce(sum(t.amount_cents), 0) FROM transactions AS t"
 
 
 @dataclass(frozen=True)
 class ExpensesPage:
     items: list[dict[str, Any]]
     total: int
+    total_cents: int
 
 
 def _category_rank_clause() -> tuple[str, list[str | int]]:
@@ -58,10 +58,22 @@ def _category_rank_clause() -> tuple[str, list[str | int]]:
     return sql, params
 
 
-def _page_sql(sort: Sort, order: Order) -> tuple[str, list[str | int]]:
+def _where(date_from: str | None, date_to: str | None) -> tuple[str, list[str]]:
+    sql = f"WHERE {SPENDING}"
+    params: list[str] = []
+    if date_from is not None:
+        sql += " AND t.date >= ?"
+        params.append(date_from)
+    if date_to is not None:
+        sql += " AND t.date <= ?"
+        params.append(date_to)
+    return sql, params
+
+
+def _page_sql(sort: Sort, order: Order, where: str) -> tuple[str, list[str | int]]:
     rank_sql, params = _category_rank_clause() if sort == "category" else ("", [])
     expression = _SORT_SQL[sort].format(order=_ORDER_SQL[order], rank=rank_sql)
-    sql = f"{_SELECT} ORDER BY {expression}, t.id DESC LIMIT ? OFFSET ?"
+    sql = f"{_SELECT} {where} ORDER BY {expression}, t.id DESC LIMIT ? OFFSET ?"
     return sql, params
 
 
@@ -72,11 +84,14 @@ def list_expenses(
     page_size: int,
     sort: Sort = "date",
     order: Order = "desc",
+    date_from: str | None = None,
+    date_to: str | None = None,
 ) -> ExpensesPage:
     offset = (page - 1) * page_size
-    sql, order_params = _page_sql(sort, order)
-    rows = conn.execute(sql, (*order_params, page_size, offset)).fetchall()
-    total = conn.execute(_TOTAL).fetchone()[0]
+    where, where_params = _where(date_from, date_to)
+    sql, order_params = _page_sql(sort, order, where)
+    rows = conn.execute(sql, (*where_params, *order_params, page_size, offset)).fetchall()
+    total, total_cents = conn.execute(f"{_TOTAL} {where}", where_params).fetchone()
     # Reason: the pt-BR category label lives only in the taxonomy seed, not
     # in the database, and the payee's display name is a precedence already
     # tested in app.payees.names — resolving both here keeps the SQL free of
@@ -99,4 +114,4 @@ def list_expenses(
                 "amount_cents": row["amount_cents"],
             }
         )
-    return ExpensesPage(items=items, total=total)
+    return ExpensesPage(items=items, total=total, total_cents=int(total_cents))

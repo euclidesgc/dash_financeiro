@@ -1,15 +1,18 @@
 import { Button } from '@/components/ui/button'
+import { formatMoney } from '@/utils/format-money'
 
 export function Pagination({
   page,
   pages,
   total,
+  totalCents,
   isFetching,
   onChange,
 }: {
   page: number
   pages: number
   total: number
+  totalCents: number
   isFetching: boolean
   onChange: (page: number) => void
 }): React.JSX.Element {
@@ -19,7 +22,7 @@ export function Pagination({
     <nav aria-label="Paginação" className="mt-6 flex flex-wrap items-center justify-between gap-4">
       <p className="text-sm text-gray-600">
         Página {page} de {pages} · {total}
-        {unit}
+        {unit} · {formatMoney(Math.abs(totalCents))} no período
       </p>
       <div className="flex gap-2">
         <Button

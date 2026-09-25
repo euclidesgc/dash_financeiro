@@ -1,5 +1,5 @@
 import { http, HttpResponse, delay } from 'msw'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { screen, waitFor, within } from '@testing-library/react'
 import { useLocation } from 'react-router'
@@ -13,6 +13,10 @@ import type { Expense, ExpenseOrder, ExpenseSort } from '@/features/expenses/typ
 function LocationProbe(): React.JSX.Element {
   const location = useLocation()
   return <span data-testid="search">{location.search}</span>
+}
+
+function filterForSpy(items: Expense[], from: string | null, to: string | null): Expense[] {
+  return items.filter((item) => (from === null || item.date >= from) && (to === null || item.date <= to))
 }
 
 function sortForSpy(items: Expense[], sort: ExpenseSort, order: ExpenseOrder): Expense[] {
@@ -48,12 +52,16 @@ function spyOnExpensesRequests(): URLSearchParams[] {
       const pageSize = Number.parseInt(url.searchParams.get('page_size') ?? '20', 10) || 20
       const sort = (url.searchParams.get('sort') ?? 'date') as ExpenseSort
       const order = (url.searchParams.get('order') ?? 'desc') as ExpenseOrder
-      const items = sortForSpy(fakeExpenses, sort, order)
+      const from = url.searchParams.get('from')
+      const to = url.searchParams.get('to')
+      const filtered = filterForSpy(fakeExpenses, from, to)
+      const items = sortForSpy(filtered, sort, order)
       return HttpResponse.json({
         items: items.slice((page - 1) * pageSize, page * pageSize),
         page,
         page_size: pageSize,
-        total: fakeExpenses.length,
+        total: filtered.length,
+        total_cents: filtered.reduce((sum, item) => sum + item.amount_cents, 0),
       })
     }),
   )
@@ -104,6 +112,7 @@ test('shows the error and retries', async () => {
         page: 1,
         page_size: 20,
         total: 1,
+        total_cents: -8490,
       })
     }),
   )
@@ -182,7 +191,7 @@ test('treats an invalid page as the first', async () => {
 test('shows the pagination summary', async () => {
   renderWithProviders(<ExpensesList />, { route: '/expenses' })
 
-  expect(await screen.findByText('Página 1 de 3 · 45 gastos')).toBeInTheDocument()
+  expect(await screen.findByText('Página 1 de 3 · 45 gastos · R$ 10.774,90 no período')).toBeInTheDocument()
 })
 
 test('hides the pagination when empty', async () => {
@@ -211,7 +220,7 @@ test('"Próxima" moves to page 2 in the URL and in the API', async () => {
 
   await userEvent.click(screen.getByRole('button', { name: 'Próxima' }))
 
-  expect(await screen.findByText('Página 2 de 3 · 45 gastos')).toBeInTheDocument()
+  expect(await screen.findByText('Página 2 de 3 · 45 gastos · R$ 10.774,90 no período')).toBeInTheDocument()
   expect(screen.getByTestId('search')).toHaveTextContent('?page=2')
   const items = screen.getAllByRole('listitem')
   expect(within(items[0]).getByText('GASTO 25')).toBeInTheDocument()
@@ -231,6 +240,7 @@ test('keeps the previous rows while the next page loads', async () => {
         page,
         page_size: pageSize,
         total: fakeExpenses.length,
+        total_cents: fakeExpenses.reduce((sum, item) => sum + item.amount_cents, 0),
       })
     }),
   )
@@ -244,13 +254,13 @@ test('keeps the previous rows while the next page loads', async () => {
   expect(screen.queryByRole('status')).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Próxima' })).toBeDisabled()
 
-  expect(await screen.findByText('Página 2 de 3 · 45 gastos')).toBeInTheDocument()
+  expect(await screen.findByText('Página 2 de 3 · 45 gastos · R$ 10.774,90 no período')).toBeInTheDocument()
 })
 
 test('falls back to the last page when the URL is past the end', async () => {
   renderWithProviders(<ExpensesList />, { route: '/expenses?page=9' })
 
-  expect(await screen.findByText('Página 3 de 3 · 45 gastos')).toBeInTheDocument()
+  expect(await screen.findByText('Página 3 de 3 · 45 gastos · R$ 10.774,90 no período')).toBeInTheDocument()
 })
 
 test('shows the default sorting controls', async () => {
@@ -397,7 +407,7 @@ test('changing the sorting drops the page', async () => {
   await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Ordenar por' }), 'amount')
 
   expect(screen.getByTestId('search')).toHaveTextContent('?sort=amount')
-  expect(await screen.findByText('Página 1 de 3 · 45 gastos')).toBeInTheDocument()
+  expect(await screen.findByText('Página 1 de 3 · 45 gastos · R$ 10.774,90 no período')).toBeInTheDocument()
 })
 
 test('pagination keeps the sorting', async () => {
@@ -468,4 +478,278 @@ test('keeps the controls visible in the empty state', async () => {
 
   expect(await screen.findByText('Nenhum gasto registrado ainda.')).toBeInTheDocument()
   expect(screen.getByRole('combobox', { name: 'Ordenar por' })).toBeInTheDocument()
+})
+
+test('shows the whole period by default', async () => {
+  const calls = spyOnExpensesRequests()
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+
+  await screen.findByRole('list')
+
+  expect(screen.getByText('Todo o período', { selector: 'span' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Todo o período' })).toBeDisabled()
+  expect(screen.getByLabelText('De', { exact: true })).toHaveValue('')
+  expect(screen.getByLabelText('Até', { exact: true })).toHaveValue('')
+
+  await waitFor(() => {
+    expect(calls[0]?.get('from')).toBeNull()
+    expect(calls[0]?.get('to')).toBeNull()
+  })
+
+  expect(await screen.findByText(/45 gastos · R\$ .* no período/)).toBeInTheDocument()
+})
+
+test('reads the month from the URL', async () => {
+  const calls = spyOnExpensesRequests()
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses?month=2026-07' })
+
+  await screen.findByRole('list')
+
+  await waitFor(() => {
+    expect(calls[0]?.get('from')).toBe('2026-07-01')
+    expect(calls[0]?.get('to')).toBe('2026-07-31')
+  })
+
+  expect(screen.getByText('julho de 2026')).toBeInTheDocument()
+  expect(await screen.findByText(/31 gastos/)).toBeInTheDocument()
+  expect(screen.getByLabelText('De', { exact: true })).toHaveValue('2026-07-01')
+  expect(screen.getByLabelText('Até', { exact: true })).toHaveValue('2026-07-31')
+  expect(screen.getByRole('button', { name: 'Todo o período' })).toBeEnabled()
+})
+
+test('"Mês anterior" moves one month back', async () => {
+  renderWithProviders(
+    <>
+      <ExpensesList />
+      <LocationProbe />
+    </>,
+    { route: '/expenses?month=2026-07' },
+  )
+
+  await screen.findByRole('list')
+
+  await userEvent.click(screen.getByRole('button', { name: 'Mês anterior' }))
+
+  expect(screen.getByTestId('search')).toHaveTextContent('?month=2026-06')
+  expect(await screen.findByText(/13 gastos/)).toBeInTheDocument()
+})
+
+test('"Próximo mês" moves one month forward', async () => {
+  renderWithProviders(
+    <>
+      <ExpensesList />
+      <LocationProbe />
+    </>,
+    { route: '/expenses?month=2026-07' },
+  )
+
+  await screen.findByRole('list')
+
+  await userEvent.click(screen.getByRole('button', { name: 'Próximo mês' }))
+
+  expect(screen.getByTestId('search')).toHaveTextContent('?month=2026-08')
+  expect(await screen.findByText(/1 gasto ·/)).toBeInTheDocument()
+  const items = screen.getAllByRole('listitem')
+  expect(items).toHaveLength(1)
+  expect(within(items[0]).getByText('MERCADO DO BAIRRO')).toBeInTheDocument()
+})
+
+test('"Mês anterior" without a month starts from the current month', async () => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date(2026, 8, 15))
+
+  renderWithProviders(
+    <>
+      <ExpensesList />
+      <LocationProbe />
+    </>,
+    { route: '/expenses' },
+  )
+
+  await userEvent.click(await screen.findByRole('button', { name: 'Mês anterior' }))
+
+  expect(screen.getByTestId('search')).toHaveTextContent('?month=2026-08')
+
+  vi.useRealTimers()
+})
+
+test('shows the filtered empty state with the controls', async () => {
+  renderWithProviders(<ExpensesList />, { route: '/expenses?month=2026-09' })
+
+  expect(await screen.findByText('Nenhum gasto nesse período.')).toBeInTheDocument()
+  expect(screen.queryByText('Nenhum gasto registrado ainda.')).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Mês anterior' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Todo o período' })).toBeInTheDocument()
+})
+
+test('"Todo o período" clears the month', async () => {
+  renderWithProviders(
+    <>
+      <ExpensesList />
+      <LocationProbe />
+    </>,
+    { route: '/expenses?month=2026-07' },
+  )
+
+  await screen.findByRole('list')
+
+  await userEvent.click(screen.getByRole('button', { name: 'Todo o período' }))
+
+  expect(screen.getByTestId('search')).toHaveTextContent('')
+  expect(await screen.findByText(/45 gastos/)).toBeInTheDocument()
+})
+
+test('editing a date switches from month to range', async () => {
+  const calls = spyOnExpensesRequests()
+
+  renderWithProviders(
+    <>
+      <ExpensesList />
+      <LocationProbe />
+    </>,
+    { route: '/expenses?month=2026-07' },
+  )
+
+  await screen.findByRole('list')
+
+  const fromInput = screen.getByLabelText('De', { exact: true })
+  await userEvent.clear(fromInput)
+  await userEvent.type(fromInput, '2026-07-10')
+
+  await waitFor(() => {
+    expect(screen.getByTestId('search')).toHaveTextContent('?from=2026-07-10&to=2026-07-31')
+  })
+
+  const toInput = screen.getByLabelText('Até', { exact: true })
+  await userEvent.clear(toInput)
+  await userEvent.type(toInput, '2026-07-20')
+
+  await waitFor(() => {
+    const search = screen.getByTestId('search').textContent
+    expect(search).toContain('from=2026-07-10')
+    expect(search).toContain('to=2026-07-20')
+    expect(search).not.toContain('month=')
+  })
+
+  expect(screen.getByText('Período personalizado')).toBeInTheDocument()
+
+  await waitFor(() => {
+    const last = calls.at(-1)
+    expect(last?.get('from')).toBe('2026-07-10')
+    expect(last?.get('to')).toBe('2026-07-20')
+  })
+})
+
+test('the field just edited wins over an inverted range', async () => {
+  renderWithProviders(
+    <>
+      <ExpensesList />
+      <LocationProbe />
+    </>,
+    { route: '/expenses?from=2026-07-10&to=2026-07-20' },
+  )
+
+  await screen.findByRole('list')
+
+  const fromInput = screen.getByLabelText('De', { exact: true })
+  await userEvent.clear(fromInput)
+  await userEvent.type(fromInput, '2026-07-25')
+
+  await waitFor(() => {
+    const search = screen.getByTestId('search').textContent
+    expect(search).toContain('from=2026-07-25')
+    expect(search).not.toContain('to=')
+  })
+})
+
+test('the month wins when the URL has both formats', async () => {
+  const calls = spyOnExpensesRequests()
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses?month=2026-07&from=2026-01-01' })
+
+  await screen.findByRole('list')
+
+  await waitFor(() => {
+    expect(calls[0]?.get('from')).toBe('2026-07-01')
+    expect(calls[0]?.get('to')).toBe('2026-07-31')
+  })
+
+  expect(screen.getByText('julho de 2026')).toBeInTheDocument()
+})
+
+test('changing the period drops the page and keeps the sorting', async () => {
+  renderWithProviders(
+    <>
+      <ExpensesList />
+      <LocationProbe />
+    </>,
+    { route: '/expenses?month=2026-07&page=2&sort=amount' },
+  )
+
+  await screen.findByRole('list')
+
+  await userEvent.click(screen.getByRole('button', { name: 'Mês anterior' }))
+
+  await waitFor(() => {
+    const search = new URLSearchParams(screen.getByTestId('search').textContent)
+    expect(search.get('month')).toBe('2026-06')
+    expect(search.get('sort')).toBe('amount')
+    expect(search.get('page')).toBeNull()
+  })
+})
+
+test('pagination keeps the period', async () => {
+  const calls = spyOnExpensesRequests()
+
+  renderWithProviders(
+    <>
+      <ExpensesList />
+      <LocationProbe />
+    </>,
+    { route: '/expenses?month=2026-07' },
+  )
+
+  await screen.findByRole('list')
+
+  await userEvent.click(screen.getByRole('button', { name: 'Próxima' }))
+
+  await waitFor(() => {
+    const search = screen.getByTestId('search').textContent
+    expect(search).toContain('month=2026-07')
+    expect(search).toContain('page=2')
+  })
+
+  await waitFor(() => {
+    const last = calls.at(-1)
+    expect(last?.get('from')).toBe('2026-07-01')
+    expect(last?.get('to')).toBe('2026-07-31')
+    expect(last?.get('page')).toBe('2')
+  })
+})
+
+test('falls back to the whole period on an invalid month', async () => {
+  const calls = spyOnExpensesRequests()
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses?month=13' })
+
+  await screen.findByRole('list')
+
+  expect(screen.getByText('Todo o período', { selector: 'span' })).toBeInTheDocument()
+
+  await waitFor(() => {
+    expect(calls[0]?.get('from')).toBeNull()
+    expect(calls[0]?.get('to')).toBeNull()
+  })
+})
+
+test('keeps the period controls visible in the error state', async () => {
+  server.use(http.get('/api/transactions/expenses', () => HttpResponse.json({}, { status: 500 })))
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+
+  const alert = await screen.findByRole('alert')
+  expect(alert).toHaveTextContent('Não foi possível carregar os gastos.')
+  expect(screen.getByRole('button', { name: 'Mês anterior' })).toBeInTheDocument()
 })

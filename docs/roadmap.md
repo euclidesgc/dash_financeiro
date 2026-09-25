@@ -9,7 +9,7 @@ prova o caminho de ponta a ponta (tela React → API FastAPI → SQLite) e as ou
 | 002 | `atualizar-registros` | apertar um botão e ter todos os registros bancários atualizados na base, vendo quando foi a última atualização | Pedido de 22/09 | 001 | in-review |
 | 003 | `lista-de-gastos` | ver uma lista paginada com todos os gastos de todas as contas | Pedido de 22/09 | 001 | in-review |
 | 004 | `ordenar-gastos` | ordenar os gastos por data, valor ou categoria | Pedido de 22/09 | 003 | in-review |
-| 005 | `filtrar-por-periodo` | filtrar os gastos por período (mês, intervalo de datas) | Pedido de 22/09 | 003 | planned |
+| 005 | `filtrar-por-periodo` | filtrar os gastos por período (mês, intervalo de datas) | Pedido de 22/09 | 003 | in-review |
 | 006 | `filtrar-por-conta` | filtrar os gastos por banco ou conta | Pedido de 22/09 | 003 | planned |
 | 007 | `buscar-por-texto` | encontrar gastos pela descrição ou pelo nome de quem recebeu | Pedido de 22/09 | 003 | planned |
 | 008 | `total-por-categoria` | ver os gastos do período agrupados por categoria, com o total de cada uma | Pedido de 22/09 | 005 | planned |
@@ -34,3 +34,4 @@ prova o caminho de ponta a ponta (tela React → API FastAPI → SQLite) e as ou
 | 022 | `setup-secrets-pluggy-credentials` | atualizar `docs/setup-secrets.md` para citar `PLUGGY_CLIENT_ID` e `PLUGGY_CLIENT_SECRET` | 002 | — | planned |
 | 023 | `category-labels-in-schema` | mover rótulo em pt-BR das categorias de `app/taxonomy/seed.json` para coluna `label` na tabela `categories`, de modo que SQL possa ordenar e filtrar por categoria em 004 e 006 | 003 | — | planned |
 | 024 | `payee-filling-post-sync` | mover `_fill_payees` e classificação automática da entrada de dados (`ingest`) para o pós-processamento (`synchronise`), para que bases de teste e e2e tenham recebedor preenchido | 003 | — | planned |
+| 025 | `spending-filter-predicate-unification` | unificar predicado de data duplicado em `app/queries/spending.py` (`total_spending_cents`) e `app/queries/expenses.py` (`_where`) em `spending.py`, evitando divergência na soma por categoria (008) | 005 | — | planned |
