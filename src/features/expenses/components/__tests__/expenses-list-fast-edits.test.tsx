@@ -13,7 +13,12 @@ function renderExpensesRoute(route: string) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} flushSync={flushSync} />
+      <RouterProvider
+        router={router}
+        flushSync={(update) => {
+          flushSync(update)
+        }}
+      />
     </QueryClientProvider>,
   )
   return router
