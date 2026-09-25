@@ -16,13 +16,14 @@
   - `expected null to be 'acc-bank-1'`
 - O primeiro erro reproduz a assinatura do e2e: o "De" volta ao primeiro dia do mês que estava na tela.
 - `pnpm exec playwright test e2e/expenses.spec.ts -g "by month and by date range" --repeat-each=30` passou 30 de 30 isolado: o intervalo é curto e depende da carga da máquina, por isso a prova é o teste de componente, não a repetição do e2e.
+- Com a correção: `pnpm exec playwright test e2e/expenses.spec.ts --repeat-each=20` deu 220 de 220, e o teste do período passou em todas as 440 execuções de duas rodadas.
 
 ## Correção proposta
-- `src/app/router.tsx` — o `RouterProvider` recebe `flushSync={flushSync}` de `react-dom`, o que permite a uma navegação pedir desenho síncrono.
-- `src/features/expenses/components/expenses-list.tsx` — toda mudança de filtro feita pelo usuário passa por uma função só que chama `setSearchParams(params, { replace: true, flushSync: true })`. Com isso a URL e a tela mudam na mesma tarefa: a próxima edição já encontra `searchParams` e `period` atualizados.
+- `src/app/router.tsx` — o `RouterProvider` recebe `flushSync` de `react-dom` (embrulhado numa função que devolve `undefined`, o tipo que a prop exige), o que permite a uma navegação pedir desenho síncrono.
+- `src/features/expenses/components/expenses-list.tsx` — toda mudança de filtro feita pelo usuário — filtros e troca de página — passa por uma função só, `commitParams`, que chama `setSearchParams` com `flushSync: true` (a troca de página segue empilhando no histórico; as demais substituem). Com isso a URL e a tela mudam na mesma tarefa: a próxima edição já encontra `searchParams` e `period` atualizados.
 - `src/features/expenses/components/__tests__/expenses-list-fast-edits.test.tsx` — os dois testes de regressão, montados com `createMemoryRouter` e `RouterProvider` com `flushSync`, como o app.
 - **Risco:** o redesenho da lista depois de cada filtro fica síncrono em vez de transição. A lista tem no máximo 20 itens por página e a consulta nova segue assíncrona (`keepPreviousData`), então o custo é um desenho curto. Os dois `useEffect` que corrigem a URL sozinhos (página além da última, conta desconhecida) continuam sem `flushSync`: rodam depois de um desenho e não disputam com edição do usuário.
-- **Fora da correção:** nenhuma outra tela usa `setSearchParams`; não há dívida nova.
+- **Fora da correção:** nenhuma outra tela usa `setSearchParams`. Rodar a suíte e2e inteira com `--repeat-each` para caçar a instabilidade mostrou que `e2e/sync.spec.ts` não aguenta segunda volta na mesma base (espera "Nunca atualizado"); vira o item 037 do roadmap. Na soma de 440 execuções de `e2e/expenses.spec.ts` (duas rodadas de `--repeat-each=20`, já com a correção), o teste do teto do mês falhou uma vez depois do reload, sem relação com a URL; vira o item 038.
 
 ## Pontos em aberto
 Nenhum.
