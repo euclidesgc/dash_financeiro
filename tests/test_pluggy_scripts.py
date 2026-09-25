@@ -235,6 +235,7 @@ def test_a_pending_purchase_with_no_newer_snapshot_is_kept(card_raw):
 
 
 FINANCING_CREDIT = "crédito de financiamento (parcelamento de fatura ou empréstimo)"
+OVERDUE_CARRIED = "saldo em atraso levado para a fatura seguinte"
 
 
 @pytest.fixture()
@@ -344,6 +345,28 @@ def test_an_invoice_plan_installment_never_pairs_with_a_credit_of_the_same_value
     )
 
     assert rows["installment"]["eh_transferencia"] is False
+
+
+def test_an_overdue_balance_carried_to_the_next_bill_is_neither_income_nor_spending(
+    bank_and_card_raw,
+):
+    rows = _consolidate_movements(
+        bank_and_card_raw,
+        [
+            _movement("credit", "card", -2425.59, "Crédito de atraso", "Bank fees"),
+            _movement(
+                "carried", "card", 2425.59, "Saldo em atraso", "Late payment and overdraft costs"
+            ),
+            _movement("fine", "card", 48.70, "Multa de atraso", "Late payment and overdraft costs"),
+        ],
+    )
+
+    assert [rows[key]["eh_transferencia"] for key in ("credit", "carried", "fine")] == [
+        True,
+        True,
+        False,
+    ]
+    assert rows["carried"]["motivo_transferencia"] == OVERDUE_CARRIED
 
 
 def test_the_down_payment_of_an_invoice_plan_stays_a_bill_payment(bank_and_card_raw):
