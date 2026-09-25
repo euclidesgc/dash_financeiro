@@ -1,4 +1,5 @@
 import { http, HttpResponse } from 'msw'
+import type { SyncStatus } from '@/features/sync/types/sync-status'
 
 export const fakeUser = { login: 'teste' }
 
@@ -22,6 +23,11 @@ export const fakeAccounts = [
     updated_at: null,
   },
 ]
+
+export const fakeSyncStatus: SyncStatus = {
+  running: false,
+  last_run: { finished_at: '2026-09-22T11:15:00+00:00', status: 'ok', reason: null },
+}
 
 let signedIn = false
 
@@ -53,5 +59,13 @@ export const handlers = [
 
   http.get('/api/accounts/balances', () => {
     return HttpResponse.json({ accounts: fakeAccounts })
+  }),
+
+  http.get('/api/sync/status', () => {
+    return HttpResponse.json(fakeSyncStatus)
+  }),
+
+  http.post('/api/sync/run', () => {
+    return HttpResponse.json(fakeSyncStatus)
   }),
 ]

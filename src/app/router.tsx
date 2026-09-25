@@ -17,7 +17,7 @@ export const routes: RouteObject[] = [
   },
 ]
 
-export const router = createBrowserRouter(routes, { basename: '/app' })
+export const router = createBrowserRouter(routes, { basename: '/app/' })
 
 export function AppRouter(): React.JSX.Element {
   return <RouterProvider router={router} />

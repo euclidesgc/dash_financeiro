@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useUser } from '@/lib/auth'
 import { LogoutButton } from '@/features/auth/components/logout-button'
 import { BalancesList } from '@/features/accounts/components/balances-list'
+import { SyncPanel } from '@/features/sync/components/sync-panel'
 
 export function DashboardRoute(): React.JSX.Element {
   const { data } = useUser()
@@ -24,6 +25,7 @@ export function DashboardRoute(): React.JSX.Element {
       <main className="mx-auto max-w-2xl p-8">
         <h1 className="text-2xl font-bold">Saldos de hoje</h1>
         <p className="mt-2 text-gray-600">Contas e cartões sincronizados da Pluggy.</p>
+        <SyncPanel />
         <BalancesList />
       </main>
     </>

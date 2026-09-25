@@ -39,6 +39,8 @@ test('a valid login lands on the balances page', async () => {
 
   expect(await screen.findByRole('heading', { name: 'Saldos de hoje' })).toBeInTheDocument()
   expect(await screen.findByText('Conta corrente')).toBeInTheDocument()
+  expect(await screen.findByText(/Última atualização/)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Atualizar agora' })).toBeInTheDocument()
 })
 
 test('signing out returns to the login page', async () => {

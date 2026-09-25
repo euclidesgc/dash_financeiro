@@ -53,6 +53,11 @@ export default tseslint.config(
               except: ['./accounts'],
             },
             {
+              target: './src/features/sync',
+              from: './src/features',
+              except: ['./sync'],
+            },
+            {
               target: './src/features',
               from: './src/app',
             },
