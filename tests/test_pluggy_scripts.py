@@ -234,6 +234,157 @@ def test_a_pending_purchase_with_no_newer_snapshot_is_kept(card_raw):
     assert _consolidated(card_raw, "descartadas.json") == []
 
 
+FINANCING_CREDIT = "crédito de financiamento (parcelamento de fatura ou empréstimo)"
+OVERDUE_CARRIED = "saldo em atraso levado para a fatura seguinte"
+
+
+@pytest.fixture()
+def bank_and_card_raw(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    raw = tmp_path / "data" / "raw"
+    raw.mkdir(parents=True)
+    accounts = [
+        {"id": "bank", "name": "Conta", "type": "BANK"},
+        {"id": "card", "name": "Cartão", "type": "CREDIT"},
+    ]
+    (raw / "accounts_x_2026-09-22.json").write_text(
+        json.dumps({"results": accounts}), encoding="utf-8"
+    )
+    return raw
+
+
+def _movement(identifier, account, amount, description, category, **extra):
+    return {
+        "id": identifier,
+        "accountId": account,
+        "date": "2026-09-10T15:00:00.000Z",
+        "amount": amount,
+        "description": description,
+        "category": category,
+        "status": "POSTED",
+        **extra,
+    }
+
+
+def _consolidate_movements(raw, movements):
+    (raw / "v2_transactions_x_2026-09-22_p1.json").write_text(
+        json.dumps({"results": movements}), encoding="utf-8"
+    )
+    consolidate()
+    return {row["id"]: row for row in _consolidated(raw)}
+
+
+@pytest.mark.parametrize(
+    ("description", "category"),
+    [
+        ("CREDITO PARCELAM. TODAS FATURAS", "Shopping"),
+        ("Crédito de parcelamento", "Transfers"),
+        ("CREDITO PARCELAMENTO DA FATURA", "Credit card payment"),
+    ],
+)
+def test_an_invoice_plan_credit_is_neither_income_nor_spending_whatever_its_wording(
+    bank_and_card_raw, description, category
+):
+    rows = _consolidate_movements(
+        bank_and_card_raw, [_movement("credit", "card", -8579.27, description, category)]
+    )
+
+    credit = rows["credit"]
+    assert credit["valor"] == 8579.27
+    assert (credit["eh_transferencia"], credit["motivo_transferencia"]) == (
+        True,
+        FINANCING_CREDIT,
+    )
+
+
+def test_a_payroll_loan_credit_is_not_income(bank_and_card_raw):
+    rows = _consolidate_movements(
+        bank_and_card_raw,
+        [_movement("loan", "bank", 32000.0, "Entrada CREDITO CONSIGNADO", "Loans and financing")],
+    )
+
+    loan = rows["loan"]
+    assert (loan["eh_transferencia"], loan["motivo_transferencia"]) == (True, FINANCING_CREDIT)
+
+
+@pytest.mark.parametrize(
+    ("description", "category", "installment"),
+    [
+        ("PARCELAM. TODAS FA01/04", "Shopping", None),
+        ("PARCELAMEN FATURA 02/04", "Credit card payment", None),
+        (
+            "Parcelamento de Fatura",
+            "Credit card payment",
+            {"installmentNumber": 1, "totalInstallments": 3},
+        ),
+    ],
+)
+def test_an_invoice_plan_installment_is_spending_whatever_its_wording(
+    bank_and_card_raw, description, category, installment
+):
+    extra = {"creditCardMetadata": installment} if installment else {}
+    rows = _consolidate_movements(
+        bank_and_card_raw,
+        [_movement("installment", "card", 2348.27, description, category, **extra)],
+    )
+
+    row = rows["installment"]
+    assert row["valor"] == -2348.27
+    assert (row["eh_transferencia"], row["motivo_transferencia"]) == (False, "")
+
+
+def test_an_invoice_plan_installment_never_pairs_with_a_credit_of_the_same_value(
+    bank_and_card_raw,
+):
+    rows = _consolidate_movements(
+        bank_and_card_raw,
+        [
+            _movement("installment", "card", 1505.10, "Parcelamento de Fatura", "Shopping"),
+            _movement("pix", "bank", 1505.10, "PIX RECEBIDO", "Transfer - PIX"),
+        ],
+    )
+
+    assert rows["installment"]["eh_transferencia"] is False
+
+
+def test_an_overdue_balance_carried_to_the_next_bill_is_neither_income_nor_spending(
+    bank_and_card_raw,
+):
+    rows = _consolidate_movements(
+        bank_and_card_raw,
+        [
+            _movement("credit", "card", -2425.59, "Crédito de atraso", "Bank fees"),
+            _movement(
+                "carried", "card", 2425.59, "Saldo em atraso", "Late payment and overdraft costs"
+            ),
+            _movement("fine", "card", 48.70, "Multa de atraso", "Late payment and overdraft costs"),
+        ],
+    )
+
+    assert [rows[key]["eh_transferencia"] for key in ("credit", "carried", "fine")] == [
+        True,
+        True,
+        False,
+    ]
+    assert rows["carried"]["motivo_transferencia"] == OVERDUE_CARRIED
+
+
+def test_the_down_payment_of_an_invoice_plan_stays_a_bill_payment(bank_and_card_raw):
+    rows = _consolidate_movements(
+        bank_and_card_raw,
+        [
+            _movement("out", "bank", -341.86, "Entrada de parcelamento cartão", "Shopping"),
+            _movement("in", "card", -341.86, "pagamento parcelam. todas faturas", "Shopping"),
+        ],
+    )
+
+    assert [(rows[key]["eh_transferencia"], rows[key]["valor"]) for key in ("out", "in")] == [
+        (True, -341.86),
+        (True, 341.86),
+    ]
+    assert rows["out"]["motivo_transferencia"] == "pagamento de fatura"
+
+
 def test_a_missing_date_stays_empty_and_a_date_without_zone_is_already_local():
     assert local_date(None) == ""
     assert local_date("") == ""

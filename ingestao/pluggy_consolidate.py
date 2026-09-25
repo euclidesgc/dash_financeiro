@@ -3,7 +3,9 @@
 
 Lê data/raw/, escreve data/processed/. Não faz nenhuma chamada de rede.
 Marca transferências entre contas próprias e pagamentos de fatura para que não
-contem duas vezes no total de gasto, e identifica recorrências e parcelamentos.
+contem duas vezes no total de gasto, tira de entrada e de gasto o crédito de
+financiamento (parcelamento de fatura e empréstimo) e o saldo em atraso levado
+para a fatura seguinte, e identifica recorrências e parcelamentos.
 """
 
 import csv
@@ -89,6 +91,17 @@ PADRAO_PAGTO_FATURA = re.compile(
     re.I,
 )
 PADRAO_PARCELA = re.compile(r"(?<!\d)(\d{1,2})\s*(?:/|\s+de\s+)\s*(\d{1,2})(?!\d)")
+# Reason: the bank words one event many ways — "Crédito de parcelamento",
+# "CREDITO PARCELAMENTO DA FATURA", "CREDITO PARCELAM. TODAS FATURAS" — and
+# Pluggy files each under a different category (Transfers, Credit card
+# payment, Shopping), so neither the category nor one spelling can decide.
+# The match runs on normalizar(), which drops accents, digits and dots.
+FINANCING_CREDIT = re.compile(r"\bcredito\s+(de\s+)?(parcelam|consignado)|\bemprestimo")
+PLAN_INSTALLMENT = re.compile(r"^parcelam\w*\s+(de\s+)?(todas\s+)?fa")
+OVERDUE_CARRIED = re.compile(r"^(credito|saldo) (de|em) atraso$")
+LOANS_CATEGORY = "Loans and financing"
+FINANCING_CREDIT_REASON = "crédito de financiamento (parcelamento de fatura ou empréstimo)"
+OVERDUE_CARRIED_REASON = "saldo em atraso levado para a fatura seguinte"
 SNAPSHOT_NAME = re.compile(r"^(?P<series>.+?)(?:_(?P<day>\d{4}-\d{2}-\d{2}))?(?:_p\d+)?\.json$")
 PENDING = "PENDING"
 
@@ -222,6 +235,7 @@ def main() -> None:
     print(f"  categoria inferida por mim (Pluggy veio vazia): {resumo['inferidas']}")
     print(f"  saques em dinheiro (destino nao rastreavel): {resumo['saques']}")
     print(f"  lancamentos anulados por estorno: {resumo['estornadas']}")
+    print(f"  creditos de financiamento (fora de entrada e de gasto): {resumo['financiamentos']}")
     print(f"  recorrentes detectadas: {resumo['recorrentes']}")
     print(f"  parcelamentos detectados: {resumo['parcelamentos']}")
 
@@ -330,9 +344,34 @@ def consolidate() -> dict[str, int]:
         "inferidas": sum(1 for linha in linhas if linha["categoria_inferida"]),
         "saques": sum(1 for linha in linhas if linha.get("eh_saque")),
         "estornadas": sum(1 for linha in linhas if linha.get("estornada_por")),
+        "financiamentos": sum(1 for linha in linhas if linha["papel_divida"] == "credit"),
         "recorrentes": len(recorrentes),
         "parcelamentos": len(parcelamentos),
     }
+
+
+def debt_role(linha: dict[str, Any]) -> str | None:
+    # Reason: an invoice plan or a loan brings borrowed money in, and the
+    # debt is paid by the later installments. The credit is neither income
+    # nor a refund of spending, and each installment is debt service that
+    # leaves the house once — like the car and the house financings. Read as
+    # income, the credit hides the month's deficit (R$ 32.000 of payroll
+    # loan, R$ 8.579,27 of plan in 09/2026); read as a bill payment, the
+    # installment vanishes from the months that really pay it. An unpaid
+    # bill carried to the next one arrives as a credit and a debit of the
+    # same balance, whose purchases already counted when they were made:
+    # neither side is money in or out, only the fines and interest are.
+    valor = linha["valor"] or 0
+    chave = linha["chave"]
+    if linha["conta_tipo"] == "CREDIT" and OVERDUE_CARRIED.search(chave):
+        return "carried"
+    if valor > 0 and (
+        FINANCING_CREDIT.search(chave) or linha["categoria_pluggy"] == LOANS_CATEGORY
+    ):
+        return "credit"
+    if valor < 0 and linha["conta_tipo"] == "CREDIT" and PLAN_INSTALLMENT.search(chave):
+        return "installment"
+    return None
 
 
 def marcar_transferencias(
@@ -341,10 +380,11 @@ def marcar_transferencias(
     for linha in linhas:
         linha["eh_transferencia"] = False
         linha["motivo_transferencia"] = ""
+        linha["papel_divida"] = debt_role(linha)
 
     por_valor: defaultdict[Any, list[int]] = defaultdict(list)
     for i, linha in enumerate(linhas):
-        if linha["valor"] is None:
+        if linha["valor"] is None or linha["papel_divida"]:
             continue
         por_valor[round(abs(linha["valor"]), 2)].append(i)
 
@@ -380,20 +420,33 @@ def marcar_transferencias(
                 break
 
     for linha in linhas:
-        if linha["eh_transferencia"]:
+        if linha["eh_transferencia"] or linha["papel_divida"]:
             continue
         if PADRAO_PAGTO_FATURA.search(linha["descricao"] or ""):
             linha["eh_transferencia"] = True
             linha["motivo_transferencia"] = "pagamento de fatura (sem par encontrado)"
 
     marcar_por_categoria_pluggy(linhas)
+    marcar_financiamentos(linhas)
     netar_estornos(linhas)
+
+
+def marcar_financiamentos(linhas: list[dict[str, Any]]) -> None:
+    for linha in linhas:
+        if linha["papel_divida"] == "credit":
+            linha["eh_transferencia"] = True
+            linha["motivo_transferencia"] = FINANCING_CREDIT_REASON
+        if linha["papel_divida"] == "carried":
+            linha["eh_transferencia"] = True
+            linha["motivo_transferencia"] = OVERDUE_CARRIED_REASON
 
 
 def marcar_por_categoria_pluggy(linhas: list[dict[str, Any]]) -> None:
     """A contraparte pode estar numa conta que não foi compartilhada; nesse caso o
     pareamento débito/crédito não acha par e a categoria da Pluggy é o único sinal."""
     for linha in linhas:
+        if linha["papel_divida"]:
+            continue
         categoria = linha["categoria_pluggy"] or ""
         if categoria == "Credit card payment" and not linha["eh_transferencia"]:
             linha["eh_transferencia"] = True
