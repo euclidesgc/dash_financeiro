@@ -16,6 +16,10 @@ FROZEN = (
     # São Paulo, not in UTC.
     "10419731",
     "104197",
+    # Reason: item 044 — the same total once a card purchase no longer pairs
+    # with a same-value Pix received from a third party.
+    "10429731",
+    "104297",
     "1921711",
     "19217",
     "1942",

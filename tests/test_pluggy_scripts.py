@@ -385,6 +385,228 @@ def test_the_down_payment_of_an_invoice_plan_stays_a_bill_payment(bank_and_card_
     assert rows["out"]["motivo_transferencia"] == "pagamento de fatura"
 
 
+OWNER = "Maria Exemplo Teste"
+OWN_TRANSFER = "transferência entre contas próprias"
+BILL_PAYMENT = "pagamento de fatura"
+
+
+@pytest.fixture()
+def own_accounts_raw(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    raw = tmp_path / "data" / "raw"
+    raw.mkdir(parents=True)
+    accounts = [
+        {"id": "bank", "name": "Conta", "type": "BANK", "owner": OWNER.upper()},
+        {"id": "other", "name": "Outra conta", "type": "BANK", "owner": f"{OWNER} "},
+        {"id": "card", "name": "Cartão", "type": "CREDIT", "owner": OWNER},
+    ]
+    (raw / "accounts_x_2026-09-22.json").write_text(
+        json.dumps({"results": accounts}), encoding="utf-8"
+    )
+    return raw
+
+
+def _on(day, movement):
+    return {**movement, "date": f"2026-07-{day:02d}T15:00:00.000Z"}
+
+
+def _pairing(rows, *keys):
+    return [(rows[key]["eh_transferencia"], rows[key]["motivo_transferencia"]) for key in keys]
+
+
+def test_a_card_purchase_never_pairs_with_a_pix_received_from_a_third_party(own_accounts_raw):
+    rows = _consolidate_movements(
+        own_accounts_raw,
+        [
+            _on(
+                20,
+                _movement(
+                    "pix", "other", 100.0, "Transferência Recebida|FULANO DE TAL", "Transfers"
+                ),
+            ),
+            _on(
+                22,
+                _movement(
+                    "fuel", "card", 100.0, "POSTO DE GASOLINA VIAITABORAIBRA", "Gas stations"
+                ),
+            ),
+        ],
+    )
+
+    assert _pairing(rows, "pix", "fuel") == [(False, ""), (False, "")]
+
+
+def test_a_pix_to_a_shop_never_pairs_with_a_transfer_received_from_a_third_party(
+    own_accounts_raw,
+):
+    rows = _consolidate_movements(
+        own_accounts_raw,
+        [
+            _on(
+                23,
+                _movement(
+                    "shop", "bank", -110.0, "Pix enviado ANIMAL SHOP", "Pet supplies and vet"
+                ),
+            ),
+            _on(
+                25,
+                _movement(
+                    "gift", "other", 110.0, "Transferência Recebida|Beltrana de Souza", "Transfers"
+                ),
+            ),
+        ],
+    )
+
+    assert _pairing(rows, "shop", "gift") == [(False, ""), (False, "")]
+
+
+def test_a_card_refund_never_pairs_with_a_bank_payment_to_a_third_party(own_accounts_raw):
+    rows = _consolidate_movements(
+        own_accounts_raw,
+        [
+            _on(10, _movement("pix", "bank", -89.9, "Pix enviado LOJA DE ROUPAS", "Shopping")),
+            _on(11, _movement("refund", "card", -89.9, "REEMBOLSO LOJA ONLINE", "Shopping")),
+        ],
+    )
+
+    assert _pairing(rows, "pix", "refund") == [(False, ""), (False, "")]
+
+
+@pytest.mark.parametrize(
+    ("sent", "received"),
+    [
+        (
+            ("Pix enviado Maria Exemplo Teste", "Same person transfer"),
+            ("Transferência Recebida|MARIA EXEMPLO TESTE", "Same person transfer"),
+        ),
+        (
+            ("TED enviada MARIA EXEMPLO TESTE", "Same person transfer"),
+            ("RECEBIMENTO TED", "Same person transfer"),
+        ),
+        (
+            ("Transferência enviada|Maria Exemplo Teste", "Transfers"),
+            ("Pix recebido Maria Exemplo Teste", "Transfer - PIX"),
+        ),
+    ],
+)
+def test_a_transfer_between_own_accounts_still_pairs(own_accounts_raw, sent, received):
+    rows = _consolidate_movements(
+        own_accounts_raw,
+        [
+            _on(10, _movement("out", "bank", -1945.78, *sent)),
+            _on(11, _movement("in", "other", 1945.78, *received)),
+        ],
+    )
+
+    assert _pairing(rows, "out", "in") == [(True, OWN_TRANSFER), (True, OWN_TRANSFER)]
+
+
+@pytest.mark.parametrize(
+    ("bank", "card"),
+    [
+        (
+            ("Pagamento de boleto ITAU UNIBANCO HOLDING S.A.", "Transfer - Bank Slip"),
+            ("Pagamento recebido", "Credit card payment"),
+        ),
+        (
+            ("Pagamento de Pix QR Code MERCADO PAGO INSTITUICAO", "Services"),
+            ("Pagamento recebido", "Credit card payment"),
+        ),
+        (
+            ("Saída PGTO MIN PASSAI MC GOLD", "Loans and financing"),
+            ("PAGAMENTO DEBITO MINIMO", "Transfers"),
+        ),
+        (
+            ("Pagamento de fatura FATURA PAGA Itau Uniclas", "Credit card payment"),
+            ("PAGAMENTO COM SALDO", "Transfers"),
+        ),
+    ],
+)
+def test_a_bill_payment_still_pairs_with_the_card_credit(own_accounts_raw, bank, card):
+    rows = _consolidate_movements(
+        own_accounts_raw,
+        [
+            _on(6, _movement("out", "bank", -3704.28, *bank)),
+            _on(6, _movement("in", "card", -3704.28, *card)),
+        ],
+    )
+
+    assert _pairing(rows, "out", "in") == [(True, BILL_PAYMENT), (True, BILL_PAYMENT)]
+
+
+def test_a_card_credit_balance_returned_to_the_bank_still_pairs(own_accounts_raw):
+    rows = _consolidate_movements(
+        own_accounts_raw,
+        [
+            _on(
+                3,
+                _movement(
+                    "back",
+                    "card",
+                    156.64,
+                    "DEVOLUCAO SALDO CREDOR",
+                    "Late payment and overdraft costs",
+                ),
+            ),
+            _on(
+                3, _movement("in", "bank", 156.64, "Entrada CREDITO CARTAO", "Credit card payment")
+            ),
+        ],
+    )
+
+    assert _pairing(rows, "back", "in") == [(True, OWN_TRANSFER), (True, OWN_TRANSFER)]
+
+
+def test_cash_withdrawn_and_deposited_in_another_own_account_is_neither_spending_nor_income(
+    own_accounts_raw,
+):
+    rows = _consolidate_movements(
+        own_accounts_raw,
+        [
+            _on(
+                6,
+                _movement(
+                    "atm",
+                    "other",
+                    -2000.0,
+                    "SAQUE DINHEIRO ATM BIOMET",
+                    "Same person transfer - CASH",
+                ),
+            ),
+            _on(
+                6,
+                _movement(
+                    "deposit", "bank", 2000.0, "Depósito DEP DIN ATM ENV 000044", "Transfer - Cash"
+                ),
+            ),
+        ],
+    )
+
+    assert _pairing(rows, "atm", "deposit") == [(True, OWN_TRANSFER), (True, OWN_TRANSFER)]
+    assert rows["atm"]["eh_saque"] is True
+
+
+def test_a_debit_pairs_with_the_closest_credit_of_the_same_value(own_accounts_raw):
+    rows = _consolidate_movements(
+        own_accounts_raw,
+        [
+            _on(7, _movement("early", "other", 500.0, "PIX RECEBIDO", "Same person transfer")),
+            _on(
+                10,
+                _movement(
+                    "out", "bank", -500.0, "Pix enviado MARIA EXEMPLO TESTE", "Same person transfer"
+                ),
+            ),
+            _on(10, _movement("same_day", "other", 500.0, "PIX RECEBIDO", "Same person transfer")),
+        ],
+    )
+
+    assert rows["same_day"]["motivo_transferencia"] == OWN_TRANSFER
+    assert rows["early"]["motivo_transferencia"] == (
+        "transferência entre contas próprias (categoria Pluggy)"
+    )
+
+
 def test_a_missing_date_stays_empty_and_a_date_without_zone_is_already_local():
     assert local_date(None) == ""
     assert local_date("") == ""
