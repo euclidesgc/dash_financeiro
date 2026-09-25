@@ -17,7 +17,6 @@ export function MonthCeiling({ query }: { query: MonthSignalQuery }): React.JSX.
   const signal = useMonthSignal(query)
   const ceiling = usePlanCeiling()
   const [editing, setEditing] = useState(false)
-  const [dismissed, setDismissed] = useState(false)
   const headingId = useId()
 
   if (signal.isPending || ceiling.isPending) {
@@ -48,11 +47,8 @@ export function MonthCeiling({ query }: { query: MonthSignalQuery }): React.JSX.
   }
 
   const { ceiling_cents, spent_cents, remaining_cents } = signal.data
-  const open = editing || (ceiling_cents === null && !dismissed)
-
   function handleDone(): void {
     setEditing(false)
-    setDismissed(true)
   }
 
   return (
@@ -61,7 +57,7 @@ export function MonthCeiling({ query }: { query: MonthSignalQuery }): React.JSX.
         Teto do mês
       </h2>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-4 rounded-md border border-gray-200 p-4">
-        {ceiling_cents !== null && open ? (
+        {ceiling_cents !== null && editing ? (
           <CeilingForm
             key={String(ceiling_cents)}
             ceilingCents={ceiling.data.monthly_ceiling_cents}
@@ -106,19 +102,19 @@ export function MonthCeiling({ query }: { query: MonthSignalQuery }): React.JSX.
               <p className="text-gray-600">
                 Sem teto definido. Defina um teto para saber se o mês cabe no plano.
               </p>
-              {open ? null : (
+              {editing ? null : (
                 <Button
                   variant="secondary"
                   aria-label="Definir teto do mês"
                   onClick={() => {
-                    setDismissed(false)
+                    setEditing(true)
                   }}
                 >
                   Definir teto
                 </Button>
               )}
             </div>
-            {open ? (
+            {editing ? (
               <div className="mt-3">
                 <CeilingForm
                   key={String(ceiling_cents)}

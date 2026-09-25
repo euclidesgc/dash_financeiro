@@ -133,28 +133,33 @@ test('shows "Sobram R$ 0,00" at the exact ceiling', async () => {
   expect(await screen.findByText(/Sobram R\$ 0,00/)).toBeInTheDocument()
 })
 
-test('without a ceiling shows the invitation with the form open and focused, no badge and no percentage', async () => {
+test('without a ceiling shows the invitation with the form closed, no stolen focus, no badge and no percentage', async () => {
   respondWith({ ceiling_cents: null, signal: null, remaining_cents: null }, null)
   renderWithProviders(<MonthCeiling query={MONTH} />)
 
   expect(
     await screen.findByText('Sem teto definido. Defina um teto para saber se o mês cabe no plano.'),
   ).toBeInTheDocument()
-  const field = screen.getByLabelText('Teto mensal (R$)')
-  expect(field).toHaveFocus()
-  expect(field).toHaveValue('')
+  expect(screen.getByRole('button', { name: 'Definir teto do mês' })).toBeInTheDocument()
+  expect(screen.queryByLabelText('Teto mensal (R$)')).not.toBeInTheDocument()
+  expect(document.body).toHaveFocus()
   expect(screen.queryByText('Dentro', { exact: true })).not.toBeInTheDocument()
   expect(screen.queryByText('Atenção', { exact: true })).not.toBeInTheDocument()
   expect(screen.queryByText('Acima', { exact: true })).not.toBeInTheDocument()
   expect(screen.queryByText('%')).not.toBeInTheDocument()
 })
 
-test('"Cancelar" without a ceiling hides the form and "Definir teto" reopens it', async () => {
+test('"Definir teto" opens the empty form focused and "Cancelar" closes it again', async () => {
   const user = userEvent.setup()
   respondWith({ ceiling_cents: null, signal: null, remaining_cents: null }, null)
   renderWithProviders(<MonthCeiling query={MONTH} />)
 
-  await screen.findByLabelText('Teto mensal (R$)')
+  await user.click(await screen.findByRole('button', { name: 'Definir teto do mês' }))
+
+  const field = screen.getByLabelText('Teto mensal (R$)')
+  expect(field).toHaveFocus()
+  expect(field).toHaveValue('')
+  expect(screen.queryByRole('button', { name: 'Definir teto do mês' })).not.toBeInTheDocument()
 
   await user.click(screen.getByRole('button', { name: 'Cancelar' }))
 
@@ -162,12 +167,7 @@ test('"Cancelar" without a ceiling hides the form and "Definir teto" reopens it'
   expect(
     screen.getByText('Sem teto definido. Defina um teto para saber se o mês cabe no plano.'),
   ).toBeInTheDocument()
-  const reopen = screen.getByRole('button', { name: 'Definir teto do mês' })
-  expect(reopen).toBeInTheDocument()
-
-  await user.click(reopen)
-
-  expect(screen.getByLabelText('Teto mensal (R$)')).toHaveFocus()
+  expect(screen.getByRole('button', { name: 'Definir teto do mês' })).toBeInTheDocument()
 })
 
 test('"Alterar teto" opens the form with the current value and "Cancelar" restores the panel', async () => {
