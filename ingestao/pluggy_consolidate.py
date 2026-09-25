@@ -3,7 +3,9 @@
 
 Lê data/raw/, escreve data/processed/. Não faz nenhuma chamada de rede.
 Marca transferências entre contas próprias e pagamentos de fatura para que não
-contem duas vezes no total de gasto, e identifica recorrências e parcelamentos.
+contem duas vezes no total de gasto, tira de entrada e de gasto o crédito de
+financiamento (parcelamento de fatura e empréstimo) e o saldo em atraso levado
+para a fatura seguinte, e identifica recorrências e parcelamentos.
 """
 
 import csv
