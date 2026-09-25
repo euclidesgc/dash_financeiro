@@ -26,7 +26,7 @@ prova o caminho de ponta a ponta (tela React → API FastAPI → SQLite) e as ou
 
 | # | Fatia | Resolução necessária | Origem | Depende de | Status |
 |---|---|---|---|---|---|
-| 017 | `jinja-router-extraction` | manter a lógica de consulta única quando uma tela migra de Jinja para React, em vez de reescrever SQL | bug | 001 | in-progress |
+| 017 | `jinja-router-extraction` | manter a lógica de consulta única quando uma tela migra de Jinja para React, em vez de reescrever SQL | bug | 001 | in-review |
 | 018 | `sync-runs-source-field` | rastrear origem do disparo (tela vs comando diário) em `sync_runs.source` em vez de só guardar o caminho do arquivo lido | 002 | — | planned |
 | 019 | `pluggy-extract-env-handling` | embrulhar leitura de `.env` e `SystemExit` em `ingestao/pluggy_extract.py` em função limpa, não chamar direto do serviço | 002 | — | planned |
 | 020 | `jinja-sync-button-exclusive-lock` | fazer o botão Jinja `/sincronizar` passar pela trava de execução única de `app/sync/exclusive.py` | 002 | — | planned |
@@ -45,3 +45,4 @@ prova o caminho de ponta a ponta (tela React → API FastAPI → SQLite) e as ou
 | 033 | `income-predicate-unification` | unificar o predicado de "entrada" (receita) que está escrito à mão em `app/projection/forecast.py`, `app/projection/monthly.py` e `app/plan/objective.py` em `app/queries/spending.py` como `INCOME`, antes de 016, para evitar divergência entre plano e tela de entradas | 015 | — | done |
 | 034 | `override-unnecessary-reclassify` | `app/taxonomy/override.py::_write` reclassifica tudo via `classify_all` mesmo quando a coluna escrita (`not_expense_reason`) não é lida pela classificação; remover custo desnecessário a cada marcação de não-gasto | 015 | — | planned |
 | 035 | `mocks-spending-rule-duplication` | os mocks MSW em `src/testing/mocks/handlers.ts` (`matchesView`, `period-result`) duplicam a regra de entrada/gasto da API; se `app/queries/spending.py` mudar, os testes de componente continuam verdes com regra antiga | 016 | — | planned |
+| 036 | `e2e-expenses-reload-flaky` | `e2e/expenses.spec.ts` ("filters the expenses by month and by date range and keeps the period on reload") falhou uma vez em 25/09 com 2 itens em vez de 1 depois do `page.reload()`, com a URL já em `from`/`to` do dia 02; passou na repetição. Achar por que a lista recarregada ignora o intervalo às vezes antes que o flake trave um PR | 017 | — | planned |
