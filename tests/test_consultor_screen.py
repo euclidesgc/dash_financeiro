@@ -88,7 +88,8 @@ def test_without_any_key_the_screen_points_to_the_configuration_screen(tmp_path,
         page = client.get(SCREEN)
 
     assert page.status_code == 200
-    assert "/configuracao" in page.text
+    assert '<a href="/configuracao#ia">Configuração</a>' in page.text
+    assert ">/configuracao</a>" not in page.text
     assert "GEMINI_API_KEY" not in page.text
 
 

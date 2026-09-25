@@ -1614,15 +1614,15 @@ test('shows the signal badges and the summary for a month', async () => {
   }
 
   expect(screen.getByText('1 categoria acima do limite')).toBeInTheDocument()
-  expect(screen.queryByText('Sinal só por mês')).not.toBeInTheDocument()
+  expect(screen.queryByText('Os avisos de limite por categoria aparecem só quando o período é um mês inteiro.')).not.toBeInTheDocument()
 })
 
-test('shows "Sinal só por mês" and no badge for the whole period', async () => {
+test('shows the month-only limit note and no badge for the whole period', async () => {
   renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   await screen.findByRole('heading', { level: 2, name: 'Por categoria' })
 
-  expect(screen.getByText('Sinal só por mês')).toBeInTheDocument()
+  expect(screen.getByText('Os avisos de limite por categoria aparecem só quando o período é um mês inteiro.')).toBeInTheDocument()
 
   for (const row of categoryRows()) {
     const text = cellsOf(row)[0] ?? ''

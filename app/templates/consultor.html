@@ -20,7 +20,7 @@
     <p class="headline" data-pergunta="{{ question['name'] }}">Qual é {{ question['label'] }}?</p>
     <p class="lede">A resposta muda <strong>{{ question['moves'] }}</strong>.
       {% if question['stale'] %}O valor que você deu antes venceu.{% endif %}
-      Informe em <a href="{{ question['where'] }}">{{ question['where'] }}</a>.</p>
+      Informe em <a href="{{ question['where'] }}">{{ question['where_label'] }}</a>.</p>
     <form method="post" action="{{ dismiss_action }}">
       <input type="hidden" name="nome" value="{{ question['name'] }}">
       <input type="hidden" name="data" value="{{ reference }}">
@@ -63,7 +63,7 @@
     {% endif %}
     {% if not has_key %}
     <p class="lede">Sem chave da IA a leitura não roda. Informe a chave em
-      <a href="/configuracao#ia">/configuracao</a> — os números abaixo continuam iguais: eles não
+      <a href="/configuracao#ia">Configuração</a> — os números abaixo continuam iguais: eles não
       dependem dela.</p>
     {% endif %}
   </section>
@@ -83,7 +83,7 @@
     <div class="empty">
       <p class="empty-title">Nenhuma proposta com taxa informada.</p>
       <p class="lede">Informe uma proposta de empréstimo em
-        <a href="/configuracao#propostas">/configuracao</a> para comparar contra
+        <a href="/configuracao#propostas">Configuração</a> para comparar contra
         {{ comparison['step']['name'] }}.</p>
     </div>
     {% else %}
@@ -124,7 +124,7 @@
       informada: {{ comparison['without_rate']|join(', ') }}.
       {% endif %}
       O painel não estima o que o banco não informou — informe a taxa em
-      <a href="/configuracao#propostas">/configuracao</a>.</p>
+      <a href="/configuracao#propostas">Configuração</a>.</p>
     {% endif %}
   </section>
   <section id="numeros" class="panel panel-wide">

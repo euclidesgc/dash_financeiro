@@ -14,7 +14,7 @@
   {% endif %}
   {% if correction.result %}
   <p class="notice notice-done" id="resultado" role="status">{{ correction.result.message }}
-    {% if correction.result.held %}<a href="/regras">Ver em /regras</a>{% endif %}</p>
+    {% if correction.result.held %}<a href="/regras">Ver em Regras</a>{% endif %}</p>
   {% endif %}
   <form id="correcao" class="form" method="post"
         action="{{ screen }}/correcao?eixo={{ axis|urlencode }}&amp;inicio={{ start }}&amp;fim={{ end }}&amp;chave={{ (key or '')|urlencode }}&amp;data={{ reference }}&amp;corrigir={{ correction.id }}">

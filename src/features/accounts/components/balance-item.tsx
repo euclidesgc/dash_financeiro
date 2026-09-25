@@ -15,7 +15,7 @@ export function BalanceItem({ account }: { account: AccountBalance }): React.JSX
           <p className="text-sm text-gray-600 truncate">{account.institution}</p>
         ) : null}
         <p className="text-sm text-gray-600">
-          {updatedAt ? `Atualizado em ${updatedAt}` : 'Sem data de atualização'}
+          {updatedAt ? `Saldo informado pelo banco em ${updatedAt}` : 'Sem data de atualização'}
         </p>
       </div>
       <div className="flex shrink-0 flex-col items-end gap-1 text-right">

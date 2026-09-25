@@ -20,7 +20,7 @@ test('shows the empty state', async () => {
 
   expect(
     await screen.findByText(
-      'Nenhuma conta sincronizada ainda. Rode a sincronização para trazer suas contas da Pluggy.',
+      'Nenhuma conta trazida do banco ainda. Use “Atualizar agora” para buscar suas contas e cartões.',
     ),
   ).toBeInTheDocument()
 })
@@ -122,7 +122,7 @@ test('shows "Sem data de atualização" when updated_at is null', async () => {
   expect(await screen.findByText('Sem data de atualização')).toBeInTheDocument()
 })
 
-test('shows "Atualizado em" with the formatted date', async () => {
+test('shows "Saldo informado pelo banco em" with the formatted date', async () => {
   server.use(
     http.get('/api/accounts/balances', () =>
       HttpResponse.json({
@@ -143,5 +143,5 @@ test('shows "Atualizado em" with the formatted date', async () => {
 
   renderWithProviders(<BalancesList />)
 
-  expect(await screen.findByText(/Atualizado em 05\/09\/2026/)).toBeInTheDocument()
+  expect(await screen.findByText(/Saldo informado pelo banco em 05\/09\/2026/)).toBeInTheDocument()
 })

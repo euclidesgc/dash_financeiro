@@ -16,7 +16,7 @@
       "subtype": "CREDIT_CARD",
       "name": "Cartão de teste",
       "marketingName": "Emissor de teste",
-      "balance": -45.0,
+      "balance": 45.0,
       "currencyCode": "BRL",
       "updatedAt": "2026-09-05T21:36:27.516Z"
     }

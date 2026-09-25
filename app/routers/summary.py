@@ -32,7 +32,6 @@ router = APIRouter()
 SCREEN = "/"
 SYNC = "/sincronizar"
 DATE_FIELD = "data"
-COMMAND = "python -m app.sync"
 
 
 @router.get(SCREEN)
@@ -173,5 +172,4 @@ def _sync(conn: sqlite3.Connection, today: date) -> dict[str, Any]:
         "stale": age is not None and age > STALE_DAYS,
         "failed": bool(runs["latest"] and runs["latest"]["status"] != "ok"),
         "action": SYNC,
-        "command": COMMAND,
     }

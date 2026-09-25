@@ -19,6 +19,7 @@ def wanted() -> tuple[dict[str, Any], ...]:
             "label": item["question"],
             "moves": item["moves"],
             "where": item["screen"],
+            "where_label": item["screen_label"],
         }
         for item in of_kind(FACT)
     )

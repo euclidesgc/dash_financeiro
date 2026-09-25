@@ -7,7 +7,7 @@ import { useRunSync } from '@/features/sync/api/run-sync'
 import type { SyncStatus, SyncTrigger } from '@/features/sync/types/sync-status'
 
 const TRIGGER_LABELS: Record<SyncTrigger, string> = {
-  screen: 'Pedida na tela',
+  screen: 'Você pediu pelo botão “Atualizar agora”',
   command: 'Feita pela rotina diária',
 }
 
@@ -79,7 +79,7 @@ function SyncStatusPanel({
     <section className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-md border border-gray-200 p-4">
       <div className="min-w-0">
         <p className="text-gray-900">
-          {finishedAt ? `Última atualização: ${finishedAt}` : 'Nunca atualizado'}
+          {finishedAt ? `Última atualização: ${finishedAt}` : 'Nenhuma atualização feita por este painel ainda'}
         </p>
         {lastRun?.triggered_by ? (
           <p className="text-sm text-gray-600">{TRIGGER_LABELS[lastRun.triggered_by]}</p>
@@ -90,7 +90,7 @@ function SyncStatusPanel({
           </span>
         ) : lastRun?.status === 'ok' ? (
           <span className="mt-1 inline-block rounded-full px-2 py-0.5 text-sm bg-green-100 text-green-800">
-            Concluída
+            Terminou sem erro
           </span>
         ) : lastRun?.status === 'failed' ? (
           <span className="mt-1 inline-block rounded-full px-2 py-0.5 text-sm bg-red-100 text-red-800">
