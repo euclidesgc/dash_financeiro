@@ -1,3 +1,4 @@
+import json
 import time
 from datetime import date, timedelta, timezone
 from pathlib import Path
@@ -15,6 +16,7 @@ from app.sync import (
     readable,
     synchronise,
 )
+from app.taxonomy.seed import seed_taxonomy
 from tests.conftest import ACCOUNT, transaction
 
 REFERENCE = date(2026, 9, 5)
@@ -295,6 +297,27 @@ def test_synchronise_ends_with_the_payee_filled_on_every_row_with_a_description(
         "WHERE description IS NOT NULL AND (payee IS NULL OR payee = '')"
     ).fetchone()[0]
     assert missing == 0
+
+
+def test_a_sync_removes_the_pending_purchase_the_consolidation_discarded(
+    taxonomy_conn, seed, monkeypatch, tmp_path
+):
+    seed_taxonomy(taxonomy_conn, seed)
+    _point_the_load_step_at_the_fixture(monkeypatch)
+    [kept] = json.loads((SYNC_DATA / "sync_transactions.json").read_text(encoding="utf-8"))
+    gone = {**kept, "id": "pending-gone", "valor": -99.99}
+    source = tmp_path / "transacoes.json"
+    monkeypatch.setenv("DASH_TRANSACTIONS_PATH", str(source))
+    source.write_text(json.dumps([kept, gone]), encoding="utf-8")
+    synchronise(taxonomy_conn, trigger=COMMAND, today=REFERENCE)
+    source.write_text(json.dumps([kept]), encoding="utf-8")
+    (tmp_path / "descartadas.json").write_text(json.dumps([gone["id"]]), encoding="utf-8")
+
+    outcome = synchronise(taxonomy_conn, trigger=COMMAND, today=REFERENCE)
+
+    assert outcome.status == "ok", outcome.message
+    remaining = [row[0] for row in taxonomy_conn.execute("SELECT pluggy_id FROM transactions")]
+    assert remaining == [kept["id"]]
 
 
 def _trigger(conn):

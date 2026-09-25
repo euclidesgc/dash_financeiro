@@ -1,11 +1,27 @@
 import glob
 import json
+import os
 from typing import Any
+
+DISCARDED_FILE = "descartadas.json"
 
 
 def load_transactions(path: str) -> list[dict[str, Any]]:
     with open(path, encoding="utf-8") as handle:
         return _records(json.load(handle))
+
+
+def load_discarded(transactions_path: str) -> list[str]:
+    # Reason: the consolidation drops the pending purchases Pluggy no longer
+    # returns and names them in a file beside the consolidated one. An
+    # upsert never removes a row, so without this list the base would keep
+    # counting them after the source stopped carrying them. A consolidated
+    # file made before the list existed has nothing to discard.
+    path = os.path.join(os.path.dirname(transactions_path), DISCARDED_FILE)
+    if not os.path.exists(path):
+        return []
+    with open(path, encoding="utf-8") as handle:
+        return [str(identifier) for identifier in json.load(handle)]
 
 
 def load_accounts(pattern: str) -> list[dict[str, Any]]:

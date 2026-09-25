@@ -156,6 +156,84 @@ def test_the_consolidated_date_is_the_day_in_sao_paulo_not_in_utc(
     assert [row["data"] for row in rows] == [expected]
 
 
+def _snapshot(raw, day, entries):
+    (raw / f"v2_transactions_acc-1_{day}_p1.json").write_text(
+        json.dumps({"results": entries}), encoding="utf-8"
+    )
+
+
+def _entry(identifier, instant, status, **extra):
+    return {
+        "id": identifier,
+        "accountId": "acc-1",
+        "date": instant,
+        "amount": 99.99,
+        "description": "PB *BETTERME BRPorto AlegreBRA",
+        "status": status,
+        **extra,
+    }
+
+
+@pytest.fixture()
+def card_raw(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    raw = tmp_path / "data" / "raw"
+    raw.mkdir(parents=True)
+    (raw / "accounts_x_2026-09-05.json").write_text(
+        json.dumps({"results": [{"id": "acc-1", "name": "Cartão", "type": "CREDIT"}]}),
+        encoding="utf-8",
+    )
+    return raw
+
+
+def _consolidated(raw, name="transacoes.json"):
+    return json.loads((raw.parent / "processed" / name).read_text(encoding="utf-8"))
+
+
+def test_the_consolidation_keeps_the_latest_copy_of_each_transaction(card_raw):
+    old = _entry("tx-1", "2026-08-04T03:00:00.000Z", "PENDING")
+    new = _entry(
+        "tx-1",
+        "2026-09-04T03:00:00.000Z",
+        "POSTED",
+        creditCardMetadata={"installmentNumber": 2, "totalInstallments": 3},
+    )
+    _snapshot(card_raw, "2026-09-05", [old])
+    _snapshot(card_raw, "2026-09-22", [new])
+
+    consolidate()
+
+    [row] = _consolidated(card_raw)
+    assert (row["data"], row["parcela_atual"]) == ("2026-09-04", 2)
+
+
+def test_a_pending_purchase_the_latest_snapshot_no_longer_returns_is_discarded(card_raw):
+    _snapshot(
+        card_raw,
+        "2026-09-05",
+        [
+            _entry("gone", "2026-08-30T04:15:44.000Z", "PENDING"),
+            _entry("kept", "2026-08-02T15:00:00.000Z", "POSTED"),
+        ],
+    )
+    _snapshot(card_raw, "2026-09-22", [_entry("other", "2026-09-20T15:00:00.000Z", "POSTED")])
+
+    summary = consolidate()
+
+    assert sorted(row["id"] for row in _consolidated(card_raw)) == ["kept", "other"]
+    assert _consolidated(card_raw, "descartadas.json") == ["gone"]
+    assert summary["descartadas"] == 1
+
+
+def test_a_pending_purchase_with_no_newer_snapshot_is_kept(card_raw):
+    _snapshot(card_raw, "2026-09-22", [_entry("tx-1", "2026-09-20T15:00:00.000Z", "PENDING")])
+
+    consolidate()
+
+    assert [row["id"] for row in _consolidated(card_raw)] == ["tx-1"]
+    assert _consolidated(card_raw, "descartadas.json") == []
+
+
 def test_a_missing_date_stays_empty_and_a_date_without_zone_is_already_local():
     assert local_date(None) == ""
     assert local_date("") == ""
