@@ -5,6 +5,12 @@ from pathlib import Path
 
 from app.config import load_config
 
+# Reason: SQLite stores INTEGER in eight signed bytes, and sqlite3 raises
+# OverflowError when a bound Python int does not fit — a 500 on any number
+# typed by hand. Every integer read from a request is held to this range.
+SQLITE_INTEGER_MIN = -(2**63)
+SQLITE_INTEGER_MAX = 2**63 - 1
+
 
 def fold(value: str | None) -> str | None:
     if value is None:
@@ -12,6 +18,14 @@ def fold(value: str | None) -> str | None:
     return "".join(
         char for char in unicodedata.normalize("NFKD", value) if not unicodedata.combining(char)
     ).casefold()
+
+
+def storable_int(text: str) -> int | None:
+    try:
+        value = int(text)
+    except ValueError:
+        return None
+    return value if SQLITE_INTEGER_MIN <= value <= SQLITE_INTEGER_MAX else None
 
 
 def _restrict(target: str) -> None:

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Form
 from starlette.requests import Request
 from starlette.responses import Response
 
-from app.db import connect
+from app.db import connect, storable_int
 from app.payees.names import labels as payee_labels
 from app.queries.ahead import Ahead, posted_ahead
 from app.queries.axes import AXES, ESSENTIALITY_AXIS, PAYEE_AXIS, aggregate, transactions_of
@@ -135,7 +135,7 @@ def spending_correction(
                 result = correct_payee(
                     conn,
                     payee=payee,
-                    group_id=_as_int(grupo),
+                    group_id=storable_int(grupo),
                     new_group=new_group,
                     nature=form_text(natureza),
                     essentiality=form_text(term),
@@ -186,13 +186,6 @@ def _key(request: Request) -> str | None:
 
 def _corrigir(request: Request) -> str | None:
     return request.query_params.get("corrigir") or None
-
-
-def _as_int(value: str) -> int | None:
-    try:
-        return int(value)
-    except ValueError:
-        return None
 
 
 def _base(
@@ -291,7 +284,7 @@ def _detail_context(
 def _target(conn: sqlite3.Connection, corrigir: str | None) -> sqlite3.Row | None:
     if not corrigir:
         return None
-    target_id = _as_int(corrigir)
+    target_id = storable_int(corrigir)
     if target_id is None:
         return None
     return correction_target(conn, target_id)

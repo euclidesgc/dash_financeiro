@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 from app.settings import store
 from app.settings.catalog import MONTHLY_CEILING
+from app.settings.limits import MAX_CENTS
 from app.taxonomy.limits import Scope, Signal, signal_for
 
 
@@ -17,7 +18,7 @@ def read_ceiling(conn: sqlite3.Connection) -> int | None:
 
 
 def set_ceiling(conn: sqlite3.Connection, cents: int | None) -> None:
-    if cents is not None and cents <= 0:
+    if cents is not None and not 0 < cents <= MAX_CENTS:
         raise InvalidCeilingError(cents)
     store.put(conn, MONTHLY_CEILING, cents)
 
