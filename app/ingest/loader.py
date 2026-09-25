@@ -1,5 +1,5 @@
 import sqlite3
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import InvalidOperation
@@ -106,6 +106,7 @@ def ingest(
     source: str,
     trigger: Trigger,
     now: datetime | None = None,
+    discarded: Sequence[str] = (),
 ) -> IngestResult:
     started = now or datetime.now(UTC)
     stale = _stale_consolidated(transactions)
@@ -144,6 +145,7 @@ def ingest(
         )
 
     try:
+        _delete_discarded(conn, discarded)
         # Reason: counted before the upsert — after it, everything is
         # present, and "how many rows are there" is not the same question
         # as "how many entered" (RF-01).
@@ -444,6 +446,14 @@ def _upsert(
         f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({placeholders}) "
         f"ON CONFLICT({key}) DO UPDATE SET {updates}"
     )
+
+
+def _delete_discarded(conn: sqlite3.Connection, discarded: Sequence[str]) -> None:
+    unique = list(dict.fromkeys(discarded))
+    for start in range(0, len(unique), _ID_CHUNK):
+        chunk = unique[start : start + _ID_CHUNK]
+        placeholders = ", ".join("?" * len(chunk))
+        conn.execute(f"DELETE FROM transactions WHERE pluggy_id IN ({placeholders})", chunk)
 
 
 def _count_present(conn: sqlite3.Connection, table: str, key: str, values: list[str]) -> int:

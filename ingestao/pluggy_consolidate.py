@@ -89,6 +89,8 @@ PADRAO_PAGTO_FATURA = re.compile(
     re.I,
 )
 PADRAO_PARCELA = re.compile(r"(?<!\d)(\d{1,2})\s*(?:/|\s+de\s+)\s*(\d{1,2})(?!\d)")
+SNAPSHOT_NAME = re.compile(r"^(?P<series>.+?)(?:_(?P<day>\d{4}-\d{2}-\d{2}))?(?:_p\d+)?\.json$")
+PENDING = "PENDING"
 
 
 def normalizar(texto: str | None) -> str:
@@ -104,18 +106,64 @@ def normalizar(texto: str | None) -> str:
     return t
 
 
-def carregar(padrao: str) -> list[dict[str, Any]]:
-    itens: list[dict[str, Any]] = []
-    for caminho in sorted(glob.glob(os.path.join(RAW, padrao))):
+def load_snapshots(pattern: str) -> list[tuple[str, str, dict[str, Any]]]:
+    snapshots: list[tuple[str, str, dict[str, Any]]] = []
+    for caminho in sorted(glob.glob(os.path.join(RAW, pattern))):
+        match = SNAPSHOT_NAME.match(os.path.basename(caminho))
+        series = match.group("series") if match else caminho
+        day = (match.group("day") if match else None) or ""
         with open(caminho) as arquivo:
             corpo = json.load(arquivo)
         if isinstance(corpo, dict) and "results" in corpo:
-            itens.extend(corpo["results"])
+            registros = corpo["results"]
         elif isinstance(corpo, list):
-            itens.extend(corpo)
+            registros = corpo
         else:
-            itens.append(corpo)
-    return itens
+            registros = [corpo]
+        snapshots.extend((series, day, registro) for registro in registros)
+    return snapshots
+
+
+def newest_copies(
+    snapshots: list[tuple[str, str, dict[str, Any]]],
+) -> tuple[dict[Any, tuple[str, str, dict[str, Any]]], list[dict[str, Any]]]:
+    # Reason: every extraction adds dated files and the old ones stay in
+    # data/raw, so one record arrives once per snapshot. Pluggy rewrites it
+    # between snapshots — a pending purchase posts, an installment gets its
+    # number and its billing date — and only the newest copy is true. The
+    # day comes from the file name: the connection id in front of it
+    # changes when a connection is redone, so name order says nothing
+    # about age.
+    chosen: dict[Any, tuple[str, str, dict[str, Any]]] = {}
+    without_id: list[dict[str, Any]] = []
+    for series, day, record in sorted(snapshots, key=lambda snapshot: snapshot[1]):
+        identifier = record.get("id")
+        if identifier:
+            chosen[identifier] = (series, day, record)
+        else:
+            without_id.append(record)
+    return chosen, without_id
+
+
+def latest_transactions(
+    snapshots: list[tuple[str, str, dict[str, Any]]],
+) -> tuple[list[dict[str, Any]], list[str]]:
+    # Reason: a pending purchase that the account's newest snapshot no
+    # longer returns was dropped by the card issuer and must stop counting.
+    # A posted one that is missing stays: the newest extraction may simply
+    # not reach that far back.
+    newest_day: dict[str, str] = {}
+    for series, day, _ in snapshots:
+        newest_day[series] = max(day, newest_day.get(series, ""))
+    chosen, without_id = newest_copies(snapshots)
+    kept: list[dict[str, Any]] = []
+    discarded: list[str] = []
+    for identifier, (series, day, transaction) in chosen.items():
+        if transaction.get("status") == PENDING and day < newest_day[series]:
+            discarded.append(identifier)
+        else:
+            kept.append(transaction)
+    return kept + without_id, sorted(discarded)
 
 
 def local_date(instant: str | None) -> str:
@@ -125,19 +173,6 @@ def local_date(instant: str | None) -> str:
     if moment.tzinfo is not None:
         moment = moment.astimezone(OWNER_ZONE)
     return moment.date().isoformat()
-
-
-def dedup(registros: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    vistos: set[Any] = set()
-    saida: list[dict[str, Any]] = []
-    for r in registros:
-        chave = r.get("id")
-        if chave and chave in vistos:
-            continue
-        if chave:
-            vistos.add(chave)
-        saida.append(r)
-    return saida
 
 
 def inferir_categoria(descricao: str | None) -> str:
@@ -182,6 +217,7 @@ def main() -> None:
     except NoRawAccountsError as erro:
         raise SystemExit(str(erro)) from erro
     print(f"transacoes: {resumo['transacoes']}")
+    print(f"  pendentes que a Pluggy nao devolve mais (descartadas): {resumo['descartadas']}")
     print(f"  marcadas como transferencia/pagto de fatura: {resumo['transferencias']}")
     print(f"  categoria inferida por mim (Pluggy veio vazia): {resumo['inferidas']}")
     print(f"  saques em dinheiro (destino nao rastreavel): {resumo['saques']}")
@@ -191,8 +227,9 @@ def main() -> None:
 
 
 def consolidate() -> dict[str, int]:
-    contas = dedup(carregar("accounts_*.json"))
-    transacoes = dedup(carregar("*transactions_*.json"))
+    contas_por_id, _ = newest_copies(load_snapshots("accounts_*.json"))
+    contas = [conta for _, _, conta in contas_por_id.values()]
+    transacoes, descartadas = latest_transactions(load_snapshots("*transactions_*.json"))
     if not contas:
         raise NoRawAccountsError("Sem data/raw/accounts_*.json — rode a extração antes.")
     os.makedirs(PROC, exist_ok=True)
@@ -279,6 +316,8 @@ def consolidate() -> dict[str, int]:
         escritor.writerows(linhas)
     with open(os.path.join(PROC, "transacoes.json"), "w") as arquivo:
         json.dump(linhas, arquivo, ensure_ascii=False, indent=2)
+    with open(os.path.join(PROC, "descartadas.json"), "w") as arquivo:
+        json.dump(descartadas, arquivo, ensure_ascii=False, indent=2)
     with open(os.path.join(PROC, "recorrentes.json"), "w") as arquivo:
         json.dump(recorrentes, arquivo, ensure_ascii=False, indent=2)
     with open(os.path.join(PROC, "parcelamentos.json"), "w") as arquivo:
@@ -286,6 +325,7 @@ def consolidate() -> dict[str, int]:
 
     return {
         "transacoes": len(linhas),
+        "descartadas": len(descartadas),
         "transferencias": sum(1 for linha in linhas if linha["eh_transferencia"]),
         "inferidas": sum(1 for linha in linhas if linha["categoria_inferida"]),
         "saques": sum(1 for linha in linhas if linha.get("eh_saque")),

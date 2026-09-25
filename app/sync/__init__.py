@@ -9,7 +9,7 @@ from app.config import PLUGGY_CREDENTIALS, load_config, reference_date
 from app.db import connect
 from app.debts.ladder import rebuild
 from app.ingest.loader import IngestResult, ingest
-from app.ingest.source import load_accounts, load_transactions
+from app.ingest.source import load_accounts, load_discarded, load_transactions
 from app.ingest.trigger import COMMAND, Trigger
 from app.queries.pluggy_connections import list_item_ids
 from app.sync.fetch import PluggyFetchError, fetch_from_pluggy
@@ -60,6 +60,7 @@ def synchronise(
     try:
         transactions = load_transactions(config.transactions_path)
         accounts = load_accounts(config.accounts_glob)
+        discarded = load_discarded(config.transactions_path)
     except (OSError, ValueError) as failure:
         # Reason: the source file not being there is the most likely
         # accident of the day, and it used to raise before any row reached
@@ -72,6 +73,7 @@ def synchronise(
         accounts=accounts,
         source=config.transactions_path,
         trigger=trigger,
+        discarded=discarded,
     )
     if result.status != "ok":
         return _outcome(result)
