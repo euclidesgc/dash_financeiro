@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import type { APIResponse } from '@playwright/test'
 
 const LOGIN = 'e2e'
 const PASSWORD = 'senha-e2e-9k2'
@@ -7,6 +8,53 @@ const PASSWORD = 'senha-e2e-9k2'
 // sync.spec.ts writes into the same shared e2e SQLite database that this
 // spec reads from; running specs across workers in parallel could race.
 test.describe.configure({ mode: 'serial' })
+
+const MARKED_BY_THESE_TESTS = new Set(['AÇOUGUE SÃO JORGE', 'SALARIO'])
+
+interface Catalogue {
+  categories: { key: string; label: string }[]
+}
+
+interface ExcludedPage {
+  items: { id: number; description: string | null }[]
+}
+
+function expectOk(response: APIResponse): APIResponse {
+  expect(response.ok(), `${response.url()} answered ${String(response.status())}`).toBe(true)
+  return response
+}
+
+// Reason: a test that fails midway never reaches its own last steps, so the
+// base must be put back here, or one failure leaves the ceiling, the limit or
+// a mark behind and every later test and repetition fails on it.
+test.afterEach(async ({ request }) => {
+  expectOk(await request.post('/api/auth/login', { data: { login: LOGIN, password: PASSWORD } }))
+  expectOk(await request.put('/api/plan/ceiling', { data: { monthly_ceiling_cents: null } }))
+
+  const catalogue = expectOk(await request.get('/api/categories'))
+  const { categories } = (await catalogue.json()) as Catalogue
+  const groceries = categories.find((category) => category.label === 'Supermercado')
+  if (groceries === undefined) {
+    throw new Error('Supermercado is missing from the catalogue')
+  }
+  expectOk(
+    await request.put(`/api/categories/${encodeURIComponent(groceries.key)}/limit`, {
+      data: { monthly_limit_cents: null },
+    }),
+  )
+
+  const excluded = expectOk(
+    await request.get('/api/transactions/expenses', {
+      params: { view: 'excluded', from: '2026-08-01', to: '2026-09-30', page_size: 100 },
+    }),
+  )
+  const { items } = (await excluded.json()) as ExcludedPage
+  for (const item of items) {
+    if (item.description !== null && MARKED_BY_THESE_TESTS.has(item.description)) {
+      expectOk(await request.delete(`/api/transactions/${String(item.id)}/not-expense`))
+    }
+  }
+})
 
 test('opens the expenses page and lists only the spending', async ({ page }) => {
   await page.goto('/app/login')
