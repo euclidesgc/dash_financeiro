@@ -8,44 +8,52 @@ import { ConnectionsRoute } from '@/app/routes/connections'
 import { DashboardRoute } from '@/app/routes/dashboard'
 import { ExpensesRoute } from '@/app/routes/expenses'
 import { LoginRoute } from '@/app/routes/login'
+import { NotFoundRoute } from '@/app/routes/not-found'
+import { RouteError } from '@/app/routes/route-error'
 
 export const routes: RouteObject[] = [
-  { path: paths.login, element: <LoginRoute /> },
   {
-    path: paths.dashboard,
-    element: (
-      <ProtectedRoute>
-        <DashboardRoute />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: paths.expenses,
-    element: (
-      <ProtectedRoute>
-        <ExpensesRoute />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: paths.categories,
-    element: (
-      <ProtectedRoute>
-        <CategoriesRoute />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: paths.connections,
-    element: (
-      <ProtectedRoute>
-        <ConnectionsRoute />
-      </ProtectedRoute>
-    ),
+    errorElement: <RouteError />,
+    children: [
+      { path: paths.login, element: <LoginRoute /> },
+      {
+        path: paths.dashboard,
+        element: (
+          <ProtectedRoute>
+            <DashboardRoute />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: paths.expenses,
+        element: (
+          <ProtectedRoute>
+            <ExpensesRoute />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: paths.categories,
+        element: (
+          <ProtectedRoute>
+            <CategoriesRoute />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: paths.connections,
+        element: (
+          <ProtectedRoute>
+            <ConnectionsRoute />
+          </ProtectedRoute>
+        ),
+      },
+      { path: '*', element: <NotFoundRoute /> },
+    ],
   },
 ]
 
-export const router = createBrowserRouter(routes, { basename: '/app/' })
+export const router = createBrowserRouter(routes, { basename: '/app' })
 
 export function AppRouter(): React.JSX.Element {
   return (
