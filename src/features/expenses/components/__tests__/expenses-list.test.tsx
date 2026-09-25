@@ -1459,6 +1459,49 @@ test('"Voltar para a automática" restores the row and removes "manual"', async 
   })
 })
 
+test('applying the category to the similar expenses updates the other row and the totals', async () => {
+  const user = userEvent.setup()
+  fakeExpenses[5].description = 'MERCADO DO BAIRRO'
+  fakeExpenses[5].payee_name = 'Mercado do Bairro'
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+
+  const list = await screen.findByRole('list')
+  const items = within(list).getAllByRole('listitem')
+  const row = items[0]
+
+  await user.click(
+    within(row).getByRole('button', { name: 'Trocar categoria de MERCADO DO BAIRRO' }),
+  )
+  await user.selectOptions(
+    within(row).getByRole('combobox', { name: 'Categoria de MERCADO DO BAIRRO' }),
+    'Groceries',
+  )
+
+  await within(row).findByText('Aplicar a 1 gasto parecido')
+
+  await user.click(within(row).getByRole('button', { name: 'Aplicar' }))
+
+  await within(row).findByText('Categoria aplicada a 1 gasto')
+
+  const otherRow = screen.getAllByRole('listitem')[5]
+  await waitFor(() => {
+    expect(within(otherRow).getByText('Supermercado')).toBeInTheDocument()
+  })
+  expect(within(otherRow).getByText('manual')).toBeInTheDocument()
+
+  await waitFor(() => {
+    const rows = categoryRows()
+    const supermercado = rows.find((r) => cellsOf(r)[0] === 'Supermercado')
+    expect(supermercado).toBeDefined()
+    if (supermercado) {
+      const cells = within(supermercado).getAllByRole('cell')
+      expect(cells[1]).toHaveTextContent('2 gastos')
+      expect(cells[2]).toHaveTextContent('R$ 484,90')
+    }
+  })
+})
+
 test('keeps the list usable when the categories request fails', async () => {
   server.use(http.get('/api/categories', () => HttpResponse.json({}, { status: 500 })))
 

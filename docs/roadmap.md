@@ -15,7 +15,7 @@ prova o caminho de ponta a ponta (tela React → API FastAPI → SQLite) e as ou
 | 008 | `total-por-categoria` | ver os gastos do período agrupados por categoria, com o total de cada uma | Pedido de 22/09 | 005 | in-review |
 | 009 | `ajustar-categoria` | trocar a categoria de um gasto, e a troca sobreviver à próxima atualização | Pedido de 22/09 | 003 | in-review |
 | 010 | `criar-categoria` | criar, renomear e apagar categorias | Pedido de 22/09 | 009 | in-review |
-| 011 | `categoria-para-parecidos` | aplicar a mesma categoria a todos os gastos parecidos de uma vez | Pedido de 22/09 | 009 | planned |
+| 011 | `categoria-para-parecidos` | aplicar a mesma categoria a todos os gastos parecidos de uma vez | Pedido de 22/09 | 009 | in-review |
 | 012 | `limite-por-categoria` | definir um limite mensal para cada categoria | Pedido de 22/09 | 010 | planned |
 | 013 | `sinal-por-categoria` | ver, em cada categoria, se está dentro, acima ou abaixo do limite no período | Pedido de 22/09 | 008, 012 | planned |
 | 014 | `sinal-do-mes` | ver se o total do mês está dentro, acima ou abaixo do teto do plano de recuperação | Pedido de 22/09 | 005 | planned |
@@ -40,3 +40,5 @@ prova o caminho de ponta a ponta (tela React → API FastAPI → SQLite) e as ou
 | 028 | `manual-category-classify-precedence` | o ajuste manual de categoria (`transactions.category_source = 'manual'`) não tem precedência sobre regras por descrição no agrupamento (`group_id`) usado pelas telas Jinja antigas (`app/taxonomy/classify.py`, `_match`); enquanto essas telas existirem, um gasto ajustado à mão pode aparecer em outro grupo nelas | 009 | — | planned |
 | 029 | `jinja-labels-from-schema` | `app/routers/spending.py` e `app/routers/rules.py` montam `LABELS` do seed no import e não veem rótulo renomeado nem categoria criada pelo dono; ler `categories` em requisição nas duas telas Jinja (e em `tests/test_gastos_screen.py`) | 010 | 010 | planned |
 | 030 | `shared-categories-query` | `src/features/expenses/api/get-categories.ts` e `src/features/categories/api/get-categories.ts` buscam `GET /api/categories` com a mesma chave `['categories']`; mover hook e tipo para `src/hooks/` e `src/types/` pela regra "usado por duas features → compartilhado" | 010 | 010 | planned |
+| 031 | `expense-count-label` | `pagination.tsx:19`, `category-totals.tsx:57` e `similar-offer.tsx` escrevem o plural de "gasto" cada um do seu jeito; um utilitário em `src/features/expenses/utils/` usado pelos três | 011 | — | planned |
+| 032 | `e2e-seed-classifies` | `scripts/e2e-backend.sh` ingere sem `classify_all`, então `payee` fica nulo até a primeira escrita de categoria e a contagem de parecidos cai no ramo por descrição, estado que a produção nunca tem; rodar `classify_all` no seed | 011 | 024 | planned |

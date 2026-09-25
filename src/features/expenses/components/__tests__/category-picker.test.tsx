@@ -11,6 +11,23 @@ import type { CategoryUpdateBody, Expense } from '@/features/expenses/types/expe
 
 const CATEGORIES = fakeCategories
 
+function countIs(n: number): void {
+  server.use(
+    http.get('/api/transactions/:id/similar', () => HttpResponse.json({ count: n })),
+  )
+}
+
+function spyOnSimilar(): number[] {
+  const calls: number[] = []
+  server.use(
+    http.get('/api/transactions/:id/similar', ({ params }) => {
+      calls.push(Number(params.id))
+      return HttpResponse.json({ count: 2 })
+    }),
+  )
+  return calls
+}
+
 const BASE: Expense = {
   id: 44,
   date: '2026-08-01',
@@ -318,6 +335,108 @@ test('the button is disabled while the catalogue is not ready', async () => {
   await user.click(button)
 
   expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+})
+
+test('shows the offer after a manual choice when there are similar expenses', async () => {
+  const user = userEvent.setup()
+  spyOnPatch()
+  countIs(2)
+  renderWithProviders(
+    <ul>
+      <CategoryPicker expense={BASE} categories={CATEGORIES} categoriesReady />
+    </ul>,
+  )
+
+  await user.click(screen.getByRole('button', { name: 'Trocar categoria de GASTO 44' }))
+  await user.selectOptions(screen.getByRole('combobox', { name: 'Categoria de GASTO 44' }), 'Groceries')
+
+  await screen.findByText('Aplicar a 2 gastos parecidos')
+  expect(screen.getByRole('button', { name: 'Aplicar' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Agora não' })).toBeInTheDocument()
+})
+
+test('shows no offer when there is no similar expense', async () => {
+  const user = userEvent.setup()
+  spyOnPatch()
+  countIs(0)
+  renderWithProviders(
+    <ul>
+      <CategoryPicker expense={BASE} categories={CATEGORIES} categoriesReady />
+    </ul>,
+  )
+
+  await user.click(screen.getByRole('button', { name: 'Trocar categoria de GASTO 44' }))
+  await user.selectOptions(screen.getByRole('combobox', { name: 'Categoria de GASTO 44' }), 'Groceries')
+
+  await waitFor(() => {
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+  expect(screen.queryByRole('button', { name: 'Aplicar' })).not.toBeInTheDocument()
+})
+
+test('"Voltar para a automática" does not ask for the similar count', async () => {
+  const user = userEvent.setup()
+  spyOnPatch()
+  const calls = spyOnSimilar()
+  renderWithProviders(
+    <ul>
+      <CategoryPicker expense={{ ...BASE, category_source: 'manual' }} categories={CATEGORIES} categoriesReady />
+    </ul>,
+  )
+
+  await user.click(screen.getByRole('button', { name: 'Trocar categoria de GASTO 44' }))
+  await user.selectOptions(screen.getByRole('combobox', { name: 'Categoria de GASTO 44' }), '__auto__')
+
+  await waitFor(() => {
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+  expect(calls.length).toBe(0)
+})
+
+test('a new choice closes the open offer', async () => {
+  const user = userEvent.setup()
+  countIs(2)
+  renderWithProviders(
+    <ul>
+      <CategoryPicker expense={BASE} categories={CATEGORIES} categoriesReady />
+    </ul>,
+  )
+
+  await user.click(screen.getByRole('button', { name: 'Trocar categoria de GASTO 44' }))
+  await user.selectOptions(screen.getByRole('combobox', { name: 'Categoria de GASTO 44' }), 'Groceries')
+  await screen.findByText('Aplicar a 2 gastos parecidos')
+
+  const { release } = spyOnPendingPatch()
+  await user.click(screen.getByRole('button', { name: 'Trocar categoria de GASTO 44' }))
+  await user.selectOptions(screen.getByRole('combobox', { name: 'Categoria de GASTO 44' }), 'Food')
+
+  expect(screen.queryByText(/Aplicar a/)).not.toBeInTheDocument()
+
+  release()
+
+  await screen.findByText('Aplicar a 2 gastos parecidos')
+})
+
+test('"Agora não" closes the offer and keeps the chosen label', async () => {
+  const user = userEvent.setup()
+  spyOnPatch()
+  countIs(2)
+  renderWithProviders(
+    <ul>
+      <CategoryPicker expense={BASE} categories={CATEGORIES} categoriesReady />
+    </ul>,
+  )
+
+  await user.click(screen.getByRole('button', { name: 'Trocar categoria de GASTO 44' }))
+  await user.selectOptions(screen.getByRole('combobox', { name: 'Categoria de GASTO 44' }), 'Groceries')
+  await screen.findByText('Aplicar a 2 gastos parecidos')
+
+  await user.click(screen.getByRole('button', { name: 'Agora não' }))
+
+  expect(screen.queryByText('Aplicar a 2 gastos parecidos')).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Trocar categoria de GASTO 44' })).toHaveTextContent(
+    'Supermercado',
+  )
 })
 
 test('success invalidates the expenses queries', async () => {
