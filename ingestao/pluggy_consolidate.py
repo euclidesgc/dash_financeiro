@@ -102,6 +102,13 @@ OVERDUE_CARRIED = re.compile(r"^(credito|saldo) (de|em) atraso$")
 LOANS_CATEGORY = "Loans and financing"
 FINANCING_CREDIT_REASON = "crédito de financiamento (parcelamento de fatura ou empréstimo)"
 OVERDUE_CARRIED_REASON = "saldo em atraso levado para a fatura seguinte"
+CARD_PAYMENT = re.compile(r"\bpag(amento|to)\b")
+CARD_BALANCE_RETURN = re.compile(r"\bdevolucao saldo credor\b")
+SAME_PERSON_CATEGORY = "Same person transfer"
+CASH_WITHDRAWAL_CATEGORY = "Same person transfer - CASH"
+CASH_DEPOSIT_CATEGORY = "Transfer - Cash"
+BILL_PAYMENT_REASON = "pagamento de fatura"
+OWN_TRANSFER_REASON = "transferência entre contas próprias"
 SNAPSHOT_NAME = re.compile(r"^(?P<series>.+?)(?:_(?P<day>\d{4}-\d{2}-\d{2}))?(?:_p\d+)?\.json$")
 PENDING = "PENDING"
 
@@ -374,6 +381,48 @@ def debt_role(linha: dict[str, Any]) -> str | None:
     return None
 
 
+def owner_names(indice_conta: dict[Any, dict[str, Any]]) -> set[str]:
+    nomes = {normalizar(conta.get("owner")) for conta in indice_conta.values()}
+    return {nome for nome in nomes if len(nome.split()) >= 2}
+
+
+def names_owner(linha: dict[str, Any], owners: set[str]) -> bool:
+    texto = f" {normalizar(linha['descricao'])} {normalizar(linha['recebedor'])} "
+    return any(f" {nome} " in texto for nome in owners)
+
+
+def own_account_side(linha: dict[str, Any], owners: set[str]) -> bool:
+    return linha["categoria_pluggy"] == SAME_PERSON_CATEGORY or names_owner(linha, owners)
+
+
+def pair_reason(debito: dict[str, Any], credito: dict[str, Any], owners: set[str]) -> str:
+    # Reason: a same-value debit and credit in two accounts within three days
+    # is not evidence of anything — a R$ 100 fuel purchase on the card met a
+    # R$ 100 Pix from a third party, and both left the totals. Each pair
+    # needs a sign that the money stayed with the owner: the card side of a
+    # bill payment says it is a payment, the card side of a credit balance
+    # returned says so, and between bank accounts both sides are the owner's
+    # own transfer (Pluggy's same-person category or the owner's name) or a
+    # cash withdrawal met by a cash deposit.
+    card_debit = debito["conta_tipo"] == "CREDIT"
+    card_credit = credito["conta_tipo"] == "CREDIT"
+    if card_debit and card_credit:
+        return ""
+    if card_credit:
+        return BILL_PAYMENT_REASON if CARD_PAYMENT.search(credito["chave"]) else ""
+    if card_debit:
+        return OWN_TRANSFER_REASON if CARD_BALANCE_RETURN.search(debito["chave"]) else ""
+    cash = (
+        debito["categoria_pluggy"] == CASH_WITHDRAWAL_CATEGORY
+        and credito["categoria_pluggy"] == CASH_DEPOSIT_CATEGORY
+    )
+    if not cash and not (own_account_side(debito, owners) and own_account_side(credito, owners)):
+        return ""
+    if PADRAO_PAGTO_FATURA.search(debito["descricao"] or ""):
+        return BILL_PAYMENT_REASON
+    return OWN_TRANSFER_REASON
+
+
 def marcar_transferencias(
     linhas: list[dict[str, Any]], indice_conta: dict[Any, dict[str, Any]]
 ) -> None:
@@ -382,42 +431,39 @@ def marcar_transferencias(
         linha["motivo_transferencia"] = ""
         linha["papel_divida"] = debt_role(linha)
 
+    owners = owner_names(indice_conta)
     por_valor: defaultdict[Any, list[int]] = defaultdict(list)
     for i, linha in enumerate(linhas):
-        if linha["valor"] is None or linha["papel_divida"]:
+        if linha["valor"] is None or linha["papel_divida"] or not linha["data"]:
             continue
         por_valor[round(abs(linha["valor"]), 2)].append(i)
 
     for valor, indices in por_valor.items():
         if valor == 0:
             continue
-        debitos = [i for i in indices if (linhas[i]["valor"] or 0) < 0]
-        creditos = [i for i in indices if (linhas[i]["valor"] or 0) > 0]
-        usados = set()
-        for d in debitos:
+        candidatos: list[tuple[int, int, int, str]] = []
+        for d in indices:
             ld = linhas[d]
-            for c in creditos:
-                if c in usados:
-                    continue
+            if (ld["valor"] or 0) >= 0:
+                continue
+            for c in indices:
                 lc = linhas[c]
-                if ld["conta_id"] == lc["conta_id"]:
-                    continue
-                if not ld["data"] or not lc["data"]:
+                if (lc["valor"] or 0) <= 0 or ld["conta_id"] == lc["conta_id"]:
                     continue
                 delta = abs(
                     (datetime.fromisoformat(ld["data"]) - datetime.fromisoformat(lc["data"])).days
                 )
-                if delta > 3:
-                    continue
-                fatura = lc["conta_tipo"] == "CREDIT" or PADRAO_PAGTO_FATURA.search(
-                    ld["descricao"] or ""
-                )
-                motivo = "pagamento de fatura" if fatura else "transferência entre contas próprias"
-                for alvo in (ld, lc):
-                    alvo["eh_transferencia"] = True
-                    alvo["motivo_transferencia"] = motivo
-                usados.add(c)
-                break
+                motivo = pair_reason(ld, lc, owners)
+                if delta <= 3 and motivo:
+                    candidatos.append((delta, d, c, motivo))
+        usados: set[int] = set()
+        for _, d, c, motivo in sorted(candidatos):
+            if d in usados or c in usados:
+                continue
+            for alvo in (linhas[d], linhas[c]):
+                alvo["eh_transferencia"] = True
+                alvo["motivo_transferencia"] = motivo
+            usados.update((d, c))
 
     for linha in linhas:
         if linha["eh_transferencia"] or linha["papel_divida"]:
@@ -451,11 +497,13 @@ def marcar_por_categoria_pluggy(linhas: list[dict[str, Any]]) -> None:
         if categoria == "Credit card payment" and not linha["eh_transferencia"]:
             linha["eh_transferencia"] = True
             linha["motivo_transferencia"] = "pagamento de fatura (categoria Pluggy)"
-        if categoria == "Same person transfer" and not linha["eh_transferencia"]:
+        if categoria == SAME_PERSON_CATEGORY and not linha["eh_transferencia"]:
             linha["eh_transferencia"] = True
             linha["motivo_transferencia"] = "transferência entre contas próprias (categoria Pluggy)"
-        linha["eh_saque"] = categoria == "Same person transfer - CASH"
-        if linha["eh_saque"]:
+        linha["eh_saque"] = categoria == CASH_WITHDRAWAL_CATEGORY
+        # Reason: cash deposited in another own account within three days
+        # never left the house; only the withdrawal nobody deposits is spent.
+        if linha["eh_saque"] and linha["motivo_transferencia"] != OWN_TRANSFER_REASON:
             linha["eh_transferencia"] = False
             linha["motivo_transferencia"] = ""
 

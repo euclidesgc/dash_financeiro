@@ -32,6 +32,12 @@ gasto total de 6 meses, R$ 103.772,33; renda regular, R$ 9.123 a R$ 13.593/mês.
 Transferências, estornos, recorrências, parcelamentos, saldos e dívidas não
 mudam.
 
+Em 25/09/2026 (item 044) o gasto total de 6 meses foi medido de novo sobre o
+mesmo bruto: a compra de R$ 100,00 no posto em 22/07 era pareada com um Pix de
+R$ 100,00 recebido de terceiro dois dias antes, e os dois saíam das somas como
+transferência entre contas próprias. Era R$ 104.197,31. O déficit não muda,
+porque o Pix volta à entrada do mesmo mês.
+
 | | |
 |---|---|
 | Renda regular | R$ 9.123 a R$ 13.148/mês, fonte única (GB Tech) |
@@ -40,7 +46,7 @@ mudam.
 | Dívida líquida | **R$ 305.207,50** |
 | Ativos líquidos | R$ 488,84 |
 | Saldo em conta + cartão | −R$ 27.449,71 |
-| Gasto total, 6 meses | R$ 104.197,31 |
+| Gasto total, 6 meses | R$ 104.297,31 |
 | Transferências entre contas próprias (excluídas do gasto) | R$ 20.272,00 |
 | Lançamentos extraídos | 1.942 |
 
@@ -378,7 +384,7 @@ Todo critério é falsificável e se compara com número congelado em 05/09/2026
 5. Gastos, últimos 6 meses até 05/09/2026, eixo grupo: **Escola R$ 12.992,18**
    no topo, **Financiamento imobiliário R$ 12.358,81** em seguida; o total
    **exclui** os R$ 20.272,00 de transferência e os pagamentos de fatura, e soma
-   **R$ 104.197,31**.
+   **R$ 104.297,31**.
 6. Dívidas mostra a escada na ordem 3,52% → 1,63% → 0,72%, e o simulador
    devolve, para R$ 10.000 no CDC, **14 parcelas quitadas e R$ 7.994,49 de juros
    evitados** — igual ao `financas/cdc_veiculo.py`.
