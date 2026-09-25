@@ -33,7 +33,7 @@ Ao final: uma tabela de casos decide a separação em gastos, entradas e "não �
 - [ ] CA1.1 — `bash scripts/lint.sh`, `uv run pytest` e `bash scripts/gates/gates_runner.sh` saem com código 0. (comando)
 - [ ] CA1.2 — `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` e `pnpm test:e2e` saem com código 0. (comando)
 - [ ] CA1.3 — `tests/test_expense_views_contract.py` e `src/testing/mocks/__tests__/expense-views-contract.test.ts` leem `src/testing/contracts/expense-views.json`, e nenhum dos dois escreve casos próprios de separação. (estrutural)
-- [ ] CA1.4 — Trocar `INCOME` por `INFLOW` em `app/queries/spending.py` faz falhar o teste da API; desfeita a troca, volta a passar. (comportamental)
+- [ ] CA1.4 — Trocar `INCOME` por `INFLOW` no `_PREDICATE` de `app/queries/expenses.py` faz falhar o teste da API; desfeita a troca, volta a passar. (comportamental)
 - [ ] CA1.5 — Tirar `amount_cents !== 0` de `excluded` em `matchesView` faz falhar o teste da API simulada; desfeita a troca, volta a passar. (comportamental)
 
 ## DoD da entrega

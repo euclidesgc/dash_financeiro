@@ -290,12 +290,15 @@ function sortExpenses(items: Expense[], sort: ExpenseSort, order: ExpenseOrder):
   })
 }
 
-function matchesView(item: Expense, view: string | null): boolean {
+export function matchesView(
+  item: Pick<Expense, 'amount_cents' | 'not_expense_reason'>,
+  view: string | null,
+): boolean {
   if (view === 'income') {
     return item.amount_cents > 0 && item.not_expense_reason === null
   }
   if (view === 'excluded') {
-    return item.not_expense_reason !== null
+    return item.amount_cents !== 0 && item.not_expense_reason !== null
   }
   return item.amount_cents < 0 && item.not_expense_reason === null
 }
