@@ -1,17 +1,17 @@
 import sqlite3
 from typing import Any
 
+from app.queries.payees import DESCRIPTION as DESCRIPTION
+from app.queries.payees import LEGAL as LEGAL
+from app.queries.payees import LOOKUP as LOOKUP
+from app.queries.payees import OWNER as OWNER
+from app.queries.payees import PLUGGY as PLUGGY
+from app.queries.payees import RESOLVED_PAYEES
 from app.queries.spending import SPENDING
 from app.settings.limits import PAYEE_ALIAS_MAX
 from app.settings.typed import InvalidValueError
 
-OWNER = "dono"
-LOOKUP = "cnpj"
 WRITABLE = (OWNER, LOOKUP)
-
-PLUGGY = "pluggy"
-LEGAL = "razao-social"
-DESCRIPTION = "descricao"
 
 # Reason: the origin travels with the value, and the screen reads this map
 # instead of guessing from the text (RF-22).
@@ -23,20 +23,6 @@ ORIGINS = {
     DESCRIPTION: "descrição normalizada",
 }
 
-# Reason: MIN() over the group is deterministic and today changes nothing —
-# not one of the payees in this base carries two different values at any
-# level. Without it the answer would depend on the order SQLite happens to
-# scan in.
-_FROM_PLUGGY = """
-SELECT payee,
-       MIN(merchant_name) AS merchant_name,
-       MIN(merchant_legal_name) AS legal_name,
-       MIN(receiver_name) AS receiver_name
-FROM transactions
-WHERE payee IS NOT NULL
-GROUP BY payee
-"""
-
 _SPENDING_BY_PAYEE = f"""
 SELECT payee, SUM(amount_cents) AS total_cents
 FROM transactions
@@ -44,8 +30,6 @@ WHERE payee IS NOT NULL AND {SPENDING}
 GROUP BY payee
 ORDER BY total_cents
 """
-
-_NAMES = "SELECT payee, source, name FROM payee_names"
 
 _WRITE = (
     "INSERT INTO payee_names (payee, source, name, updated_at) "
@@ -59,33 +43,11 @@ class UnknownSourceError(ValueError):
     pass
 
 
-def _chosen(payee: str, row: dict[str, Any], given: dict[str, str]) -> tuple[str, str]:
-    # Reason: ordered by the quality of the name, not by the source —
-    # merchant.name answers "Apple", "Shopee", "outback", while
-    # receiver.name answers "IFOOD.COM AGENCIA DE RESTAURANTES ONLINE S.A."
-    # — both come from the Pluggy, and one is an answer while the other is a
-    # legal record.
-    for name, origin in (
-        (given.get(OWNER), OWNER),
-        (row.get("merchant_name"), PLUGGY),
-        (given.get(LOOKUP), LOOKUP),
-        (row.get("legal_name") or row.get("receiver_name"), LEGAL),
-    ):
-        if name:
-            return name, origin
-    return payee, DESCRIPTION
-
-
 def display_name(conn: sqlite3.Connection) -> dict[str, dict[str, str]]:
-    given: dict[str, dict[str, str]] = {}
-    for row in conn.execute(_NAMES):
-        given.setdefault(row["payee"], {})[row["source"]] = row["name"]
-    answer: dict[str, dict[str, str]] = {}
-    for row in conn.execute(_FROM_PLUGGY):
-        payee = row["payee"]
-        name, origin = _chosen(payee, dict(row), given.get(payee, {}))
-        answer[payee] = {"name": name, "source": origin}
-    return answer
+    return {
+        row["payee"]: {"name": row["name"] or row["payee"], "source": row["source"]}
+        for row in conn.execute(RESOLVED_PAYEES)
+    }
 
 
 def labels(conn: sqlite3.Connection) -> dict[str, str]:
