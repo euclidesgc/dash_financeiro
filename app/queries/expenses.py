@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Any, Literal
 
 from app.db import fold
-from app.payees.names import labels
+from app.queries.payees import RESOLVED_PAYEES
 from app.queries.spending import EXCLUDED, INCOME, SPENDING, date_window
 
 Sort = Literal["date", "amount", "category"]
@@ -16,12 +16,11 @@ _ORDER_SQL: dict[Order, str] = {"asc": "ASC", "desc": "DESC"}
 
 _FROM = (
     "FROM transactions AS t LEFT JOIN accounts AS a ON a.id = t.account_id"
-    " LEFT JOIN payee_names AS own ON own.payee = t.payee AND own.source = 'dono'"
-    " LEFT JOIN payee_names AS lk ON lk.payee = t.payee AND lk.source = 'cnpj'"
+    f" LEFT JOIN ({RESOLVED_PAYEES}) AS pn ON pn.payee = t.payee"
     " LEFT JOIN categories AS c ON c.name = t.category"
 )
-# Reason: categories.name is UNIQUE, so the join doesn't multiply rows and
-# _TOTAL stays correct.
+# Reason: categories.name is UNIQUE and RESOLVED_PAYEES has one row per
+# payee, so neither join multiplies rows and _TOTAL stays correct.
 
 _LABEL = "COALESCE(c.label, NULLIF(t.category, ''))"
 
@@ -35,7 +34,7 @@ _SORT_SQL: dict[Sort, str] = {
 
 _SELECT = f"""SELECT t.id, t.date, t.description, t.payee, t.category, t.category_source,
        {_LABEL} AS category_label,
-       t.amount_cents, t.account_id, t.not_expense_reason,
+       t.amount_cents, t.account_id, t.not_expense_reason, pn.name AS payee_name,
        a.name AS account_name, a.institution AS account_institution, a.type AS account_type
 {_FROM}"""
 
@@ -44,14 +43,6 @@ _BY_CATEGORY = (
     f"SELECT NULLIF(t.category, '') AS category, {_LABEL} AS label, count(*) AS count,"
     f" coalesce(sum(t.amount_cents), 0) AS total,"
     f" max(c.monthly_limit_cents) AS limit_cents {_FROM}"
-)
-
-# Reason: reproduces app.payees.names._chosen's precedence row by row (debt
-# tracked in the SPEC).
-_PAYEE_NAME_SQL = (
-    "CASE WHEN t.payee IS NULL THEN NULL ELSE COALESCE("
-    "NULLIF(own.name, ''), NULLIF(t.merchant_name, ''), NULLIF(lk.name, ''), "
-    "NULLIF(t.merchant_legal_name, ''), NULLIF(t.receiver_name, '')) END"
 )
 
 
@@ -98,10 +89,7 @@ def _where(
         sql += " AND t.account_id = ?"
         params.append(account_id)
     if search is not None:
-        sql += (
-            " AND (fold(t.description) LIKE ? ESCAPE '\\'"
-            f" OR fold({_PAYEE_NAME_SQL}) LIKE ? ESCAPE '\\')"
-        )
+        sql += " AND (fold(t.description) LIKE ? ESCAPE '\\' OR fold(pn.name) LIKE ? ESCAPE '\\')"
         pattern = _like_pattern(search)
         params.extend([pattern, pattern])
     return sql, params
@@ -112,13 +100,13 @@ def _page_sql(sort: Sort, order: Order, where: str) -> str:
     return f"{_SELECT} {where} ORDER BY {expression}, t.id DESC LIMIT ? OFFSET ?"
 
 
-def _item(row: sqlite3.Row, names: dict[str, str]) -> dict[str, Any]:
+def _item(row: sqlite3.Row) -> dict[str, Any]:
     raw_category = row["category"]
     return {
         "id": row["id"],
         "date": row["date"],
         "description": row["description"],
-        "payee_name": names.get(row["payee"]),
+        "payee_name": row["payee_name"],
         "account_name": row["account_name"],
         "account_institution": row["account_institution"],
         "account_type": row["account_type"],
@@ -171,11 +159,7 @@ def list_expenses(
         account_id=account_id,
         search=search,
     )
-    # Reason: the payee's display name is a precedence already tested in
-    # app.payees.names — resolving it here keeps the SQL free of duplicated
-    # logic.
-    names = labels(conn)
-    items = [_item(row, names) for row in rows]
+    items = [_item(row) for row in rows]
     return ExpensesPage(items=items, total=total, total_cents=int(total_cents))
 
 
@@ -185,7 +169,7 @@ def get_expense(conn: sqlite3.Connection, transaction_id: int) -> dict[str, Any]
         return None
     # Reason: no SPENDING filter here — this reads a single transaction by
     # id, not a page of gastos.
-    return _item(row, labels(conn))
+    return _item(row)
 
 
 def sum_by_category(

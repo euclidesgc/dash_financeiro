@@ -10,7 +10,7 @@ from app.ingest.loader import ingest
 from app.ingest.source import load_accounts
 from app.ingest.trigger import COMMAND
 from app.main import create_app
-from app.payees.names import name_it
+from app.payees.names import DESCRIPTION, LOOKUP, OWNER, display_name, name_it
 from app.taxonomy.seed import seed_taxonomy
 
 LOGIN = "teste"
@@ -2436,3 +2436,79 @@ def test_the_openapi_lists_period_result_and_income_in_the_view_enum(client):
 
     properties = body["components"]["schemas"]["PeriodResultResponse"]["properties"]
     assert set(properties) >= {"income_cents", "spending_cents", "balance_cents"}
+
+
+def test_the_list_shows_the_same_name_the_payees_screen_resolves(client):
+    _load(
+        [
+            _transaction("owner", "2026-09-01", -10.0, nome_fantasia="Loja do Dono"),
+            _transaction("pluggy", "2026-09-02", -10.0, nome_fantasia="Shopee"),
+            _transaction("lookup", "2026-09-03", -10.0, razao_social="COMERCIO LTDA"),
+            _transaction("legal", "2026-09-04", -10.0, razao_social="LOJA COMERCIO LTDA"),
+            _transaction("receiver", "2026-09-05", -10.0, recebedor="IFOOD.COM S.A."),
+            _transaction("bare", "2026-09-06", -10.0),
+        ]
+    )
+    conn = connect()
+    name_it(conn, _payee_of(conn, "owner"), "Apelido do dono", OWNER)
+    name_it(conn, _payee_of(conn, "lookup"), "Fantasia consultada", LOOKUP)
+    resolved = display_name(conn)
+    payees = {
+        id: _payee_of(conn, id) for id in ("owner", "pluggy", "lookup", "legal", "receiver", "bare")
+    }
+    conn.close()
+    _sign_in(client)
+
+    items = {
+        item["description"]: item
+        for item in client.get("/api/transactions/expenses").json()["items"]
+    }
+
+    shown = {id: items[f"GASTO {id}"]["payee_name"] for id in payees}
+    assert shown == {
+        "owner": "Apelido do dono",
+        "pluggy": "Shopee",
+        "lookup": "Fantasia consultada",
+        "legal": "LOJA COMERCIO LTDA",
+        "receiver": "IFOOD.COM S.A.",
+        "bare": None,
+    }
+    for id, payee in payees.items():
+        expected = None if resolved[payee]["source"] == DESCRIPTION else resolved[payee]["name"]
+        assert shown[id] == expected
+
+
+def test_the_search_follows_the_name_of_the_payee_not_of_the_row(client):
+    _load(
+        [
+            _transaction("a", "2026-09-01", -10.0, descricao="COMPRA LOJA", nome_fantasia="Alfa"),
+            _transaction("b", "2026-09-02", -20.0, descricao="COMPRA LOJA", nome_fantasia="Beta"),
+        ]
+    )
+    conn = connect()
+    assert _payee_of(conn, "a") == _payee_of(conn, "b")
+    conn.close()
+    _sign_in(client)
+
+    found = client.get("/api/transactions/expenses?q=alfa").json()
+    assert [item["payee_name"] for item in found["items"]] == ["Alfa", "Alfa"]
+    assert client.get("/api/transactions/expenses?q=beta").json()["total"] == 0
+
+
+def test_a_looked_up_name_is_searched_below_the_merchant_name(client):
+    _load(
+        [
+            _transaction("legal", "2026-09-01", -10.0, razao_social="COMERCIO XYZ LTDA"),
+            _transaction("trade", "2026-09-02", -10.0, nome_fantasia="Padaria Real"),
+        ]
+    )
+    conn = connect()
+    name_it(conn, _payee_of(conn, "legal"), "Mercearia Consultada", LOOKUP)
+    name_it(conn, _payee_of(conn, "trade"), "Panificadora Consultada", LOOKUP)
+    conn.close()
+    _sign_in(client)
+
+    assert _descriptions(client, "q=mercearia") == ["GASTO legal"]
+    assert _descriptions(client, "q=xyz") == []
+    assert _descriptions(client, "q=panificadora") == []
+    assert _descriptions(client, "q=padaria") == ["GASTO trade"]
