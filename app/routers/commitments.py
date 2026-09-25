@@ -67,7 +67,6 @@ def _mark(
             action(conn, series_key)
         except DismissRefusedError as refusal:
             return _answer(request, conn, today, notice=str(refusal), status_code=400)
-        conn.commit()
         # Reason: the whole screen comes back from the write, totals
         # included — asking for a reload would take the number the owner
         # just changed out of sight.

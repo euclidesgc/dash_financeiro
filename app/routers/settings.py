@@ -14,6 +14,7 @@ from app.offers import store as offers_store
 from app.payees import names
 from app.payees.lookup import InvalidCnpjError, LookupUnavailableError, enabled, trade_name
 from app.projection.monthly import available_months
+from app.queries.payees import payee_cnpj, payee_known
 from app.settings import store
 from app.settings.catalog import FACT, GOAL, MEDIAN
 from app.settings.typed import InvalidValueError, parse_months
@@ -80,7 +81,7 @@ def name_payee(
     payee = text(beneficiario)
     conn = connect()
     try:
-        if not _known(conn, payee):
+        if not payee_known(conn, payee):
             return answer(request, conn, notice=UNKNOWN_PAYEE.format(payee=payee), status_code=400)
         given = text(nome).strip()
         if given:
@@ -108,7 +109,7 @@ def look_up_cnpj(
     try:
         if not enabled():
             return answer(request, conn, notice=LOOKUP_OFF)
-        cnpj = _cnpj_of(conn, payee)
+        cnpj = payee_cnpj(conn, payee)
         if cnpj is None:
             return answer(request, conn, notice=NO_CNPJ)
         try:
@@ -149,20 +150,6 @@ def forget_ia(request: Request) -> Response:
         return answer(request, conn, done=KEY_FORGOTTEN)
     finally:
         conn.close()
-
-
-def _known(conn: sqlite3.Connection, payee: str) -> bool:
-    found = conn.execute("SELECT 1 FROM transactions WHERE payee = ? LIMIT 1", (payee,)).fetchone()
-    return found is not None
-
-
-def _cnpj_of(conn: sqlite3.Connection, payee: str) -> str | None:
-    found = conn.execute(
-        "SELECT MIN(merchant_cnpj) AS cnpj FROM transactions "
-        "WHERE payee = ? AND merchant_cnpj IS NOT NULL",
-        (payee,),
-    ).fetchone()
-    return found["cnpj"] if found else None
 
 
 def _refuse_window_the_base_cannot_fill(conn: sqlite3.Connection, name: str, typed: str) -> None:

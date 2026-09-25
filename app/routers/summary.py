@@ -11,6 +11,7 @@ from app.db import connect
 from app.projection.forecast import forecast
 from app.projection.monthly import median_months, monthly
 from app.projection.position import positions
+from app.queries.transactions import base_is_empty
 from app.routers.reference import Reference, screen_date
 from app.sync import (
     STALE_DAYS,
@@ -31,8 +32,6 @@ SCREEN = "/"
 SYNC = "/sincronizar"
 DATE_FIELD = "data"
 COMMAND = "python -m app.sync"
-
-_COUNT = "SELECT COUNT(*) AS total FROM transactions"
 
 
 @router.get(SCREEN)
@@ -126,7 +125,7 @@ def _context(conn: sqlite3.Connection, today: date) -> dict[str, Any]:
         # previous one — otherwise the figures on screen would not add up
         # to the balance beside them.
         "moving": _moving(line["days"]),
-        "empty": conn.execute(_COUNT).fetchone()["total"] == 0,
+        "empty": base_is_empty(conn),
         "sync": _sync(conn, today),
     }
 

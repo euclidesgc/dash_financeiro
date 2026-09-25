@@ -3,8 +3,9 @@ import sqlite3
 import pytest
 
 from app.db import fold
+from app.queries.rules import residue
 from app.taxonomy.catalogue import create_category
-from app.taxonomy.classify import classify_all, residue
+from app.taxonomy.classify import classify_all
 from app.taxonomy.override import (
     NotCountableError,
     UnknownCategoryError,

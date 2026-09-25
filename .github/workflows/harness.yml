@@ -89,3 +89,5 @@ jobs:
         run: bash scripts/gates/__tests__/medir.test.sh
       - name: a tranca de merge trata verificação pendente como não medida
         run: bash scripts/gates/__tests__/merge-se-liberado.test.sh
+      - name: G7 recusa router com consulta ou transação própria
+        run: bash scripts/gates/__tests__/gate7.test.sh
