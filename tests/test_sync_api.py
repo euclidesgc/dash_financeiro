@@ -172,7 +172,7 @@ def test_a_pluggy_failure_during_run_is_200_with_status_failed(client, monkeypat
     monkeypatch.setenv("PLUGGY_CLIENT_ID", "id-falso")
     monkeypatch.setenv("PLUGGY_CLIENT_SECRET", "segredo-falso")
 
-    def explode(config):
+    def explode(config, item_ids):
         raise PluggyFetchError(UNREACHABLE)
 
     monkeypatch.setattr(app.sync, "fetch_from_pluggy", explode)

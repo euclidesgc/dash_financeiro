@@ -2,7 +2,13 @@ import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
 import { afterAll, afterEach, beforeAll } from 'vitest'
 
-import { resetCategories, resetExpenses, resetPlan, resetSession } from '@/testing/mocks/handlers'
+import {
+  resetCategories,
+  resetConnections,
+  resetExpenses,
+  resetPlan,
+  resetSession,
+} from '@/testing/mocks/handlers'
 import { server } from '@/testing/mocks/server'
 
 beforeAll(() => {
@@ -15,6 +21,7 @@ afterEach(() => {
   resetExpenses()
   resetCategories()
   resetPlan()
+  resetConnections()
 })
 afterAll(() => {
   server.close()

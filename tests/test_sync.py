@@ -261,7 +261,7 @@ def test_with_the_pluggy_source_a_fetch_failure_records_a_failed_run(taxonomy_co
     monkeypatch.setenv("PLUGGY_CLIENT_ID", "id-falso")
     monkeypatch.setenv("PLUGGY_CLIENT_SECRET", "segredo-falso")
 
-    def explode(config):
+    def explode(config, item_ids):
         raise sync.PluggyFetchError(
             "pluggy: a Pluggy não respondeu; verifique a conexão com a internet e tente de novo."
         )
@@ -325,7 +325,7 @@ def test_a_pluggy_failure_records_who_asked_for_the_failed_run(taxonomy_conn, mo
     monkeypatch.setenv("PLUGGY_CLIENT_ID", "id-falso")
     monkeypatch.setenv("PLUGGY_CLIENT_SECRET", "segredo-falso")
 
-    def explode(config):
+    def explode(config, item_ids):
         raise sync.PluggyFetchError("pluggy: fora do ar")
 
     monkeypatch.setattr(sync, "fetch_from_pluggy", explode)

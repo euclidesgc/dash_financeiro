@@ -38,6 +38,7 @@ EXPECTED_TABLES = [
     "payee_names",
     "plan_facts",
     "plan_snapshots",
+    "pluggy_connections",
     "scenarios",
     "schema_migrations",
     "sync_runs",
@@ -67,6 +68,7 @@ EXPECTED_MIGRATIONS = [
     "021_category_limit.sql",
     "022_not_expense.sql",
     "023_sync_trigger.sql",
+    "024_pluggy_connections.sql",
 ]
 
 TABLE_NAMES = (
