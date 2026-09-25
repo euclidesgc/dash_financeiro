@@ -1,5 +1,5 @@
 import { http, HttpResponse, delay } from 'msw'
-import { expect, test, vi } from 'vitest'
+import { expect, test } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { screen, waitFor } from '@testing-library/react'
 
@@ -120,7 +120,7 @@ test('shows the status error and retries', async () => {
   expect(await screen.findByText(/Última atualização: 22\/09\/2026/)).toBeInTheDocument()
 })
 
-test('disables the button with "Atualizando…" while running and invalidates the balances', async () => {
+test('disables the button with "Atualizando…" while running and marks the balances stale', async () => {
   server.use(
     http.post('/api/sync/run', async () => {
       await delay(50)
@@ -129,7 +129,7 @@ test('disables the button with "Atualizando…" while running and invalidates th
   )
 
   const { queryClient } = renderWithProviders(<SyncPanel />)
-  const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
+  queryClient.setQueryData(['accounts', 'balances'], [])
 
   await screen.findByText(/Última atualização: 22\/09\/2026/)
 
@@ -143,7 +143,7 @@ test('disables the button with "Atualizando…" while running and invalidates th
   await waitFor(() =>
     expect(screen.getByRole('button', { name: 'Atualizar agora' })).toBeInTheDocument(),
   )
-  expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['accounts', 'balances'] })
+  expect(queryClient.getQueryState(['accounts', 'balances'])?.isInvalidated).toBe(true)
 })
 
 test('shows the server detail on 409', async () => {
