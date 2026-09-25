@@ -27,7 +27,7 @@ export function AccountSelect({
   const id = useId()
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex min-w-0 max-w-full flex-col gap-1">
       <label htmlFor={id} className="block text-sm font-medium text-gray-900">
         Conta
       </label>
@@ -39,7 +39,7 @@ export function AccountSelect({
         onChange={(event) => {
           onChange(event.target.value === '' ? null : event.target.value)
         }}
-        className="mt-1 block min-h-10 rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+        className="mt-1 block min-h-10 max-w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
       >
         <option value="">Todas as contas</option>
         {!isPending && !isError
