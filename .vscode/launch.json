@@ -2,43 +2,11 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Painel (127.0.0.1:8000)",
-      "type": "debugpy",
-      "request": "launch",
-      "module": "app",
-      "console": "integratedTerminal",
-      "justMyCode": false,
-      "python": "${workspaceFolder}/.venv/bin/python",
-      "cwd": "${workspaceFolder}",
-      "preLaunchTask": "Preparar a base local"
-    },
-    {
-      "name": "Front (localhost:5173/app/)",
+      "name": "Executar",
       "type": "node-terminal",
       "request": "launch",
-      "command": "pnpm dev",
-      "cwd": "${workspaceFolder}",
-      "env": {
-        "NO_COLOR": "1"
-      }
-    },
-    {
-      "name": "Abrir o painel no navegador",
-      "type": "node-terminal",
-      "request": "launch",
-      "command": "until curl -s -o /dev/null http://localhost:5173/app/; do sleep 1; done; xdg-open http://localhost:5173/app/; exit",
+      "command": "bash scripts/dev.sh",
       "cwd": "${workspaceFolder}"
-    }
-  ],
-  "compounds": [
-    {
-      "name": "Painel completo (API + front)",
-      "configurations": [
-        "Painel (127.0.0.1:8000)",
-        "Front (localhost:5173/app/)",
-        "Abrir o painel no navegador"
-      ],
-      "stopAll": true
     }
   ]
 }
