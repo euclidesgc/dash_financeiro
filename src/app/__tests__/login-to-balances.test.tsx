@@ -1,13 +1,18 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { http, HttpResponse } from 'msw'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { expect, test } from 'vitest'
 
 import { routes } from '@/app/router'
+import { createQueryClient } from '@/lib/react-query'
+import { server } from '@/testing/mocks/server'
 
-function renderRouter(initialEntries: string[]) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+function renderRouter(
+  initialEntries: string[],
+  queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } }),
+) {
   const router = createMemoryRouter(routes, { initialEntries })
 
   render(
@@ -94,5 +99,27 @@ test('a session that expires while the app is open lands on the login page and s
   unsubscribe()
 
   expect(visited).toEqual(['/login'])
+  expect(router.state.location.pathname).toBe('/login')
+})
+
+test('a 401 from another call while the app is open lands on the login page', async () => {
+  const { router, queryClient } = renderRouter(['/login'], createQueryClient())
+
+  await screen.findByRole('heading', { name: 'Entrar' })
+  await login()
+  await screen.findByRole('heading', { name: 'Saldos de hoje' })
+
+  await fetch('/api/auth/logout', { method: 'POST' })
+  server.use(
+    http.get('/api/accounts/balances', () =>
+      HttpResponse.json({ detail: 'nao autenticado' }, { status: 401 }),
+    ),
+  )
+
+  await act(async () => {
+    await queryClient.invalidateQueries({ queryKey: ['accounts', 'balances'] })
+  })
+
+  expect(await screen.findByRole('heading', { name: 'Entrar' })).toBeInTheDocument()
   expect(router.state.location.pathname).toBe('/login')
 })

@@ -70,6 +70,24 @@ test('a session that ends while the app is open goes to the login page and stays
   await expect(page.getByRole('heading', { level: 1, name: 'Saldos de hoje' })).toBeVisible()
 })
 
+test('a session that ends while the user moves between screens goes to the login page', async ({
+  page,
+}) => {
+  await page.goto('/app/login')
+  await page.getByLabel('Login').fill(LOGIN)
+  await page.getByLabel('Senha').fill(PASSWORD)
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Saldos de hoje' })).toBeVisible()
+
+  const loggedOut = await page.request.post('/api/auth/logout')
+  expect(loggedOut.ok()).toBe(true)
+
+  await page.getByRole('link', { name: 'Gastos' }).click()
+
+  await expect(page.getByRole('heading', { level: 1, name: 'Entrar' })).toBeVisible()
+  await expect(page).toHaveURL(/\/app\/login$/)
+})
+
 test('opens the app without the trailing slash and shows a Portuguese page for an unknown path', async ({
   page,
 }) => {
