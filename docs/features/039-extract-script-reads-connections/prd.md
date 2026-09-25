@@ -14,6 +14,7 @@ O único usuário do painel, que roda o script de extração no terminal quando 
 - **R2** — Sem conexão cadastrada e sem `--item`, `status` e `extrair` param com "Nenhuma conexão cadastrada. Cadastre em Conexões ou passe --item.".
 - **R3** — `criar-item` cadastra a conexão criada na lista da tela; se ela já estiver lá, segue sem duplicar. A mensagem final diz que a conexão foi cadastrada em Conexões.
 - **R4** — O script deixa de ler e gravar o arquivo de texto antigo e a variável de ambiente de conexão avulsa; `--item` continua consultando uma conexão só, sem tocar na lista.
+- **R5** — A ajuda do script (`--help`) diz como rodá-lo: da raiz do projeto, `uv run python -m ingestao.pluggy_extract <subcomando>`.
 
 ## Fora de escopo
 
