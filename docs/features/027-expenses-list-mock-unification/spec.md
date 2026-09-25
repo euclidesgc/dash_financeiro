@@ -3,7 +3,7 @@
 ## Contexto
 
 - `src/testing/mocks/handlers.ts` responde `GET /api/transactions/expenses` com `filterExpenses(url)` (período, conta, busca e `matchesView`), `sortExpenses` e o fatiamento da página.
-- `src/features/expenses/components/__tests__/expenses-list.test.tsx::spyOnExpensesRequests` substitui esse handler para registrar os parâmetros das chamadas e, para responder, reescreve a mesma regra: `filterForSpy`, `matchesViewForSpy`, `sortForSpy` e o fatiamento.
+- `src/features/expenses/components/__tests__/expenses-list.test.tsx::spyOnExpensesRequests` substitui esse handler para registrar os parâmetros das chamadas e, para responder, reescreve a mesma regra: `filterForSpy`, `matchesViewForSpy`, `sortForSpy` e o fatiamento. O teste "keeps the previous rows while the next page loads" monta outra página à mão com `matchesViewForSpy`, só para atrasar a segunda página.
 
 ## Decisões
 
@@ -15,7 +15,7 @@
 
 ### D2 — As cópias do teste saem
 
-`filterForSpy`, `matchesViewForSpy` e `sortForSpy` são removidas de `expenses-list.test.tsx`, com os imports que só elas usavam.
+`filterForSpy`, `matchesViewForSpy` e `sortForSpy` são removidas de `expenses-list.test.tsx`, com os imports que só elas usavam; o handler que atrasa a segunda página também responde com `expensesPage(url)`.
 
 ## Arquivos afetados
 
