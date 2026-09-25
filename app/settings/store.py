@@ -69,6 +69,11 @@ def entry(name: str) -> dict[str, Any]:
     return item
 
 
+def _valid_until(conn: sqlite3.Connection, name: str) -> str | None:
+    row = conn.execute("SELECT valid_until FROM plan_facts WHERE name = ?", (name,)).fetchone()
+    return row["valid_until"] if row else None
+
+
 def write(
     conn: sqlite3.Connection,
     name: str,
@@ -81,8 +86,7 @@ def write(
     if read_value is None:
         raise InvalidValueError(f"{item['label']} precisa de um valor.")
     if valid_until is UNCHANGED:
-        row = conn.execute("SELECT valid_until FROM plan_facts WHERE name = ?", (name,)).fetchone()
-        valid_until = row["valid_until"] if row else None
+        valid_until = _valid_until(conn, name)
     conn.execute(
         _UPSERT,
         (
@@ -97,3 +101,23 @@ def write(
     )
     conn.commit()
     return read_value
+
+
+def put(conn: sqlite3.Connection, name: str, value: int | None) -> None:
+    item = entry(name)
+    if value is None:
+        conn.execute("DELETE FROM plan_facts WHERE name = ?", (name,))
+    else:
+        conn.execute(
+            _UPSERT,
+            (
+                name,
+                item["label"],
+                value,
+                item["unit"],
+                item["kind"],
+                HUMAN,
+                _valid_until(conn, name),
+            ),
+        )
+    conn.commit()

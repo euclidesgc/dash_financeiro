@@ -96,6 +96,17 @@ def _payee_of(conn, id: str) -> str:
     return row["payee"]
 
 
+def _month_signal(client: TestClient, query: str = "") -> dict[str, Any]:
+    return client.get(f"/api/transactions/expenses/month-signal?{query}").json()
+
+
+def _put_ceiling(client: TestClient, cents: int | None):
+    return client.put("/api/plan/ceiling", json={"monthly_ceiling_cents": cents})
+
+
+MONTH = "from=2026-08-01&to=2026-08-31"
+
+
 def test_expenses_without_session_answers_401(client):
     response = client.get("/api/transactions/expenses")
 
@@ -1796,3 +1807,127 @@ def test_the_openapi_lists_similar_and_apply_to_similar(client):
     paths = response.json()["paths"]
     assert "get" in paths["/api/transactions/{transaction_id}/similar"]
     assert "post" in paths["/api/transactions/{transaction_id}/category/apply-to-similar"]
+
+
+def _load_month_signal_fixture(client):
+    _load(
+        [
+            _transaction("m-1", "2026-08-20", -60.0, categoria="Groceries"),
+            _transaction("m-2", "2026-08-15", -45.0, categoria="Healthcare"),
+        ]
+    )
+    _sign_in(client)
+
+
+def test_month_signal_without_session_answers_401(client):
+    response = client.get(f"/api/transactions/expenses/month-signal?{MONTH}")
+
+    assert response.status_code == 401
+    assert response.json() == {"detail": "nao autenticado"}
+
+
+def test_a_whole_month_over_the_ceiling(client):
+    _load_month_signal_fixture(client)
+    _put_ceiling(client, 10000)
+
+    body = _month_signal(client, MONTH)
+
+    assert body == {
+        "scope": "month",
+        "spent_cents": 10500,
+        "ceiling_cents": 10000,
+        "signal": "over",
+        "remaining_cents": -500,
+    }
+
+
+def test_a_whole_month_within_the_ceiling(client):
+    _load_month_signal_fixture(client)
+    _put_ceiling(client, 20000)
+
+    body = _month_signal(client, MONTH)
+
+    assert body["signal"] == "within"
+    assert body["remaining_cents"] == 9500
+
+
+def test_a_whole_month_near_the_ceiling_is_warning(client):
+    _load_month_signal_fixture(client)
+    _put_ceiling(client, 12000)
+
+    body = _month_signal(client, MONTH)
+
+    assert body["signal"] == "warning"
+    assert body["remaining_cents"] == 1500
+
+
+def test_a_whole_month_without_a_ceiling_has_no_signal(client):
+    _load_month_signal_fixture(client)
+
+    body = _month_signal(client, MONTH)
+
+    assert body["spent_cents"] == 10500
+    assert body["ceiling_cents"] is None
+    assert body["signal"] is None
+    assert body["remaining_cents"] is None
+    assert body["scope"] == "month"
+
+
+def test_a_partial_interval_only_from_and_no_dates_give_scope_none(client):
+    _load_month_signal_fixture(client)
+    _put_ceiling(client, 10000)
+
+    partial = _month_signal(client, "from=2026-08-01&to=2026-08-30")
+    only_from = _month_signal(client, "from=2026-08-01")
+    no_dates = _month_signal(client)
+
+    for body in (partial, only_from, no_dates):
+        assert body["scope"] == "none"
+        assert body["signal"] is None
+        assert body["remaining_cents"] is None
+        assert body["ceiling_cents"] == 10000
+
+
+def test_month_signal_refuses_inverted_dates(client):
+    _load_month_signal_fixture(client)
+
+    response = client.get("/api/transactions/expenses/month-signal?from=2026-08-31&to=2026-08-01")
+
+    assert response.status_code == 422
+
+
+def test_transfers_and_refunds_stay_out_of_the_month_signal(client):
+    _load(
+        [
+            _transaction("m-1", "2026-08-20", -60.0, categoria="Groceries"),
+            _transaction("m-2", "2026-08-15", -45.0, categoria="Healthcare"),
+            _transaction("t-1", "2026-08-05", -500.0, eh_transferencia=True),
+            _transaction("r-1", "2026-08-06", 30.0, eh_estorno=True),
+        ]
+    )
+    _sign_in(client)
+
+    body = _month_signal(client, MONTH)
+
+    assert body["spent_cents"] == 10500
+
+
+def test_spent_cents_equals_the_absolute_total_of_the_expenses_page(client):
+    _load_month_signal_fixture(client)
+
+    signal_body = _month_signal(client, MONTH)
+    expenses_body = client.get(f"/api/transactions/expenses?{MONTH}").json()
+
+    assert signal_body["spent_cents"] == abs(expenses_body["total_cents"])
+
+
+def test_the_openapi_lists_month_signal_with_from_and_to_only(client):
+    _sign_in(client)
+
+    response = client.get("/openapi.json")
+
+    body = response.json()
+    parameters = body["paths"]["/api/transactions/expenses/month-signal"]["get"]["parameters"]
+    assert {param["name"] for param in parameters} == {"from", "to"}
+    properties = body["components"]["schemas"]["MonthSignalResponse"]["properties"]
+    assert set(properties) >= {"scope", "spent_cents", "ceiling_cents", "signal", "remaining_cents"}

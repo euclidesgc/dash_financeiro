@@ -1,13 +1,13 @@
 import { http, HttpResponse, delay } from 'msw'
 import { afterEach, expect, test, vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { useLocation } from 'react-router'
 
 import { ExpensesList } from '@/features/expenses/components/expenses-list'
 import { renderWithProviders } from '@/testing/test-utils'
 import { server } from '@/testing/mocks/server'
-import { fakeExpenses, filterExpenses, foldText, groupByCategory } from '@/testing/mocks/handlers'
+import { fakeExpenses, fakePlan, filterExpenses, foldText, groupByCategory } from '@/testing/mocks/handlers'
 import type { Expense, ExpenseOrder, ExpenseSort } from '@/features/expenses/types/expense'
 
 afterEach(() => {
@@ -1563,4 +1563,53 @@ test('shows "Sinal só por mês" and no badge for the whole period', async () =>
     expect(text).not.toContain('Acima')
   }
   expect(screen.queryByText(/acima do limite/)).not.toBeInTheDocument()
+})
+
+test('shows the month ceiling block with the invitation for a month without ceiling', async () => {
+  renderWithProviders(<ExpensesList />, { route: '/expenses?month=2026-08' })
+
+  expect(
+    await screen.findByRole('heading', { level: 2, name: 'Teto do mês' }),
+  ).toBeInTheDocument()
+  expect(screen.getByText('Sem teto definido.', { exact: false })).toBeInTheDocument()
+})
+
+test('hides the month ceiling block and does not call month-signal outside a month', async () => {
+  const calls: URLSearchParams[] = []
+  server.use(
+    http.get('/api/transactions/expenses/month-signal', ({ request }) => {
+      calls.push(new URL(request.url).searchParams)
+      return HttpResponse.json({
+        scope: 'none',
+        spent_cents: 0,
+        ceiling_cents: null,
+        signal: null,
+        remaining_cents: null,
+      })
+    }),
+  )
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  await screen.findByRole('heading', { level: 2, name: 'Por categoria' })
+  expect(screen.queryByText('Teto do mês')).not.toBeInTheDocument()
+
+  cleanup()
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses?from=2026-08-01&to=2026-08-15' })
+  await screen.findByRole('list')
+  expect(screen.queryByText('Teto do mês')).not.toBeInTheDocument()
+
+  expect(calls).toHaveLength(0)
+})
+
+test('shows the month signal against the fake ceiling', async () => {
+  fakePlan.monthly_ceiling_cents = 10000
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses?month=2026-08' })
+
+  expect(
+    await screen.findByText('R$ 84,90 de R$ 100,00 · 85%'),
+  ).toBeInTheDocument()
+  expect(screen.getByText('Atenção', { exact: true })).toBeInTheDocument()
+  expect(screen.getByText(/Sobram R\$ 15,10/)).toBeInTheDocument()
 })

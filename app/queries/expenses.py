@@ -121,6 +121,19 @@ def _item(row: sqlite3.Row, names: dict[str, str]) -> dict[str, Any]:
     }
 
 
+def sum_expenses(
+    conn: sqlite3.Connection,
+    *,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    account_id: str | None = None,
+    search: str | None = None,
+) -> int:
+    where, params = _where(date_from, date_to, account_id, search)
+    _, total_cents = conn.execute(f"{_TOTAL} {where}", params).fetchone()
+    return int(total_cents)
+
+
 def list_expenses(
     conn: sqlite3.Connection,
     *,
@@ -137,7 +150,14 @@ def list_expenses(
     where, where_params = _where(date_from, date_to, account_id, search)
     sql = _page_sql(sort, order, where)
     rows = conn.execute(sql, (*where_params, page_size, offset)).fetchall()
-    total, total_cents = conn.execute(f"{_TOTAL} {where}", where_params).fetchone()
+    total, _ = conn.execute(f"{_TOTAL} {where}", where_params).fetchone()
+    total_cents = sum_expenses(
+        conn,
+        date_from=date_from,
+        date_to=date_to,
+        account_id=account_id,
+        search=search,
+    )
     # Reason: the payee's display name is a precedence already tested in
     # app.payees.names — resolving it here keeps the SQL free of duplicated
     # logic.

@@ -4,21 +4,20 @@ import { useForm } from 'react-hook-form'
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ApiError } from '@/lib/api-client'
-import { useSetCategoryLimit } from '@/features/categories/api/set-category-limit'
-import { categoryLimitSchema } from '@/features/categories/types/category-limit-schema'
-import type { CategoryLimitInput } from '@/features/categories/types/category-limit-schema'
+import { useSetPlanCeiling } from '@/features/expenses/api/set-plan-ceiling'
+import { ceilingSchema } from '@/features/expenses/types/ceiling-schema'
+import type { CeilingInput } from '@/features/expenses/types/ceiling-schema'
 import { fromCents, toCents } from '@/utils/cents'
-import type { CatalogueCategory } from '@/features/categories/types/category'
 
-function isLimitError(error: unknown): error is ApiError {
+function isCeilingError(error: unknown): error is ApiError {
   return error instanceof ApiError && error.status === 422
 }
 
-export function CategoryLimitForm({
-  category,
+export function CeilingForm({
+  ceilingCents,
   onDone,
 }: {
-  category: CatalogueCategory
+  ceilingCents: number | null
   onDone: () => void
 }): React.JSX.Element {
   const {
@@ -26,11 +25,11 @@ export function CategoryLimitForm({
     handleSubmit,
     setError,
     formState: { errors },
-  } = useForm<CategoryLimitInput>({
-    resolver: zodResolver(categoryLimitSchema),
-    defaultValues: { limit: fromCents(category.monthly_limit_cents) },
+  } = useForm<CeilingInput>({
+    resolver: zodResolver(ceilingSchema),
+    defaultValues: { ceiling: fromCents(ceilingCents) },
   })
-  const mutation = useSetCategoryLimit()
+  const mutation = useSetPlanCeiling()
   const id = useId()
   const errorId = `${id}-error`
   const isSubmitting = useRef(false)
@@ -39,11 +38,11 @@ export function CategoryLimitForm({
     if (isSubmitting.current) return
     isSubmitting.current = true
     mutation.mutate(
-      { key: category.key, monthly_limit_cents: toCents(input.limit) },
+      { monthly_ceiling_cents: toCents(input.ceiling) },
       {
         onSuccess: onDone,
         onError: (error) => {
-          if (isLimitError(error)) setError('limit', { message: error.detail })
+          if (isCeilingError(error)) setError('ceiling', { message: error.detail })
         },
         onSettled: () => {
           isSubmitting.current = false
@@ -61,7 +60,7 @@ export function CategoryLimitForm({
       >
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <label htmlFor={id} className="block text-sm font-medium text-gray-900">
-            Limite mensal (R$)
+            Teto mensal (R$)
           </label>
           <input
             id={id}
@@ -71,17 +70,17 @@ export function CategoryLimitForm({
             inputMode="decimal"
             autoComplete="off"
             autoFocus
-            aria-invalid={errors.limit ? true : undefined}
-            aria-describedby={errors.limit ? errorId : undefined}
+            aria-invalid={errors.ceiling ? true : undefined}
+            aria-describedby={errors.ceiling ? errorId : undefined}
             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 min-h-10 tabular-nums aria-[invalid=true]:border-red-600"
             onKeyDown={(event) => {
               if (event.key === 'Escape') onDone()
             }}
-            {...register('limit')}
+            {...register('ceiling')}
           />
-          {errors.limit ? (
+          {errors.ceiling ? (
             <p id={errorId} className="mt-1 text-sm text-red-700">
-              {errors.limit.message}
+              {errors.ceiling.message}
             </p>
           ) : null}
         </div>
@@ -94,8 +93,8 @@ export function CategoryLimitForm({
           </Button>
         </div>
       </form>
-      {mutation.isError && !isLimitError(mutation.error) ? (
-        <Alert message="Não foi possível salvar o limite. Tente de novo." />
+      {mutation.isError && !isCeilingError(mutation.error) ? (
+        <Alert message="Não foi possível salvar o teto. Tente de novo." />
       ) : null}
     </div>
   )
