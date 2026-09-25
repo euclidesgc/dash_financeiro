@@ -7,7 +7,7 @@ import { useLocation } from 'react-router'
 import { ExpensesList } from '@/features/expenses/components/expenses-list'
 import { renderWithProviders } from '@/testing/test-utils'
 import { server } from '@/testing/mocks/server'
-import { fakeExpenses, foldText } from '@/testing/mocks/handlers'
+import { fakeExpenses, filterExpenses, foldText, groupByCategory } from '@/testing/mocks/handlers'
 import type { Expense, ExpenseOrder, ExpenseSort } from '@/features/expenses/types/expense'
 
 afterEach(() => {
@@ -89,10 +89,30 @@ function spyOnExpensesRequests(): URLSearchParams[] {
   return calls
 }
 
+function spyOnCategoryTotalsRequests(): URLSearchParams[] {
+  const calls: URLSearchParams[] = []
+  server.use(
+    http.get('/api/transactions/expenses/by-category', ({ request }) => {
+      const url = new URL(request.url)
+      calls.push(url.searchParams)
+      const groups = groupByCategory(filterExpenses(url))
+      return HttpResponse.json({
+        groups,
+        total_cents: groups.reduce((sum, group) => sum + group.total_cents, 0),
+      })
+    }),
+  )
+  return calls
+}
+
+function categoryRows(): HTMLElement[] {
+  return within(screen.getByRole('table')).getAllByRole('row').slice(1)
+}
+
 test('shows the loading state', () => {
   renderWithProviders(<ExpensesList />, { route: '/expenses' })
 
-  expect(screen.getByRole('status')).toHaveTextContent('Carregando gastos…')
+  expect(screen.getByText('Carregando gastos…')).toBeInTheDocument()
 })
 
 test('shows the empty state', async () => {
@@ -179,8 +199,9 @@ test('shows "Sem categoria" and "Sem descrição" fallbacks', async () => {
 
   await screen.findByRole('list')
 
-  expect(screen.getByText('Sem descrição')).toBeInTheDocument()
-  expect(screen.getByText('Sem categoria')).toBeInTheDocument()
+  const list = screen.getByRole('list')
+  expect(within(list).getByText('Sem descrição')).toBeInTheDocument()
+  expect(within(list).getByText('Sem categoria')).toBeInTheDocument()
 })
 
 test('shows twenty rows on the first page', async () => {
@@ -273,7 +294,7 @@ test('keeps the previous rows while the next page loads', async () => {
 
   await userEvent.click(screen.getByRole('button', { name: 'Próxima' }))
 
-  expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  expect(screen.queryByText('Carregando gastos…')).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Próxima' })).toBeDisabled()
 
   expect(await screen.findByText('Página 2 de 3 · 45 gastos · R$ 10.774,90 no período')).toBeInTheDocument()
@@ -555,7 +576,8 @@ test('"Mês anterior" moves one month back', async () => {
   await userEvent.click(screen.getByRole('button', { name: 'Mês anterior' }))
 
   expect(screen.getByTestId('search')).toHaveTextContent('?month=2026-06')
-  expect(await screen.findByText(/13 gastos/)).toBeInTheDocument()
+  const pagination = screen.getByRole('navigation', { name: 'Paginação' })
+  expect(await within(pagination).findByText(/13 gastos/)).toBeInTheDocument()
 })
 
 test('"Próximo mês" moves one month forward', async () => {
@@ -798,7 +820,8 @@ test('reads the account from the URL', async () => {
     expect(calls.at(-1)?.get('account_id')).toBe('acc-credit-1')
   })
 
-  expect(await screen.findByText(/13 gastos/)).toBeInTheDocument()
+  const pagination = screen.getByRole('navigation', { name: 'Paginação' })
+  expect(await within(pagination).findByText(/13 gastos/)).toBeInTheDocument()
   await waitFor(() => {
     expect(screen.getByLabelText('Conta')).toHaveValue('acc-credit-1')
   })
@@ -981,7 +1004,8 @@ test('reads the search from the URL', async () => {
 
   expect(screen.getByLabelText('Buscar')).toHaveValue('mercado')
   expect(screen.getByRole('button', { name: 'Limpar busca' })).toBeInTheDocument()
-  expect(await screen.findByText(/1 gasto\b/)).toBeInTheDocument()
+  const pagination = screen.getByRole('navigation', { name: 'Paginação' })
+  expect(await within(pagination).findByText(/1 gasto\b/)).toBeInTheDocument()
 
   const items = screen.getAllByRole('listitem')
   expect(items).toHaveLength(1)
@@ -1214,4 +1238,123 @@ test('retrying keeps the search', async () => {
   const items = await screen.findAllByRole('listitem')
   expect(items).toHaveLength(1)
   expect(within(items[0]).getByText('MERCADO DO BAIRRO')).toBeInTheDocument()
+})
+
+test('shows the totals by category above the list', async () => {
+  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+
+  await screen.findByRole('heading', { level: 2, name: 'Por categoria' })
+
+  const rows = categoryRows()
+  expect(rows).toHaveLength(4)
+  const firstCells = within(rows[0]).getAllByRole('cell')
+  expect(firstCells[0]).toHaveTextContent('Compras')
+  expect(firstCells[1]).toHaveTextContent('42 gastos')
+  expect(firstCells[2]).toHaveTextContent('R$ 9.484,90')
+  const secondCells = within(rows[1]).getAllByRole('cell')
+  expect(secondCells[0]).toHaveTextContent('Alimentação')
+  expect(secondCells[1]).toHaveTextContent('1 gasto')
+  expect(secondCells[2]).toHaveTextContent('R$ 440,00')
+  const thirdCells = within(rows[2]).getAllByRole('cell')
+  expect(thirdCells[0]).toHaveTextContent('Sem categoria')
+  expect(thirdCells[1]).toHaveTextContent('1 gasto')
+  expect(thirdCells[2]).toHaveTextContent('R$ 430,00')
+  const fourthCells = within(rows[3]).getAllByRole('cell')
+  expect(fourthCells[0]).toHaveTextContent('Transporte')
+  expect(fourthCells[1]).toHaveTextContent('1 gasto')
+  expect(fourthCells[2]).toHaveTextContent('R$ 420,00')
+  expect(screen.queryByRole('button', { name: /Mostrar todas/ })).not.toBeInTheDocument()
+
+  const section = screen.getByRole('table', { name: 'Por categoria' }).closest('section')
+  const list = await screen.findByRole('list')
+  expect(section).not.toBeNull()
+  if (section) {
+    expect(
+      section.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  }
+  expect(await screen.findAllByRole('listitem')).toHaveLength(20)
+})
+
+test('filters the totals by account and sends account_id to by-category', async () => {
+  const calls = spyOnCategoryTotalsRequests()
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses?account=acc-credit-1' })
+
+  await screen.findByRole('heading', { level: 2, name: 'Por categoria' })
+
+  const rows = categoryRows()
+  expect(rows).toHaveLength(1)
+  const cells = within(rows[0]).getAllByRole('cell')
+  expect(cells[0]).toHaveTextContent('Compras')
+  expect(cells[1]).toHaveTextContent('13 gastos')
+  expect(cells[2]).toHaveTextContent('R$ 2.730,00')
+
+  await waitFor(() => {
+    expect(calls.at(-1)?.get('account_id')).toBe('acc-credit-1')
+  })
+})
+
+test('hides the totals block for a search without results', async () => {
+  renderWithProviders(<ExpensesList />, { route: '/expenses?q=zzzz' })
+
+  await screen.findByText('Nenhum gasto para esse filtro.')
+
+  expect(screen.queryByRole('heading', { level: 2 })).not.toBeInTheDocument()
+  expect(screen.queryByRole('table')).not.toBeInTheDocument()
+})
+
+test('keeps the list when by-category fails', async () => {
+  server.use(
+    http.get('/api/transactions/expenses/by-category', () => HttpResponse.json({}, { status: 500 })),
+  )
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+
+  const alert = await screen.findByRole('alert')
+  expect(alert).toHaveTextContent('Não foi possível carregar os totais por categoria.')
+
+  expect(await screen.findAllByRole('listitem')).toHaveLength(20)
+  expect(screen.queryByText('Não foi possível carregar os gastos.')).not.toBeInTheDocument()
+})
+
+test('"Próxima" does not refetch by-category', async () => {
+  const categoryCalls = spyOnCategoryTotalsRequests()
+  const expensesCalls = spyOnExpensesRequests()
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+
+  await screen.findByRole('list')
+  await waitFor(() => {
+    expect(categoryCalls.length).toBe(1)
+  })
+
+  await userEvent.click(screen.getByRole('button', { name: 'Próxima' }))
+
+  await waitFor(() => {
+    expect(expensesCalls.at(-1)?.get('page')).toBe('2')
+  })
+
+  expect(categoryCalls.length).toBe(1)
+})
+
+test('changing the period refetches by-category with from and to', async () => {
+  const calls = spyOnCategoryTotalsRequests()
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses?month=2026-08' })
+
+  await screen.findByRole('list')
+  await waitFor(() => {
+    const last = calls.at(-1)
+    expect(last?.get('from')).toBe('2026-08-01')
+    expect(last?.get('to')).toBe('2026-08-31')
+  })
+
+  await userEvent.click(screen.getByRole('button', { name: 'Todo o período' }))
+
+  await waitFor(() => {
+    const last = calls.at(-1)
+    expect(last?.get('from')).toBeNull()
+    expect(last?.get('to')).toBeNull()
+  })
 })

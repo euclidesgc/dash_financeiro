@@ -36,6 +36,10 @@ _SELECT = f"""SELECT t.id, t.date, t.description, t.payee, t.category, t.amount_
 # Reason: the primary key (payee, source) guarantees at most one row per
 # join, so count and sum don't multiply.
 _TOTAL = f"SELECT count(*), coalesce(sum(t.amount_cents), 0) {_FROM}"
+_BY_CATEGORY = (
+    f"SELECT NULLIF(t.category, '') AS category, count(*) AS count,"
+    f" coalesce(sum(t.amount_cents), 0) AS total {_FROM}"
+)
 
 # Reason: reproduces app.payees.names._chosen's precedence row by row (debt
 # tracked in the SPEC).
@@ -50,6 +54,14 @@ _PAYEE_NAME_SQL = (
 class ExpensesPage:
     items: list[dict[str, Any]]
     total: int
+    total_cents: int
+
+
+@dataclass(frozen=True)
+class CategoryTotal:
+    category: str | None
+    label: str
+    count: int
     total_cents: int
 
 
@@ -154,3 +166,35 @@ def list_expenses(
             }
         )
     return ExpensesPage(items=items, total=total, total_cents=int(total_cents))
+
+
+def sum_by_category(
+    conn: sqlite3.Connection,
+    *,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    account_id: str | None = None,
+    search: str | None = None,
+) -> list[CategoryTotal]:
+    where, params = _where(date_from, date_to, account_id, search)
+    sql = (
+        f"{_BY_CATEGORY} {where} GROUP BY NULLIF(t.category, '')"
+        " ORDER BY abs(total) DESC,"
+        " CASE WHEN NULLIF(t.category, '') IS NULL THEN 1 ELSE 0 END,"
+        " NULLIF(t.category, '')"
+    )
+    rows = conn.execute(sql, params).fetchall()
+    categories = category_labels()
+    result = []
+    for row in rows:
+        category = row["category"]
+        label = "Sem categoria" if category is None else categories.get(category, category)
+        result.append(
+            CategoryTotal(
+                category=category,
+                label=label,
+                count=row["count"],
+                total_cents=int(row["total"]),
+            )
+        )
+    return result

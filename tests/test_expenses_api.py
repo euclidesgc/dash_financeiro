@@ -1028,3 +1028,240 @@ def test_the_openapi_lists_q_as_an_optional_string(client):
         if option.get("type") == "string" and "minLength" not in option
     ]
     assert string_options
+
+
+_BY_CATEGORY_ROWS = [
+    _transaction("hou", "2026-09-01", -150.0, categoria="Housing"),
+    _transaction("gro1", "2026-09-02", -60.0, categoria="Groceries"),
+    _transaction("gro2", "2026-09-15", -84.9, categoria="Groceries"),
+    _transaction("card", "2026-08-20", -45.0, categoria="Shopping", conta_id="sync-acc-2"),
+    _transaction("unc", "2026-09-05", -50.0, categoria=""),
+]
+
+
+def _by_category(client: TestClient, query: str = "") -> dict[str, Any]:
+    response = client.get(f"/api/transactions/expenses/by-category?{query}")
+    return response.json()
+
+
+def _group_tuples(body: dict[str, Any]) -> list[tuple[str | None, str, int, int]]:
+    return [
+        (group["category"], group["label"], group["count"], group["total_cents"])
+        for group in body["groups"]
+    ]
+
+
+def test_by_category_without_session_answers_401(client):
+    response = client.get("/api/transactions/expenses/by-category")
+
+    assert response.status_code == 401
+    assert response.json() == {"detail": "nao autenticado"}
+
+
+def test_an_empty_base_answers_no_groups(client):
+    _sign_in(client)
+
+    response = client.get("/api/transactions/expenses/by-category")
+
+    assert response.status_code == 200
+    assert response.json() == {"groups": [], "total_cents": 0}
+
+
+def test_the_by_category_response_has_the_contract_fields(client):
+    _load(_BY_CATEGORY_ROWS, accounts=[CREDIT_ACCOUNT])
+    _sign_in(client)
+
+    body = _by_category(client)
+
+    assert set(body) == {"groups", "total_cents"}
+    for group in body["groups"]:
+        assert set(group) == {"category", "label", "count", "total_cents"}
+
+
+def test_groups_come_biggest_first_with_the_seed_label_and_the_count(client):
+    _load(_BY_CATEGORY_ROWS, accounts=[CREDIT_ACCOUNT])
+    _sign_in(client)
+
+    body = _by_category(client)
+
+    assert _group_tuples(body) == [
+        ("Housing", "Casa", 1, -15000),
+        ("Groceries", "Supermercado", 2, -14490),
+        (None, "Sem categoria", 1, -5000),
+        ("Shopping", "Compras", 1, -4500),
+    ]
+    assert body["total_cents"] == -38990
+
+
+def test_empty_and_missing_categories_fall_into_a_single_uncategorised_group_ordered_by_total(
+    client,
+):
+    _load(
+        [
+            _transaction("e1", "2026-09-01", -10.0, categoria=""),
+            _transaction("e2", "2026-09-02", -20.0, categoria=None),
+            _transaction("s1", "2026-09-03", -40.0, categoria="Shopping"),
+            _transaction("h1", "2026-09-04", -25.0, categoria="Housing"),
+        ]
+    )
+    _sign_in(client)
+
+    body = _by_category(client)
+
+    assert _group_tuples(body) == [
+        ("Shopping", "Compras", 1, -4000),
+        (None, "Sem categoria", 2, -3000),
+        ("Housing", "Casa", 1, -2500),
+    ]
+
+
+def test_a_category_outside_the_seed_uses_its_own_key_as_label(client):
+    _load([_transaction("d1", "2026-09-01", -10.0, categoria="Desconhecida")])
+    _sign_in(client)
+
+    body = _by_category(client)
+
+    assert _group_tuples(body) == [("Desconhecida", "Desconhecida", 1, -1000)]
+
+
+def test_equal_totals_put_the_uncategorised_group_last_and_then_sort_by_key(client):
+    _load(
+        [
+            _transaction("h1", "2026-09-01", -10.0, categoria="Housing"),
+            _transaction("e1", "2026-09-02", -10.0, categoria=""),
+            _transaction("g1", "2026-09-03", -10.0, categoria="Groceries"),
+        ]
+    )
+    _sign_in(client)
+
+    body = _by_category(client)
+
+    assert [group["category"] for group in body["groups"]] == ["Groceries", "Housing", None]
+
+
+def test_transfers_and_refunds_stay_out_of_the_groups(client):
+    _load(
+        [
+            *_BY_CATEGORY_ROWS,
+            _transaction("t1", "2026-09-05", -500.0, categoria="Housing", eh_transferencia=True),
+            _transaction("r1", "2026-09-06", -70.0, categoria="Housing", eh_estorno=True),
+        ],
+        accounts=[CREDIT_ACCOUNT],
+    )
+    _sign_in(client)
+
+    body = _by_category(client)
+
+    housing = next(group for group in body["groups"] if group["category"] == "Housing")
+    assert housing["count"] == 1
+    assert housing["total_cents"] == -15000
+    assert body["total_cents"] == -38990
+
+
+def test_from_and_to_limit_the_groups(client):
+    _load(_BY_CATEGORY_ROWS, accounts=[CREDIT_ACCOUNT])
+    _sign_in(client)
+
+    within_month = _by_category(client, "from=2026-09-01&to=2026-09-30")
+    assert [group["category"] for group in within_month["groups"]] == [
+        "Housing",
+        "Groceries",
+        None,
+    ]
+    assert within_month["total_cents"] == -34490
+
+    before_month = _by_category(client, "to=2026-08-31")
+    assert _group_tuples(before_month) == [("Shopping", "Compras", 1, -4500)]
+
+
+def test_account_id_limits_the_groups(client):
+    _load(_BY_CATEGORY_ROWS, accounts=[CREDIT_ACCOUNT])
+    _sign_in(client)
+
+    by_account = _by_category(client, "account_id=sync-acc-2")
+    assert [group["category"] for group in by_account["groups"]] == ["Shopping"]
+
+    unknown_account = _by_category(client, "account_id=desconhecida")
+    assert unknown_account["groups"] == []
+    assert unknown_account["total_cents"] == 0
+
+
+def test_q_limits_the_groups_and_a_short_q_is_ignored(client):
+    _load(
+        [
+            *_BY_CATEGORY_ROWS,
+        ],
+        accounts=[CREDIT_ACCOUNT],
+    )
+    conn = connect()
+    conn.execute(
+        "UPDATE transactions SET description = ? WHERE pluggy_id = ?",
+        ("Aluguel central", "hou"),
+    )
+    conn.execute(
+        "UPDATE transactions SET description = ? WHERE pluggy_id = ?",
+        ("Acougue do bairro", "gro1"),
+    )
+    conn.commit()
+    conn.close()
+    _sign_in(client)
+
+    central = _by_category(client, "q=central")
+    assert _group_tuples(central) == [("Housing", "Casa", 1, -15000)]
+
+    acougue = _by_category(client, "q=acougue")
+    assert _group_tuples(acougue) == [("Groceries", "Supermercado", 1, -6000)]
+
+    baseline = _by_category(client)
+    short_q = _by_category(client, "q=a")
+    assert _group_tuples(short_q) == _group_tuples(baseline)
+
+
+def test_an_inverted_interval_answers_422_on_by_category(client):
+    _sign_in(client)
+
+    response = client.get("/api/transactions/expenses/by-category?from=2026-09-30&to=2026-09-01")
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "A data final precisa ser igual ou posterior à inicial."
+
+
+def test_an_empty_account_id_answers_422_on_by_category(client):
+    _sign_in(client)
+
+    response = client.get("/api/transactions/expenses/by-category?account_id=")
+
+    assert response.status_code == 422
+
+
+def test_the_group_totals_add_up_to_the_list_total_for_the_same_filter(client):
+    _load(_BY_CATEGORY_ROWS, accounts=[CREDIT_ACCOUNT])
+    _sign_in(client)
+
+    for query in (
+        "",
+        "from=2026-09-01&to=2026-09-30",
+        "account_id=sync-acc-2",
+        "q=mercado",
+        "from=2026-09-02&account_id=sync-acc-1&q=ma",
+    ):
+        body = _by_category(client, query)
+        list_body = client.get(f"/api/transactions/expenses?{query}").json()
+
+        assert sum(group["total_cents"] for group in body["groups"]) == body["total_cents"]
+        assert body["total_cents"] == list_body["total_cents"]
+        assert sum(group["count"] for group in body["groups"]) == list_body["total"]
+
+
+def test_the_openapi_lists_by_category_with_four_optional_parameters(client):
+    _sign_in(client)
+
+    response = client.get("/openapi.json")
+
+    parameters = response.json()["paths"]["/api/transactions/expenses/by-category"]["get"][
+        "parameters"
+    ]
+    assert {parameter["name"] for parameter in parameters} == {"from", "to", "account_id", "q"}
+    for parameter in parameters:
+        assert parameter["in"] == "query"
+        assert not parameter.get("required", False)

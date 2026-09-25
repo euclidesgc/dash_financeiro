@@ -12,7 +12,7 @@ prova o caminho de ponta a ponta (tela React → API FastAPI → SQLite) e as ou
 | 005 | `filtrar-por-periodo` | filtrar os gastos por período (mês, intervalo de datas) | Pedido de 22/09 | 003 | in-review |
 | 006 | `filtrar-por-conta` | filtrar os gastos por banco ou conta | Pedido de 22/09 | 003 | in-review |
 | 007 | `buscar-por-texto` | encontrar gastos pela descrição ou pelo nome de quem recebeu | Pedido de 22/09 | 003 | in-review |
-| 008 | `total-por-categoria` | ver os gastos do período agrupados por categoria, com o total de cada uma | Pedido de 22/09 | 005 | planned |
+| 008 | `total-por-categoria` | ver os gastos do período agrupados por categoria, com o total de cada uma | Pedido de 22/09 | 005 | in-review |
 | 009 | `ajustar-categoria` | trocar a categoria de um gasto, e a troca sobreviver à próxima atualização | Pedido de 22/09 | 003 | planned |
 | 010 | `criar-categoria` | criar, renomear e apagar categorias | Pedido de 22/09 | 009 | planned |
 | 011 | `categoria-para-parecidos` | aplicar a mesma categoria a todos os gastos parecidos de uma vez | Pedido de 22/09 | 009 | planned |
@@ -36,3 +36,4 @@ prova o caminho de ponta a ponta (tela React → API FastAPI → SQLite) e as ou
 | 024 | `payee-filling-post-sync` | mover `_fill_payees` e classificação automática da entrada de dados (`ingest`) para o pós-processamento (`synchronise`), para que bases de teste e e2e tenham recebedor preenchido | 003 | — | planned |
 | 025 | `spending-filter-predicate-unification` | unificar predicado de data duplicado em `app/queries/spending.py` (`total_spending_cents`) e `app/queries/expenses.py` (`_where`) em `spending.py`, evitando divergência na soma por categoria (008) | 005 | — | planned |
 | 026 | `unify-payee-name-precedence` | consolidar precedência do nome do recebedor entre Python (`app/payees/names.py`, `_chosen`) e SQL (`app/queries/expenses.py`, `_PAYEE_NAME_SQL`), evitando divergência silenciosa se uma mudar | 007 | 025 | planned |
+| 027 | `expenses-list-mock-unification` | `filterForSpy` em `src/features/expenses/components/__tests__/expenses-list.test.tsx` duplica a lógica de filtro dos mocks; importar `filterExpenses` de `src/testing/mocks/handlers.ts` em vez de reinventar | 008 | — | planned |
