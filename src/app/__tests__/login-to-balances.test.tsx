@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { act, render, screen } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { createMemoryRouter, RouterProvider } from 'react-router'
@@ -46,6 +46,20 @@ test('a valid login lands on the balances page', async () => {
   expect(await screen.findByText('Conta corrente')).toBeInTheDocument()
   expect(await screen.findByText(/Última atualização/)).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Atualizar agora' })).toBeInTheDocument()
+})
+
+test('the balances page shows the month plan card linking to the month expenses', async () => {
+  const { router } = renderRouter(['/login'])
+
+  await screen.findByRole('heading', { name: 'Entrar' })
+  await login()
+
+  const card = await screen.findByRole('region', { name: /^Plano de / })
+  await userEvent.click(await within(card).findByRole('link'))
+
+  expect(await screen.findByRole('heading', { level: 1, name: 'Gastos' })).toBeInTheDocument()
+  expect(router.state.location.pathname).toBe('/expenses')
+  expect(router.state.location.search).toMatch(/^\?month=\d{4}-\d{2}$/)
 })
 
 test('signing out returns to the login page', async () => {
