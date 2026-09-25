@@ -7,6 +7,7 @@ import { AccountSelect } from '@/features/expenses/components/account-select'
 import { ExpenseItem } from '@/features/expenses/components/expense-item'
 import { Pagination } from '@/features/expenses/components/pagination'
 import { PeriodControls } from '@/features/expenses/components/period-controls'
+import { SearchInput } from '@/features/expenses/components/search-input'
 import { SortControls } from '@/features/expenses/components/sort-controls'
 import type { ExpenseOrder, ExpenseSort, Period } from '@/features/expenses/types/expense'
 import { currentMonth, readPeriod, shiftMonth, toDateBounds, writePeriod } from '@/features/expenses/utils/period'
@@ -36,6 +37,26 @@ function readOrder(value: string | null): ExpenseOrder {
 
 function readAccount(value: string | null): string | null {
   return value === null || value === '' ? null : value
+}
+
+function readSearch(value: string | null): string | null {
+  const term = (value ?? '').trim()
+  return term.length >= 2 ? term : null
+}
+
+function writeSearch(params: URLSearchParams, text: string): boolean {
+  const next = readSearch(text)
+  const current = readSearch(params.get('q'))
+  if (next === current) {
+    return false
+  }
+  params.delete('page')
+  if (next === null) {
+    params.delete('q')
+  } else {
+    params.set('q', next)
+  }
+  return true
 }
 
 function writeAccount(params: URLSearchParams, id: string | null): void {
@@ -69,6 +90,7 @@ export function ExpensesList(): React.JSX.Element {
   const period = readPeriod(searchParams)
   const { from, to } = toDateBounds(period)
   const account = readAccount(searchParams.get('account'))
+  const search = readSearch(searchParams.get('q'))
   const accounts = useExpenseAccounts()
   const accountKnown = accounts.data
     ? accounts.data.accounts.some((item) => item.id === account)
@@ -80,6 +102,7 @@ export function ExpensesList(): React.JSX.Element {
     from,
     to,
     account: accountKnown ? account : null,
+    search,
   })
   const pages = data ? Math.max(1, Math.ceil(data.total / data.page_size)) : 1
 
@@ -151,8 +174,16 @@ export function ExpensesList(): React.JSX.Element {
     setSearchParams(params, { replace: true })
   }
 
+  function handleSearchCommit(text: string): void {
+    const params = new URLSearchParams(searchParams)
+    if (writeSearch(params, text)) {
+      setSearchParams(params, { replace: true })
+    }
+  }
+
   const controls = (
     <div className="mt-6 flex flex-wrap items-end gap-3">
+      <SearchInput value={search} onCommit={handleSearchCommit} />
       <AccountSelect
         value={account}
         accounts={accounts.data?.accounts ?? []}
@@ -200,7 +231,7 @@ export function ExpensesList(): React.JSX.Element {
   }
 
   if (data.total === 0) {
-    const filtered = period.kind !== 'all' || account !== null
+    const filtered = period.kind !== 'all' || account !== null || search !== null
     return (
       <>
         {controls}

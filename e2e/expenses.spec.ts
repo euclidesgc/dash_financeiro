@@ -29,7 +29,7 @@ test('opens the expenses page and lists only the spending', async ({ page }) => 
   await expect(page.getByText('TED PARA POUPANCA')).toHaveCount(0)
   await expect(page.getByText('SALARIO')).toHaveCount(0)
 
-  await expect(page.getByText(/Página 1 de 1 · [34] gastos/)).toBeVisible()
+  await expect(page.getByText(/Página 1 de 1 · [45] gastos/)).toBeVisible()
   await expect(page.getByRole('button', { name: 'Anterior', exact: true })).toBeDisabled()
   await expect(page.getByRole('button', { name: 'Próxima' })).toBeDisabled()
 })
@@ -93,8 +93,8 @@ test('filters the expenses by month and by date range and keeps the period on re
 
   await expect(
     page
-      .getByText('Página 1 de 1 · 3 gastos · R$ 279,90 no período')
-      .or(page.getByText('Página 1 de 1 · 4 gastos · R$ 329,90 no período')),
+      .getByText('Página 1 de 1 · 4 gastos · R$ 339,90 no período')
+      .or(page.getByText('Página 1 de 1 · 5 gastos · R$ 389,90 no período')),
   ).toBeVisible()
   await expect(page.getByRole('button', { name: 'Todo o período' })).toBeDisabled()
 
@@ -170,12 +170,64 @@ test('filters the expenses by account and keeps the account on reload', async ({
 
   await accountSelect.selectOption({ label: 'Todas as contas' })
   await expect(page).not.toHaveURL(/account=/)
-  await expect.poll(() => page.getByRole('listitem').count()).toBeGreaterThanOrEqual(3)
+  await expect.poll(() => page.getByRole('listitem').count()).toBeGreaterThanOrEqual(4)
 
   await page.goto('/app/expenses?account=nao-existe')
   await expect(page).not.toHaveURL(/account=/)
   await expect(accountSelect).toHaveValue('')
-  await expect.poll(() => page.getByRole('listitem').count()).toBeGreaterThanOrEqual(3)
+  await expect.poll(() => page.getByRole('listitem').count()).toBeGreaterThanOrEqual(4)
+})
+
+test('searches the expenses by text and keeps the search on reload', async ({ page }) => {
+  await page.goto('/app/login')
+  await page.getByLabel('Login').fill(LOGIN)
+  await page.getByLabel('Senha').fill(PASSWORD)
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page).toHaveURL(/\/app\/?$/)
+
+  await page.getByRole('link', { name: 'Gastos' }).click()
+  await expect(page).toHaveURL(/\/app\/expenses$/)
+
+  const searchInput = page.getByLabel('Buscar')
+  await expect(searchInput).toHaveValue('')
+  await expect(page.getByRole('button', { name: 'Limpar busca' })).toHaveCount(0)
+
+  await searchInput.fill('acougue')
+  await expect(page).toHaveURL(/q=acougue/)
+  const items = page.getByRole('listitem')
+  await expect(items).toHaveCount(1)
+  await expect(items).toContainText('AÇOUGUE SÃO JORGE')
+  await expect(items).toContainText('-R$ 60,00')
+  await expect(page.getByText('Página 1 de 1 · 1 gasto · R$ 60,00 no período')).toBeVisible()
+
+  await page.reload()
+  await expect(page.getByRole('listitem')).toHaveCount(1)
+  await expect(page.getByRole('listitem')).toContainText('AÇOUGUE SÃO JORGE')
+  await expect(searchInput).toHaveValue('acougue')
+
+  await searchInput.fill('a')
+  await expect(page).not.toHaveURL(/q=/)
+  await expect.poll(() => page.getByRole('listitem').count()).toBeGreaterThanOrEqual(4)
+
+  await searchInput.fill('mercado')
+  await searchInput.press('Enter')
+  await expect(page).toHaveURL(/q=mercado/)
+  await expect(page.getByRole('listitem')).toHaveCount(1)
+  await expect(page.getByRole('listitem')).toContainText('MERCADO DO BAIRRO')
+
+  await page.getByRole('button', { name: 'Limpar busca' }).click()
+  await expect(page).not.toHaveURL(/q=/)
+  await expect(searchInput).toHaveValue('')
+  await expect.poll(() => page.getByRole('listitem').count()).toBeGreaterThanOrEqual(4)
+
+  await page.goto('/app/expenses?q=mercado&month=2026-08')
+  await expect(page.getByText('Nenhum gasto para esse filtro.')).toBeVisible()
+  await expect(searchInput).toHaveValue('mercado')
+
+  await page.getByRole('button', { name: 'Todo o período' }).click()
+  await expect(page).not.toHaveURL(/month=/)
+  await expect(page).toHaveURL(/q=mercado/)
+  await expect(page.getByRole('listitem')).toHaveCount(1)
 })
 
 test('goes back to the balances page', async ({ page }) => {

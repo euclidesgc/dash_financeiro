@@ -29,6 +29,7 @@ export interface ExpensesQuery {
   from: string | null
   to: string | null
   account: string | null
+  search: string | null
 }
 
 export interface ExpenseAccount {

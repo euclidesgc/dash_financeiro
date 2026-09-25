@@ -1,7 +1,7 @@
 import os
 import stat
 
-from app.db import connect
+from app.db import connect, fold
 
 
 def test_a_new_database_is_readable_only_by_its_owner(tmp_path):
@@ -42,3 +42,46 @@ def test_a_database_without_a_file_still_connects():
 
     assert conn.execute("SELECT 1").fetchone()[0] == 1
     conn.close()
+
+
+def test_fold_drops_accents_and_case_in_sql():
+    conn = connect(":memory:")
+
+    row = conn.execute("SELECT fold('Açougue São JORGE')").fetchone()
+
+    assert row[0] == "acougue sao jorge"
+    conn.close()
+
+
+def test_fold_of_null_is_null():
+    conn = connect(":memory:")
+
+    row = conn.execute("SELECT fold(NULL)").fetchone()
+
+    assert row[0] is None
+    conn.close()
+
+
+def test_fold_keeps_digits_and_punctuation():
+    conn = connect(":memory:")
+
+    row = conn.execute("SELECT fold('GASTO 42 10/12')").fetchone()
+
+    assert row[0] == "gasto 42 10/12"
+    conn.close()
+
+
+def test_fold_is_available_on_a_second_connection_to_the_same_file(tmp_path):
+    target = tmp_path / "dash.sqlite"
+    connect(str(target)).close()
+
+    conn = connect(str(target))
+    row = conn.execute("SELECT fold('Ünico')").fetchone()
+
+    assert row[0] == "unico"
+    conn.close()
+
+
+def test_fold_in_python_matches_the_sql_function():
+    assert fold("Ação") == "acao"
+    assert fold(None) is None
