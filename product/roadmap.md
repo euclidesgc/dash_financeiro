@@ -1,7 +1,7 @@
 # Roadmap — dash_financeiro
 
 Painel financeiro pessoal de um usuário, rodando local. O objetivo do produto
-não é ver gráficos: é **sair de um déficit de R$ 4.940,72/mês e passar a viver
+não é ver gráficos: é **sair de um déficit de R$ 5.661,30/mês e passar a viver
 com folga com o salário atual**. Toda tela existe para responder uma pergunta
 que muda uma decisão. O documento de referência é [`docs/plano.md`](../docs/plano.md).
 
