@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { NavLink } from 'react-router'
-import { paths } from '@/config/paths'
+import { legacyScreens, paths } from '@/config/paths'
 
 function navLinkClassName({ isActive }: { isActive: boolean }): string {
   const base = 'text-sm font-medium underline-offset-4 hover:underline'
@@ -34,6 +34,23 @@ export function AppHeader({
           <NavLink to={paths.connections} className={navLinkClassName}>
             Conexões
           </NavLink>
+          <details className="group open:basis-full">
+            <summary className="cursor-pointer text-sm font-medium text-gray-600 underline-offset-4 hover:underline">
+              Mais telas
+            </summary>
+            <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-2">
+              {legacyScreens.map((screen) => (
+                <li key={screen.href}>
+                  <a
+                    href={screen.href}
+                    className="text-sm font-medium text-gray-600 underline-offset-4 hover:underline"
+                  >
+                    {screen.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </details>
         </nav>
         <div className="flex min-w-0 items-center gap-4">
           <span className="truncate text-gray-600">{userLogin}</span>

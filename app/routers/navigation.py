@@ -30,6 +30,16 @@ SCREENS: tuple[dict[str, str], ...] = (
 )
 
 
+# Reason: the new panel is a separate client app mounted under /app; these are
+# full page loads into it, kept beside the old rail until the migration ends.
+SPA_SCREENS: tuple[dict[str, str], ...] = (
+    {"href": "/app/", "label": "Saldos"},
+    {"href": "/app/expenses", "label": "Gastos"},
+    {"href": "/app/categories", "label": "Categorias"},
+    {"href": "/app/connections", "label": "Conexões"},
+)
+
+
 def current(path: str, href: str) -> bool:
     # Reason: a screen keeps the mark while the reader is inside it —
     # /regras/7/editar is still Regras. The root would swallow every path

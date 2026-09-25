@@ -79,7 +79,8 @@ body {
 /* Where you are is an edge, the same accent edge the notice uses to say a write
    happened — and it never carries the meaning alone: the current screen also
    takes the full ink and the heavier weight. */
-.rail-link {
+.rail-link,
+.rail-spa-link {
   display: block;
   padding: var(--space-2);
   border-left: var(--space-1) solid transparent;
@@ -89,7 +90,8 @@ body {
   transition: border-color var(--motion-fast) var(--motion-ease);
 }
 
-.rail-link:hover {
+.rail-link:hover,
+.rail-spa-link:hover {
   color: var(--color-ink);
   border-left-color: var(--color-rule);
 }
@@ -150,11 +152,21 @@ body {
     display: none;
   }
 
+  /* The group label is what tells the two "Gastos" apart once the rail lies
+     down, so it stays when the panel name goes. */
+  .rail-mark-group {
+    display: block;
+    padding-left: var(--space-4);
+    border-left: 1px solid var(--color-rule);
+    white-space: nowrap;
+  }
+
   .rail-list {
     display: flex;
   }
 
-  .rail-link {
+  .rail-link,
+  .rail-spa-link {
     padding: var(--space-3);
     border-left: 0;
     border-bottom: var(--space-1) solid transparent;
@@ -165,7 +177,8 @@ body {
     border-bottom-color: var(--color-accent);
   }
 
-  .rail-link:hover {
+  .rail-link:hover,
+  .rail-spa-link:hover {
     border-bottom-color: var(--color-rule);
   }
 

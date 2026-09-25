@@ -48,6 +48,13 @@ test('every screen fits a 375 px phone without horizontal scroll', async ({ page
     await expect(navigation.getByRole('link', { name })).toBeInViewport({ ratio: 1 })
   }
 
+  await navigation.getByText('Mais telas').click()
+  for (const name of ['Resumo', 'Objetivo', 'Dívidas', 'Simulador', 'Consultor', 'Configuração']) {
+    await expect(navigation.getByRole('link', { name })).toBeInViewport({ ratio: 1 })
+  }
+  await expectNoHorizontalScroll(page)
+  await navigation.getByText('Mais telas').click()
+
   const screens = [
     { link: 'Gastos', heading: 'Gastos' },
     { link: 'Categorias', heading: 'Categorias' },
