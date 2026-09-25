@@ -8,8 +8,8 @@ import { renderWithProviders } from '@/testing/test-utils'
 import { server } from '@/testing/mocks/server'
 import type { CategoryGroup, CategoryTotalsQuery } from '@/features/expenses/types/expense'
 
-const ALL: CategoryTotalsQuery = { from: null, to: null, account: null, search: null }
-const MONTH: CategoryTotalsQuery = { from: '2026-08-01', to: '2026-08-31', account: null, search: null }
+const ALL: CategoryTotalsQuery = { from: null, to: null, account: null, search: null, view: 'expenses' }
+const MONTH: CategoryTotalsQuery = { from: '2026-08-01', to: '2026-08-31', account: null, search: null, view: 'expenses' }
 
 function groupsOf(n: number): CategoryGroup[] {
   return Array.from({ length: n }, (_, index) => {
@@ -233,6 +233,7 @@ test('sends from, to, account_id and q only when they are set', async () => {
     to: '2026-08-31',
     account: 'acc-credit-1',
     search: 'mercado',
+    view: 'expenses',
   }
 
   const { unmount } = renderWithProviders(<CategoryTotals query={query} />)

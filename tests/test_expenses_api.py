@@ -282,6 +282,7 @@ def test_the_response_has_the_contract_fields(client):
         "category_source",
         "amount_cents",
         "account_id",
+        "not_expense_reason",
     }
     assert item["amount_cents"] == -5000
     assert item["account_id"] == "sync-acc-1"
@@ -1303,7 +1304,7 @@ def test_the_group_totals_add_up_to_the_list_total_for_the_same_filter(client):
         assert sum(group["count"] for group in body["groups"]) == list_body["total"]
 
 
-def test_the_openapi_lists_by_category_with_four_optional_parameters(client):
+def test_the_openapi_lists_by_category_with_five_optional_parameters(client):
     _sign_in(client)
 
     response = client.get("/openapi.json")
@@ -1311,7 +1312,13 @@ def test_the_openapi_lists_by_category_with_four_optional_parameters(client):
     parameters = response.json()["paths"]["/api/transactions/expenses/by-category"]["get"][
         "parameters"
     ]
-    assert {parameter["name"] for parameter in parameters} == {"from", "to", "account_id", "q"}
+    assert {parameter["name"] for parameter in parameters} == {
+        "from",
+        "to",
+        "account_id",
+        "q",
+        "view",
+    }
     for parameter in parameters:
         assert parameter["in"] == "query"
         assert not parameter.get("required", False)
@@ -1931,3 +1938,246 @@ def test_the_openapi_lists_month_signal_with_from_and_to_only(client):
     assert {param["name"] for param in parameters} == {"from", "to"}
     properties = body["components"]["schemas"]["MonthSignalResponse"]["properties"]
     assert set(properties) >= {"scope", "spent_cents", "ceiling_cents", "signal", "remaining_cents"}
+
+
+def _put_not_expense(client: TestClient, id: int, body: dict[str, Any]) -> Any:
+    return client.put(f"/api/transactions/{id}/not-expense", json=body)
+
+
+def _delete_not_expense(client: TestClient, id: int) -> Any:
+    return client.delete(f"/api/transactions/{id}/not-expense")
+
+
+def _load_not_expense_fixture() -> None:
+    _load(
+        [
+            _transaction("ne-1", "2026-08-20", -60.0, categoria="Groceries", descricao="ACOUGUE"),
+            _transaction("ne-2", "2026-08-15", -45.0, categoria="Healthcare", descricao="FARMACIA"),
+            _transaction("ne-t", "2026-08-05", -500.0, eh_transferencia=True, descricao="TED"),
+        ]
+    )
+
+
+def _id_by_description(client: TestClient, text: str) -> int:
+    body = client.get("/api/transactions/expenses").json()
+    return next(item["id"] for item in body["items"] if item["description"] == text)
+
+
+def test_each_expense_carries_a_null_not_expense_reason(client):
+    _load_not_expense_fixture()
+    _sign_in(client)
+
+    body = client.get(f"/api/transactions/expenses?{MONTH}").json()
+
+    assert body["items"]
+    for item in body["items"]:
+        assert item["not_expense_reason"] is None
+
+
+def test_put_not_expense_without_session_answers_401(client):
+    _load_not_expense_fixture()
+
+    response = _put_not_expense(client, 1, {"reason": "own_transfer"})
+    assert response.status_code == 401
+    assert response.json() == {"detail": "nao autenticado"}
+
+    response = _delete_not_expense(client, 1)
+    assert response.status_code == 401
+    assert response.json() == {"detail": "nao autenticado"}
+
+
+def test_put_not_expense_answers_the_expense_with_the_reason(client):
+    _load_not_expense_fixture()
+    _sign_in(client)
+    id = _id_by_description(client, "ACOUGUE")
+
+    response = _put_not_expense(client, id, {"reason": "own_transfer"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["id"] == id
+    assert body["not_expense_reason"] == "own_transfer"
+    assert body["description"] == "ACOUGUE"
+
+
+def test_a_marked_expense_leaves_the_list_the_totals_the_groups_and_the_month_signal(client):
+    _load_not_expense_fixture()
+    _sign_in(client)
+
+    before_list = client.get(f"/api/transactions/expenses?{MONTH}").json()
+    assert before_list["total"] == 2
+    assert before_list["total_cents"] == -10500
+    before_by_category = _by_category(client, MONTH)
+    assert before_by_category["total_cents"] == -10500
+    assert any(g["label"] == "Supermercado" for g in before_by_category["groups"])
+    before_signal = _month_signal(client, MONTH)
+    assert before_signal["spent_cents"] == 10500
+
+    id = _id_by_description(client, "ACOUGUE")
+    _put_not_expense(client, id, {"reason": "own_transfer"})
+
+    after_list = client.get(f"/api/transactions/expenses?{MONTH}").json()
+    assert after_list["total"] == 1
+    assert after_list["total_cents"] == -4500
+    assert [item["description"] for item in after_list["items"]] == ["FARMACIA"]
+    after_by_category = _by_category(client, MONTH)
+    assert not any(g["label"] == "Supermercado" for g in after_by_category["groups"])
+    assert after_by_category["total_cents"] == -4500
+    after_signal = _month_signal(client, MONTH)
+    assert after_signal["spent_cents"] == 4500
+
+
+def test_view_excluded_lists_only_the_marked_rows_with_their_reason_and_total(client):
+    _load_not_expense_fixture()
+    _sign_in(client)
+    id = _id_by_description(client, "ACOUGUE")
+    _put_not_expense(client, id, {"reason": "refund"})
+
+    body = client.get(f"/api/transactions/expenses?view=excluded&{MONTH}").json()
+    assert body["total"] == 1
+    assert body["total_cents"] == -6000
+    item = body["items"][0]
+    assert item["description"] == "ACOUGUE"
+    assert item["not_expense_reason"] == "refund"
+    assert all(item["description"] != "TED" for item in body["items"])
+
+    by_category = _by_category(client, f"view=excluded&{MONTH}")
+    group = _group_of(by_category, "Groceries")
+    assert group["label"] == "Supermercado"
+    assert group["total_cents"] == -6000
+    assert by_category["total_cents"] == -6000
+
+
+def test_view_excluded_on_a_base_without_marks_is_empty(client):
+    _load_not_expense_fixture()
+    _sign_in(client)
+
+    body = client.get("/api/transactions/expenses?view=excluded").json()
+    assert body["total"] == 0
+    assert body["items"] == []
+
+    by_category = _by_category(client, "view=excluded")
+    assert by_category["groups"] == []
+
+
+def test_an_unknown_view_answers_422(client):
+    _load_not_expense_fixture()
+    _sign_in(client)
+
+    assert client.get("/api/transactions/expenses?view=x").status_code == 422
+    assert client.get("/api/transactions/expenses/by-category?view=x").status_code == 422
+
+
+def test_month_signal_does_not_accept_view(client):
+    _sign_in(client)
+
+    response = client.get("/openapi.json")
+
+    parameters = response.json()["paths"]["/api/transactions/expenses/month-signal"]["get"][
+        "parameters"
+    ]
+    assert {param["name"] for param in parameters} == {"from", "to"}
+
+
+def test_put_not_expense_refuses_a_reason_outside_the_list_and_a_missing_reason(client):
+    _load_not_expense_fixture()
+    _sign_in(client)
+    id = _id_by_description(client, "ACOUGUE")
+
+    response = _put_not_expense(client, id, {"reason": "x"})
+    assert response.status_code == 422
+    assert isinstance(response.json()["detail"], list)
+
+    response = _put_not_expense(client, id, {})
+    assert response.status_code == 422
+    assert isinstance(response.json()["detail"], list)
+
+    body = client.get("/api/transactions/expenses").json()
+    item = next(item for item in body["items"] if item["description"] == "ACOUGUE")
+    assert item["not_expense_reason"] is None
+
+
+def test_put_and_delete_not_expense_on_an_unknown_expense_answer_404(client):
+    _load_not_expense_fixture()
+    _sign_in(client)
+
+    response = _put_not_expense(client, 999999, {"reason": "own_transfer"})
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Gasto não encontrado."}
+
+    response = _delete_not_expense(client, 999999)
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Gasto não encontrado."}
+
+
+def test_put_not_expense_refuses_an_automatic_transfer_with_422(client):
+    _load_not_expense_fixture()
+    _sign_in(client)
+    conn = connect()
+    id = conn.execute("SELECT id FROM transactions WHERE pluggy_id = ?", ("ne-t",)).fetchone()[0]
+    conn.close()
+
+    response = _put_not_expense(client, id, {"reason": "own_transfer"})
+
+    assert response.status_code == 422
+    assert response.json() == {"detail": "Só uma saída que conta como gasto pode ser marcada."}
+    body = client.get("/api/transactions/expenses?view=excluded").json()
+    assert body["items"] == []
+
+
+def test_delete_not_expense_brings_the_row_back_and_is_idempotent(client):
+    _load_not_expense_fixture()
+    _sign_in(client)
+    id = _id_by_description(client, "ACOUGUE")
+    _put_not_expense(client, id, {"reason": "own_transfer"})
+
+    response = _delete_not_expense(client, id)
+    assert response.status_code == 200
+    assert response.json()["not_expense_reason"] is None
+
+    body = client.get(f"/api/transactions/expenses?{MONTH}").json()
+    assert body["total"] == 2
+    assert body["total_cents"] == -10500
+    assert client.get("/api/transactions/expenses?view=excluded").json()["items"] == []
+
+    second = _delete_not_expense(client, id)
+    assert second.status_code == 200
+    assert second.json()["not_expense_reason"] is None
+
+
+def test_a_not_expense_mark_survives_reingesting_the_same_source(client):
+    _load_not_expense_fixture()
+    _sign_in(client)
+    id = _id_by_description(client, "ACOUGUE")
+    _put_not_expense(client, id, {"reason": "own_transfer"})
+
+    _load_not_expense_fixture()
+
+    body = client.get(f"/api/transactions/expenses?{MONTH}").json()
+    assert body["total"] == 1
+    assert all(item["description"] != "ACOUGUE" for item in body["items"])
+    excluded = client.get(f"/api/transactions/expenses?view=excluded&{MONTH}").json()
+    item = next(item for item in excluded["items"] if item["description"] == "ACOUGUE")
+    assert item["not_expense_reason"] == "own_transfer"
+
+
+def test_the_openapi_lists_put_and_delete_of_not_expense_and_view_on_both_gets(client):
+    _sign_in(client)
+
+    response = client.get("/openapi.json")
+
+    body = response.json()
+    not_expense_path = body["paths"]["/api/transactions/{transaction_id}/not-expense"]
+    assert "put" in not_expense_path
+    assert "delete" in not_expense_path
+
+    expenses_params = {
+        param["name"] for param in body["paths"]["/api/transactions/expenses"]["get"]["parameters"]
+    }
+    assert "view" in expenses_params
+    by_category_params = {
+        param["name"]
+        for param in body["paths"]["/api/transactions/expenses/by-category"]["get"]["parameters"]
+    }
+    assert "view" in by_category_params
+    assert "not_expense_reason" in body["components"]["schemas"]["Expense"]["properties"]

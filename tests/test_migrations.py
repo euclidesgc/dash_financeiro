@@ -65,6 +65,7 @@ EXPECTED_MIGRATIONS = [
     "019_category_manual.sql",
     "020_category_labels.sql",
     "021_category_limit.sql",
+    "022_not_expense.sql",
 ]
 
 TABLE_NAMES = (
@@ -247,7 +248,7 @@ def test_category_source_defaults_to_auto_and_only_accepts_auto_or_manual(conn):
 def test_a_base_migrated_before_019_copies_category_into_category_auto(tmp_path, conn):
     folder = tmp_path / "sql"
     folder.mkdir()
-    for name in EXPECTED_MIGRATIONS[:-3]:
+    for name in EXPECTED_MIGRATIONS[:-4]:
         _write_sql(folder, name, (ROOT / "app" / "migrations" / "sql" / name).read_text())
     apply_migrations(conn, folder)
 
@@ -273,7 +274,7 @@ def test_a_base_migrated_before_019_copies_category_into_category_auto(tmp_path,
 def test_a_base_migrated_before_020_gets_the_seed_labels_and_is_system(tmp_path, conn):
     folder = tmp_path / "sql"
     folder.mkdir()
-    for name in EXPECTED_MIGRATIONS[:-2]:
+    for name in EXPECTED_MIGRATIONS[:-3]:
         _write_sql(folder, name, (ROOT / "app" / "migrations" / "sql" / name).read_text())
     apply_migrations(conn, folder)
 
@@ -312,7 +313,7 @@ def test_a_base_migrated_before_020_gets_the_seed_labels_and_is_system(tmp_path,
 def test_a_base_migrated_before_021_gets_a_null_limit_that_refuses_zero(tmp_path, conn):
     folder = tmp_path / "sql"
     folder.mkdir()
-    for name in EXPECTED_MIGRATIONS[:-1]:
+    for name in EXPECTED_MIGRATIONS[:-2]:
         _write_sql(folder, name, (ROOT / "app" / "migrations" / "sql" / name).read_text())
     apply_migrations(conn, folder)
 
@@ -355,7 +356,7 @@ def test_a_base_migrated_before_021_gets_a_null_limit_that_refuses_zero(tmp_path
     )
 
 
-def test_a_fresh_base_applies_the_nineteen_real_migrations(tmp_path):
+def test_a_fresh_base_applies_the_twenty_real_migrations(tmp_path):
     result = subprocess.run(
         [sys.executable, "-m", "app.migrate"],
         cwd=ROOT,
@@ -369,7 +370,7 @@ def test_a_fresh_base_applies_the_nineteen_real_migrations(tmp_path):
     )
 
     assert result.returncode == 0
-    assert "migrations applied: 19" in result.stdout
+    assert "migrations applied: 20" in result.stdout
 
 
 def _base_que_pulou(conn, folder):
@@ -455,3 +456,54 @@ def test_reconciling_refuses_a_version_that_is_not_a_gap(tmp_path, conn):
     assert "Renumere" in resultado
     registradas = {row[0] for row in conn.execute("SELECT version FROM schema_migrations")}
     assert registradas == {"020"}
+
+
+def test_a_base_migrated_before_022_gets_a_null_reason_that_only_accepts_the_three_values(
+    tmp_path, conn
+):
+    folder = tmp_path / "sql"
+    folder.mkdir()
+    for name in EXPECTED_MIGRATIONS[:-1]:
+        _write_sql(folder, name, (ROOT / "app" / "migrations" / "sql" / name).read_text())
+    apply_migrations(conn, folder)
+
+    conn.execute("insert into accounts (id, balance_cents) values ('acc-1', 0)")
+    conn.execute(
+        "insert into transactions (pluggy_id, account_id, date, amount_cents, type) "
+        "values ('abc-1', 'acc-1', '2026-09-05', -100, 'DEBIT')"
+    )
+
+    _write_sql(
+        folder,
+        "022_not_expense.sql",
+        (ROOT / "app" / "migrations" / "sql" / "022_not_expense.sql").read_text(),
+    )
+    apply_migrations(conn, folder)
+
+    column = conn.execute(
+        "select type, \"notnull\" from pragma_table_info('transactions') "
+        "where name = 'not_expense_reason'"
+    ).fetchone()
+    assert column["type"] == "TEXT"
+    assert column["notnull"] == 0
+
+    assert (
+        conn.execute(
+            "SELECT not_expense_reason FROM transactions WHERE pluggy_id = 'abc-1'"
+        ).fetchone()[0]
+        is None
+    )
+
+    for value in ("own_transfer", "refund", "other"):
+        conn.execute("UPDATE transactions SET not_expense_reason = ?", (value,))
+
+    with pytest.raises(sqlite3.IntegrityError, match="CHECK constraint failed"):
+        conn.execute("UPDATE transactions SET not_expense_reason = 'x'")
+
+    conn.execute("UPDATE transactions SET not_expense_reason = NULL")
+    assert (
+        conn.execute(
+            "SELECT not_expense_reason FROM transactions WHERE pluggy_id = 'abc-1'"
+        ).fetchone()[0]
+        is None
+    )

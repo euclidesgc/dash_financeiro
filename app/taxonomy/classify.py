@@ -3,14 +3,10 @@ import sqlite3
 
 from app.db import connect
 from app.ingest.normalize import normalize_description
+from app.queries.spending import SPENDING
 
 MATCH_DESCRIPTION = "description"
 MATCH_CATEGORY = "category"
-
-# Reason: money moved between the owner's own accounts, and money given
-# back, never left the house; counting either as spending inflates the
-# residue the panel offers for correction (invariant 25).
-_SPENDING = "amount_cents < 0 AND is_transfer = 0 AND is_refund = 0 AND refunded_by IS NULL"
 
 # Reason: a bare tuple has no field names, so the order is written here
 # once — rule_id (None only for the fallback), group_id, nature,
@@ -48,7 +44,7 @@ def classify_all(conn: sqlite3.Connection) -> int:
 def residue(conn: sqlite3.Connection, *, start: str, end: str) -> sqlite3.Row:
     row: sqlite3.Row = conn.execute(
         "SELECT count(*) AS entries, coalesce(sum(amount_cents), 0) AS amount_cents "
-        f"FROM transactions WHERE rule_id IS NULL AND {_SPENDING} AND date >= ? AND date <= ?",
+        f"FROM transactions WHERE rule_id IS NULL AND {SPENDING} AND date >= ? AND date <= ?",
         (start, end),
     ).fetchone()
     return row

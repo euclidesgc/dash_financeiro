@@ -80,3 +80,35 @@ test('shows R$ 0,00 when the total is zero', () => {
   expect(summary).toHaveTextContent('R$ 0,00 no período')
   expect(summary).not.toHaveTextContent('-R$')
 })
+
+test('uses the noun given for the singular and the plural', () => {
+  const { unmount } = renderWithProviders(
+    <Pagination
+      page={1}
+      pages={1}
+      total={1}
+      totalCents={-6000}
+      isFetching={false}
+      onChange={vi.fn()}
+      noun={{ one: 'lançamento', many: 'lançamentos' }}
+    />,
+  )
+
+  expect(screen.getByText('Página 1 de 1 · 1 lançamento · R$ 60,00 no período')).toBeInTheDocument()
+
+  unmount()
+
+  renderWithProviders(
+    <Pagination
+      page={1}
+      pages={1}
+      total={2}
+      totalCents={-6000}
+      isFetching={false}
+      onChange={vi.fn()}
+      noun={{ one: 'lançamento', many: 'lançamentos' }}
+    />,
+  )
+
+  expect(screen.getByText('Página 1 de 1 · 2 lançamentos · R$ 60,00 no período')).toBeInTheDocument()
+})

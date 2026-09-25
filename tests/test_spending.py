@@ -3,7 +3,7 @@ import pytest
 from app.db import connect
 from app.ingest.loader import ingest
 from app.migrate import run_migrations
-from app.queries.spending import total_spending_cents
+from app.queries.spending import date_window, total_spending_cents
 
 ACCOUNT = {
     "id": "acc-1",
@@ -79,3 +79,26 @@ def test_window_narrows_the_total(loaded):
     assert total_spending_cents(loaded, start="2025-09-01") == -3025
     assert total_spending_cents(loaded, end="2025-08-31") == -1050
     assert total_spending_cents(loaded, start="2026-01-01") == 0
+
+
+def test_a_row_marked_as_not_expense_leaves_the_total(loaded):
+    loaded.execute(
+        "UPDATE transactions SET not_expense_reason = 'own_transfer' WHERE pluggy_id = 't-mercado'"
+    )
+    loaded.commit()
+
+    assert total_spending_cents(loaded) == -1050
+    assert total_spending_cents(loaded, start="2025-09-01") == 0
+
+
+def test_date_window_without_dates_is_empty():
+    assert date_window(None, None) == ("", [])
+
+
+def test_date_window_composes_the_column_and_the_bounds_in_order():
+    assert date_window("2025-09-01", None, "t.date") == (" AND t.date >= ?", ["2025-09-01"])
+    assert date_window(None, "2025-09-30") == (" AND date <= ?", ["2025-09-30"])
+    assert date_window("2025-09-01", "2025-09-30") == (
+        " AND date >= ? AND date <= ?",
+        ["2025-09-01", "2025-09-30"],
+    )

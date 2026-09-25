@@ -4,10 +4,13 @@ from typing import Any, Literal
 
 from app.db import fold
 from app.payees.names import labels
-from app.queries.spending import SPENDING
+from app.queries.spending import EXCLUDED, SPENDING, date_window
 
 Sort = Literal["date", "amount", "category"]
 Order = Literal["asc", "desc"]
+View = Literal["expenses", "excluded"]
+
+_PREDICATE: dict[View, str] = {"expenses": SPENDING, "excluded": EXCLUDED}
 
 _ORDER_SQL: dict[Order, str] = {"asc": "ASC", "desc": "DESC"}
 
@@ -32,7 +35,7 @@ _SORT_SQL: dict[Sort, str] = {
 
 _SELECT = f"""SELECT t.id, t.date, t.description, t.payee, t.category, t.category_source,
        {_LABEL} AS category_label,
-       t.amount_cents, t.account_id,
+       t.amount_cents, t.account_id, t.not_expense_reason,
        a.name AS account_name, a.institution AS account_institution, a.type AS account_type
 {_FROM}"""
 
@@ -75,16 +78,15 @@ def _like_pattern(term: str) -> str:
 
 
 def _where(
-    date_from: str | None, date_to: str | None, account_id: str | None, search: str | None
+    view: View,
+    date_from: str | None,
+    date_to: str | None,
+    account_id: str | None,
+    search: str | None,
 ) -> tuple[str, list[str]]:
-    sql = f"WHERE {SPENDING}"
-    params: list[str] = []
-    if date_from is not None:
-        sql += " AND t.date >= ?"
-        params.append(date_from)
-    if date_to is not None:
-        sql += " AND t.date <= ?"
-        params.append(date_to)
+    sql = f"WHERE {_PREDICATE[view]}"
+    window, params = date_window(date_from, date_to, "t.date")
+    sql += window
     if account_id is not None:
         sql += " AND t.account_id = ?"
         params.append(account_id)
@@ -118,18 +120,20 @@ def _item(row: sqlite3.Row, names: dict[str, str]) -> dict[str, Any]:
         "category_source": row["category_source"],
         "amount_cents": row["amount_cents"],
         "account_id": row["account_id"],
+        "not_expense_reason": row["not_expense_reason"],
     }
 
 
 def sum_expenses(
     conn: sqlite3.Connection,
     *,
+    view: View = "expenses",
     date_from: str | None = None,
     date_to: str | None = None,
     account_id: str | None = None,
     search: str | None = None,
 ) -> int:
-    where, params = _where(date_from, date_to, account_id, search)
+    where, params = _where(view, date_from, date_to, account_id, search)
     _, total_cents = conn.execute(f"{_TOTAL} {where}", params).fetchone()
     return int(total_cents)
 
@@ -141,18 +145,20 @@ def list_expenses(
     page_size: int,
     sort: Sort = "date",
     order: Order = "desc",
+    view: View = "expenses",
     date_from: str | None = None,
     date_to: str | None = None,
     account_id: str | None = None,
     search: str | None = None,
 ) -> ExpensesPage:
     offset = (page - 1) * page_size
-    where, where_params = _where(date_from, date_to, account_id, search)
+    where, where_params = _where(view, date_from, date_to, account_id, search)
     sql = _page_sql(sort, order, where)
     rows = conn.execute(sql, (*where_params, page_size, offset)).fetchall()
     total, _ = conn.execute(f"{_TOTAL} {where}", where_params).fetchone()
     total_cents = sum_expenses(
         conn,
+        view=view,
         date_from=date_from,
         date_to=date_to,
         account_id=account_id,
@@ -178,12 +184,13 @@ def get_expense(conn: sqlite3.Connection, transaction_id: int) -> dict[str, Any]
 def sum_by_category(
     conn: sqlite3.Connection,
     *,
+    view: View = "expenses",
     date_from: str | None = None,
     date_to: str | None = None,
     account_id: str | None = None,
     search: str | None = None,
 ) -> list[CategoryTotal]:
-    where, params = _where(date_from, date_to, account_id, search)
+    where, params = _where(view, date_from, date_to, account_id, search)
     sql = (
         f"{_BY_CATEGORY} {where} GROUP BY NULLIF(t.category, '')"
         " ORDER BY abs(total) DESC,"

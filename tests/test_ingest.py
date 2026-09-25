@@ -219,3 +219,27 @@ def test_refund_carries_the_identifier_of_the_debit_it_cancels(conn, accounts):
     assert rows["d4714f41"]["refunded_by"] == "8b073fe4"
     assert rows["8b073fe4"]["is_refund"] == 0
     assert rows["8b073fe4"]["refunded_by"] is None
+
+
+def test_a_new_row_enters_with_a_null_not_expense_reason(conn, accounts):
+    transactions = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))[:2]
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    value = conn.execute(
+        "SELECT not_expense_reason FROM transactions WHERE pluggy_id = 'fix-duplicada'"
+    ).fetchone()[0]
+    assert value is None
+
+
+def test_reingesting_keeps_the_not_expense_reason_and_still_updates_the_description(conn, accounts):
+    transactions = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))[:2]
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    conn.execute(
+        "UPDATE transactions SET not_expense_reason = 'refund' WHERE pluggy_id = 'fix-duplicada'"
+    )
+    conn.commit()
+    transactions[0]["descricao"] = "DESCRICAO NOVA"
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    updated = conn.execute(
+        "SELECT not_expense_reason, description FROM transactions WHERE pluggy_id = 'fix-duplicada'"
+    ).fetchone()
+    assert (updated["not_expense_reason"], updated["description"]) == ("refund", "DESCRICAO NOVA")

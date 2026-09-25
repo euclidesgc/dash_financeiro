@@ -9,6 +9,7 @@ from app.plan.ceiling import month_signal, read_ceiling
 from app.queries.expenses import (
     Order,
     Sort,
+    View,
     get_expense,
     list_expenses,
     sum_by_category,
@@ -17,17 +18,21 @@ from app.queries.expenses import (
 from app.queries.similar import count_similar
 from app.taxonomy.limits import Scope, Signal, is_whole_month, signal_for
 from app.taxonomy.override import (
+    NotAnOutflowError,
     UnknownCategoryError,
     UnknownTransactionError,
     apply_to_similar,
+    clear_not_expense,
     restore_auto,
     set_manual,
+    set_not_expense,
 )
 
 router = APIRouter(prefix="/api/transactions")
 
 UNKNOWN_EXPENSE = "Gasto não encontrado."
 UNKNOWN_CATEGORY = "Categoria desconhecida."
+NOT_AN_OUTFLOW = "Só uma saída que conta como gasto pode ser marcada."
 
 
 class Expense(BaseModel):
@@ -43,6 +48,7 @@ class Expense(BaseModel):
     category_source: Literal["auto", "manual"]
     amount_cents: int
     account_id: str | None
+    not_expense_reason: Literal["own_transfer", "refund", "other"] | None
 
 
 class ExpensesResponse(BaseModel):
@@ -94,6 +100,10 @@ class ApplyToSimilarResponse(BaseModel):
     updated: int
 
 
+class NotExpenseBody(BaseModel):
+    reason: Literal["own_transfer", "refund", "other"]
+
+
 def _date_bounds(from_: date | None, to: date | None) -> tuple[str | None, str | None]:
     if from_ is not None and to is not None and to < from_:
         raise HTTPException(
@@ -117,6 +127,7 @@ def expenses(
     to: Annotated[date | None, Query()] = None,
     account_id: Annotated[str | None, Query(min_length=1)] = None,
     q: Annotated[str | None, Query()] = None,
+    view: Annotated[View, Query()] = "expenses",
 ) -> ExpensesResponse:
     date_from, date_to = _date_bounds(from_, to)
     search = _search_term(q)
@@ -128,6 +139,7 @@ def expenses(
             page_size=page_size,
             sort=sort,
             order=order,
+            view=view,
             date_from=date_from,
             date_to=date_to,
             account_id=account_id,
@@ -150,6 +162,7 @@ def expenses_by_category(
     to: Annotated[date | None, Query()] = None,
     account_id: Annotated[str | None, Query(min_length=1)] = None,
     q: Annotated[str | None, Query()] = None,
+    view: Annotated[View, Query()] = "expenses",
 ) -> CategoryTotalsResponse:
     date_from, date_to = _date_bounds(from_, to)
     search = _search_term(q)
@@ -157,6 +170,7 @@ def expenses_by_category(
     try:
         groups = sum_by_category(
             conn,
+            view=view,
             date_from=date_from,
             date_to=date_to,
             account_id=account_id,
@@ -223,6 +237,40 @@ def update_category(transaction_id: int, body: CategoryUpdate) -> Expense:
             raise HTTPException(status_code=404, detail=UNKNOWN_EXPENSE) from error
         except UnknownCategoryError as error:
             raise HTTPException(status_code=422, detail=UNKNOWN_CATEGORY) from error
+        item = get_expense(conn, transaction_id)
+    finally:
+        conn.close()
+    if item is None:
+        raise HTTPException(status_code=404, detail=UNKNOWN_EXPENSE)
+    return Expense(**item)
+
+
+@router.put("/{transaction_id}/not-expense")
+def set_not_expense_of(transaction_id: int, body: NotExpenseBody) -> Expense:
+    conn = connect()
+    try:
+        try:
+            set_not_expense(conn, transaction_id, body.reason)
+        except UnknownTransactionError as error:
+            raise HTTPException(status_code=404, detail=UNKNOWN_EXPENSE) from error
+        except NotAnOutflowError as error:
+            raise HTTPException(status_code=422, detail=NOT_AN_OUTFLOW) from error
+        item = get_expense(conn, transaction_id)
+    finally:
+        conn.close()
+    if item is None:
+        raise HTTPException(status_code=404, detail=UNKNOWN_EXPENSE)
+    return Expense(**item)
+
+
+@router.delete("/{transaction_id}/not-expense")
+def clear_not_expense_of(transaction_id: int) -> Expense:
+    conn = connect()
+    try:
+        try:
+            clear_not_expense(conn, transaction_id)
+        except UnknownTransactionError as error:
+            raise HTTPException(status_code=404, detail=UNKNOWN_EXPENSE) from error
         item = get_expense(conn, transaction_id)
     finally:
         conn.close()
