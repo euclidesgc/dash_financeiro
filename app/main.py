@@ -22,6 +22,7 @@ from app.routers import (
     spending,
     summary,
     sync,
+    transactions,
     whatif,
 )
 from app.routers.navigation import marked
@@ -70,6 +71,7 @@ def create_app() -> FastAPI:
     app.include_router(auth_api.router)
     app.include_router(accounts.router)
     app.include_router(sync.router)
+    app.include_router(transactions.router)
     app.include_router(cards.router)
     app.include_router(summary.router)
     app.include_router(spending.router)

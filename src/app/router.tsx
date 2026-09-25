@@ -3,6 +3,7 @@ import type { RouteObject } from 'react-router'
 import { paths } from '@/config/paths'
 import { ProtectedRoute } from '@/lib/auth'
 import { DashboardRoute } from '@/app/routes/dashboard'
+import { ExpensesRoute } from '@/app/routes/expenses'
 import { LoginRoute } from '@/app/routes/login'
 
 export const routes: RouteObject[] = [
@@ -12,6 +13,14 @@ export const routes: RouteObject[] = [
     element: (
       <ProtectedRoute>
         <DashboardRoute />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: paths.expenses,
+    element: (
+      <ProtectedRoute>
+        <ExpensesRoute />
       </ProtectedRoute>
     ),
   },

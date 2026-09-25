@@ -17,7 +17,7 @@ import sys
 from app.auth.seed import seed_user
 from app.db import connect
 from app.ingest.loader import ingest
-from app.ingest.source import load_accounts
+from app.ingest.source import load_accounts, load_transactions
 from app.migrate import run_migrations
 from app.taxonomy.seed import seed_taxonomy
 
@@ -28,7 +28,7 @@ try:
     seed_taxonomy(conn)
     result = ingest(
         conn,
-        transactions=[],
+        transactions=load_transactions("tests/data/e2e_transactions.json"),
         accounts=load_accounts("tests/fixtures/accounts_fixture.json"),
         source="e2e",
     )
