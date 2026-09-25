@@ -5,7 +5,7 @@ import httpx
 
 from app.config import Config
 from ingestao.pluggy_consolidate import NoRawAccountsError, consolidate
-from ingestao.pluggy_extract import itens_salvos, salvar
+from ingestao.pluggy_extract import salvar
 
 API = "https://api.pluggy.ai"
 SOURCE = "pluggy"
@@ -16,7 +16,7 @@ REFUSED = (
     "pluggy: a Pluggy recusou as credenciais; confira PLUGGY_CLIENT_ID e PLUGGY_CLIENT_SECRET."
 )
 UNREACHABLE = "pluggy: a Pluggy não respondeu; verifique a conexão com a internet e tente de novo."
-NO_ITEMS = "pluggy: nenhuma conexão registrada em data/item_ids.txt."
+NO_ITEMS = "pluggy: nenhuma conexão cadastrada; cadastre em Conexões."
 CONSOLIDATION_FAILED = "pluggy: a consolidação dos dados brutos falhou."
 
 
@@ -32,14 +32,15 @@ def unexpected_message(status: int, path: str) -> str:
     return f"pluggy: a Pluggy respondeu {status} em {path}."
 
 
-def fetch_from_pluggy(config: Config, *, transport: httpx.BaseTransport | None = None) -> None:
-    ids = itens_salvos()
-    if not ids:
+def fetch_from_pluggy(
+    config: Config, item_ids: list[str], *, transport: httpx.BaseTransport | None = None
+) -> None:
+    if not item_ids:
         raise PluggyFetchError(NO_ITEMS)
     try:
         with httpx.Client(base_url=API, timeout=60.0, transport=transport) as client:
             client.headers["X-API-KEY"] = _authenticate(client, config)
-            for item_id in ids:
+            for item_id in item_ids:
                 _fetch_item(client, item_id)
     except httpx.HTTPError as failure:
         raise PluggyFetchError(UNREACHABLE) from failure

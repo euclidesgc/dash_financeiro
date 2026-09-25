@@ -11,6 +11,7 @@ from app.debts.ladder import rebuild
 from app.ingest.loader import IngestResult, ingest
 from app.ingest.source import load_accounts, load_transactions
 from app.ingest.trigger import COMMAND, Trigger
+from app.queries.pluggy_connections import list_item_ids
 from app.sync.fetch import PluggyFetchError, fetch_from_pluggy
 from app.taxonomy.classify import classify_all
 
@@ -53,7 +54,7 @@ def synchronise(
                 + " no ambiente. Enquanto não houver, o painel lê o arquivo já consolidado."
             )
         try:
-            fetch_from_pluggy(config)
+            fetch_from_pluggy(config, list_item_ids(conn))
         except PluggyFetchError as failure:
             return _record_failed(conn, PLUGGY, trigger, str(failure))
     try:

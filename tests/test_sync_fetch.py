@@ -11,13 +11,13 @@ CLIENT_ID = "id-teste"
 SECRET = "segredo-muito-secreto"
 API_KEY = "chave-api-secreta"
 ITEM_ID = "item-abc12345"
+ITEMS = [ITEM_ID]
 
 
 @pytest.fixture()
 def workspace(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     (tmp_path / "data").mkdir()
-    (tmp_path / "data" / "item_ids.txt").write_text(ITEM_ID + "\n", encoding="utf-8")
     return tmp_path
 
 
@@ -144,7 +144,7 @@ def recording_transport(routes: dict) -> httpx.MockTransport:
 def test_the_happy_path_writes_raw_files_and_consolidates(workspace):
     mock = recording_transport(happy_routes())
 
-    fetch_from_pluggy(config_with(), transport=mock)
+    fetch_from_pluggy(config_with(), ITEMS, transport=mock)
 
     raw = list((workspace / "data" / "raw").glob("accounts_item-abc*.json"))
     assert raw, "esperava um data/raw/accounts_item-abc*.json"
@@ -160,7 +160,7 @@ def test_the_happy_path_writes_raw_files_and_consolidates(workspace):
 def test_the_transaction_pages_follow_the_next_cursor(workspace):
     mock = recording_transport(happy_routes())
 
-    fetch_from_pluggy(config_with(), transport=mock)
+    fetch_from_pluggy(config_with(), ITEMS, transport=mock)
 
     transaction_requests = [
         request
@@ -175,7 +175,7 @@ def test_a_401_on_auth_means_refused_credentials(workspace):
     mock = transport({("POST", "/auth"): lambda request: httpx.Response(401, json={})})
 
     with pytest.raises(PluggyFetchError, match="recusou as credenciais"):
-        fetch_from_pluggy(config_with(), transport=mock)
+        fetch_from_pluggy(config_with(), ITEMS, transport=mock)
 
 
 def test_a_connect_error_means_pluggy_did_not_answer(workspace):
@@ -185,7 +185,7 @@ def test_a_connect_error_means_pluggy_did_not_answer(workspace):
     mock = transport({("POST", "/auth"): boom})
 
     with pytest.raises(PluggyFetchError, match="não respondeu"):
-        fetch_from_pluggy(config_with(), transport=mock)
+        fetch_from_pluggy(config_with(), ITEMS, transport=mock)
 
 
 def test_a_login_error_item_asks_for_a_new_login(workspace):
@@ -205,7 +205,7 @@ def test_a_login_error_item_asks_for_a_new_login(workspace):
     with pytest.raises(
         PluggyFetchError, match="a conexão Banco Teste pede novo login em meu.pluggy.ai."
     ):
-        fetch_from_pluggy(config_with(), transport=mock)
+        fetch_from_pluggy(config_with(), ITEMS, transport=mock)
 
 
 def test_a_404_item_asks_for_a_new_login_by_id(workspace):
@@ -215,7 +215,7 @@ def test_a_404_item_asks_for_a_new_login_by_id(workspace):
     mock = transport(happy_routes({("GET", f"/items/{ITEM_ID}"): item_404}))
 
     with pytest.raises(PluggyFetchError, match="a conexão item-abc pede novo login"):
-        fetch_from_pluggy(config_with(), transport=mock)
+        fetch_from_pluggy(config_with(), ITEMS, transport=mock)
 
 
 def test_any_other_status_is_reported_with_the_path(workspace):
@@ -225,16 +225,12 @@ def test_any_other_status_is_reported_with_the_path(workspace):
     mock = transport(happy_routes({("GET", "/accounts"): accounts_500}))
 
     with pytest.raises(PluggyFetchError, match="a Pluggy respondeu 500 em /accounts."):
-        fetch_from_pluggy(config_with(), transport=mock)
+        fetch_from_pluggy(config_with(), ITEMS, transport=mock)
 
 
-def test_an_empty_item_list_is_a_failure(tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
-    (tmp_path / "data").mkdir()
-    (tmp_path / "data" / "item_ids.txt").write_text("", encoding="utf-8")
-
-    with pytest.raises(PluggyFetchError, match="nenhuma conexão registrada"):
-        fetch_from_pluggy(config_with())
+def test_an_empty_item_list_is_a_failure(workspace):
+    with pytest.raises(PluggyFetchError, match="nenhuma conexão cadastrada; cadastre em Conexões"):
+        fetch_from_pluggy(config_with(), [])
 
 
 def test_no_message_ever_contains_the_secret_or_the_api_key(workspace):
@@ -251,7 +247,7 @@ def test_no_message_ever_contains_the_secret_or_the_api_key(workspace):
     ]
     for mock in scenarios:
         with pytest.raises(PluggyFetchError) as failure:
-            fetch_from_pluggy(config_with(), transport=mock)
+            fetch_from_pluggy(config_with(), ITEMS, transport=mock)
         assert SECRET not in str(failure.value)
         assert API_KEY not in str(failure.value)
 
@@ -260,7 +256,6 @@ def test_a_failure_in_one_item_writes_no_processed_file(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     (tmp_path / "data").mkdir()
     second_item = "item-second9"
-    (tmp_path / "data" / "item_ids.txt").write_text(f"{ITEM_ID}\n{second_item}\n", encoding="utf-8")
 
     def item_router(request: httpx.Request) -> httpx.Response:
         if request.url.path == f"/items/{second_item}":
@@ -279,7 +274,7 @@ def test_a_failure_in_one_item_writes_no_processed_file(tmp_path, monkeypatch):
     mock = transport(routes)
 
     with pytest.raises(PluggyFetchError, match="pede novo login"):
-        fetch_from_pluggy(config_with(), transport=mock)
+        fetch_from_pluggy(config_with(), [ITEM_ID, second_item], transport=mock)
 
     assert not (tmp_path / "data" / "processed" / "transacoes.json").exists()
 
@@ -291,4 +286,4 @@ def test_no_accounts_at_pluggy_means_the_consolidation_failed(workspace):
     mock = transport(happy_routes({("GET", "/accounts"): no_accounts}))
 
     with pytest.raises(PluggyFetchError, match="a consolidação dos dados brutos falhou"):
-        fetch_from_pluggy(config_with(), transport=mock)
+        fetch_from_pluggy(config_with(), ITEMS, transport=mock)

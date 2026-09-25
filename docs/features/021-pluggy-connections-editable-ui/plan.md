@@ -10,17 +10,17 @@ Decisões registradas aqui:
 
 Ao final: a API lista, cadastra e remove conexões, e a atualização pela Pluggy busca as conexões da base.
 
-- [ ] T1.1 — Tabela, domínio, consulta e router
+- [x] T1.1 — Tabela, domínio, consulta e router
   - Arquivos: `app/migrations/sql/024_pluggy_connections.sql`, `app/migrations/NUMBERING.md`, `app/sync/connections.py`, `app/queries/pluggy_connections.py`, `app/routers/pluggy_connections.py`, `app/main.py`
   - O que fazer: D1, D2 e D3 da SPEC.
   - Skills: python-tratamento-de-erros
   - Complexidade: média
-- [ ] T1.2 — Atualização lê a base
+- [x] T1.2 — Atualização lê a base
   - Arquivos: `app/sync/fetch.py`, `app/sync/__init__.py`
   - O que fazer: D4 da SPEC.
   - Skills: python-tratamento-de-erros
   - Complexidade: baixa
-- [ ] T1.3 — Testes
+- [x] T1.3 — Testes
   - Arquivos: `tests/test_pluggy_connections.py`, `tests/test_sync_fetch.py`
   - O que fazer: API (lista vazia, cadastro, 422, 409, 404, 401 sem sessão), `import_file` idempotente e `synchronise` com a fonte `pluggy` passando os ids da base.
   - Skills: python-testes-de-integracao-httpx
@@ -28,11 +28,11 @@ Ao final: a API lista, cadastra e remove conexões, e a atualização pela Plugg
 
 ### Critérios de aceite da fase 1
 
-- [ ] CA1.1 — `bash scripts/lint.sh`, `uv run pytest` e `bash scripts/gates/gates_runner.sh` saem com código 0. (comando)
-- [ ] CA1.2 — `grep -rn "itens_salvos\|item_ids.txt" app/` não encontra nada. (estrutural)
-- [ ] CA1.3 — Autenticado, `POST /api/pluggy-connections` com `{"item_id": " 3F2504E0-4F89-11D3-9A0C-0305E82C3301 "}` responde 201 com `item_id` em minúsculas; repetir responde 409 "Essa conexão já está cadastrada."; `{"item_id": "abc"}` responde 422 com a mensagem de formato; `GET` lista a conexão; `DELETE` responde 204 e um segundo `DELETE` 404; sem sessão, `GET` responde 401. (comportamental)
-- [ ] CA1.4 — `import_file` com um arquivo de duas linhas válidas, uma repetida e uma inválida grava 2 conexões e, rodado de novo, grava 0. (comportamental)
-- [ ] CA1.5 — Com a fonte `pluggy` e a tabela vazia, `synchronise` grava falha com "nenhuma conexão cadastrada; cadastre em Conexões."; com uma conexão cadastrada, a busca recebe exatamente esse id. (comportamental)
+- [x] CA1.1 — `bash scripts/lint.sh`, `uv run pytest` e `bash scripts/gates/gates_runner.sh` saem com código 0. (comando)
+- [x] CA1.2 — `grep -rn "itens_salvos\|item_ids.txt" app/` não encontra nada. (estrutural)
+- [x] CA1.3 — Autenticado, `POST /api/pluggy-connections` com `{"item_id": " 3F2504E0-4F89-11D3-9A0C-0305E82C3301 "}` responde 201 com `item_id` em minúsculas; repetir responde 409 "Essa conexão já está cadastrada."; `{"item_id": "abc"}` responde 422 com a mensagem de formato; `GET` lista a conexão; `DELETE` responde 204 e um segundo `DELETE` 404; sem sessão, `GET` responde 401. (comportamental)
+- [x] CA1.4 — `import_file` com um arquivo de duas linhas válidas, uma repetida e uma inválida grava 2 conexões e, rodado de novo, grava 0. (comportamental)
+- [x] CA1.5 — Com a fonte `pluggy` e a tabela vazia, `synchronise` grava falha com "nenhuma conexão cadastrada; cadastre em Conexões."; com uma conexão cadastrada, a busca recebe exatamente esse id. (comportamental)
 
 ## Fase 2 — Tela de conexões
 
