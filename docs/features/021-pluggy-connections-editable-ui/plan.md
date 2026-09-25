@@ -38,12 +38,12 @@ Ao final: a API lista, cadastra e remove conexões, e a atualização pela Plugg
 
 Ao final: o dono abre "Conexões" no menu, vê, cadastra e remove conexões.
 
-- [ ] T2.1 — Feature, rota e menu
+- [x] T2.1 — Feature, rota e menu
   - Arquivos: `src/features/pluggy-connections/**`, `src/app/routes/connections.tsx`, `src/app/router.tsx`, `src/config/paths.ts`, `src/components/layouts/app-header.tsx`, `src/testing/mocks/handlers.ts`, `src/testing/setup.ts`
   - O que fazer: D5 da SPEC.
   - Skills: br:forms, br:api-requests, br:api-mocking, br:interface-design
   - Complexidade: média
-- [ ] T2.2 — Testes
+- [x] T2.2 — Testes
   - Arquivos: `src/features/pluggy-connections/components/__tests__/*`, `src/components/layouts/__tests__/app-header.test.tsx`, `e2e/connections.spec.ts`
   - O que fazer: carregando, erro com nova tentativa, vazio, cadastro válido, recusa de formato sem chamar a API, 409 no campo, remoção com confirmação e cancelamento; e2e cadastra, recarrega, remove e deixa a base como achou.
   - Skills: br:component-testing, br:e2e-testing
@@ -51,19 +51,19 @@ Ao final: o dono abre "Conexões" no menu, vê, cadastra e remove conexões.
 
 ### Critérios de aceite da fase 2
 
-- [ ] CA2.1 — `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` e `pnpm test:e2e` saem com código 0. (comando)
-- [ ] CA2.2 — `src/features/pluggy-connections/` não importa de outra feature nem de `src/app/`. (estrutural)
-- [ ] CA2.3 — O menu tem o link "Conexões" para `/connections`, marcado como atual nessa rota. (comportamental)
-- [ ] CA2.4 — Na tela, "abc" mostra a mensagem de formato sem chamar a API; um identificador válido aparece na lista e o campo esvazia; um duplicado mostra "Essa conexão já está cadastrada." no campo; remover pede confirmação e, confirmado, a conexão some; sem conexões aparece "Nenhuma conexão cadastrada.". (comportamental)
+- [x] CA2.1 — `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` e `pnpm test:e2e` saem com código 0. (comando)
+- [x] CA2.2 — `src/features/pluggy-connections/` não importa de outra feature nem de `src/app/`. (estrutural)
+- [x] CA2.3 — O menu tem o link "Conexões" para `/connections`, marcado como atual nessa rota. (comportamental)
+- [x] CA2.4 — Na tela, "abc" mostra a mensagem de formato sem chamar a API; um identificador válido aparece na lista e o campo esvazia; um duplicado mostra "Essa conexão já está cadastrada." no campo; remover pede confirmação e, confirmado, a conexão some; sem conexões aparece "Nenhuma conexão cadastrada.". (comportamental)
 
 ## DoD da entrega
 
-- [ ] DoD1 — Todas as tarefas e critérios do plano marcados
-- [ ] DoD2 — Suíte de testes inteira passa
-- [ ] DoD3 — Lint do projeto inteiro sem erros nem avisos
-- [ ] DoD4 — Tipos de todos os `tsconfig` sem erros
-- [ ] DoD5 — Console dos testes sem erro nem aviso
-- [ ] DoD6 — `build` passa
-- [ ] DoD7 — Nenhum import entre features nem contra o fluxo compartilhado → features → app
-- [ ] DoD8 — Nenhum `console.log`, `TODO`, `// @debug`, `.only(` ou `.skip(` no diff da branch
-- [ ] DoD9 — Nenhuma worktree ou branch temporária sobrando
+- [x] DoD1 — Todas as tarefas e critérios do plano marcados
+- [x] DoD2 — Suíte de testes inteira passa
+- [x] DoD3 — Lint do projeto inteiro sem erros nem avisos
+- [x] DoD4 — Tipos de todos os `tsconfig` sem erros
+- [x] DoD5 — Console dos testes sem erro nem aviso
+- [x] DoD6 — `build` passa
+- [x] DoD7 — Nenhum import entre features nem contra o fluxo compartilhado → features → app
+- [x] DoD8 — Nenhum `console.log`, `TODO`, `// @debug`, `.only(` ou `.skip(` no diff da branch
+- [x] DoD9 — Nenhuma worktree ou branch temporária sobrando

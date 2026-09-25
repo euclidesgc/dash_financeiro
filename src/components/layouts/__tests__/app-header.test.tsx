@@ -41,4 +41,12 @@ test('links point to the routes', () => {
   expect(screen.getByRole('link', { name: 'Saldos' })).toHaveAttribute('href', '/')
   expect(screen.getByRole('link', { name: 'Gastos' })).toHaveAttribute('href', '/expenses')
   expect(screen.getByRole('link', { name: 'Categorias' })).toHaveAttribute('href', '/categories')
+  expect(screen.getByRole('link', { name: 'Conexões' })).toHaveAttribute('href', '/connections')
+})
+
+test('marks "Conexões" as current on the connections page', () => {
+  renderWithProviders(<AppHeader />, { route: '/connections' })
+
+  expect(screen.getByRole('link', { name: 'Conexões' })).toHaveAttribute('aria-current', 'page')
+  expect(screen.getByRole('link', { name: 'Categorias' })).not.toHaveAttribute('aria-current')
 })

@@ -1,6 +1,7 @@
 import { http, HttpResponse } from 'msw'
 import type { SyncStatus } from '@/features/sync/types/sync-status'
 import type { CatalogueCategory } from '@/features/categories/types/category'
+import type { PluggyConnection } from '@/features/pluggy-connections/types/pluggy-connection'
 import type {
   CategoryGroup,
   CategorySignal,
@@ -57,6 +58,20 @@ export const fakeCategories: CatalogueCategory[] = generateFakeCategories()
 export function resetCategories(): void {
   fakeCategories.splice(0, fakeCategories.length, ...generateFakeCategories())
 }
+
+function generateFakeConnections(): PluggyConnection[] {
+  return [
+    { item_id: '3f2504e0-4f89-11d3-9a0c-0305e82c3301', created_at: '2026-09-10T12:00:00+00:00' },
+  ]
+}
+
+export const fakeConnections: PluggyConnection[] = generateFakeConnections()
+
+export function resetConnections(): void {
+  fakeConnections.splice(0, fakeConnections.length, ...generateFakeConnections())
+}
+
+const FAKE_ITEM_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 export const fakePlan: { monthly_ceiling_cents: number | null } = { monthly_ceiling_cents: null }
 
@@ -498,6 +513,36 @@ export const handlers = [
       spending_cents,
       balance_cents: income_cents + spending_cents,
     })
+  }),
+
+  http.get('/api/pluggy-connections', () => {
+    return HttpResponse.json({ connections: fakeConnections })
+  }),
+
+  http.post('/api/pluggy-connections', async ({ request }) => {
+    const body = (await request.json()) as { item_id: string }
+    const itemId = body.item_id.trim().toLowerCase()
+    if (!FAKE_ITEM_ID.test(itemId)) {
+      return HttpResponse.json(
+        { detail: 'Informe um identificador de conexão da Pluggy (formato 8-4-4-4-12).' },
+        { status: 422 },
+      )
+    }
+    if (fakeConnections.some((connection) => connection.item_id === itemId)) {
+      return HttpResponse.json({ detail: 'Essa conexão já está cadastrada.' }, { status: 409 })
+    }
+    const item: PluggyConnection = { item_id: itemId, created_at: '2026-09-25T12:00:00+00:00' }
+    fakeConnections.push(item)
+    return HttpResponse.json(item, { status: 201 })
+  }),
+
+  http.delete('/api/pluggy-connections/:itemId', ({ params }) => {
+    const index = fakeConnections.findIndex((connection) => connection.item_id === params.itemId)
+    if (index === -1) {
+      return HttpResponse.json({ detail: 'Conexão não encontrada.' }, { status: 404 })
+    }
+    fakeConnections.splice(index, 1)
+    return new HttpResponse(null, { status: 204 })
   }),
 
   http.get('/api/categories', () => {
