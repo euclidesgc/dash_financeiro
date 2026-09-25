@@ -1,6 +1,6 @@
 # PLAN 055 — balances-month-plan-card
 
-Branch: `feature/055-balances-month-plan-card`
+Branch: `feature/055-balances-plan-card`
 
 ## Fase 1 — cartão do plano do mês na tela de saldos
 
