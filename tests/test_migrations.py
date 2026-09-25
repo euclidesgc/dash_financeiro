@@ -66,6 +66,7 @@ EXPECTED_MIGRATIONS = [
     "020_category_labels.sql",
     "021_category_limit.sql",
     "022_not_expense.sql",
+    "023_sync_trigger.sql",
 ]
 
 TABLE_NAMES = (
@@ -147,6 +148,10 @@ def test_unknown_account_is_refused(conn):
             "insert into transactions (pluggy_id, account_id, date, amount_cents) "
             "values ('abc-2', 'nao-existe', '2026-09-05', -100)"
         )
+
+
+def _before(name):
+    return EXPECTED_MIGRATIONS[: EXPECTED_MIGRATIONS.index(name)]
 
 
 def _write_sql(folder, name, script):
@@ -248,7 +253,7 @@ def test_category_source_defaults_to_auto_and_only_accepts_auto_or_manual(conn):
 def test_a_base_migrated_before_019_copies_category_into_category_auto(tmp_path, conn):
     folder = tmp_path / "sql"
     folder.mkdir()
-    for name in EXPECTED_MIGRATIONS[:-4]:
+    for name in _before("019_category_manual.sql"):
         _write_sql(folder, name, (ROOT / "app" / "migrations" / "sql" / name).read_text())
     apply_migrations(conn, folder)
 
@@ -274,7 +279,7 @@ def test_a_base_migrated_before_019_copies_category_into_category_auto(tmp_path,
 def test_a_base_migrated_before_020_gets_the_seed_labels_and_is_system(tmp_path, conn):
     folder = tmp_path / "sql"
     folder.mkdir()
-    for name in EXPECTED_MIGRATIONS[:-3]:
+    for name in _before("020_category_labels.sql"):
         _write_sql(folder, name, (ROOT / "app" / "migrations" / "sql" / name).read_text())
     apply_migrations(conn, folder)
 
@@ -313,7 +318,7 @@ def test_a_base_migrated_before_020_gets_the_seed_labels_and_is_system(tmp_path,
 def test_a_base_migrated_before_021_gets_a_null_limit_that_refuses_zero(tmp_path, conn):
     folder = tmp_path / "sql"
     folder.mkdir()
-    for name in EXPECTED_MIGRATIONS[:-2]:
+    for name in _before("021_category_limit.sql"):
         _write_sql(folder, name, (ROOT / "app" / "migrations" / "sql" / name).read_text())
     apply_migrations(conn, folder)
 
@@ -356,7 +361,7 @@ def test_a_base_migrated_before_021_gets_a_null_limit_that_refuses_zero(tmp_path
     )
 
 
-def test_a_fresh_base_applies_the_twenty_real_migrations(tmp_path):
+def test_a_fresh_base_applies_every_real_migration(tmp_path):
     result = subprocess.run(
         [sys.executable, "-m", "app.migrate"],
         cwd=ROOT,
@@ -370,7 +375,7 @@ def test_a_fresh_base_applies_the_twenty_real_migrations(tmp_path):
     )
 
     assert result.returncode == 0
-    assert "migrations applied: 20" in result.stdout
+    assert f"migrations applied: {len(EXPECTED_MIGRATIONS)}" in result.stdout
 
 
 def _base_que_pulou(conn, folder):
@@ -463,7 +468,7 @@ def test_a_base_migrated_before_022_gets_a_null_reason_that_only_accepts_the_thr
 ):
     folder = tmp_path / "sql"
     folder.mkdir()
-    for name in EXPECTED_MIGRATIONS[:-1]:
+    for name in _before("022_not_expense.sql"):
         _write_sql(folder, name, (ROOT / "app" / "migrations" / "sql" / name).read_text())
     apply_migrations(conn, folder)
 
@@ -507,3 +512,16 @@ def test_a_base_migrated_before_022_gets_a_null_reason_that_only_accepts_the_thr
         ).fetchone()[0]
         is None
     )
+
+
+def test_the_origin_of_a_sync_run_only_accepts_screen_command_or_nothing(conn):
+    apply_migrations(conn, SQL_FOLDER)
+    insert = (
+        "INSERT INTO sync_runs (started_at, source, status, triggered_by) "
+        "VALUES ('2026-09-25T10:00:00', 'x', 'ok', ?)"
+    )
+    for accepted in ("screen", "command", None):
+        conn.execute(insert, (accepted,))
+
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute(insert, ("outro",))

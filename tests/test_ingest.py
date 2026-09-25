@@ -7,6 +7,7 @@ from app.db import connect
 from app.ingest.loader import ingest
 from app.ingest.normalize import normalize_description
 from app.ingest.source import load_accounts, load_transactions
+from app.ingest.trigger import COMMAND, SCREEN
 from app.migrate import run_migrations
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -62,7 +63,9 @@ def test_source_keeps_one_row_per_account_and_the_latest_snapshot_wins(tmp_path)
 
 def test_rejects_the_offending_line_and_writes_nothing(conn, accounts):
     transactions = load_transactions(str(FIXTURES / "transacoes_invalidas.json"))
-    result = ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    result = ingest(
+        conn, transactions=transactions, accounts=accounts, source="fixture", trigger=COMMAND
+    )
     assert result.status == "failed"
     assert [(r.index, r.reason) for r in result.rejections] == [
         (1, "missing_pluggy_id"),
@@ -73,7 +76,9 @@ def test_rejects_the_offending_line_and_writes_nothing(conn, accounts):
 
 def test_divergence_rolls_back_and_the_failed_run_survives(conn, accounts):
     transactions = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))
-    result = ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    result = ingest(
+        conn, transactions=transactions, accounts=accounts, source="fixture", trigger=COMMAND
+    )
     assert result.status == "failed"
     assert "accepted=3 present=2" in result.message
     assert counts(conn) == (0, 0, 1)
@@ -85,24 +90,26 @@ def test_divergence_rolls_back_and_the_failed_run_survives(conn, accounts):
 def test_second_run_over_the_same_source_does_not_duplicate(conn, accounts):
     transactions = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))[:2]
     for _ in range(2):
-        result = ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+        result = ingest(
+            conn, transactions=transactions, accounts=accounts, source="fixture", trigger=COMMAND
+        )
         assert result.status == "ok"
     assert counts(conn) == (2, 1, 2)
 
 
 def test_updates_the_row_that_the_source_changed(conn, accounts):
     transactions = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))[:1]
-    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture", trigger=COMMAND)
     transactions[0]["descricao"] = "DESCRICAO CORRIGIDA"
     transactions[0]["valor"] = -11.0
-    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture", trigger=COMMAND)
     row = conn.execute("SELECT description, amount_cents FROM transactions").fetchone()
     assert (row["description"], row["amount_cents"]) == ("DESCRICAO CORRIGIDA", -1100)
 
 
 def test_card_balance_is_stored_as_debt(conn):
     card = {"id": "acc-card", "type": "CREDIT", "name": "Itau Black", "balance": 8666.7}
-    result = ingest(conn, transactions=[], accounts=[card], source="fixture")
+    result = ingest(conn, transactions=[], accounts=[card], source="fixture", trigger=COMMAND)
     assert result.status == "ok"
     assert conn.execute("SELECT sum(balance_cents) FROM accounts").fetchone()[0] == -866670
 
@@ -125,7 +132,7 @@ def test_amount_keeps_the_sign_the_consolidator_already_normalised(conn, account
         "cnpj": "",
         "recebedor": "",
     }
-    ingest(conn, transactions=[payment], accounts=accounts, source="fixture")
+    ingest(conn, transactions=[payment], accounts=accounts, source="fixture", trigger=COMMAND)
     row = conn.execute(
         "SELECT amount_cents, is_transfer, transfer_reason FROM transactions"
     ).fetchone()
@@ -143,7 +150,7 @@ def row(conn):
 
 def test_a_new_row_enters_as_auto_with_category_auto_equal_to_category(conn, accounts):
     transactions = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))[:2]
-    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture", trigger=COMMAND)
     assert tuple(row(conn)) == ("Shopping", "Shopping", "auto")
 
 
@@ -151,9 +158,9 @@ def test_reingesting_a_changed_category_updates_category_and_category_auto_when_
     conn, accounts
 ):
     transactions = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))[:2]
-    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture", trigger=COMMAND)
     transactions[0]["categoria"] = "Groceries"
-    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture", trigger=COMMAND)
     assert tuple(row(conn)) == ("Groceries", "Groceries", "auto")
 
 
@@ -161,14 +168,14 @@ def test_reingesting_keeps_a_manual_category_and_still_follows_the_source_in_cat
     conn, accounts
 ):
     transactions = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))[:2]
-    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture", trigger=COMMAND)
     conn.execute(
         "UPDATE transactions SET category = 'Housing', category_source = 'manual' "
         "WHERE pluggy_id = 'fix-duplicada'"
     )
     conn.commit()
     transactions[0]["categoria"] = "Groceries"
-    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture", trigger=COMMAND)
     assert tuple(row(conn)) == ("Housing", "Groceries", "manual")
     updated = conn.execute(
         "SELECT description, amount_cents FROM transactions WHERE pluggy_id = 'fix-duplicada'"
@@ -181,13 +188,13 @@ def test_reingesting_keeps_a_manual_category_and_still_follows_the_source_in_cat
 
 def test_reingesting_a_manual_row_with_the_same_source_category_changes_nothing(conn, accounts):
     transactions = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))[:2]
-    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture", trigger=COMMAND)
     conn.execute(
         "UPDATE transactions SET category = 'Housing', category_source = 'manual' "
         "WHERE pluggy_id = 'fix-duplicada'"
     )
     conn.commit()
-    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture", trigger=COMMAND)
     assert tuple(row(conn)) == ("Housing", "Shopping", "manual")
     assert conn.execute("SELECT count(*) FROM sync_runs WHERE status = 'ok'").fetchone()[0] == 2
 
@@ -211,7 +218,7 @@ def test_refund_carries_the_identifier_of_the_debit_it_cancels(conn, accounts):
         "recebedor": "",
     }
     debit = dict(refund, id="8b073fe4", valor=-2462.56, eh_estorno=False, estornada_por="")
-    ingest(conn, transactions=[refund, debit], accounts=accounts, source="fixture")
+    ingest(conn, transactions=[refund, debit], accounts=accounts, source="fixture", trigger=COMMAND)
     rows = {
         row["pluggy_id"]: row
         for row in conn.execute("SELECT pluggy_id, is_refund, refunded_by FROM transactions")
@@ -224,7 +231,7 @@ def test_refund_carries_the_identifier_of_the_debit_it_cancels(conn, accounts):
 
 def test_a_new_row_enters_with_a_null_not_expense_reason(conn, accounts):
     transactions = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))[:2]
-    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture", trigger=COMMAND)
     value = conn.execute(
         "SELECT not_expense_reason FROM transactions WHERE pluggy_id = 'fix-duplicada'"
     ).fetchone()[0]
@@ -233,13 +240,13 @@ def test_a_new_row_enters_with_a_null_not_expense_reason(conn, accounts):
 
 def test_reingesting_keeps_the_not_expense_reason_and_still_updates_the_description(conn, accounts):
     transactions = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))[:2]
-    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture", trigger=COMMAND)
     conn.execute(
         "UPDATE transactions SET not_expense_reason = 'refund' WHERE pluggy_id = 'fix-duplicada'"
     )
     conn.commit()
     transactions[0]["descricao"] = "DESCRICAO NOVA"
-    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture", trigger=COMMAND)
     updated = conn.execute(
         "SELECT not_expense_reason, description FROM transactions WHERE pluggy_id = 'fix-duplicada'"
     ).fetchone()
@@ -248,7 +255,7 @@ def test_reingesting_keeps_the_not_expense_reason_and_still_updates_the_descript
 
 def test_ingest_fills_the_payee_from_the_normalized_description(conn, accounts):
     transactions = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))[:2]
-    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture", trigger=COMMAND)
     stored = conn.execute("SELECT description, payee FROM transactions").fetchall()
     assert stored
     assert [r["payee"] for r in stored] == [normalize_description(r["description"]) for r in stored]
@@ -257,10 +264,10 @@ def test_ingest_fills_the_payee_from_the_normalized_description(conn, accounts):
 
 def test_ingest_again_does_not_overwrite_an_existing_payee(conn, accounts):
     transactions = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))[:2]
-    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture", trigger=COMMAND)
     conn.execute("UPDATE transactions SET payee = 'MANUAL' WHERE pluggy_id = 'fix-duplicada'")
     conn.commit()
-    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture", trigger=COMMAND)
     payee = conn.execute(
         "SELECT payee FROM transactions WHERE pluggy_id = 'fix-duplicada'"
     ).fetchone()[0]
@@ -270,19 +277,23 @@ def test_ingest_again_does_not_overwrite_an_existing_payee(conn, accounts):
 def test_ingest_leaves_the_payee_null_when_the_description_is_null(conn, accounts):
     transactions = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))[:1]
     transactions[0]["descricao"] = None
-    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture", trigger=COMMAND)
     payee = conn.execute("SELECT payee FROM transactions").fetchone()[0]
     assert payee is None
 
 
 def test_a_rejected_ingest_writes_no_payee_and_records_failed(conn, accounts):
     transactions = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))[:2]
-    ingest(conn, transactions=transactions, accounts=accounts, source="fixture")
+    ingest(conn, transactions=transactions, accounts=accounts, source="fixture", trigger=COMMAND)
     conn.execute("UPDATE transactions SET payee = NULL WHERE pluggy_id = 'fix-duplicada'")
     conn.commit()
     without_id = {k: v for k, v in transactions[0].items() if k != "id"}
     result = ingest(
-        conn, transactions=[*transactions, without_id], accounts=accounts, source="fixture"
+        conn,
+        transactions=[*transactions, without_id],
+        accounts=accounts,
+        source="fixture",
+        trigger=COMMAND,
     )
     assert result.status == "failed"
     payee = conn.execute(
@@ -291,3 +302,14 @@ def test_a_rejected_ingest_writes_no_payee_and_records_failed(conn, accounts):
     assert payee is None
     last = conn.execute("SELECT status FROM sync_runs ORDER BY id DESC LIMIT 1").fetchone()
     assert last["status"] == "failed"
+
+
+def test_the_run_records_who_asked_for_it_on_success_and_on_failure(conn, accounts):
+    good = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))[:2]
+    bad = load_transactions(str(FIXTURES / "transacoes_invalidas.json"))
+
+    ingest(conn, transactions=good, accounts=accounts, source="fixture", trigger=SCREEN)
+    ingest(conn, transactions=bad, accounts=accounts, source="fixture", trigger=COMMAND)
+
+    recorded = conn.execute("SELECT status, triggered_by FROM sync_runs ORDER BY id").fetchall()
+    assert [tuple(row) for row in recorded] == [("ok", "screen"), ("failed", "command")]

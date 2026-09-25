@@ -2,6 +2,7 @@ import sqlite3
 import threading
 from datetime import date
 
+from app.ingest.trigger import Trigger
 from app.sync import SyncOutcome, synchronise
 
 BUSY_MESSAGE = "Já existe uma atualização em andamento."
@@ -19,10 +20,12 @@ def is_synchronising() -> bool:
     return _LOCK.locked()
 
 
-def exclusive_synchronise(conn: sqlite3.Connection, *, today: date | None = None) -> SyncOutcome:
+def exclusive_synchronise(
+    conn: sqlite3.Connection, *, trigger: Trigger, today: date | None = None
+) -> SyncOutcome:
     if not _LOCK.acquire(blocking=False):
         raise SyncBusyError(BUSY_MESSAGE)
     try:
-        return synchronise(conn, today=today)
+        return synchronise(conn, trigger=trigger, today=today)
     finally:
         _LOCK.release()

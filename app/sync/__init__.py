@@ -10,6 +10,7 @@ from app.db import connect
 from app.debts.ladder import rebuild
 from app.ingest.loader import IngestResult, ingest
 from app.ingest.source import load_accounts, load_transactions
+from app.ingest.trigger import COMMAND, Trigger
 from app.sync.fetch import PluggyFetchError, fetch_from_pluggy
 from app.taxonomy.classify import classify_all
 
@@ -32,7 +33,9 @@ class SyncOutcome:
     accounts: int
 
 
-def synchronise(conn: sqlite3.Connection, *, today: date | None = None) -> SyncOutcome:
+def synchronise(
+    conn: sqlite3.Connection, *, trigger: Trigger, today: date | None = None
+) -> SyncOutcome:
     # Reason: the command and the button call this same function — a sync
     # that behaves differently from the cron and from the screen is the
     # defect that only shows up on the day it matters (D4).
@@ -52,7 +55,7 @@ def synchronise(conn: sqlite3.Connection, *, today: date | None = None) -> SyncO
         try:
             fetch_from_pluggy(config)
         except PluggyFetchError as failure:
-            return _record_failed(conn, PLUGGY, str(failure))
+            return _record_failed(conn, PLUGGY, trigger, str(failure))
     try:
         transactions = load_transactions(config.transactions_path)
         accounts = load_accounts(config.accounts_glob)
@@ -61,12 +64,13 @@ def synchronise(conn: sqlite3.Connection, *, today: date | None = None) -> SyncO
         # accident of the day, and it used to raise before any row reached
         # sync_runs — the sync failed, left no trace, and the screen went on
         # announcing the last success (RF-20).
-        return _record_failure(conn, config.transactions_path, failure)
+        return _record_failure(conn, config.transactions_path, trigger, failure)
     result = ingest(
         conn,
         transactions=transactions,
         accounts=accounts,
         source=config.transactions_path,
+        trigger=trigger,
     )
     if result.status != "ok":
         return _outcome(result)
@@ -94,16 +98,20 @@ def _demote(conn: sqlite3.Connection, run_id: int | None, failure: Exception) ->
     return SyncOutcome(status="failed", message=message, transactions=0, accounts=0)
 
 
-def _record_failure(conn: sqlite3.Connection, source: str, failure: Exception) -> SyncOutcome:
-    return _record_failed(conn, source, f"fonte ilegível: {type(failure).__name__}")
+def _record_failure(
+    conn: sqlite3.Connection, source: str, trigger: Trigger, failure: Exception
+) -> SyncOutcome:
+    return _record_failed(conn, source, trigger, f"fonte ilegível: {type(failure).__name__}")
 
 
-def _record_failed(conn: sqlite3.Connection, source: str, message: str) -> SyncOutcome:
+def _record_failed(
+    conn: sqlite3.Connection, source: str, trigger: Trigger, message: str
+) -> SyncOutcome:
     now = datetime.now(UTC).isoformat()
     conn.execute(
-        "INSERT INTO sync_runs (started_at, finished_at, source, status, message) "
-        "VALUES (?, ?, ?, 'failed', ?)",
-        (now, now, source, message),
+        "INSERT INTO sync_runs (started_at, finished_at, source, triggered_by, status, message) "
+        "VALUES (?, ?, ?, ?, 'failed', ?)",
+        (now, now, source, trigger, message),
     )
     conn.commit()
     return SyncOutcome(status="failed", message=message, transactions=0, accounts=0)
@@ -208,7 +216,7 @@ def main() -> int:
     today = reference_date()
     conn = connect()
     try:
-        outcome = synchronise(conn, today=today)
+        outcome = synchronise(conn, trigger=COMMAND, today=today)
     except MissingCredentialError as refusal:
         print(f"sync recusado: {refusal}", flush=True)
         return 1

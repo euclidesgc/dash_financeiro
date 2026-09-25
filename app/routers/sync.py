@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 from app.config import reference_date
 from app.db import connect
+from app.ingest.trigger import SCREEN, Trigger
 from app.sync import MissingCredentialError, last_runs, readable
 from app.sync.exclusive import SyncBusyError, exclusive_synchronise, is_synchronising
 
@@ -16,6 +17,7 @@ class SyncRun(BaseModel):
     finished_at: str | None
     status: Literal["ok", "failed"]
     reason: str | None
+    triggered_by: Trigger | None
 
 
 class SyncStatus(BaseModel):
@@ -33,6 +35,7 @@ def _status(conn: sqlite3.Connection) -> SyncStatus:
             finished_at=latest["finished_at"],
             status=latest["status"],
             reason=readable(latest["message"]) if latest["status"] == "failed" else None,
+            triggered_by=latest["triggered_by"],
         ),
     )
 
@@ -51,7 +54,7 @@ def sync_run() -> SyncStatus:
     conn = connect()
     try:
         try:
-            exclusive_synchronise(conn, today=reference_date())
+            exclusive_synchronise(conn, trigger=SCREEN, today=reference_date())
         except SyncBusyError as busy:
             raise HTTPException(status_code=409, detail=str(busy)) from busy
         except MissingCredentialError as refusal:

@@ -8,6 +8,7 @@ from starlette.responses import Response
 
 from app.commitments.calendar import WINDOW_DAYS
 from app.db import connect
+from app.ingest import trigger
 from app.projection.forecast import forecast
 from app.projection.monthly import median_months, monthly
 from app.projection.position import positions
@@ -50,7 +51,7 @@ def synchronise_now(request: Request) -> Response:
     conn = connect()
     try:
         try:
-            outcome = synchronise(conn, today=reference.date)
+            outcome = synchronise(conn, trigger=trigger.SCREEN, today=reference.date)
         except MissingCredentialError as refusal:
             return _answer(request, conn, reference, notice=str(refusal), status_code=400)
         return _answer(request, conn, reference, notice=_said(outcome))

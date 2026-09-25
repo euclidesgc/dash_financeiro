@@ -7,6 +7,7 @@ import pytest
 
 from app.db import connect
 from app.ingest.loader import ingest
+from app.ingest.trigger import COMMAND
 from app.migrate import run_migrations
 from app.taxonomy.seed import load_seed
 
@@ -52,7 +53,7 @@ def transaction(pluggy_id: str, date: str, valor: float, **overrides) -> dict:
 
 
 def load(conn: sqlite3.Connection, rows: list[dict]) -> sqlite3.Connection:
-    result = ingest(conn, transactions=rows, accounts=[ACCOUNT], source="tests")
+    result = ingest(conn, transactions=rows, accounts=[ACCOUNT], source="tests", trigger=COMMAND)
     assert result.status == "ok", result.message
     return conn
 

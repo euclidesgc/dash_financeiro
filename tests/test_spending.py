@@ -2,6 +2,7 @@ import pytest
 
 from app.db import connect
 from app.ingest.loader import ingest
+from app.ingest.trigger import COMMAND
 from app.migrate import run_migrations
 from app.queries.spending import EXCLUDED, INCOME, INFLOW, date_window, total_spending_cents
 
@@ -67,6 +68,7 @@ def loaded(conn):
         ],
         accounts=[ACCOUNT],
         source="tests",
+        trigger=COMMAND,
     )
     return conn
 
