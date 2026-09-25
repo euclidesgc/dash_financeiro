@@ -456,13 +456,13 @@ test('shows the limit of each category or "Sem limite"', async () => {
   expect(within(itemOf('Supermercado')).getByText('Sem limite')).toBeInTheDocument()
 })
 
-test('shows "Limite" on every row, system ones included', async () => {
+test('shows "Limite" on every row, system ones included, named by whether a limit is set', async () => {
   renderWithProviders(<CategoriesList />)
 
   await screen.findAllByRole('listitem')
 
   expect(screen.getByRole('button', { name: 'Definir limite de Supermercado' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Definir limite de Compras' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Alterar limite de Compras' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Definir limite de Pet shop' })).toBeInTheDocument()
 })
 
@@ -471,13 +471,13 @@ test('"Limite" opens the field with the current value in the row', async () => {
   renderWithProviders(<CategoriesList />)
 
   await screen.findAllByRole('listitem')
-  await user.click(screen.getByRole('button', { name: 'Definir limite de Compras' }))
+  await user.click(screen.getByRole('button', { name: 'Alterar limite de Compras' }))
 
   const item = itemOf('Compras')
   const input = within(item).getByLabelText('Limite mensal (R$)')
-  expect(input).toHaveValue(1500)
+  expect(input).toHaveValue('1.500,00')
   expect(input).toHaveFocus()
-  expect(within(item).queryByRole('button', { name: 'Definir limite de Compras' })).not.toBeInTheDocument()
+  expect(within(item).queryByRole('button', { name: 'Alterar limite de Compras' })).not.toBeInTheDocument()
 })
 
 test('saving a limit sends PUT, the row shows it and the categories query is invalidated', async () => {
@@ -505,18 +505,16 @@ test('saving a limit sends PUT, the row shows it and the categories query is inv
   })
 })
 
-test('clearing the limit sends null and the row shows "Sem limite"', async () => {
+test('"Remover limite" sends null and the row shows "Sem limite"', async () => {
   const user = userEvent.setup()
   spyOnPut()
   renderWithProviders(<CategoriesList />)
 
   await screen.findAllByRole('listitem')
-  await user.click(screen.getByRole('button', { name: 'Definir limite de Compras' }))
+  await user.click(screen.getByRole('button', { name: 'Alterar limite de Compras' }))
 
   const item = itemOf('Compras')
-  const input = within(item).getByLabelText('Limite mensal (R$)')
-  await user.clear(input)
-  await user.click(within(item).getByRole('button', { name: 'Salvar' }))
+  await user.click(within(item).getByRole('button', { name: 'Remover limite' }))
 
   expect(await within(item).findByText('Sem limite')).toBeInTheDocument()
 })

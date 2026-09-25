@@ -338,9 +338,8 @@ test('shows the signal of each category against its limit only in a whole month 
   await expect(page.getByText(/acima do limite/)).toHaveCount(0)
 
   await page.getByRole('link', { name: 'Categorias' }).click()
-  await supermercado.getByRole('button', { name: 'Definir limite de Supermercado' }).click()
-  await supermercado.getByLabel('Limite mensal (R$)').fill('')
-  await supermercado.getByLabel('Limite mensal (R$)').press('Enter')
+  await supermercado.getByRole('button', { name: 'Alterar limite de Supermercado' }).click()
+  await supermercado.getByRole('button', { name: 'Remover limite' }).click()
   await expect(supermercado).toContainText('Sem limite')
 
   await page.goto('/app/expenses?month=2026-08')
@@ -373,8 +372,17 @@ test('shows the month against its ceiling, edits the ceiling inline and leaves t
   await expect(block).toContainText('Passou R$ 5,00')
   await expect(block.getByLabel('Teto mensal (R$)')).toHaveCount(0)
 
-  await block.getByRole('button', { name: 'Definir teto do mês' }).click()
-  await expect(block.getByLabel('Teto mensal (R$)')).toHaveValue('100.00')
+  await expect(block.getByRole('button', { name: 'Alterar teto do mês' })).toHaveText('Alterar teto')
+  await block.getByRole('button', { name: 'Alterar teto do mês' }).click()
+  await expect(block.getByLabel('Teto mensal (R$)')).toHaveValue('100,00')
+  await block.getByLabel('Teto mensal (R$)').fill('')
+  await block.getByLabel('Teto mensal (R$)').press('Enter')
+  await expect(block.getByText('Informe um valor.')).toBeVisible()
+  await block.getByLabel('Teto mensal (R$)').fill('1.500,00')
+  await block.getByLabel('Teto mensal (R$)').press('Enter')
+  await expect(block).toContainText('R$ 105,00 de R$ 1.500,00 · 7%')
+
+  await block.getByRole('button', { name: 'Alterar teto do mês' }).click()
   await block.getByLabel('Teto mensal (R$)').fill('200')
   await block.getByLabel('Teto mensal (R$)').press('Enter')
   await expect(block).toContainText('R$ 105,00 de R$ 200,00 · 53%')
@@ -391,9 +399,8 @@ test('shows the month against its ceiling, edits the ceiling inline and leaves t
   await expect(page.getByRole('heading', { level: 2, name: 'Teto do mês' })).toHaveCount(0)
 
   await page.goto('/app/expenses?month=2026-08')
-  await block.getByRole('button', { name: 'Definir teto do mês' }).click()
-  await block.getByLabel('Teto mensal (R$)').fill('')
-  await block.getByLabel('Teto mensal (R$)').press('Enter')
+  await block.getByRole('button', { name: 'Alterar teto do mês' }).click()
+  await block.getByRole('button', { name: 'Remover teto' }).click()
   await expect(block).toContainText('Sem teto definido.')
   await expect(block).not.toContainText('%')
 })
