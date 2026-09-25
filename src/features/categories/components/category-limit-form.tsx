@@ -4,16 +4,17 @@ import { useForm } from 'react-hook-form'
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ApiError } from '@/lib/api-client'
-import { useRenameCategory } from '@/features/categories/api/rename-category'
-import { categoryLabelSchema } from '@/features/categories/types/category-label-schema'
-import type { CategoryLabelInput } from '@/features/categories/types/category-label-schema'
+import { useSetCategoryLimit } from '@/features/categories/api/set-category-limit'
+import { categoryLimitSchema } from '@/features/categories/types/category-limit-schema'
+import type { CategoryLimitInput } from '@/features/categories/types/category-limit-schema'
+import { fromCents, toCents } from '@/features/categories/utils/limit-cents'
 import type { CatalogueCategory } from '@/features/categories/types/category'
 
-function isLabelError(error: unknown): error is ApiError {
+function isLimitError(error: unknown): error is ApiError {
   return error instanceof ApiError && error.status === 422
 }
 
-export function RenameCategoryForm({
+export function CategoryLimitForm({
   category,
   onDone,
 }: {
@@ -25,11 +26,11 @@ export function RenameCategoryForm({
     handleSubmit,
     setError,
     formState: { errors },
-  } = useForm<CategoryLabelInput>({
-    resolver: zodResolver(categoryLabelSchema),
-    defaultValues: { label: category.label },
+  } = useForm<CategoryLimitInput>({
+    resolver: zodResolver(categoryLimitSchema),
+    defaultValues: { limit: fromCents(category.monthly_limit_cents) },
   })
-  const mutation = useRenameCategory()
+  const mutation = useSetCategoryLimit()
   const id = useId()
   const errorId = `${id}-error`
   const isSubmitting = useRef(false)
@@ -38,11 +39,11 @@ export function RenameCategoryForm({
     if (isSubmitting.current) return
     isSubmitting.current = true
     mutation.mutate(
-      { key: category.key, label: input.label },
+      { key: category.key, monthly_limit_cents: toCents(input.limit) },
       {
         onSuccess: onDone,
         onError: (error) => {
-          if (isLabelError(error)) setError('label', { message: error.detail })
+          if (isLimitError(error)) setError('limit', { message: error.detail })
         },
         onSettled: () => {
           isSubmitting.current = false
@@ -60,24 +61,27 @@ export function RenameCategoryForm({
       >
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <label htmlFor={id} className="block text-sm font-medium text-gray-900">
-            Novo nome
+            Limite mensal (R$)
           </label>
           <input
             id={id}
-            type="text"
+            type="number"
+            step="0.01"
+            min="0.01"
+            inputMode="decimal"
             autoComplete="off"
             autoFocus
-            aria-invalid={errors.label ? true : undefined}
-            aria-describedby={errors.label ? errorId : undefined}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 min-h-10 aria-[invalid=true]:border-red-600"
+            aria-invalid={errors.limit ? true : undefined}
+            aria-describedby={errors.limit ? errorId : undefined}
+            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 min-h-10 tabular-nums aria-[invalid=true]:border-red-600"
             onKeyDown={(event) => {
               if (event.key === 'Escape') onDone()
             }}
-            {...register('label')}
+            {...register('limit')}
           />
-          {errors.label ? (
+          {errors.limit ? (
             <p id={errorId} className="mt-1 text-sm text-red-700">
-              {errors.label.message}
+              {errors.limit.message}
             </p>
           ) : null}
         </div>
@@ -90,8 +94,8 @@ export function RenameCategoryForm({
           </Button>
         </div>
       </form>
-      {mutation.isError && !isLabelError(mutation.error) ? (
-        <Alert message="Não foi possível salvar a categoria. Tente de novo." />
+      {mutation.isError && !isLimitError(mutation.error) ? (
+        <Alert message="Não foi possível salvar o limite. Tente de novo." />
       ) : null}
     </div>
   )

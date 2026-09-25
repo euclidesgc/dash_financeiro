@@ -38,6 +38,12 @@ class CategoryInUseError(RuntimeError):
         self.usage_count = usage_count
 
 
+class InvalidLimitError(ValueError):
+    def __init__(self, cents: int) -> None:
+        super().__init__(f"limite inválido: {cents}")
+        self.cents = cents
+
+
 def slugify(label: str) -> str:
     folded = fold(label) or ""
     slug = re.sub(r"[^a-z0-9]+", "-", folded).strip("-")
@@ -96,6 +102,14 @@ def rename_category(conn: sqlite3.Connection, key: str, label: str) -> None:
     conn.commit()
 
 
+def set_monthly_limit(conn: sqlite3.Connection, key: str, cents: int | None) -> None:
+    _require(conn, key)
+    if cents is not None and cents <= 0:
+        raise InvalidLimitError(cents)
+    conn.execute("UPDATE categories SET monthly_limit_cents = ? WHERE name = ?", (cents, key))
+    conn.commit()
+
+
 def delete_category(conn: sqlite3.Connection, key: str) -> None:
     row = _require(conn, key)
     if row["is_system"]:
@@ -109,6 +123,6 @@ def delete_category(conn: sqlite3.Connection, key: str) -> None:
     conn.commit()
 
 
-# Reason: creating, renaming or deleting a category touches only the
-# categories table — no transaction's classification changes, so the
-# taxonomy reclassification step is never invoked here.
+# Reason: creating, renaming, deleting or setting the limit of a category
+# touches only the categories table — no transaction's classification
+# changes, so the taxonomy reclassification step is never invoked here.

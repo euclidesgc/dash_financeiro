@@ -91,6 +91,8 @@ def test_categories_lists_the_pickable_seed_in_label_order(client):
     finally:
         conn.close()
 
+    expected = [{**item, "monthly_limit_cents": None} for item in expected]
+
     response = client.get("/api/categories")
 
     assert response.status_code == 200
@@ -100,6 +102,7 @@ def test_categories_lists_the_pickable_seed_in_label_order(client):
         "label": "Supermercado",
         "is_system": True,
         "usage_count": 0,
+        "monthly_limit_cents": None,
     } in expected
 
 
@@ -163,6 +166,16 @@ def _keys(client) -> list[str]:
     return [item["key"] for item in client.get("/api/categories").json()["categories"]]
 
 
+def _put_limit(client, key: str, cents: int | None):
+    return client.put(f"/api/categories/{key}/limit", json={"monthly_limit_cents": cents})
+
+
+def _limit_of(client, key: str):
+    return next(
+        item["monthly_limit_cents"] for item in _list_categories(client) if item["key"] == key
+    )
+
+
 def test_post_creates_the_category_and_it_is_pickable_for_an_expense(client):
     _sign_in(client)
     _load([_transaction("g1", "2026-09-01", -60.0, categoria="Groceries")])
@@ -176,6 +189,7 @@ def test_post_creates_the_category_and_it_is_pickable_for_an_expense(client):
         "label": "Pet shop",
         "is_system": False,
         "usage_count": 0,
+        "monthly_limit_cents": None,
     }
     assert "pet-shop" in _keys(client)
 
@@ -341,3 +355,102 @@ def test_the_openapi_lists_the_write_routes(client):
     assert "post" in paths["/api/categories"]
     assert "patch" in paths["/api/categories/{key}"]
     assert "delete" in paths["/api/categories/{key}"]
+
+
+def test_categories_carry_a_null_limit_after_the_seed(client):
+    _sign_in(client)
+
+    response = client.get("/api/categories")
+
+    categories = response.json()["categories"]
+    assert categories
+    for item in categories:
+        assert "monthly_limit_cents" in item
+        assert item["monthly_limit_cents"] is None
+
+
+def test_put_limit_writes_the_cents_and_the_list_reflects_it(client):
+    _sign_in(client)
+
+    response = _put_limit(client, "Shopping", 150000)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["key"] == "Shopping"
+    assert body["monthly_limit_cents"] == 150000
+    assert {"label", "is_system", "usage_count"}.issubset(body.keys())
+    assert _limit_of(client, "Shopping") == 150000
+
+
+def test_put_limit_with_null_clears_it(client):
+    _sign_in(client)
+    _put_limit(client, "Shopping", 150000)
+
+    response = _put_limit(client, "Shopping", None)
+
+    assert response.status_code == 200
+    assert response.json()["monthly_limit_cents"] is None
+    assert _limit_of(client, "Shopping") is None
+
+
+def test_put_limit_refuses_zero_and_negative_with_422_and_keeps_the_previous_value(client):
+    _sign_in(client)
+    _put_limit(client, "Shopping", 150000)
+
+    zero = _put_limit(client, "Shopping", 0)
+    negative = _put_limit(client, "Shopping", -5)
+
+    assert zero.status_code == 422
+    assert zero.json() == {"detail": "O limite precisa ser maior que zero."}
+    assert negative.status_code == 422
+    assert negative.json() == {"detail": "O limite precisa ser maior que zero."}
+    assert _limit_of(client, "Shopping") == 150000
+
+
+def test_put_limit_without_the_field_answers_422_from_pydantic(client):
+    _sign_in(client)
+
+    without_field = client.put("/api/categories/Shopping/limit", json={})
+    assert without_field.status_code == 422
+    assert isinstance(without_field.json()["detail"], list)
+
+    not_an_integer = client.put(
+        "/api/categories/Shopping/limit", json={"monthly_limit_cents": 12.5}
+    )
+    assert not_an_integer.status_code == 422
+
+
+def test_put_limit_an_unknown_key_and_the_uncategorised_key_answer_404(client):
+    _sign_in(client)
+
+    unknown = _put_limit(client, "Inexistente", 100)
+    uncategorised = _put_limit(client, "Não classificado", 100)
+
+    assert unknown.status_code == 404
+    assert unknown.json() == {"detail": "Categoria não encontrada."}
+    assert uncategorised.status_code == 404
+    assert uncategorised.json() == {"detail": "Categoria não encontrada."}
+
+
+def test_put_limit_accepts_a_system_category(client):
+    _sign_in(client)
+    groceries = next(item for item in _list_categories(client) if item["key"] == "Groceries")
+    assert groceries["is_system"] is True
+
+    response = _put_limit(client, "Groceries", 5000)
+
+    assert response.status_code == 200
+
+
+def test_put_limit_without_session_answers_401(client):
+    response = _put_limit(client, "Shopping", 150000)
+
+    assert response.status_code == 401
+
+
+def test_the_openapi_lists_the_limit_route(client):
+    _sign_in(client)
+
+    response = client.get("/openapi.json")
+
+    assert "put" in response.json()["paths"]["/api/categories/{key}/limit"]

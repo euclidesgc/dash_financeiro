@@ -8,10 +8,12 @@ from app.taxonomy.catalogue import (
     CategoryNotFoundError,
     DuplicateLabelError,
     InvalidLabelError,
+    InvalidLimitError,
     SystemCategoryError,
     create_category,
     delete_category,
     rename_category,
+    set_monthly_limit,
     slugify,
 )
 from app.taxonomy.seed import UNCATEGORISED, seed_taxonomy
@@ -22,6 +24,12 @@ def row(conn: sqlite3.Connection, key: str) -> sqlite3.Row | None:
     return conn.execute(
         "SELECT name, label, is_system, group_id FROM categories WHERE name = ?", (key,)
     ).fetchone()
+
+
+def limit_of(conn: sqlite3.Connection, key: str) -> int | None:
+    return conn.execute(
+        "SELECT monthly_limit_cents FROM categories WHERE name = ?", (key,)
+    ).fetchone()[0]
 
 
 @pytest.fixture
@@ -161,3 +169,52 @@ def test_delete_category_refuses_the_uncategorised_key_and_an_unknown_key(seeded
         delete_category(seeded, UNCATEGORISED)
     with pytest.raises(CategoryNotFoundError):
         delete_category(seeded, "nao-existe")
+
+
+def test_set_monthly_limit_writes_the_cents_and_commits(seeded):
+    set_monthly_limit(seeded, "Groceries", 150000)
+
+    assert limit_of(seeded, "Groceries") == 150000
+
+    fresh = connect(seeded.execute("PRAGMA database_list").fetchone()["file"])
+    try:
+        assert limit_of(fresh, "Groceries") == 150000
+    finally:
+        fresh.close()
+
+
+def test_set_monthly_limit_with_none_clears_the_limit(seeded):
+    set_monthly_limit(seeded, "Groceries", 150000)
+
+    set_monthly_limit(seeded, "Groceries", None)
+
+    assert limit_of(seeded, "Groceries") is None
+
+
+def test_set_monthly_limit_refuses_zero_and_negative_and_keeps_the_previous_value(seeded):
+    set_monthly_limit(seeded, "Groceries", 150000)
+
+    with pytest.raises(InvalidLimitError) as excinfo:
+        set_monthly_limit(seeded, "Groceries", 0)
+    assert excinfo.value.cents == 0
+
+    with pytest.raises(InvalidLimitError) as excinfo:
+        set_monthly_limit(seeded, "Groceries", -1)
+    assert excinfo.value.cents == -1
+
+    assert limit_of(seeded, "Groceries") == 150000
+
+
+def test_set_monthly_limit_refuses_the_uncategorised_key_and_an_unknown_key(seeded):
+    with pytest.raises(CategoryNotFoundError):
+        set_monthly_limit(seeded, UNCATEGORISED, 100)
+    with pytest.raises(CategoryNotFoundError):
+        set_monthly_limit(seeded, "Inexistente", 100)
+
+
+def test_set_monthly_limit_accepts_a_system_category(seeded):
+    assert row(seeded, "Groceries")["is_system"] == 1
+
+    set_monthly_limit(seeded, "Groceries", 5000)
+
+    assert limit_of(seeded, "Groceries") == 5000

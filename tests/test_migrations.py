@@ -64,6 +64,7 @@ EXPECTED_MIGRATIONS = [
     "018_offers.sql",
     "019_category_manual.sql",
     "020_category_labels.sql",
+    "021_category_limit.sql",
 ]
 
 TABLE_NAMES = (
@@ -246,7 +247,7 @@ def test_category_source_defaults_to_auto_and_only_accepts_auto_or_manual(conn):
 def test_a_base_migrated_before_019_copies_category_into_category_auto(tmp_path, conn):
     folder = tmp_path / "sql"
     folder.mkdir()
-    for name in EXPECTED_MIGRATIONS[:-2]:
+    for name in EXPECTED_MIGRATIONS[:-3]:
         _write_sql(folder, name, (ROOT / "app" / "migrations" / "sql" / name).read_text())
     apply_migrations(conn, folder)
 
@@ -272,7 +273,7 @@ def test_a_base_migrated_before_019_copies_category_into_category_auto(tmp_path,
 def test_a_base_migrated_before_020_gets_the_seed_labels_and_is_system(tmp_path, conn):
     folder = tmp_path / "sql"
     folder.mkdir()
-    for name in EXPECTED_MIGRATIONS[:-1]:
+    for name in EXPECTED_MIGRATIONS[:-2]:
         _write_sql(folder, name, (ROOT / "app" / "migrations" / "sql" / name).read_text())
     apply_migrations(conn, folder)
 
@@ -308,7 +309,53 @@ def test_a_base_migrated_before_020_gets_the_seed_labels_and_is_system(tmp_path,
     assert tuple(is_system_info) == ("INTEGER", 1, "1")
 
 
-def test_a_fresh_base_applies_the_eighteen_real_migrations(tmp_path):
+def test_a_base_migrated_before_021_gets_a_null_limit_that_refuses_zero(tmp_path, conn):
+    folder = tmp_path / "sql"
+    folder.mkdir()
+    for name in EXPECTED_MIGRATIONS[:-1]:
+        _write_sql(folder, name, (ROOT / "app" / "migrations" / "sql" / name).read_text())
+    apply_migrations(conn, folder)
+
+    conn.execute(
+        "INSERT INTO category_groups (name, position, is_fallback) VALUES ('Outros', 1, 1)"
+    )
+    conn.execute("INSERT INTO categories (name, group_id) VALUES ('Groceries', 1)")
+    conn.commit()
+
+    _write_sql(
+        folder,
+        "021_category_limit.sql",
+        (ROOT / "app" / "migrations" / "sql" / "021_category_limit.sql").read_text(),
+    )
+    apply_migrations(conn, folder)
+
+    column = conn.execute(
+        "select type, \"notnull\" from pragma_table_info('categories') "
+        "where name = 'monthly_limit_cents'"
+    ).fetchone()
+    assert column["type"] == "INTEGER"
+    assert column["notnull"] == 0
+
+    assert (
+        conn.execute(
+            "SELECT monthly_limit_cents FROM categories WHERE name = 'Groceries'"
+        ).fetchone()[0]
+        is None
+    )
+
+    with pytest.raises(sqlite3.IntegrityError, match="CHECK constraint failed"):
+        conn.execute("UPDATE categories SET monthly_limit_cents = 0")
+
+    conn.execute("UPDATE categories SET monthly_limit_cents = 100 WHERE name = 'Groceries'")
+    assert (
+        conn.execute(
+            "SELECT monthly_limit_cents FROM categories WHERE name = 'Groceries'"
+        ).fetchone()[0]
+        == 100
+    )
+
+
+def test_a_fresh_base_applies_the_nineteen_real_migrations(tmp_path):
     result = subprocess.run(
         [sys.executable, "-m", "app.migrate"],
         cwd=ROOT,
@@ -322,7 +369,7 @@ def test_a_fresh_base_applies_the_eighteen_real_migrations(tmp_path):
     )
 
     assert result.returncode == 0
-    assert "migrations applied: 18" in result.stdout
+    assert "migrations applied: 19" in result.stdout
 
 
 def _base_que_pulou(conn, folder):

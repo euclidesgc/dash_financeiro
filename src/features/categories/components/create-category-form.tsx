@@ -1,4 +1,4 @@
-import { useId } from 'react'
+import { useId, useRef } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { Alert } from '@/components/ui/alert'
@@ -26,13 +26,18 @@ export function CreateCategoryForm(): React.JSX.Element {
   const mutation = useCreateCategory()
   const id = useId()
   const errorId = `${id}-error`
+  const isSubmitting = useRef(false)
 
   const onSubmit = handleSubmit((input) => {
-    if (mutation.isPending) return
+    if (isSubmitting.current) return
+    isSubmitting.current = true
     mutation.mutate(input, {
       onSuccess: () => { reset(); },
       onError: (error) => {
         if (isLabelError(error)) setError('label', { message: error.detail })
+      },
+      onSettled: () => {
+        isSubmitting.current = false
       },
     })
   })

@@ -1,6 +1,6 @@
 # Numeração das migrações
 
-`016` e `017` não existem — foram reservados por itens que fecharam fora de ordem e nunca viraram arquivo; a próxima migração é `021`, e `apply_migrations` recusa qualquer versão que ordene abaixo da maior já registrada em `schema_migrations`.
+`016` e `017` não existem — foram reservados por itens que fecharam fora de ordem e nunca viraram arquivo; a próxima migração é `022`, e `apply_migrations` recusa qualquer versão que ordene abaixo da maior já registrada em `schema_migrations`.
 
 ## Base que pulou uma versão
 
