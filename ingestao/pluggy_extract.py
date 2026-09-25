@@ -32,6 +32,7 @@ from app.db import connect
 from app.migrate import run_migrations
 from app.queries.pluggy_connections import list_item_ids
 from app.sync.connections import DuplicateConnectionError, add_connection
+from ingestao.pluggy_consolidate import local_date
 from ingestao.raw import salvar
 
 API = "https://api.pluggy.ai"
@@ -307,7 +308,7 @@ def extrair_um(api_key: str, item_id: str, args: argparse.Namespace) -> dict[str
         if st != 200:
             inventario["faltantes"].append(f"transactions da conta {rotulo}: HTTP {st} {err}")
             transacoes = []
-        datas = sorted(t["date"] for t in transacoes if t.get("date"))
+        datas = sorted(local_date(t["date"]) for t in transacoes if t.get("date"))
         inventario["contas"].append(
             {
                 "id": conta_id,
@@ -318,13 +319,13 @@ def extrair_um(api_key: str, item_id: str, args: argparse.Namespace) -> dict[str
                 "saldo": conta.get("balance"),
                 "moeda": conta.get("currencyCode"),
                 "transacoes": len(transacoes),
-                "primeira": datas[0][:10] if datas else None,
-                "ultima": datas[-1][:10] if datas else None,
+                "primeira": datas[0] if datas else None,
+                "ultima": datas[-1] if datas else None,
             }
         )
         print(
             f"  {rotulo}: {len(transacoes)} transacoes "
-            f"({datas[0][:10] if datas else '-'} a {datas[-1][:10] if datas else '-'})"
+            f"({datas[0] if datas else '-'} a {datas[-1] if datas else '-'})"
         )
 
         if conta.get("type") == "CREDIT":
