@@ -5,7 +5,7 @@ import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ApiError } from '@/lib/api-client'
 import { useCreateCategory } from '@/features/categories/api/create-category'
-import { categoryLabelSchema } from '@/features/categories/types/category-label-schema'
+import { CATEGORY_LABEL_MAX, categoryLabelSchema } from '@/features/categories/types/category-label-schema'
 import type { CategoryLabelInput } from '@/features/categories/types/category-label-schema'
 
 function isLabelError(error: unknown): error is ApiError {
@@ -60,6 +60,7 @@ export function CreateCategoryForm(): React.JSX.Element {
             id={id}
             type="text"
             autoComplete="off"
+            maxLength={CATEGORY_LABEL_MAX}
             aria-invalid={errors.label ? true : undefined}
             aria-describedby={errors.label ? errorId : undefined}
             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 min-h-10 aria-[invalid=true]:border-red-600"
