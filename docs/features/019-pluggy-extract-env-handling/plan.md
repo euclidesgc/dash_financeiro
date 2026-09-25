@@ -26,7 +26,7 @@ Ao final: o comando manual lê as credenciais como o painel, e o serviço de sin
 
 - [ ] CA1.1 — `bash scripts/lint.sh`, `uv run pytest` e `bash scripts/gates/gates_runner.sh` saem com código 0. (comando)
 - [ ] CA1.2 — `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` e `pnpm test:e2e` saem com código 0. (comando)
-- [ ] CA1.3 — `grep -rn "SystemExit" app/sync/` não encontra nada; `grep -n "ENV_PATH\|carregar_env" ingestao/pluggy_extract.py` não encontra nada; `ingestao/` não importa `app`. (estrutural)
+- [ ] CA1.3 — `grep -n "SystemExit" app/sync/fetch.py app/sync/__init__.py` não encontra nada (o `app/sync/__main__.py` é ponto de entrada de comando e sai com o código do `main`); `grep -n "ENV_PATH\|carregar_env" ingestao/pluggy_extract.py` não encontra nada; `ingestao/` não importa `app`. (estrutural)
 - [ ] CA1.4 — Com `DASH_ENV_FILE` apontando para um arquivo com as duas credenciais, `read_credentials()` as devolve; uma variável de ambiente já definida vence o arquivo; sem `PLUGGY_CLIENT_SECRET`, `MissingCredentialsError` cita o nome da variável. (comportamental)
 - [ ] CA1.5 — Sem `data/raw/accounts_*.json`, `consolidate()` levanta `NoRawAccountsError` e nada é impresso; `fetch_from_pluggy` com a Pluggy devolvendo zero contas levanta `PluggyFetchError` com "a consolidação dos dados brutos falhou". (comportamental)
 

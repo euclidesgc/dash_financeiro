@@ -156,12 +156,30 @@ def parcelas_da_transacao(
     return None, None, None
 
 
+class NoRawAccountsError(RuntimeError):
+    pass
+
+
 def main() -> None:
-    os.makedirs(PROC, exist_ok=True)
+    try:
+        resumo = consolidate()
+    except NoRawAccountsError as erro:
+        raise SystemExit(str(erro)) from erro
+    print(f"transacoes: {resumo['transacoes']}")
+    print(f"  marcadas como transferencia/pagto de fatura: {resumo['transferencias']}")
+    print(f"  categoria inferida por mim (Pluggy veio vazia): {resumo['inferidas']}")
+    print(f"  saques em dinheiro (destino nao rastreavel): {resumo['saques']}")
+    print(f"  lancamentos anulados por estorno: {resumo['estornadas']}")
+    print(f"  recorrentes detectadas: {resumo['recorrentes']}")
+    print(f"  parcelamentos detectados: {resumo['parcelamentos']}")
+
+
+def consolidate() -> dict[str, int]:
     contas = dedup(carregar("accounts_*.json"))
     transacoes = dedup(carregar("*transactions_*.json"))
     if not contas:
-        raise SystemExit("Sem data/raw/accounts_*.json — rode a extração antes.")
+        raise NoRawAccountsError("Sem data/raw/accounts_*.json — rode a extração antes.")
+    os.makedirs(PROC, exist_ok=True)
 
     indice_conta: dict[Any, dict[str, Any]] = {c["id"]: c for c in contas}
     linhas: list[dict[str, Any]] = []
@@ -250,17 +268,15 @@ def main() -> None:
     with open(os.path.join(PROC, "parcelamentos.json"), "w") as arquivo:
         json.dump(parcelamentos, arquivo, ensure_ascii=False, indent=2)
 
-    total_transf = sum(1 for linha in linhas if linha["eh_transferencia"])
-    saques = sum(1 for linha in linhas if linha.get("eh_saque"))
-    estornadas = sum(1 for linha in linhas if linha.get("estornada_por"))
-    inferidas = sum(1 for linha in linhas if linha["categoria_inferida"])
-    print(f"transacoes: {len(linhas)}")
-    print(f"  marcadas como transferencia/pagto de fatura: {total_transf}")
-    print(f"  categoria inferida por mim (Pluggy veio vazia): {inferidas}")
-    print(f"  saques em dinheiro (destino nao rastreavel): {saques}")
-    print(f"  lancamentos anulados por estorno: {estornadas}")
-    print(f"  recorrentes detectadas: {len(recorrentes)}")
-    print(f"  parcelamentos detectados: {len(parcelamentos)}")
+    return {
+        "transacoes": len(linhas),
+        "transferencias": sum(1 for linha in linhas if linha["eh_transferencia"]),
+        "inferidas": sum(1 for linha in linhas if linha["categoria_inferida"]),
+        "saques": sum(1 for linha in linhas if linha.get("eh_saque")),
+        "estornadas": sum(1 for linha in linhas if linha.get("estornada_por")),
+        "recorrentes": len(recorrentes),
+        "parcelamentos": len(parcelamentos),
+    }
 
 
 def marcar_transferencias(

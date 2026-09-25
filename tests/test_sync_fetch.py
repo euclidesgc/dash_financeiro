@@ -282,3 +282,13 @@ def test_a_failure_in_one_item_writes_no_processed_file(tmp_path, monkeypatch):
         fetch_from_pluggy(config_with(), transport=mock)
 
     assert not (tmp_path / "data" / "processed" / "transacoes.json").exists()
+
+
+def test_no_accounts_at_pluggy_means_the_consolidation_failed(workspace):
+    def no_accounts(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"results": []})
+
+    mock = transport(happy_routes({("GET", "/accounts"): no_accounts}))
+
+    with pytest.raises(PluggyFetchError, match="a consolidação dos dados brutos falhou"):
+        fetch_from_pluggy(config_with(), transport=mock)
