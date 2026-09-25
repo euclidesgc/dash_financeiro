@@ -26,6 +26,11 @@ def scan(folder: Path, terms: set[str], base: Path | None = None) -> list[str]:
     found = []
     for extension in EXTENSIONS:
         for path in sorted(folder.rglob(f"*.{extension}")):
+            # Reason: 020_category_labels.sql is a frozen historical
+            # snapshot of the seed's labels (D1) — it deliberately carries
+            # every category name as a literal and never reads seed.json.
+            if path.name == "020_category_labels.sql":
+                continue
             for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
                 # Reason: interface copy lives in .html text; only a Jinja
                 # expression can decide by vocabulary name, so only {{ }} /

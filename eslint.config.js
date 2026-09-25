@@ -63,6 +63,11 @@ export default tseslint.config(
               except: ['./expenses'],
             },
             {
+              target: './src/features/categories',
+              from: './src/features',
+              except: ['./categories'],
+            },
+            {
               target: './src/features',
               from: './src/app',
             },

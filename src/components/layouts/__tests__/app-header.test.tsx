@@ -18,6 +18,14 @@ test('marks "Gastos" as current on the expenses page', () => {
   expect(screen.getByRole('link', { name: 'Saldos' })).not.toHaveAttribute('aria-current')
 })
 
+test('marks "Categorias" as current on the categories page', () => {
+  renderWithProviders(<AppHeader />, { route: '/categories' })
+
+  expect(screen.getByRole('link', { name: 'Categorias' })).toHaveAttribute('aria-current', 'page')
+  expect(screen.getByRole('link', { name: 'Saldos' })).not.toHaveAttribute('aria-current')
+  expect(screen.getByRole('link', { name: 'Gastos' })).not.toHaveAttribute('aria-current')
+})
+
 test('renders the login and the action', () => {
   renderWithProviders(
     <AppHeader userLogin="teste" action={<button type="button">Sair</button>} />,
@@ -32,4 +40,5 @@ test('links point to the routes', () => {
 
   expect(screen.getByRole('link', { name: 'Saldos' })).toHaveAttribute('href', '/')
   expect(screen.getByRole('link', { name: 'Gastos' })).toHaveAttribute('href', '/expenses')
+  expect(screen.getByRole('link', { name: 'Categorias' })).toHaveAttribute('href', '/categories')
 })

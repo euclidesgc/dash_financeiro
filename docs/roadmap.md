@@ -14,7 +14,7 @@ prova o caminho de ponta a ponta (tela React → API FastAPI → SQLite) e as ou
 | 007 | `buscar-por-texto` | encontrar gastos pela descrição ou pelo nome de quem recebeu | Pedido de 22/09 | 003 | in-review |
 | 008 | `total-por-categoria` | ver os gastos do período agrupados por categoria, com o total de cada uma | Pedido de 22/09 | 005 | in-review |
 | 009 | `ajustar-categoria` | trocar a categoria de um gasto, e a troca sobreviver à próxima atualização | Pedido de 22/09 | 003 | in-review |
-| 010 | `criar-categoria` | criar, renomear e apagar categorias | Pedido de 22/09 | 009 | planned |
+| 010 | `criar-categoria` | criar, renomear e apagar categorias | Pedido de 22/09 | 009 | in-review |
 | 011 | `categoria-para-parecidos` | aplicar a mesma categoria a todos os gastos parecidos de uma vez | Pedido de 22/09 | 009 | planned |
 | 012 | `limite-por-categoria` | definir um limite mensal para cada categoria | Pedido de 22/09 | 010 | planned |
 | 013 | `sinal-por-categoria` | ver, em cada categoria, se está dentro, acima ou abaixo do limite no período | Pedido de 22/09 | 008, 012 | planned |
@@ -32,9 +32,11 @@ prova o caminho de ponta a ponta (tela React → API FastAPI → SQLite) e as ou
 | 020 | `jinja-sync-button-exclusive-lock` | fazer o botão Jinja `/sincronizar` passar pela trava de execução única de `app/sync/exclusive.py` | 002 | — | planned |
 | 021 | `pluggy-connections-editable-ui` | mover lista de conexões Pluggy de `data/item_ids.txt` para tela editável (norma 26) | 002 | — | planned |
 | 022 | `setup-secrets-pluggy-credentials` | atualizar `docs/setup-secrets.md` para citar `PLUGGY_CLIENT_ID` e `PLUGGY_CLIENT_SECRET` | 002 | — | planned |
-| 023 | `category-labels-in-schema` | mover rótulo em pt-BR das categorias de `app/taxonomy/seed.json` para coluna `label` na tabela `categories`, de modo que SQL possa ordenar e filtrar por categoria em 004 e 006 | 003 | — | planned |
+| 023 | `category-labels-in-schema` | mover rótulo em pt-BR das categorias de `app/taxonomy/seed.json` para coluna `label` na tabela `categories`, de modo que SQL possa ordenar e filtrar por categoria em 004 e 006 | 003 | — | done |
 | 024 | `payee-filling-post-sync` | mover `_fill_payees` e classificação automática da entrada de dados (`ingest`) para o pós-processamento (`synchronise`), para que bases de teste e e2e tenham recebedor preenchido | 003 | — | planned |
 | 025 | `spending-filter-predicate-unification` | unificar predicado de data duplicado em `app/queries/spending.py` (`total_spending_cents`) e `app/queries/expenses.py` (`_where`) em `spending.py`, evitando divergência na soma por categoria (008) | 005 | — | planned |
 | 026 | `unify-payee-name-precedence` | consolidar precedência do nome do recebedor entre Python (`app/payees/names.py`, `_chosen`) e SQL (`app/queries/expenses.py`, `_PAYEE_NAME_SQL`), evitando divergência silenciosa se uma mudar | 007 | 025 | planned |
 | 027 | `expenses-list-mock-unification` | `filterForSpy` em `src/features/expenses/components/__tests__/expenses-list.test.tsx` duplica a lógica de filtro dos mocks; importar `filterExpenses` de `src/testing/mocks/handlers.ts` em vez de reinventar | 008 | — | planned |
 | 028 | `manual-category-classify-precedence` | o ajuste manual de categoria (`transactions.category_source = 'manual'`) não tem precedência sobre regras por descrição no agrupamento (`group_id`) usado pelas telas Jinja antigas (`app/taxonomy/classify.py`, `_match`); enquanto essas telas existirem, um gasto ajustado à mão pode aparecer em outro grupo nelas | 009 | — | planned |
+| 029 | `jinja-labels-from-schema` | `app/routers/spending.py` e `app/routers/rules.py` montam `LABELS` do seed no import e não veem rótulo renomeado nem categoria criada pelo dono; ler `categories` em requisição nas duas telas Jinja (e em `tests/test_gastos_screen.py`) | 010 | 010 | planned |
+| 030 | `shared-categories-query` | `src/features/expenses/api/get-categories.ts` e `src/features/categories/api/get-categories.ts` buscam `GET /api/categories` com a mesma chave `['categories']`; mover hook e tipo para `src/hooks/` e `src/types/` pela regra "usado por duas features → compartilhado" | 010 | 010 | planned |

@@ -1,7 +1,7 @@
 import { http, HttpResponse } from 'msw'
 import type { SyncStatus } from '@/features/sync/types/sync-status'
+import type { CatalogueCategory } from '@/features/categories/types/category'
 import type {
-  Category,
   CategoryGroup,
   CategoryUpdateBody,
   Expense,
@@ -39,12 +39,41 @@ export const fakeAccounts = [
   },
 ]
 
-export const fakeCategories: Category[] = [
-  { key: 'Food', label: 'Alimentação' },
-  { key: 'Shopping', label: 'Compras' },
-  { key: 'Groceries', label: 'Supermercado' },
-  { key: 'Transport', label: 'Transporte' },
-]
+function generateFakeCategories(): CatalogueCategory[] {
+  return [
+    { key: 'Food', label: 'Alimentação', is_system: true, usage_count: 1 },
+    { key: 'Shopping', label: 'Compras', is_system: true, usage_count: 40 },
+    { key: 'lazer', label: 'Lazer', is_system: false, usage_count: 3 },
+    { key: 'pet-shop', label: 'Pet shop', is_system: false, usage_count: 0 },
+    { key: 'Groceries', label: 'Supermercado', is_system: true, usage_count: 0 },
+    { key: 'Transport', label: 'Transporte', is_system: true, usage_count: 1 },
+  ]
+}
+
+export const fakeCategories: CatalogueCategory[] = generateFakeCategories()
+
+export function resetCategories(): void {
+  fakeCategories.splice(0, fakeCategories.length, ...generateFakeCategories())
+}
+
+function slugify(label: string): string {
+  return foldText(label).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'categoria'
+}
+
+function labelError(label: string, exceptKey?: string): HttpResponse<{ detail: string }> | null {
+  const trimmed = label.trim()
+  if (trimmed === '') {
+    return HttpResponse.json({ detail: 'Informe o nome da categoria.' }, { status: 422 })
+  }
+  if (
+    fakeCategories.some(
+      (category) => category.key !== exceptKey && foldText(category.label) === foldText(trimmed),
+    )
+  ) {
+    return HttpResponse.json({ detail: 'Já existe uma categoria com esse nome.' }, { status: 422 })
+  }
+  return null
+}
 
 export const fakeSyncStatus: SyncStatus = {
   running: false,
@@ -323,7 +352,70 @@ export const handlers = [
   }),
 
   http.get('/api/categories', () => {
-    return HttpResponse.json({ categories: fakeCategories })
+    return HttpResponse.json({
+      categories: [...fakeCategories].sort((a, b) =>
+        foldText(a.label).localeCompare(foldText(b.label)),
+      ),
+    })
+  }),
+
+  http.post('/api/categories', async ({ request }) => {
+    const body = (await request.json()) as { label: string }
+    const trimmed = body.label.trim()
+    const error = labelError(body.label)
+    if (error) {
+      return error
+    }
+    let key = slugify(trimmed)
+    let suffix = 2
+    while (fakeCategories.some((category) => category.key === key)) {
+      key = `${slugify(trimmed)}-${String(suffix)}`
+      suffix += 1
+    }
+    const item: CatalogueCategory = { key, label: trimmed, is_system: false, usage_count: 0 }
+    fakeCategories.push(item)
+    return HttpResponse.json(item, { status: 201 })
+  }),
+
+  http.patch('/api/categories/:key', async ({ params, request }) => {
+    const item = fakeCategories.find((category) => category.key === params.key)
+    if (item === undefined) {
+      return HttpResponse.json({ detail: 'Categoria não encontrada.' }, { status: 404 })
+    }
+    const body = (await request.json()) as { label: string }
+    const trimmed = body.label.trim()
+    const error = labelError(body.label, item.key)
+    if (error) {
+      return error
+    }
+    item.label = trimmed
+    return HttpResponse.json(item)
+  }),
+
+  http.delete('/api/categories/:key', ({ params }) => {
+    const item = fakeCategories.find((category) => category.key === params.key)
+    if (item === undefined) {
+      return HttpResponse.json({ detail: 'Categoria não encontrada.' }, { status: 404 })
+    }
+    if (item.is_system) {
+      return HttpResponse.json(
+        { detail: 'Categoria do sistema não pode ser apagada.' },
+        { status: 403 },
+      )
+    }
+    if (item.usage_count > 0) {
+      return HttpResponse.json(
+        {
+          detail:
+            'Esta categoria está em uso por ' +
+            String(item.usage_count) +
+            (item.usage_count === 1 ? ' gasto.' : ' gastos.'),
+        },
+        { status: 409 },
+      )
+    }
+    fakeCategories.splice(fakeCategories.indexOf(item), 1)
+    return new HttpResponse(null, { status: 204 })
   }),
 
   http.patch('/api/transactions/:id/category', async ({ params, request }) => {

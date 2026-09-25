@@ -24,7 +24,7 @@ from app.routers.reference import DATE_FIELD, Reference, screen_date
 from app.routers.rules import form_text
 from app.taxonomy.classify import residue
 from app.taxonomy.rules import Correction, RuleError, correct_payee
-from app.taxonomy.seed import category_labels
+from app.taxonomy.seed import seed_labels
 
 from .render import TEMPLATES
 
@@ -49,7 +49,7 @@ CORRECTION_MISSING_TARGET_MESSAGE = "Nenhum lançamento selecionado para corrigi
 # Reason: the category key stays the raw name the source sends, because
 # that is what matches it again on the next sync; the reading label is data
 # next to it.
-LABELS: dict[str, str] = category_labels()
+LABELS: dict[str, str] = seed_labels()
 
 _CROSSINGS = "SELECT slug, label, nature, essentiality FROM crossings ORDER BY position"
 _FALLBACK_TERM = "SELECT value FROM essentialities WHERE is_fallback = 1"

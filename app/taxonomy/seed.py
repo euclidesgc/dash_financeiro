@@ -1,6 +1,5 @@
 import json
 import sqlite3
-import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
@@ -16,6 +15,7 @@ UNCATEGORISED = "Não classificado"
 class Category:
     key: str
     label: str
+    is_system: bool
 
 
 def load_seed(path: Path | None = None) -> dict[str, Any]:
@@ -27,21 +27,19 @@ def message(key: str, value: object, seed: dict[str, Any] | None = None) -> str:
     return template.format(value=value)
 
 
-def category_labels() -> dict[str, str]:
+def seed_labels() -> dict[str, str]:
     return {entry["name"]: entry["label"] for entry in load_seed()["categories"]}
 
 
-def label_sort_key(label: str) -> str:
-    return unicodedata.normalize("NFKD", label).encode("ascii", "ignore").decode("ascii").casefold()
-
-
-def pickable_categories() -> list[Category]:
-    categories = [
-        Category(key=entry["name"], label=entry["label"])
-        for entry in load_seed()["categories"]
-        if entry["name"] != UNCATEGORISED
+def pickable_categories(conn: sqlite3.Connection) -> list[Category]:
+    return [
+        Category(key=row["name"], label=row["label"], is_system=bool(row["is_system"]))
+        for row in conn.execute(
+            "SELECT name, label, is_system FROM categories WHERE name != ? "
+            "ORDER BY fold(label), name",
+            (UNCATEGORISED,),
+        )
     ]
-    return sorted(categories, key=lambda category: label_sort_key(category.label))
 
 
 def seed_taxonomy(conn: sqlite3.Connection, seed: dict[str, Any] | None = None) -> None:
@@ -98,10 +96,15 @@ def seed_taxonomy(conn: sqlite3.Connection, seed: dict[str, Any] | None = None) 
     # category the owner's machine already carries under an old vocabulary
     # can still be pointing at one of them, and app/db.py:27 blocks the
     # delete while it does.
+    # Reason: a label equal to the key (or empty) means "nobody named it
+    # yet" — it was written by _record_categories or by 020's trailing
+    # UPDATE; any other value is the owner's or a previous seed's and stays.
     conn.executemany(
-        "INSERT INTO categories (name, group_id) VALUES (?, ?) "
-        "ON CONFLICT (name) DO UPDATE SET group_id = excluded.group_id",
-        [(entry["name"], groups[entry["group"]]) for entry in data["categories"]],
+        "INSERT INTO categories (name, group_id, label) VALUES (?, ?, ?) "
+        "ON CONFLICT (name) DO UPDATE SET group_id = excluded.group_id, "
+        "label = CASE WHEN categories.label IN ('', categories.name) "
+        "THEN excluded.label ELSE categories.label END",
+        [(entry["name"], groups[entry["group"]], entry["label"]) for entry in data["categories"]],
     )
     declared_names = [entry["name"] for entry in data["groups"]]
     declared_ids = [groups[name] for name in declared_names]

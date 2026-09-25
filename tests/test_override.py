@@ -2,6 +2,8 @@ import sqlite3
 
 import pytest
 
+from app.db import fold
+from app.taxonomy.catalogue import create_category
 from app.taxonomy.classify import classify_all
 from app.taxonomy.override import (
     UnknownCategoryError,
@@ -11,9 +13,8 @@ from app.taxonomy.override import (
 )
 from app.taxonomy.seed import (
     UNCATEGORISED,
-    category_labels,
-    label_sort_key,
     pickable_categories,
+    seed_labels,
     seed_taxonomy,
 )
 from tests.conftest import load, narrowed, transaction
@@ -48,13 +49,14 @@ def state(conn: sqlite3.Connection, id: int) -> tuple[str | None, str | None, st
 def test_pickable_categories_are_sorted_by_label_without_the_uncategorised_key(taxonomy_conn, seed):
     seed_taxonomy(taxonomy_conn, seed)
 
-    keys = [c.key for c in pickable_categories()]
+    categories = pickable_categories(taxonomy_conn)
 
-    assert UNCATEGORISED not in keys
-    assert len(keys) == len(category_labels()) - 1
-    sort_keys = [label_sort_key(c.label) for c in pickable_categories()]
+    assert UNCATEGORISED not in [c.key for c in categories]
+    assert len(categories) == len(seed_labels()) - 1
+    sort_keys = [fold(c.label) for c in categories]
     assert sort_keys == sorted(sort_keys)
-    assert label_sort_key("Água") == "agua"
+    assert all(c.is_system for c in categories)
+    assert fold("Água") == "agua"
 
 
 def test_set_manual_writes_the_category_marks_it_manual_and_reclassifies(tmp_path, seed):
@@ -134,3 +136,14 @@ def test_restore_auto_refuses_an_unknown_transaction(taxonomy_conn, seed):
 
     with pytest.raises(UnknownTransactionError):
         restore_auto(taxonomy_conn, id + 1000)
+
+
+def test_set_manual_accepts_a_key_created_in_the_catalogue(taxonomy_conn, seed):
+    id = prepared(taxonomy_conn, seed)
+    key = create_category(taxonomy_conn, "Pet shop")
+
+    set_manual(taxonomy_conn, id, key)
+
+    category, _, source, _ = state(taxonomy_conn, id)
+    assert category == "pet-shop"
+    assert source == "manual"
