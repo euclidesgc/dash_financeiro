@@ -31,6 +31,12 @@ PAYEE_ALIAS_MAX = 60
 # saúde" with room to spare.
 SCENARIO_NAME_MAX = 40
 
+# Reason: a category name is a short label on a list row and in the
+# category picker. The longest name in the catalogue today has 33
+# characters ("Transferência própria em dinheiro"); forty is the ceiling of
+# the scenario name and of the category group, labels of the same kind.
+CATEGORY_LABEL_MAX = 40
+
 # Reason: a rule expression is a hand-written regex, sometimes joining more
 # than one payee name by alternation — two hundred characters cover several
 # escaped names without leaving the column with no ceiling at all.

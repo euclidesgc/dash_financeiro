@@ -86,6 +86,11 @@ test('creates, uses, renames and deletes a category and leaves the base as it fo
   await expect(page.getByText('Já existe uma categoria com esse nome.')).toBeVisible()
   await expect(page.getByLabel('Nome da categoria')).toHaveValue('pet shop')
 
+  await page.getByLabel('Nome da categoria').fill('')
+  await page.getByLabel('Nome da categoria').pressSequentially('a'.repeat(45))
+  await expect(page.getByLabel('Nome da categoria')).toHaveValue('a'.repeat(40))
+  await page.getByLabel('Nome da categoria').fill('')
+
   await page.goto('/app/expenses?month=2026-08')
   const row = page.getByRole('listitem').filter({ hasText: 'FARMACIA CENTRAL' })
   await row.getByRole('button', { name: 'Trocar categoria de FARMACIA CENTRAL' }).click()

@@ -5,7 +5,7 @@ import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ApiError } from '@/lib/api-client'
 import { useRenameCategory } from '@/features/categories/api/rename-category'
-import { categoryLabelSchema } from '@/features/categories/types/category-label-schema'
+import { CATEGORY_LABEL_MAX, categoryLabelSchema } from '@/features/categories/types/category-label-schema'
 import type { CategoryLabelInput } from '@/features/categories/types/category-label-schema'
 import type { Category } from '@/types/category'
 
@@ -66,6 +66,7 @@ export function RenameCategoryForm({
             id={id}
             type="text"
             autoComplete="off"
+            maxLength={CATEGORY_LABEL_MAX}
             autoFocus
             aria-invalid={errors.label ? true : undefined}
             aria-describedby={errors.label ? errorId : undefined}

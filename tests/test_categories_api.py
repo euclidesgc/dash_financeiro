@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 from typing import Any
 
@@ -11,11 +12,15 @@ from app.ingest.source import load_accounts
 from app.ingest.trigger import COMMAND
 from app.main import create_app
 from app.queries.categories import category_labels
+from app.settings import limits
 from app.taxonomy.seed import UNCATEGORISED, pickable_categories, seed_taxonomy
 
 LOGIN = "teste"
 PASSWORD = "senha-teste-9k2"
 DATA = Path(__file__).parent / "data"
+SPA_LABEL_SCHEMA = (
+    Path(__file__).parent.parent / "src/features/categories/types/category-label-schema.ts"
+)
 
 
 @pytest.fixture()
@@ -228,6 +233,58 @@ def test_post_refuses_a_duplicate_label_ignoring_case_and_accents_with_422(clien
 
     assert response.status_code == 422
     assert response.json() == {"detail": "Já existe uma categoria com esse nome."}
+
+
+LABEL_TOO_LONG = "O nome da categoria pode ter no máximo 40 caracteres."
+
+
+def test_post_refuses_a_label_one_over_the_ceiling_with_422_and_writes_nothing(client):
+    _sign_in(client)
+    before = _keys(client)
+
+    response = _post(client, "a" * 41)
+
+    assert response.status_code == 422
+    assert response.json() == {"detail": LABEL_TOO_LONG}
+    assert _keys(client) == before
+
+
+def test_post_accepts_a_label_at_the_ceiling(client):
+    _sign_in(client)
+
+    response = _post(client, "a" * 40)
+
+    assert response.status_code == 201
+    assert response.json()["label"] == "a" * 40
+
+
+def test_post_measures_the_label_after_trimming_the_spaces_around_it(client):
+    _sign_in(client)
+
+    response = _post(client, "  " + "a" * 40 + "  ")
+
+    assert response.status_code == 201
+    assert response.json()["label"] == "a" * 40
+
+
+def test_patch_refuses_a_label_one_over_the_ceiling_with_422_and_keeps_the_old_one(client):
+    _sign_in(client)
+
+    response = _patch(client, "Groceries", "a" * 41)
+
+    assert response.status_code == 422
+    assert response.json() == {"detail": LABEL_TOO_LONG}
+    labels = {item["key"]: item["label"] for item in _list_categories(client)}
+    assert labels["Groceries"] == "Supermercado"
+
+
+def test_the_spa_holds_the_category_label_to_the_server_ceiling():
+    schema = SPA_LABEL_SCHEMA.read_text(encoding="utf-8")
+
+    match = re.search(r"export const CATEGORY_LABEL_MAX = (\d+)", schema)
+
+    assert match is not None
+    assert int(match.group(1)) == limits.CATEGORY_LABEL_MAX
 
 
 def test_post_without_label_answers_422_from_pydantic(client):

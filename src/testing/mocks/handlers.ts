@@ -1,6 +1,10 @@
 import { http, HttpResponse } from 'msw'
 import type { SyncStatus } from '@/features/sync/types/sync-status'
 import type { Category } from '@/types/category'
+import {
+  CATEGORY_LABEL_MAX,
+  CATEGORY_LABEL_TOO_LONG,
+} from '@/features/categories/types/category-label-schema'
 import { EXPENSE_NOUN, formatCount } from '@/utils/format-count'
 import type { PluggyConnection } from '@/features/pluggy-connections/types/pluggy-connection'
 import type {
@@ -89,6 +93,9 @@ function labelError(label: string, exceptKey?: string): HttpResponse<{ detail: s
   const trimmed = label.trim()
   if (trimmed === '') {
     return HttpResponse.json({ detail: 'Informe o nome da categoria.' }, { status: 422 })
+  }
+  if (trimmed.length > CATEGORY_LABEL_MAX) {
+    return HttpResponse.json({ detail: CATEGORY_LABEL_TOO_LONG }, { status: 422 })
   }
   if (
     fakeCategories.some(

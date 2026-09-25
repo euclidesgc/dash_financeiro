@@ -70,6 +70,17 @@ test('submitting empty shows the message, focuses the field and does not call th
   expect(calls).toHaveLength(0)
 })
 
+test('the name field stops at the 40 characters the server accepts', async () => {
+  const user = userEvent.setup()
+  renderWithProviders(<CreateCategoryForm />)
+
+  const input = screen.getByLabelText('Nome da categoria')
+  await user.type(input, 'a'.repeat(45))
+
+  expect(input).toHaveAttribute('maxLength', '40')
+  expect(input).toHaveValue('a'.repeat(40))
+})
+
 test('a 422 from the server shows next to the field and keeps the value', async () => {
   const user = userEvent.setup()
   server.use(

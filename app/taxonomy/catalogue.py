@@ -3,7 +3,7 @@ import sqlite3
 from typing import cast
 
 from app.db import fold
-from app.settings.limits import MAX_CENTS
+from app.settings.limits import CATEGORY_LABEL_MAX, MAX_CENTS
 from app.taxonomy.classify import MissingFallbackError
 from app.taxonomy.seed import UNCATEGORISED
 
@@ -11,6 +11,12 @@ from app.taxonomy.seed import UNCATEGORISED
 class InvalidLabelError(ValueError):
     def __init__(self, label: object) -> None:
         super().__init__(f"rótulo inválido: {label!r}")
+        self.label = label
+
+
+class LabelTooLongError(ValueError):
+    def __init__(self, label: str) -> None:
+        super().__init__(f"rótulo longo demais: {len(label)} caracteres")
         self.label = label
 
 
@@ -64,6 +70,8 @@ def _check_label(conn: sqlite3.Connection, label: str, except_key: str | None = 
     clean = label.strip()
     if not clean:
         raise InvalidLabelError(label)
+    if len(clean) > CATEGORY_LABEL_MAX:
+        raise LabelTooLongError(clean)
     row = conn.execute(
         "SELECT 1 FROM categories WHERE fold(label) = fold(?) AND name != ?",
         (clean, except_key or ""),

@@ -327,6 +327,21 @@ test('"Renomear" opens the field with the label and focus, and Escape closes it 
   expect(calls).toHaveLength(0)
 })
 
+test('the rename field stops at the 40 characters the server accepts', async () => {
+  const user = userEvent.setup()
+  renderWithProviders(<CategoriesList />)
+
+  await screen.findAllByRole('listitem')
+  await user.click(screen.getByRole('button', { name: 'Renomear Supermercado' }))
+
+  const input = within(itemOf('Supermercado')).getByLabelText('Novo nome')
+  await user.clear(input)
+  await user.type(input, 'a'.repeat(45))
+
+  expect(input).toHaveAttribute('maxLength', '40')
+  expect(input).toHaveValue('a'.repeat(40))
+})
+
 test('"Cancelar" closes the rename without calling the API', async () => {
   const user = userEvent.setup()
   const calls = spyOnPatch()

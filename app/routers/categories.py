@@ -8,13 +8,14 @@ from pydantic import BaseModel
 from app.db import connect
 from app.queries.categories import CategoryRow, get_category, list_categories
 from app.routers.render import brl
-from app.settings.limits import MAX_CENTS
+from app.settings.limits import CATEGORY_LABEL_MAX, MAX_CENTS
 from app.taxonomy.catalogue import (
     CategoryInUseError,
     CategoryNotFoundError,
     DuplicateLabelError,
     InvalidLabelError,
     InvalidLimitError,
+    LabelTooLongError,
     SystemCategoryError,
     create_category,
     delete_category,
@@ -25,6 +26,7 @@ from app.taxonomy.catalogue import (
 router = APIRouter(prefix="/api/categories")
 
 INVALID_LABEL = "Informe o nome da categoria."
+LABEL_TOO_LONG = f"O nome da categoria pode ter no máximo {CATEGORY_LABEL_MAX} caracteres."
 DUPLICATE_LABEL = "Já existe uma categoria com esse nome."
 NOT_FOUND = "Categoria não encontrada."
 SYSTEM_CATEGORY = "Categoria do sistema não pode ser apagada."
@@ -74,6 +76,8 @@ def _translated() -> Iterator[None]:
         yield
     except InvalidLabelError as error:
         raise HTTPException(status_code=422, detail=INVALID_LABEL) from error
+    except LabelTooLongError as error:
+        raise HTTPException(status_code=422, detail=LABEL_TOO_LONG) from error
     except DuplicateLabelError as error:
         raise HTTPException(status_code=422, detail=DUPLICATE_LABEL) from error
     except InvalidLimitError as error:
