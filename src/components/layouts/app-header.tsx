@@ -16,26 +16,27 @@ export function AppHeader({
 }): React.JSX.Element {
   return (
     <header className="border-b border-gray-200">
-      <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-4 p-4">
-        <div className="flex items-center gap-4">
-          <span className="font-medium text-gray-900">dash_financeiro</span>
-          <nav aria-label="Principal" className="flex items-center gap-4">
-            <NavLink to={paths.dashboard} end className={navLinkClassName}>
-              Saldos
-            </NavLink>
-            <NavLink to={paths.expenses} className={navLinkClassName}>
-              Gastos
-            </NavLink>
-            <NavLink to={paths.categories} className={navLinkClassName}>
-              Categorias
-            </NavLink>
-            <NavLink to={paths.connections} className={navLinkClassName}>
-              Conexões
-            </NavLink>
-          </nav>
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="text-gray-600">{userLogin}</span>
+      <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-x-4 gap-y-2 p-4">
+        <span className="font-medium text-gray-900">dash_financeiro</span>
+        <nav
+          aria-label="Principal"
+          className="order-last flex w-full flex-wrap items-center gap-x-4 gap-y-2 sm:order-none sm:mr-auto sm:w-auto"
+        >
+          <NavLink to={paths.dashboard} end className={navLinkClassName}>
+            Saldos
+          </NavLink>
+          <NavLink to={paths.expenses} className={navLinkClassName}>
+            Gastos
+          </NavLink>
+          <NavLink to={paths.categories} className={navLinkClassName}>
+            Categorias
+          </NavLink>
+          <NavLink to={paths.connections} className={navLinkClassName}>
+            Conexões
+          </NavLink>
+        </nav>
+        <div className="flex min-w-0 items-center gap-4">
+          <span className="truncate text-gray-600">{userLogin}</span>
           {action}
         </div>
       </div>

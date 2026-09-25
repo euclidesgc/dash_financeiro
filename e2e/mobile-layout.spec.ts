@@ -13,7 +13,7 @@ async function elementsPastTheRightEdge(page: Page): Promise<string[]> {
         return box.width > 0 && box.height > 0 && box.right > limit + 0.5
       })
       .map((element) => {
-        const text = (element.textContent ?? '').trim().slice(0, 30)
+        const text = element.textContent.trim().slice(0, 30)
         return `${element.tagName.toLowerCase()} "${text}"`
       })
   })
