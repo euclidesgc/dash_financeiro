@@ -24,7 +24,7 @@ As duas telas leem a mesma consulta por lados diferentes e se devolvem a navega�
 - **Risco:** as telas que mostram o login do usuário no cabeçalho já leem `data?.login`, e continuam funcionando com `null`.
 
 ## Fora da correção
-- Um 401 em qualquer outra chamada da API (saldos, gastos, categorias) não avisa o app de que a sessão acabou: a tela mostra a mensagem de erro daquela área até a consulta do usuário ser refeita (troca de foco da aba ou nova tela). Registrado no roadmap como item próprio.
+- Um 401 em qualquer outra chamada da API (saldos, gastos, categorias) não avisa o app de que a sessão acabou: a tela mostra a mensagem de erro daquela área até a consulta do usuário ser refeita (troca de foco da aba ou nova tela). Registrado no roadmap como item 063 (`session-expiry-any-401`).
 
 ## Pontos em aberto
 Nenhum.
