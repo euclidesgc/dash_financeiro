@@ -648,7 +648,7 @@ test('editing a date switches from month to range', async () => {
   })
 })
 
-test('the field just edited wins over an inverted range', async () => {
+test('an inverted range shows the message and leaves the URL as it was', async () => {
   renderWithProviders(
     <>
       <ExpensesList />
@@ -660,13 +660,91 @@ test('the field just edited wins over an inverted range', async () => {
   await screen.findByRole('list')
 
   const fromInput = screen.getByLabelText('De', { exact: true })
-  await userEvent.clear(fromInput)
-  await userEvent.type(fromInput, '2026-07-25')
+  const toInput = screen.getByLabelText('Até', { exact: true })
+  fireEvent.change(fromInput, { target: { value: '2026-07-25' } })
+
+  expect(await screen.findByRole('alert')).toHaveTextContent('"Até" não pode ser antes de "De".')
+  expect(fromInput).toHaveAttribute('aria-invalid', 'true')
+  expect(toInput).toHaveAttribute('aria-invalid', 'true')
+  expect(fromInput).toHaveValue('2026-07-25')
+  expect(toInput).toHaveValue('2026-07-20')
+  expect(screen.getByTestId('search')).toHaveTextContent('?from=2026-07-10&to=2026-07-20')
+
+  fireEvent.change(toInput, { target: { value: '2026-07-31' } })
 
   await waitFor(() => {
-    const search = screen.getByTestId('search').textContent
-    expect(search).toContain('from=2026-07-25')
-    expect(search).not.toContain('to=')
+    expect(screen.getByTestId('search')).toHaveTextContent('?from=2026-07-25&to=2026-07-31')
+  })
+  expect(screen.queryByText('"Até" não pode ser antes de "De".')).not.toBeInTheDocument()
+  expect(fromInput).toHaveAttribute('aria-invalid', 'false')
+})
+
+test('a date field with a segment half typed keeps the filter and the other field', async () => {
+  renderWithProviders(
+    <>
+      <ExpensesList />
+      <LocationProbe />
+    </>,
+    { route: '/expenses?month=2026-07' },
+  )
+
+  await screen.findByRole('list')
+
+  const fromInput = screen.getByLabelText('De', { exact: true })
+  Object.defineProperty(fromInput, 'validity', { configurable: true, value: { badInput: true } })
+  fireEvent.change(fromInput, { target: { value: '' } })
+
+  expect(screen.getByTestId('search')).toHaveTextContent('?month=2026-07')
+  expect(screen.getByLabelText('Até', { exact: true })).toHaveValue('2026-07-31')
+  expect(screen.getByText('julho de 2026')).toBeInTheDocument()
+})
+
+test('a year still being typed does not reach the URL', async () => {
+  const calls = spyOnExpensesRequests()
+
+  renderWithProviders(
+    <>
+      <ExpensesList />
+      <LocationProbe />
+    </>,
+    { route: '/expenses?from=2026-07-10&to=2026-07-20' },
+  )
+
+  await screen.findByRole('list')
+  const requestsBefore = calls.length
+
+  const toInput = screen.getByLabelText('Até', { exact: true })
+  fireEvent.change(toInput, { target: { value: '0002-07-25' } })
+  fireEvent.change(toInput, { target: { value: '0020-07-25' } })
+  fireEvent.change(toInput, { target: { value: '0202-07-25' } })
+
+  expect(screen.getByTestId('search')).toHaveTextContent('?from=2026-07-10&to=2026-07-20')
+  expect(screen.getByLabelText('De', { exact: true })).toHaveValue('2026-07-10')
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  expect(calls).toHaveLength(requestsBefore)
+
+  fireEvent.change(toInput, { target: { value: '2026-07-25' } })
+
+  await waitFor(() => {
+    expect(screen.getByTestId('search')).toHaveTextContent('?from=2026-07-10&to=2026-07-25')
+  })
+})
+
+test('erasing a date takes that end off the range', async () => {
+  renderWithProviders(
+    <>
+      <ExpensesList />
+      <LocationProbe />
+    </>,
+    { route: '/expenses?from=2026-07-10&to=2026-07-20' },
+  )
+
+  await screen.findByRole('list')
+
+  fireEvent.change(screen.getByLabelText('De', { exact: true }), { target: { value: '' } })
+
+  await waitFor(() => {
+    expect(screen.getByTestId('search')).toHaveTextContent('?to=2026-07-20')
   })
 })
 

@@ -43,6 +43,17 @@ export function readIsoDate(value: string | null): string | null {
   return value
 }
 
+// Reason: while the year is typed digit by digit, the browser date field
+// reports every step as a valid date (0002, 0020, 0202, then 2026); a year
+// below 1000 is a year still being typed, never a period with spending.
+export function readTypedDate(value: string): string | null {
+  const date = readIsoDate(value)
+  if (date === null || Number(date.slice(0, 4)) < 1000) {
+    return null
+  }
+  return date
+}
+
 export function monthRange(month: string): { from: string; to: string } {
   const [yearText, monthText] = month.split('-')
   const year = Number(yearText)

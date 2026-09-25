@@ -223,18 +223,7 @@ export function ExpensesList(): React.JSX.Element {
     commitPeriod({ kind: 'month', month: shiftMonth(base, delta) })
   }
 
-  function handleRangeChange(field: 'from' | 'to', value: string): void {
-    const bounds = toDateBounds(period)
-    const nextValue = value || null
-    let nextFrom = field === 'from' ? nextValue : bounds.from
-    let nextTo = field === 'to' ? nextValue : bounds.to
-    if (nextFrom !== null && nextTo !== null && nextTo < nextFrom) {
-      if (field === 'from') {
-        nextTo = null
-      } else {
-        nextFrom = null
-      }
-    }
+  function handleRangeChange(nextFrom: string | null, nextTo: string | null): void {
     commitPeriod(
       nextFrom !== null || nextTo !== null
         ? { kind: 'range', from: nextFrom, to: nextTo }

@@ -6,6 +6,7 @@ import {
   readIsoDate,
   readMonth,
   readPeriod,
+  readTypedDate,
   shiftMonth,
   toDateBounds,
   writePeriod,
@@ -81,4 +82,16 @@ test('writePeriod drops the page and the competing format', () => {
   const clearParams = new URLSearchParams('page=2&month=2026-07&sort=amount')
   writePeriod(clearParams, { kind: 'all' })
   expect(clearParams.toString()).toBe('sort=amount')
+})
+
+test('readTypedDate accepts a whole date', () => {
+  expect(readTypedDate('2026-09-01')).toBe('2026-09-01')
+  expect(readTypedDate('1999-12-31')).toBe('1999-12-31')
+})
+
+test('readTypedDate refuses a year still being typed and an invalid date', () => {
+  expect(readTypedDate('0002-09-01')).toBeNull()
+  expect(readTypedDate('0202-09-01')).toBeNull()
+  expect(readTypedDate('2026-02-30')).toBeNull()
+  expect(readTypedDate('')).toBeNull()
 })
