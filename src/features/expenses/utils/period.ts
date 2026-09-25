@@ -1,4 +1,7 @@
 import type { Period } from '@/features/expenses/types/expense'
+import { formatDate } from '@/utils/format-date'
+
+const ALL_PERIOD = 'all'
 
 const MONTH_NAMES = [
   'janeiro',
@@ -96,7 +99,26 @@ export function readPeriod(searchParams: URLSearchParams): Period {
   if (from !== null || to !== null) {
     return { kind: 'range', from, to }
   }
-  return { kind: 'all' }
+  if (searchParams.get('period') === ALL_PERIOD) {
+    return { kind: 'all' }
+  }
+  return { kind: 'month', month: currentMonth() }
+}
+
+export function formatPeriod(period: Period): string {
+  if (period.kind === 'all') {
+    return 'Todo o período'
+  }
+  if (period.kind === 'month') {
+    return formatMonth(period.month)
+  }
+  if (period.from !== null && period.to !== null) {
+    return `de ${formatDate(period.from)} a ${formatDate(period.to)}`
+  }
+  if (period.from !== null) {
+    return `a partir de ${formatDate(period.from)}`
+  }
+  return period.to !== null ? `até ${formatDate(period.to)}` : 'Todo o período'
 }
 
 export function toDateBounds(period: Period): { from: string | null; to: string | null } {
@@ -114,9 +136,12 @@ export function writePeriod(params: URLSearchParams, period: Period): void {
   params.delete('month')
   params.delete('from')
   params.delete('to')
-  if (period.kind === 'month') {
+  params.delete('period')
+  if (period.kind === 'all') {
+    params.set('period', ALL_PERIOD)
+  } else if (period.kind === 'month') {
     params.set('month', period.month)
-  } else if (period.kind === 'range') {
+  } else {
     if (period.from !== null) {
       params.set('from', period.from)
     }

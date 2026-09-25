@@ -6,19 +6,19 @@ Decisões na SPEC (D1 a D4). Uma fase: a mudança atravessa utilitário, tela, t
 
 ## Fase 1 — "Gastos" abre no mês corrente com o resultado no topo
 
-- [ ] T1.1 — Período padrão e nome do período
+- [x] T1.1 — Período padrão e nome do período
   - Arquivos: `src/features/expenses/utils/period.ts`
   - O que fazer: D1 e `formatPeriod` (D3).
   - Complexidade: baixa
-- [ ] T1.2 — Ordem da tela
+- [x] T1.2 — Ordem da tela
   - Arquivos: `src/features/expenses/components/expenses-list.tsx`, `src/features/expenses/components/period-result.tsx`
   - O que fazer: D2 e a linha do período em `PeriodResult` (D3).
   - Complexidade: baixa
-- [ ] T1.3 — Testes
+- [x] T1.3 — Testes
   - Arquivos: `src/features/expenses/utils/__tests__/period.test.ts`, `src/features/expenses/components/__tests__/*.test.tsx`, `e2e/expenses.spec.ts`
   - O que fazer: casos de `readPeriod`/`writePeriod`/`formatPeriod`; padrão no mês corrente com data fixa; `period=all` onde o teste espera a lista inteira; e2e da abertura com relógio fixo e ordem visual.
   - Complexidade: média
-- [ ] T1.4 — Documentos
+- [x] T1.4 — Documentos
   - Arquivos: `docs/design.md`, `docs/features/005-filtrar-por-periodo/prd.md`, `docs/features/005-filtrar-por-periodo/spec.md`
   - O que fazer: reescrever no presente o padrão do período e a ordem da página.
   - Complexidade: baixa
@@ -27,9 +27,9 @@ Decisões na SPEC (D1 a D4). Uma fase: a mudança atravessa utilitário, tela, t
 
 - [ ] CA1.1 — `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` e `pnpm test:e2e` saem com código 0. (comando)
 - [ ] CA1.2 — `bash scripts/lint.sh`, `uv run pytest` e `bash scripts/gates/gates_runner.sh` saem com código 0. (comando)
-- [ ] CA1.3 — Com a data fixada em 15/09/2026, abrir "Gastos" pelo cabeçalho mostra "setembro de 2026", a API recebe `from=2026-09-01&to=2026-09-30`, o botão "Todo o período" está habilitado e os títulos "Resultado do período" e "Teto do mês" aparecem acima do campo "Buscar" na ordem do documento. (comportamental)
-- [ ] CA1.4 — Clicar "Todo o período" grava `period=all`, a API não recebe `from`/`to`, o resultado some, e depois de recarregar e trocar a ordenação o período continua "Todo o período". (comportamental)
-- [ ] CA1.5 — Voltar `readPeriod` a devolver `all` sem parâmetros faz falhar o teste do padrão em `period.test.ts` e o de `expenses-list.test.tsx`; desfeita a troca, voltam a passar. (comportamental)
+- [x] CA1.3 — Com a data fixada em 15/09/2026, abrir "Gastos" pelo cabeçalho mostra "setembro de 2026", a API recebe `from=2026-09-01&to=2026-09-30`, o botão "Todo o período" está habilitado e os títulos "Resultado do período" e "Teto do mês" aparecem acima do campo "Buscar" na ordem do documento. (comportamental)
+- [x] CA1.4 — Clicar "Todo o período" grava `period=all`, a API não recebe `from`/`to`, o resultado some, e depois de recarregar e trocar a ordenação o período continua "Todo o período". (comportamental)
+- [x] CA1.5 — Voltar `readPeriod` a devolver `all` sem parâmetros faz falhar o teste do padrão em `period.test.ts` e o de `expenses-list.test.tsx`; desfeita a troca, voltam a passar. (comportamental)
 - [ ] CA1.6 — Em 375 px e 1280 px, a página aberta pelo cabeçalho não rola na horizontal e mostra o resultado antes dos filtros (captura no backend isolado do e2e). (comportamental)
 
 ## DoD da entrega

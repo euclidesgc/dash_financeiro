@@ -1,7 +1,8 @@
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 
 import {
   formatMonth,
+  formatPeriod,
   monthRange,
   readIsoDate,
   readMonth,
@@ -57,9 +58,38 @@ test('readPeriod drops an inverted "to"', () => {
   expect(readPeriod(params)).toEqual({ kind: 'range', from: '2026-09-10', to: null })
 })
 
-test('readPeriod falls back to all on invalid values', () => {
-  expect(readPeriod(new URLSearchParams('month=13'))).toEqual({ kind: 'all' })
-  expect(readPeriod(new URLSearchParams(''))).toEqual({ kind: 'all' })
+test('readPeriod opens in the current month without a period and on invalid values', () => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date(2026, 8, 15))
+
+  expect(readPeriod(new URLSearchParams(''))).toEqual({ kind: 'month', month: '2026-09' })
+  expect(readPeriod(new URLSearchParams('month=13'))).toEqual({ kind: 'month', month: '2026-09' })
+  expect(readPeriod(new URLSearchParams('period=other'))).toEqual({
+    kind: 'month',
+    month: '2026-09',
+  })
+
+  vi.useRealTimers()
+})
+
+test('readPeriod reads the whole period from period=all', () => {
+  expect(readPeriod(new URLSearchParams('period=all'))).toEqual({ kind: 'all' })
+  expect(readPeriod(new URLSearchParams('period=all&month=2026-07'))).toEqual({
+    kind: 'month',
+    month: '2026-07',
+  })
+})
+
+test('formatPeriod names the month, the range and the whole period', () => {
+  expect(formatPeriod({ kind: 'all' })).toBe('Todo o período')
+  expect(formatPeriod({ kind: 'month', month: '2026-09' })).toBe('setembro de 2026')
+  expect(formatPeriod({ kind: 'range', from: '2026-09-01', to: '2026-09-15' })).toBe(
+    'de 01/09/2026 a 15/09/2026',
+  )
+  expect(formatPeriod({ kind: 'range', from: '2026-09-01', to: null })).toBe(
+    'a partir de 01/09/2026',
+  )
+  expect(formatPeriod({ kind: 'range', from: null, to: '2026-09-15' })).toBe('até 15/09/2026')
 })
 
 test('toDateBounds expands a month and passes a range through', () => {
@@ -81,7 +111,11 @@ test('writePeriod drops the page and the competing format', () => {
 
   const clearParams = new URLSearchParams('page=2&month=2026-07&sort=amount')
   writePeriod(clearParams, { kind: 'all' })
-  expect(clearParams.toString()).toBe('sort=amount')
+  expect(clearParams.toString()).toBe('sort=amount&period=all')
+
+  const backToMonthParams = new URLSearchParams('period=all&sort=amount')
+  writePeriod(backToMonthParams, { kind: 'month', month: '2026-08' })
+  expect(backToMonthParams.toString()).toBe('sort=amount&month=2026-08')
 })
 
 test('readTypedDate accepts a whole date', () => {
