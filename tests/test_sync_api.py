@@ -201,6 +201,33 @@ def test_a_run_recorded_before_the_origin_existed_comes_back_without_one(client)
     assert response.json()["last_run"]["triggered_by"] is None
 
 
+def test_the_old_screen_button_while_the_lock_is_held_answers_409_without_a_row(client):
+    _sign_in(client)
+    conn = connect()
+    before = _runs_count(conn)
+    conn.close()
+
+    with app.sync.exclusive._LOCK:
+        response = client.post("/sincronizar")
+
+    assert response.status_code == 409
+    assert "Já existe uma atualização em andamento." in response.text
+    conn = connect()
+    assert _runs_count(conn) == before
+    conn.close()
+
+
+def test_the_old_screen_button_releases_the_lock_when_it_finishes(client):
+    _sign_in(client)
+
+    response = client.post("/sincronizar")
+
+    assert app.sync.exclusive.is_synchronising() is False
+    assert 'id="aviso-sincronizacao"' in response.text
+    assert "Sincronizado." in response.text
+    assert "A tela responde pela data de hoje." not in response.text
+
+
 def test_the_old_screen_button_records_the_screen_as_origin(client):
     _sign_in(client)
 
