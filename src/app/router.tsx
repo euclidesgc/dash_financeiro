@@ -1,3 +1,4 @@
+import { flushSync } from 'react-dom'
 import { createBrowserRouter, RouterProvider } from 'react-router'
 import type { RouteObject } from 'react-router'
 import { paths } from '@/config/paths'
@@ -38,5 +39,12 @@ export const routes: RouteObject[] = [
 export const router = createBrowserRouter(routes, { basename: '/app/' })
 
 export function AppRouter(): React.JSX.Element {
-  return <RouterProvider router={router} />
+  return (
+    <RouterProvider
+      router={router}
+      flushSync={(update) => {
+        flushSync(update)
+      }}
+    />
+  )
 }

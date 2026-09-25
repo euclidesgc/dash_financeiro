@@ -203,10 +203,18 @@ export function ExpensesList(): React.JSX.Element {
     }
   }, [account, accountKnown, accounts.data, searchParams, setSearchParams])
 
+  // Reason: the data router writes the URL first and renders it later inside a
+  // transition; every handler builds on the rendered searchParams, so without a
+  // synchronous render a second edit in that gap rewrites the URL from stale
+  // params and drops the first edit.
+  function commitParams(params: URLSearchParams, { replace = true } = {}): void {
+    setSearchParams(params, { replace, flushSync: true })
+  }
+
   function commitPeriod(next: Period): void {
     const params = new URLSearchParams(searchParams)
     writePeriod(params, next)
-    setSearchParams(params, { replace: true })
+    commitParams(params)
   }
 
   function handleMonthChange(delta: -1 | 1): void {
@@ -240,31 +248,31 @@ export function ExpensesList(): React.JSX.Element {
   function handleSortChange(next: ExpenseSort): void {
     const params = new URLSearchParams(searchParams)
     writeSorting(params, next, DEFAULT_ORDER_BY_SORT[next])
-    setSearchParams(params, { replace: true })
+    commitParams(params)
   }
 
   function handleOrderToggle(): void {
     const params = new URLSearchParams(searchParams)
     writeSorting(params, sort, order === 'asc' ? 'desc' : 'asc')
-    setSearchParams(params, { replace: true })
+    commitParams(params)
   }
 
   function handleAccountChange(next: string | null): void {
     const params = new URLSearchParams(searchParams)
     writeAccount(params, next)
-    setSearchParams(params, { replace: true })
+    commitParams(params)
   }
 
   function handleViewChange(next: ExpenseView): void {
     const params = new URLSearchParams(searchParams)
     writeView(params, next)
-    setSearchParams(params, { replace: true })
+    commitParams(params)
   }
 
   function handleSearchCommit(text: string): void {
     const params = new URLSearchParams(searchParams)
     if (writeSearch(params, text)) {
-      setSearchParams(params, { replace: true })
+      commitParams(params)
     }
   }
 
@@ -415,7 +423,7 @@ export function ExpensesList(): React.JSX.Element {
         onChange={(next) => {
           const params = new URLSearchParams(searchParams)
           params.set('page', String(next))
-          setSearchParams(params)
+          commitParams(params, { replace: false })
         }}
       />
     </>
