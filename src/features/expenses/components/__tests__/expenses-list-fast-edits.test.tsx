@@ -59,7 +59,7 @@ test('an end date typed before the start date renders keeps the start date', asy
 })
 
 test('a sort chosen before the account filter renders keeps the account', async () => {
-  const router = renderExpensesRoute('/expenses')
+  const router = renderExpensesRoute('/expenses?period=all')
   await screen.findByRole('list')
   const accountSelect = screen.getByLabelText('Conta', { exact: true })
   await vi.waitFor(() => {

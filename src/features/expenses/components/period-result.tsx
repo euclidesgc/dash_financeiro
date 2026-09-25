@@ -10,7 +10,13 @@ function balanceColor(balanceCents: number): string {
   return 'text-gray-900'
 }
 
-export function PeriodResult({ query }: { query: PeriodResultQuery }): React.JSX.Element {
+export function PeriodResult({
+  query,
+  periodLabel,
+}: {
+  query: PeriodResultQuery
+  periodLabel: string
+}): React.JSX.Element {
   const result = usePeriodResult(query)
   const headingId = useId()
 
@@ -38,6 +44,7 @@ export function PeriodResult({ query }: { query: PeriodResultQuery }): React.JSX
       <h2 id={headingId} className="mt-6 text-lg font-semibold">
         Resultado do período
       </h2>
+      <p className="mt-1 text-sm text-gray-600">{periodLabel}</p>
       <dl className="mt-2 flex flex-wrap gap-x-8 gap-y-2 rounded-md border border-gray-200 p-4">
         <div className="min-w-0">
           <dt className="text-sm text-gray-600">Entradas</dt>

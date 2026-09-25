@@ -11,7 +11,7 @@ O único usuário do painel, dono das contas, na página "Gastos", já vendo a l
 ## Requisitos
 
 - **R1** — Na página "Gastos", o usuário vê um seletor de mês com um nome de mês/ano, um botão "Mês anterior", um botão "Próximo mês" e a opção "Todo o período".
-- **R2** — Por padrão, ao abrir a página sem nenhum filtro escolhido, a lista mostra todo o período (nenhum mês pré-selecionado), para não esconder gastos de quem ainda não escolheu filtrar.
+- **R2** — Por padrão, ao abrir a página sem período escolhido, a lista mostra o mês corrente, onde o resultado do período e o teto do mês aparecem; "Todo o período" mostra todos os lançamentos e fica no endereço da página.
 - **R3** — Escolhendo um mês, o usuário vê só os gastos daquele mês inteiro (do dia 1 ao último dia).
 - **R4** — "Mês anterior" e "Próximo mês" movem o filtro um mês para trás ou para frente a partir do mês selecionado; se nenhum mês estiver selecionado, partem do mês atual.
 - **R5** — O usuário também pode informar um intervalo de datas (de/até) para filtrar por um período que não seja um mês inteiro; informar o intervalo substitui o filtro por mês, e escolher um mês substitui o intervalo.
@@ -29,7 +29,7 @@ O único usuário do painel, dono das contas, na página "Gastos", já vendo a l
 - Buscar por texto na descrição ou no recebedor (fatia 007).
 - Agrupar o período filtrado por categoria (fatia 008).
 - Ver o sinal do mês frente ao teto do plano de recuperação (fatia 014).
-- Salvar o período preferido entre sessões (o padrão é sempre "todo o período" ao abrir a página sem parâmetro na URL).
+- Salvar o período preferido entre sessões (o padrão é sempre o mês corrente ao abrir a página sem parâmetro na URL).
 
 ## Pontos em aberto
 
