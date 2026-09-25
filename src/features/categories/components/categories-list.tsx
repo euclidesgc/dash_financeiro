@@ -1,9 +1,9 @@
 import { Alert } from '@/components/ui/alert'
-import { useCatalogue } from '@/features/categories/api/get-categories'
+import { useCategories } from '@/hooks/use-categories'
 import { CategoryItem } from '@/features/categories/components/category-item'
 
 export function CategoriesList(): React.JSX.Element {
-  const catalogue = useCatalogue()
+  const catalogue = useCategories()
 
   function content(): React.JSX.Element {
     if (catalogue.isPending) {

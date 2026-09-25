@@ -6,7 +6,7 @@ import { formatMoney } from '@/utils/format-money'
 import { useDeleteCategory } from '@/features/categories/api/delete-category'
 import { CategoryLimitForm } from '@/features/categories/components/category-limit-form'
 import { RenameCategoryForm } from '@/features/categories/components/rename-category-form'
-import type { CatalogueCategory } from '@/features/categories/types/category'
+import type { Category } from '@/types/category'
 
 function usageText(count: number): string {
   if (count === 0) return 'Nenhum gasto'
@@ -25,7 +25,7 @@ function deleteErrorMessage(error: unknown): string {
   return 'Não foi possível apagar a categoria. Tente de novo.'
 }
 
-export function CategoryItem({ category }: { category: CatalogueCategory }): React.JSX.Element {
+export function CategoryItem({ category }: { category: Category }): React.JSX.Element {
   const [mode, setMode] = useState<'view' | 'rename' | 'limit' | 'confirm-delete' | 'in-use'>(
     'view',
   )

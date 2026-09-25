@@ -2,7 +2,8 @@ import { formatDate } from '@/utils/format-date'
 import { formatMoney } from '@/utils/format-money'
 import { CategoryPicker } from '@/features/expenses/components/category-picker'
 import { NotExpenseControl } from '@/features/expenses/components/not-expense-control'
-import type { Category, Expense, ExpenseView } from '@/features/expenses/types/expense'
+import type { Expense, ExpenseView } from '@/features/expenses/types/expense'
+import type { Category } from '@/types/category'
 import { REASON_LABELS } from '@/features/expenses/utils/reason-labels'
 
 function accountLabel(expense: Expense): string {

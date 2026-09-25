@@ -67,15 +67,6 @@ export interface PeriodResultResponse {
   balance_cents: number
 }
 
-export interface Category {
-  key: string
-  label: string
-}
-
-export interface CategoriesResponse {
-  categories: Category[]
-}
-
 export type CategoryUpdateBody = { mode: 'manual'; category: string | null } | { mode: 'auto' }
 
 export interface SimilarCountResponse {

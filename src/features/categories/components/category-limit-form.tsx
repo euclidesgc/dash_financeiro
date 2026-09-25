@@ -8,7 +8,7 @@ import { useSetCategoryLimit } from '@/features/categories/api/set-category-limi
 import { categoryLimitSchema } from '@/features/categories/types/category-limit-schema'
 import type { CategoryLimitInput } from '@/features/categories/types/category-limit-schema'
 import { fromCents, toCents } from '@/utils/cents'
-import type { CatalogueCategory } from '@/features/categories/types/category'
+import type { Category } from '@/types/category'
 
 function isLimitError(error: unknown): error is ApiError {
   return error instanceof ApiError && error.status === 422
@@ -18,7 +18,7 @@ export function CategoryLimitForm({
   category,
   onDone,
 }: {
-  category: CatalogueCategory
+  category: Category
   onDone: () => void
 }): React.JSX.Element {
   const {

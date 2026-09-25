@@ -1,4 +1,4 @@
-export interface CatalogueCategory {
+export interface Category {
   key: string
   label: string
   is_system: boolean
@@ -6,6 +6,6 @@ export interface CatalogueCategory {
   monthly_limit_cents: number | null
 }
 
-export interface CatalogueResponse {
-  categories: CatalogueCategory[]
+export interface CategoriesResponse {
+  categories: Category[]
 }

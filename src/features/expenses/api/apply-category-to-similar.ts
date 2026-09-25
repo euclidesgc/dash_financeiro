@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiRequest } from '@/lib/api-client'
+import { categoriesQueryKey } from '@/hooks/use-categories'
 import type { ApplyToSimilarResponse } from '@/features/expenses/types/expense'
 
 export interface ApplyToSimilarVariables {
@@ -27,7 +28,7 @@ export function useApplyCategoryToSimilar() {
     mutationFn: applyCategoryToSimilar,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['expenses'] })
-      void queryClient.invalidateQueries({ queryKey: ['categories'] })
+      void queryClient.invalidateQueries({ queryKey: categoriesQueryKey })
     },
   })
 }
