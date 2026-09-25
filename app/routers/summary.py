@@ -22,8 +22,8 @@ from app.sync import (
     finished_on,
     last_runs,
     readable,
-    synchronise,
 )
+from app.sync.exclusive import SyncBusyError, exclusive_synchronise
 
 from .render import TEMPLATES
 
@@ -51,10 +51,33 @@ def synchronise_now(request: Request) -> Response:
     conn = connect()
     try:
         try:
-            outcome = synchronise(conn, trigger=trigger.SCREEN, today=reference.date)
+            outcome = exclusive_synchronise(conn, trigger=trigger.SCREEN, today=reference.date)
+        except SyncBusyError as busy:
+            return _answer(
+                request,
+                conn,
+                reference,
+                notice=reference.notice,
+                sync_notice=str(busy),
+                status_code=409,
+            )
         except MissingCredentialError as refusal:
-            return _answer(request, conn, reference, notice=str(refusal), status_code=400)
-        return _answer(request, conn, reference, notice=_said(outcome))
+            return _answer(
+                request,
+                conn,
+                reference,
+                notice=reference.notice,
+                sync_notice=str(refusal),
+                status_code=400,
+            )
+        return _answer(
+            request,
+            conn,
+            reference,
+            notice=reference.notice,
+            sync_notice=_said(outcome),
+            sync_done=outcome.status == "ok",
+        )
     finally:
         conn.close()
 
@@ -73,11 +96,15 @@ def _answer(
     reference: Reference,
     *,
     notice: str | None = None,
+    sync_notice: str | None = None,
+    sync_done: bool = False,
     status_code: int = 200,
 ) -> Response:
     context = _context(conn, reference.date)
     context.update(
         notice=notice,
+        sync_notice=sync_notice,
+        sync_done=sync_done,
         # Reason: the balances are always the current ones — no history of
         # them is kept, so the reference date moves the projection and
         # never the position. Saying "hoje" over a date the owner typed

@@ -1,6 +1,10 @@
 <section id="sincronizacao" class="panel panel-wide">
   <div class="stack-tight">
     <h2 class="section-title">Os dados</h2>
+    {% if sync_notice %}
+    <p class="notice{% if sync_done %} notice-done{% endif %}" id="aviso-sincronizacao"
+       role="{{ 'status' if sync_done else 'alert' }}">{{ sync_notice }}</p>
+    {% endif %}
     {% if sync['failed'] %}
     <p class="notice" role="alert">A última sincronização <strong>falhou</strong>:
       {{ sync['reason'] }}</p>
