@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from app.auth.seed import seed_user
 from app.db import connect
 from app.ingest.loader import STALE_CONSOLIDATED, ingest
+from app.ingest.trigger import COMMAND
 from app.main import create_app
 from app.payees import lookup, names
 from app.payees.names import DESCRIPTION, LEGAL, LOOKUP, OWNER, PLUGGY, display_name, ranked
@@ -122,7 +123,9 @@ def test_a_consolidated_file_without_the_new_keys_is_refused(taxonomy_conn):
     for key in ("nome_fantasia", "razao_social", "cnpj", "recebedor"):
         stale.pop(key)
 
-    result = ingest(taxonomy_conn, transactions=[stale], accounts=[ACCOUNT], source="tests")
+    result = ingest(
+        taxonomy_conn, transactions=[stale], accounts=[ACCOUNT], source="tests", trigger=COMMAND
+    )
 
     assert result.status == "failed"
     assert result.message == STALE_CONSOLIDATED

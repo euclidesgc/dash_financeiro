@@ -10,6 +10,7 @@ from app.debts.ladder import rebuild
 from app.financings import MORTGAGE, VEHICLE
 from app.financings.typed import read_form as financing_read_form
 from app.ingest.loader import ingest
+from app.ingest.trigger import COMMAND
 from app.main import create_app
 from app.offers import store as offers_store
 from app.offers.typed import read_form as offer_read_form
@@ -111,6 +112,7 @@ def campos_client(tmp_path, monkeypatch, seed):
         ],
         accounts=[OVERDRAFT_ACCOUNT, CREDIT_ACCOUNT],
         source="tests",
+        trigger=COMMAND,
     )
     assert result.status == "ok", result.message
     seed_taxonomy(conn, narrowed(seed, []))

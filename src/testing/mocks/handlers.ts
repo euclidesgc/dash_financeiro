@@ -85,7 +85,12 @@ function labelError(label: string, exceptKey?: string): HttpResponse<{ detail: s
 
 export const fakeSyncStatus: SyncStatus = {
   running: false,
-  last_run: { finished_at: '2026-09-22T11:15:00+00:00', status: 'ok', reason: null },
+  last_run: {
+    finished_at: '2026-09-22T11:15:00+00:00',
+    status: 'ok',
+    reason: null,
+    triggered_by: 'command',
+  },
 }
 
 function generateFakeExpenses(): Expense[] {

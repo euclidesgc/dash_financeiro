@@ -5,6 +5,7 @@ from app.auth.seed import seed_user
 from app.db import connect
 from app.ingest.loader import IngestResult, ingest
 from app.ingest.source import load_accounts, load_transactions
+from app.ingest.trigger import COMMAND
 from app.migrate import run_migrations
 from app.taxonomy.classify import classify_all
 from app.taxonomy.seed import seed_taxonomy
@@ -23,6 +24,7 @@ def seed(conn: sqlite3.Connection) -> IngestResult:
         transactions=load_transactions(TRANSACTIONS),
         accounts=load_accounts(ACCOUNTS),
         source="e2e",
+        trigger=COMMAND,
     )
     if result.status != "ok":
         return result

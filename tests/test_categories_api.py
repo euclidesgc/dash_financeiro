@@ -8,6 +8,7 @@ from app.auth.seed import seed_user
 from app.db import connect, fold
 from app.ingest.loader import ingest
 from app.ingest.source import load_accounts
+from app.ingest.trigger import COMMAND
 from app.main import create_app
 from app.taxonomy.seed import UNCATEGORISED, pickable_categories, seed_taxonomy
 
@@ -69,6 +70,7 @@ def _load(rows: list[dict[str, Any]], accounts: list[dict[str, Any]] | None = No
         transactions=rows,
         accounts=[*load_accounts(str(DATA / "sync_accounts.json")), *(accounts or [])],
         source="teste",
+        trigger=COMMAND,
     )
     conn.close()
 

@@ -33,6 +33,46 @@ test('shows the date and the "Concluída" badge', async () => {
   expect(screen.getByText('Concluída')).toBeInTheDocument()
 })
 
+test('says the last update came from the daily routine', async () => {
+  renderWithProviders(<SyncPanel />)
+
+  expect(await screen.findByText('Feita pela rotina diária')).toBeInTheDocument()
+  expect(screen.queryByText('Pedida na tela')).not.toBeInTheDocument()
+})
+
+test('says the last update was asked for on the screen', async () => {
+  server.use(
+    http.get('/api/sync/status', () =>
+      HttpResponse.json({
+        running: false,
+        last_run: { ...fakeSyncStatus.last_run, triggered_by: 'screen' },
+      }),
+    ),
+  )
+
+  renderWithProviders(<SyncPanel />)
+
+  expect(await screen.findByText('Pedida na tela')).toBeInTheDocument()
+  expect(screen.queryByText('Feita pela rotina diária')).not.toBeInTheDocument()
+})
+
+test('says nothing about the origin of a run recorded without one', async () => {
+  server.use(
+    http.get('/api/sync/status', () =>
+      HttpResponse.json({
+        running: false,
+        last_run: { ...fakeSyncStatus.last_run, triggered_by: null },
+      }),
+    ),
+  )
+
+  renderWithProviders(<SyncPanel />)
+
+  await screen.findByText(/Última atualização: 22\/09\/2026/)
+  expect(screen.queryByText('Pedida na tela')).not.toBeInTheDocument()
+  expect(screen.queryByText('Feita pela rotina diária')).not.toBeInTheDocument()
+})
+
 test('shows "Falhou" with the reason and a retry button', async () => {
   server.use(
     http.get('/api/sync/status', () =>
@@ -42,6 +82,7 @@ test('shows "Falhou" with the reason and a retry button', async () => {
           finished_at: '2026-09-22T11:15:00+00:00',
           status: 'failed',
           reason: 'a Pluggy não respondeu; verifique a conexão com a internet e tente de novo.',
+          triggered_by: 'screen',
         },
       }),
     ),

@@ -36,6 +36,7 @@ test('updates the records from the balances page', async ({ page }) => {
 
   await expect(page.getByText('Concluída')).toBeVisible()
   await expect(page.getByText(/Última atualização: \d{2}\/\d{2}\/\d{4}/)).toBeVisible()
+  await expect(page.getByText('Pedida na tela')).toBeVisible()
 
   const item = page.getByRole('listitem').filter({ hasText: 'Conta de sincronização' })
   await expect(item).toBeVisible()

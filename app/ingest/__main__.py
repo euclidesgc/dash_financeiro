@@ -6,6 +6,7 @@ from app.db import connect
 from app.debts.ladder import main as debts_command
 from app.ingest.loader import ingest
 from app.ingest.source import load_accounts, load_transactions
+from app.ingest.trigger import COMMAND
 from app.migrate import run_migrations
 from app.taxonomy.classify import main as classify_command
 from app.taxonomy.seed import main as seed_command
@@ -23,6 +24,7 @@ def main() -> int:
             transactions=transactions,
             accounts=accounts,
             source=config.transactions_path,
+            trigger=COMMAND,
         )
     finally:
         conn.close()

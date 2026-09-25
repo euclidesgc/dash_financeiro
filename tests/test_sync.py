@@ -6,6 +6,7 @@ import pytest
 
 from app.config import PLUGGY_CREDENTIALS
 from app.ingest.loader import ingest
+from app.ingest.trigger import COMMAND, SCREEN
 from app.sync import (
     MissingCredentialError,
     days_since,
@@ -38,7 +39,7 @@ def runs(conn):
 
 def load_twice(conn, entries):
     for _ in range(2):
-        ingest(conn, transactions=entries, accounts=[ACCOUNT], source="tests")
+        ingest(conn, transactions=entries, accounts=[ACCOUNT], source="tests", trigger=COMMAND)
     return conn
 
 
@@ -67,6 +68,7 @@ def test_a_run_that_inserts_new_rows_counts_only_the_new_ones(taxonomy_conn):
         transactions=[transaction("t-1", "2026-08-10", -10.0)],
         accounts=[ACCOUNT],
         source="tests",
+        trigger=COMMAND,
     )
     ingest(
         taxonomy_conn,
@@ -76,6 +78,7 @@ def test_a_run_that_inserts_new_rows_counts_only_the_new_ones(taxonomy_conn):
         ],
         accounts=[ACCOUNT],
         source="tests",
+        trigger=COMMAND,
     )
 
     assert runs(taxonomy_conn)[-1] == (1, 2, "ok")
@@ -90,7 +93,7 @@ def test_without_the_pluggy_credentials_the_sync_refuses_and_records_nothing(
     before = len(runs(taxonomy_conn))
 
     with pytest.raises(MissingCredentialError) as refusal:
-        synchronise(taxonomy_conn, today=REFERENCE)
+        synchronise(taxonomy_conn, trigger=COMMAND, today=REFERENCE)
 
     assert PLUGGY_CREDENTIALS[0] in str(refusal.value)
     assert len(runs(taxonomy_conn)) == before
@@ -102,6 +105,7 @@ def test_the_last_success_and_the_last_attempt_are_read_apart(taxonomy_conn):
         transactions=[transaction("t-1", "2026-08-10", -10.0)],
         accounts=[ACCOUNT],
         source="tests",
+        trigger=COMMAND,
     )
     taxonomy_conn.execute(
         "INSERT INTO sync_runs (started_at, finished_at, source, status, message) "
@@ -120,6 +124,7 @@ def test_the_age_of_the_data_is_counted_from_the_last_success(taxonomy_conn):
         transactions=[transaction("t-1", "2026-08-10", -10.0)],
         accounts=[ACCOUNT],
         source="tests",
+        trigger=COMMAND,
     )
     succeeded = last_runs(taxonomy_conn)["succeeded"]
 
@@ -134,6 +139,7 @@ def test_a_write_that_blows_up_still_leaves_a_failed_run(taxonomy_conn):
         transactions=[transaction("t-orfa", "2026-08-10", -10.0, conta_id="nao-existe")],
         accounts=[ACCOUNT],
         source="tests",
+        trigger=COMMAND,
     )
 
     assert result.status == "failed"
@@ -148,6 +154,7 @@ def test_a_foreign_key_restricao_is_named_and_not_just_the_exception_class(taxon
         transactions=[transaction("t-orfa", "2026-08-10", -10.0, conta_id="nao-existe")],
         accounts=[ACCOUNT],
         source="tests",
+        trigger=COMMAND,
     )
 
     message = _message(taxonomy_conn)
@@ -192,7 +199,7 @@ def test_a_source_that_cannot_be_read_records_a_failed_run(taxonomy_conn, monkey
     monkeypatch.setenv("DASH_TRANSACTIONS_PATH", "/tmp/nao-existe-006.json")
     before = len(runs(taxonomy_conn))
 
-    outcome = synchronise(taxonomy_conn, today=REFERENCE)
+    outcome = synchronise(taxonomy_conn, trigger=COMMAND, today=REFERENCE)
 
     assert outcome.status == "failed"
     assert len(runs(taxonomy_conn)) == before + 1
@@ -209,7 +216,7 @@ def test_a_failure_after_the_load_demotes_the_run_instead_of_claiming_success(
 
     _point_the_load_step_at_the_fixture(monkeypatch)
     monkeypatch.setattr(sync, "_after", explode)
-    outcome = synchronise(taxonomy_conn, today=REFERENCE)
+    outcome = synchronise(taxonomy_conn, trigger=COMMAND, today=REFERENCE)
 
     assert outcome.status == "failed"
     assert runs(taxonomy_conn)[-1][2] == "failed"
@@ -230,7 +237,7 @@ def test_the_demotion_names_its_own_row_and_not_the_largest_id(taxonomy_conn, mo
 
     _point_the_load_step_at_the_fixture(monkeypatch)
     monkeypatch.setattr(sync, "_after", explode_after_someone_else_writes)
-    synchronise(taxonomy_conn, today=REFERENCE)
+    synchronise(taxonomy_conn, trigger=COMMAND, today=REFERENCE)
     found = [
         (row["source"], row["status"])
         for row in taxonomy_conn.execute("SELECT * FROM sync_runs ORDER BY id")
@@ -262,7 +269,7 @@ def test_with_the_pluggy_source_a_fetch_failure_records_a_failed_run(taxonomy_co
     monkeypatch.setattr(sync, "fetch_from_pluggy", explode)
     before = len(runs(taxonomy_conn))
 
-    outcome = synchronise(taxonomy_conn, today=REFERENCE)
+    outcome = synchronise(taxonomy_conn, trigger=COMMAND, today=REFERENCE)
 
     assert outcome.status == "failed"
     assert len(runs(taxonomy_conn)) == before + 1
@@ -280,7 +287,7 @@ def test_synchronise_ends_with_the_payee_filled_on_every_row_with_a_description(
 ):
     _point_the_load_step_at_the_fixture(monkeypatch)
 
-    synchronise(taxonomy_conn, today=REFERENCE)
+    synchronise(taxonomy_conn, trigger=COMMAND, today=REFERENCE)
 
     assert rows(taxonomy_conn) > 0
     missing = taxonomy_conn.execute(
@@ -288,3 +295,61 @@ def test_synchronise_ends_with_the_payee_filled_on_every_row_with_a_description(
         "WHERE description IS NOT NULL AND (payee IS NULL OR payee = '')"
     ).fetchone()[0]
     assert missing == 0
+
+
+def _trigger(conn):
+    return conn.execute("SELECT triggered_by FROM sync_runs ORDER BY id DESC LIMIT 1").fetchone()[0]
+
+
+def test_a_sync_that_loads_records_who_asked_for_it(taxonomy_conn, monkeypatch):
+    _point_the_load_step_at_the_fixture(monkeypatch)
+
+    synchronise(taxonomy_conn, trigger=SCREEN, today=REFERENCE)
+
+    assert rows(taxonomy_conn) > 0
+    assert _trigger(taxonomy_conn) == "screen"
+
+
+def test_an_unreadable_source_records_who_asked_for_the_failed_run(taxonomy_conn, monkeypatch):
+    monkeypatch.setenv("DASH_TRANSACTIONS_PATH", "/tmp/nao-existe-018.json")
+
+    synchronise(taxonomy_conn, trigger=SCREEN, today=REFERENCE)
+
+    assert _trigger(taxonomy_conn) == "screen"
+
+
+def test_a_pluggy_failure_records_who_asked_for_the_failed_run(taxonomy_conn, monkeypatch):
+    import app.sync as sync
+
+    monkeypatch.setenv("DASH_SYNC_SOURCE", "pluggy")
+    monkeypatch.setenv("PLUGGY_CLIENT_ID", "id-falso")
+    monkeypatch.setenv("PLUGGY_CLIENT_SECRET", "segredo-falso")
+
+    def explode(config):
+        raise sync.PluggyFetchError("pluggy: fora do ar")
+
+    monkeypatch.setattr(sync, "fetch_from_pluggy", explode)
+
+    synchronise(taxonomy_conn, trigger=COMMAND, today=REFERENCE)
+
+    assert _trigger(taxonomy_conn) == "command"
+
+
+def test_the_daily_command_says_it_was_a_command(monkeypatch):
+    import app.sync as sync
+
+    asked = {}
+
+    def record(conn, *, trigger, today=None):
+        asked["trigger"] = trigger
+        return sync.SyncOutcome(status="ok", message="", transactions=0, accounts=0)
+
+    class Closable:
+        def close(self):
+            return None
+
+    monkeypatch.setattr(sync, "synchronise", record)
+    monkeypatch.setattr(sync, "connect", lambda: Closable())
+
+    assert sync.main() == 0
+    assert asked["trigger"] == "command"

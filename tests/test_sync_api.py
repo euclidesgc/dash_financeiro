@@ -10,6 +10,7 @@ from app.config import PLUGGY_CREDENTIALS
 from app.db import connect
 from app.ingest.loader import ingest
 from app.ingest.source import load_accounts, load_transactions
+from app.ingest.trigger import COMMAND
 from app.main import create_app
 from app.sync.fetch import UNREACHABLE, PluggyFetchError
 from app.taxonomy.seed import seed_taxonomy
@@ -73,6 +74,7 @@ def test_status_after_an_ingest_shows_ok_and_finished_at(client):
         transactions=load_transactions(str(DATA / "sync_transactions.json")),
         accounts=load_accounts(str(DATA / "sync_accounts.json")),
         source="tests",
+        trigger=COMMAND,
     )
     conn.close()
     _sign_in(client)
@@ -83,6 +85,7 @@ def test_status_after_an_ingest_shows_ok_and_finished_at(client):
     assert body["last_run"]["status"] == "ok"
     assert isinstance(body["last_run"]["finished_at"], str)
     assert body["last_run"]["reason"] is None
+    assert body["last_run"]["triggered_by"] == "command"
 
 
 def test_run_with_the_file_source_answers_200_and_records_a_new_row(client):
@@ -95,6 +98,8 @@ def test_run_with_the_file_source_answers_200_and_records_a_new_row(client):
 
     assert response.status_code == 200
     assert response.json()["last_run"]["status"] == "ok"
+    assert response.json()["last_run"]["triggered_by"] == "screen"
+    assert client.get("/api/sync/status").json()["last_run"]["triggered_by"] == "screen"
     conn = connect()
     assert _runs_count(conn) == before + 1
     conn.close()
@@ -179,3 +184,29 @@ def test_a_pluggy_failure_during_run_is_200_with_status_failed(client, monkeypat
     body = response.json()
     assert body["last_run"]["status"] == "failed"
     assert not body["last_run"]["reason"].startswith("pluggy: ")
+
+
+def test_a_run_recorded_before_the_origin_existed_comes_back_without_one(client):
+    conn = connect()
+    conn.execute(
+        "INSERT INTO sync_runs (started_at, finished_at, source, status) "
+        "VALUES ('2026-09-05T10:00:00', '2026-09-05T10:00:01', 'arquivo', 'ok')"
+    )
+    conn.commit()
+    conn.close()
+    _sign_in(client)
+
+    response = client.get("/api/sync/status")
+
+    assert response.json()["last_run"]["triggered_by"] is None
+
+
+def test_the_old_screen_button_records_the_screen_as_origin(client):
+    _sign_in(client)
+
+    client.post("/sincronizar")
+
+    conn = connect()
+    row = conn.execute("SELECT triggered_by FROM sync_runs ORDER BY id DESC LIMIT 1").fetchone()
+    conn.close()
+    assert row[0] == "screen"

@@ -8,6 +8,7 @@ from typing import Any
 from app.accounts import CREDIT
 from app.ingest.money import FractionalCentsError, to_cents
 from app.ingest.normalize import normalize_description
+from app.ingest.trigger import Trigger
 
 # Reason: SQLite caps host parameters per statement, so the source is
 # compared against the database in chunks instead of one IN clause holding
@@ -103,6 +104,7 @@ def ingest(
     transactions: list[dict[str, Any]],
     accounts: list[dict[str, Any]],
     source: str,
+    trigger: Trigger,
     now: datetime | None = None,
 ) -> IngestResult:
     started = now or datetime.now(UTC)
@@ -113,6 +115,7 @@ def ingest(
             started=started,
             now=started,
             source=source,
+            trigger=trigger,
             message=STALE_CONSOLIDATED,
             rejections=(stale,),
             transactions_accepted=0,
@@ -131,6 +134,7 @@ def ingest(
             started=started,
             now=now,
             source=source,
+            trigger=trigger,
             message=message,
             rejections=tuple(rejections),
             transactions_accepted=len(transaction_rows),
@@ -180,6 +184,7 @@ def ingest(
             started=started,
             now=now,
             source=source,
+            trigger=trigger,
             message=f"erro de escrita: {type(failure).__name__}: {failure}",
             rejections=(),
             transactions_accepted=len(transaction_rows),
@@ -194,6 +199,7 @@ def ingest(
             started=started,
             now=now,
             source=source,
+            trigger=trigger,
             message=(
                 f"transactions accepted={len(transaction_rows)} present={transactions_present} "
                 f"accounts accepted={len(account_rows)} present={accounts_present}"
@@ -213,6 +219,7 @@ def ingest(
         started=started,
         finished=now or datetime.now(UTC),
         source=source,
+        trigger=trigger,
         status="ok",
         transactions_count=transactions_written,
         accounts_count=accounts_written,
@@ -239,6 +246,7 @@ def _fail(
     started: datetime,
     now: datetime | None,
     source: str,
+    trigger: Trigger,
     message: str,
     rejections: tuple[Rejection, ...],
     transactions_accepted: int,
@@ -256,6 +264,7 @@ def _fail(
         started=started,
         finished=now or datetime.now(UTC),
         source=source,
+        trigger=trigger,
         status="failed",
         transactions_count=transactions_written,
         accounts_count=accounts_written,
@@ -282,6 +291,7 @@ def _record_run(
     started: datetime,
     finished: datetime,
     source: str,
+    trigger: Trigger,
     status: str,
     transactions_count: int,
     accounts_count: int,
@@ -290,13 +300,14 @@ def _record_run(
     message: str,
 ) -> int:
     written = conn.execute(
-        "INSERT INTO sync_runs (started_at, finished_at, source, status, transactions_count, "
-        "accounts_count, transactions_present, accounts_present, message) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO sync_runs (started_at, finished_at, source, triggered_by, status, "
+        "transactions_count, accounts_count, transactions_present, accounts_present, message) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
             started.isoformat(),
             finished.isoformat(),
             source,
+            trigger,
             status,
             transactions_count,
             accounts_count,

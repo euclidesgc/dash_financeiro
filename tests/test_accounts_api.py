@@ -7,6 +7,7 @@ from app.auth.seed import seed_user
 from app.db import connect
 from app.ingest.loader import ingest
 from app.ingest.source import load_accounts
+from app.ingest.trigger import COMMAND
 from app.main import create_app
 
 LOGIN = "teste"
@@ -41,7 +42,7 @@ def test_balances_without_session_answers_401(client):
 def test_balances_returns_the_fixture_account_with_integer_cents(client):
     accounts = load_accounts(str(FIXTURES / "accounts_fixture.json"))
     conn = connect()
-    ingest(conn, transactions=[], accounts=accounts, source="tests")
+    ingest(conn, transactions=[], accounts=accounts, source="tests", trigger=COMMAND)
     conn.close()
     _sign_in(client)
 
@@ -97,7 +98,7 @@ def test_balances_are_ordered_by_type_then_name(client):
         },
     ]
     conn = connect()
-    ingest(conn, transactions=[], accounts=accounts, source="tests")
+    ingest(conn, transactions=[], accounts=accounts, source="tests", trigger=COMMAND)
     conn.close()
     _sign_in(client)
 
@@ -131,7 +132,7 @@ def test_balances_with_null_updated_at_returns_null(client):
         },
     ]
     conn = connect()
-    ingest(conn, transactions=[], accounts=accounts, source="tests")
+    ingest(conn, transactions=[], accounts=accounts, source="tests", trigger=COMMAND)
     conn.close()
     _sign_in(client)
 

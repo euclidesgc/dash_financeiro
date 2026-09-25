@@ -4,6 +4,12 @@ import { ApiError } from '@/lib/api-client'
 import { formatDateTime } from '@/utils/format-date-time'
 import { useSyncStatus } from '@/features/sync/api/get-sync-status'
 import { useRunSync } from '@/features/sync/api/run-sync'
+import type { SyncStatus, SyncTrigger } from '@/features/sync/types/sync-status'
+
+const TRIGGER_LABELS: Record<SyncTrigger, string> = {
+  screen: 'Pedida na tela',
+  command: 'Feita pela rotina diária',
+}
 
 const GENERIC_MUTATION_ERROR =
   'Não foi possível atualizar. Verifique se o servidor está no ar e tente de novo.'
@@ -61,7 +67,7 @@ function SyncStatusPanel({
   isRunning,
   onRun,
 }: {
-  data: { running: boolean; last_run: { finished_at: string | null; status: 'ok' | 'failed'; reason: string | null } | null }
+  data: SyncStatus
   isRunning: boolean
   onRun: () => void
 }): React.JSX.Element {
@@ -75,6 +81,9 @@ function SyncStatusPanel({
         <p className="text-gray-900">
           {finishedAt ? `Última atualização: ${finishedAt}` : 'Nunca atualizado'}
         </p>
+        {lastRun?.triggered_by ? (
+          <p className="text-sm text-gray-600">{TRIGGER_LABELS[lastRun.triggered_by]}</p>
+        ) : null}
         {busy ? (
           <span className="mt-1 inline-block rounded-full px-2 py-0.5 text-sm bg-amber-100 text-amber-800">
             Em andamento
