@@ -58,3 +58,8 @@ def test_a_window_starting_after_the_first_day_does_not_cover_whole_months():
 
 def test_a_window_ending_before_the_last_day_of_the_month_does_not_cover_whole_months():
     assert covers_whole_months("2026-03-01", "2026-08-30") is False
+
+
+def test_the_last_month_the_calendar_has_ends_on_its_last_day():
+    assert month_end(date(9999, 12, 31)) == date(9999, 12, 31)
+    assert covers_whole_months("9999-12-01", "9999-12-31")
