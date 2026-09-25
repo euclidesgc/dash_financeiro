@@ -225,9 +225,8 @@ test.describe('typing the dates by keyboard', () => {
 
     await page.getByRole('button', { name: 'Próximo mês' }).click()
     await expect(page).toHaveURL(/month=/)
-    // Reason: with no ceiling, the month opens the ceiling form, and its field
-    // takes the focus when it loads; typing before that loses the keys.
-    await expect(page.getByLabel('Teto mensal (R$)')).toBeFocused()
+    await expect(page.getByRole('button', { name: 'Definir teto do mês' })).toBeVisible()
+    await expect(page.getByLabel('Teto mensal (R$)')).toHaveCount(0)
 
     // Reason: a click lands on the segment under the pointer; the left edge
     // is the day, where a person starts typing a dd/mm/aaaa date.
@@ -455,6 +454,8 @@ test('shows the month against its ceiling, edits the ceiling inline and leaves t
   const block = page.getByRole('region', { name: 'Teto do mês' })
   await expect(page.getByRole('heading', { level: 2, name: 'Teto do mês' })).toBeVisible()
   await expect(block).toContainText('Sem teto definido.')
+  await expect(block.getByLabel('Teto mensal (R$)')).toHaveCount(0)
+  await block.getByRole('button', { name: 'Definir teto do mês' }).click()
   const field = block.getByLabel('Teto mensal (R$)')
   await expect(field).toBeFocused()
 
