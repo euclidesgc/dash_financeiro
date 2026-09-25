@@ -52,7 +52,7 @@ CREDIT_ACCOUNT = {
     "type": "CREDIT",
     "subtype": "CREDIT_CARD",
     "name": "Cartão de teste",
-    "balance": -200.0,
+    "balance": 200.0,
 }
 MORTGAGE_ROW = {
     "kind": "mortgage",
