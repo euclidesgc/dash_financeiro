@@ -1930,6 +1930,23 @@ test('?view=excluded lists a marked income next to a marked expense and "Voltar 
   })
 })
 
+test('?view=excluded shows what went out and what came in apart, not their difference', async () => {
+  fakeExpenses[0].amount_cents = -100000
+  fakeExpenses[0].not_expense_reason = 'own_transfer'
+  const salario = fakeExpenses.find((item) => item.id === 46)
+  if (salario !== undefined) {
+    salario.amount_cents = 100000
+    salario.not_expense_reason = 'own_transfer'
+  }
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses?view=excluded' })
+
+  const pagination = await screen.findByRole('navigation', { name: 'Paginação' })
+  expect(pagination).toHaveTextContent(
+    'Página 1 de 1 · 2 lançamentos · R$ 1.000,00 em saídas e R$ 1.000,00 em entradas no período',
+  )
+})
+
 test('shows the income loading and error texts', async () => {
   server.use(
     http.get('/api/transactions/expenses', async () => {
