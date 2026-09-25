@@ -23,8 +23,8 @@ As outras três falhas vêm do mesmo esquema e da mesma tela:
 
 ## Correção proposta
 - `src/utils/money-text.ts` (novo) — `parseMoneyText` lê o texto em formato brasileiro e devolve os centavos ou o motivo da recusa (vazio, formato, casas decimais, não positivo), com aritmética de inteiros. Aceita "R$" na frente, ponto de milhar em grupos de três, vírgula decimal e, sem vírgula, ponto seguido de uma ou duas casas como decimal. `formatMoneyInput` escreve o valor gravado como "1.500,00".
-- `src/utils/money-text-schema.ts` — esquema obrigatório que transforma o texto em centavos, com uma mensagem por motivo: "Informe um valor.", "Use o formato 1.500,00.", "Use no máximo duas casas decimais.", "Informe um valor maior que zero.".
-- `ceiling-form.tsx` e `category-limit-form.tsx` — campo `type="text"` com `inputMode="decimal"`; salvar manda os centavos do esquema; com valor gravado, um botão "Remover teto" / "Remover limite" manda `null`, que passa a ser a única forma de tirar.
+- `src/utils/money-text-schema.ts` — esquema obrigatório que recusa com uma mensagem por motivo: "Informe um valor.", "Use o formato 1.500,00.", "Use no máximo duas casas decimais.", "Informe um valor maior que zero.".
+- `ceiling-form.tsx` e `category-limit-form.tsx` — campo `type="text"` com `inputMode="decimal"`; salvar manda os centavos lidos por `parseMoneyText`; com valor gravado, um botão "Remover teto" / "Remover limite" manda `null`, que passa a ser a única forma de tirar.
 - `month-ceiling.tsx` — com teto gravado, o botão diz "Alterar teto" (nome acessível "Alterar teto do mês"); na categoria com limite, o nome acessível passa a "Alterar limite de …".
 - `src/utils/cents.ts` sai: `toCents` e `fromCents` só serviam a esses dois campos.
 - **Risco:** "1.999" passa a ser mil novecentos e noventa e nove reais (milhar), não um erro de casas decimais; é a leitura brasileira. Quem digitava "0" continua vendo "Informe um valor maior que zero.".
