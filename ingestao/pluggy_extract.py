@@ -1,10 +1,14 @@
-#!/usr/bin/env python3
 """Extração somente-leitura dos dados financeiros pessoais via API da Pluggy.
 
 Subcomandos:
-  criar-item   cria o item do conector 200 (MeuPluggy) e devolve a URL de autorização
-  status       mostra status, execução e warnings do item
-  extrair      baixa accounts, transactions, bills, loans, investments e identity
+  criar-item   cria o item do conector 200 (MeuPluggy), cadastra-o em Conexões e devolve a
+               URL de autorização
+  status       mostra status, execução e warnings de cada conexão cadastrada (ou de --item)
+  extrair      baixa accounts, transactions, bills, loans, investments e identity de cada
+               conexão cadastrada (ou de --item)
+
+As conexões são as da tela Conexões do painel, na base apontada por DASH_DB_PATH.
+Rode da raiz do projeto: uv run python -m ingestao.pluggy_extract <subcomando>.
 
 O CLIENT_SECRET e a apiKey nunca são impressos nem gravados em disco.
 Nenhum endpoint de escrita além do POST /items explicitamente confirmado é chamado.
@@ -13,23 +17,29 @@ Nenhum endpoint de escrita além do POST /items explicitamente confirmado é cha
 import argparse
 import json
 import os
+import sqlite3
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
 from collections.abc import Mapping
-from datetime import date, datetime
+from datetime import datetime
 from typing import Any, cast
 
 from dotenv import load_dotenv
 
+from app.db import connect
+from app.migrate import run_migrations
+from app.queries.pluggy_connections import list_item_ids
+from app.sync.connections import DuplicateConnectionError, add_connection
+from ingestao.raw import salvar
+
 API = "https://api.pluggy.ai"
 DEFAULT_ENV_FILE = ".env"
 CREDENTIALS = ("PLUGGY_CLIENT_ID", "PLUGGY_CLIENT_SECRET")
-RAW = "data/raw"
-ITEM_FILE = "data/item_id.txt"
-ITENS_FILE = "data/item_ids.txt"
 CONNECTOR_MEU_PLUGGY = 200
+
+NO_CONNECTIONS = "Nenhuma conexão cadastrada. Cadastre em Conexões ou passe --item."
 
 ESCRITA_PROIBIDA = ("/payments", "/payment-", "/transfers", "/smart-transfers", "/boletos")
 
@@ -83,16 +93,6 @@ def chamar(
             return erro.code, json.loads(texto)
         except json.JSONDecodeError:
             return erro.code, {"raw": texto[:500]}
-
-
-def salvar(nome: str, conteudo: Any, pagina: int | None = None) -> str:
-    os.makedirs(RAW, exist_ok=True)
-    hoje = date.today().isoformat()
-    sufixo = f"_p{pagina}" if pagina is not None else ""
-    caminho = os.path.join(RAW, f"{nome}_{hoje}{sufixo}.json")
-    with open(caminho, "w") as arquivo:
-        json.dump(conteudo, arquivo, ensure_ascii=False, indent=2)
-    return caminho
 
 
 def paginar(api_key: str, path: str, params: dict[str, Any]) -> tuple[list[Any], int, Any]:
@@ -153,26 +153,33 @@ def paginar_cursor(api_key: str, path: str, params: dict[str, Any]) -> tuple[lis
     return resultados, 200, None
 
 
-def itens_salvos() -> list[str]:
-    ids: list[str] = []
-    for caminho in (ITENS_FILE, ITEM_FILE):
-        if os.path.exists(caminho):
-            for linha in open(caminho):
-                valor = linha.strip()
-                if valor and valor not in ids:
-                    ids.append(valor)
-    extra = os.environ.get("PLUGGY_ITEM_ID", "").strip()
-    if extra and extra not in ids:
-        ids.append(extra)
+def itens_salvos(conn: sqlite3.Connection) -> list[str]:
+    return list_item_ids(conn)
+
+
+def registrar_item(conn: sqlite3.Connection, item_id: str) -> None:
+    try:
+        add_connection(conn, item_id)
+    except DuplicateConnectionError:
+        return
+
+
+def _abrir_base() -> sqlite3.Connection:
+    run_migrations()
+    return connect()
+
+
+def _ids_pedidos(args: argparse.Namespace) -> list[str]:
+    if args.item:
+        return [args.item]
+    conn = _abrir_base()
+    try:
+        ids = itens_salvos(conn)
+    finally:
+        conn.close()
+    if not ids:
+        raise SystemExit(NO_CONNECTIONS)
     return ids
-
-
-def registrar_item(item_id: str) -> None:
-    ids = itens_salvos()
-    if item_id not in ids:
-        ids.append(item_id)
-    with open(ITENS_FILE, "w") as arquivo:
-        arquivo.write("\n".join(ids) + "\n")
 
 
 def cmd_criar_item(args: argparse.Namespace) -> None:
@@ -187,10 +194,13 @@ def cmd_criar_item(args: argparse.Namespace) -> None:
         print(json.dumps(item, ensure_ascii=False, indent=2)[:1200])
         raise SystemExit(1)
     item_id = item["id"]
-    os.makedirs("data", exist_ok=True)
-    registrar_item(item_id)
+    conn = _abrir_base()
+    try:
+        registrar_item(conn, item_id)
+    finally:
+        conn.close()
     salvar(f"item_criado_{item_id[:8]}", item)
-    print(f"itemId: {item_id}  (gravado em {ITENS_FILE})")
+    print(f"itemId: {item_id}  (cadastrado em Conexões)")
     print(f"conector: {(item.get('connector') or {}).get('name')}")
     print(f"status: {item.get('status')} / {item.get('executionStatus')}")
     url = extrair_oauth_url(item)
@@ -226,10 +236,8 @@ def extrair_oauth_url(item: dict[str, Any]) -> str | None:
 
 
 def cmd_status(args: argparse.Namespace) -> None:
+    ids = _ids_pedidos(args)
     api_key = autenticar()
-    ids = [args.item] if args.item else itens_salvos()
-    if not ids:
-        raise SystemExit(f"Sem itemId. Grave em {ITENS_FILE} ou passe --item.")
     for item_id in ids:
         status_de_um(api_key, item_id)
 
@@ -253,10 +261,8 @@ def status_de_um(api_key: str, item_id: str) -> None:
 
 
 def cmd_extrair(args: argparse.Namespace) -> None:
+    ids = _ids_pedidos(args)
     api_key = autenticar()
-    ids = [args.item] if args.item else itens_salvos()
-    if not ids:
-        raise SystemExit(f"Sem itemId. Grave em {ITENS_FILE} ou passe --item.")
     geral: list[dict[str, Any]] = []
     for item_id in ids:
         print(f"\n########## item {item_id} ##########")
@@ -347,7 +353,9 @@ def extrair_um(api_key: str, item_id: str, args: argparse.Namespace) -> dict[str
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p = sub.add_parser("criar-item")

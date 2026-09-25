@@ -2,11 +2,22 @@ import json
 
 import pytest
 
+from app.db import connect
+from app.migrate import run_migrations
+from app.queries.pluggy_connections import list_item_ids
+from app.sync.connections import add_connection
 from ingestao import pluggy_consolidate, pluggy_extract
 from ingestao.pluggy_consolidate import NoRawAccountsError, consolidate
-from ingestao.pluggy_extract import MissingCredentialsError, read_credentials
+from ingestao.pluggy_extract import (
+    MissingCredentialsError,
+    itens_salvos,
+    read_credentials,
+    registrar_item,
+)
 
 SECRET = "segredo-do-arquivo"
+FIRST = "3f2504e0-4f89-11d3-9a0c-0305e82c3301"
+SECOND = "0b8e5f3a-1c2d-4e5f-8a9b-0c1d2e3f4a5b"
 
 
 @pytest.fixture()
@@ -106,3 +117,72 @@ def test_the_consolidation_command_still_exits_without_raw_accounts(tmp_path, mo
 
     with pytest.raises(SystemExit, match="accounts_"):
         pluggy_consolidate.main()
+
+
+def test_the_saved_items_are_the_registered_connections_in_registration_order(taxonomy_conn):
+    add_connection(taxonomy_conn, FIRST)
+    add_connection(taxonomy_conn, SECOND)
+
+    assert itens_salvos(taxonomy_conn) == [FIRST, SECOND]
+
+
+def test_registering_an_item_adds_it_once_and_tolerates_a_repeat(taxonomy_conn):
+    registrar_item(taxonomy_conn, FIRST)
+    registrar_item(taxonomy_conn, FIRST)
+
+    assert list_item_ids(taxonomy_conn) == [FIRST]
+
+
+@pytest.fixture()
+def database(tmp_path, monkeypatch):
+    path = tmp_path / "dash.sqlite"
+    monkeypatch.setenv("DASH_DB_PATH", str(path))
+    return path
+
+
+@pytest.fixture()
+def queried(monkeypatch):
+    items: list[str] = []
+    monkeypatch.setattr(pluggy_extract, "autenticar", lambda: "chave-falsa")
+    monkeypatch.setattr(
+        pluggy_extract, "status_de_um", lambda api_key, item_id: items.append(item_id)
+    )
+    return items
+
+
+def _status(monkeypatch, *arguments: str) -> None:
+    monkeypatch.setattr("sys.argv", ["pluggy_extract.py", "status", *arguments])
+    pluggy_extract.main()
+
+
+def test_status_without_item_queries_every_registered_connection(database, queried, monkeypatch):
+    run_migrations(str(database))
+    conn = connect(str(database))
+    try:
+        add_connection(conn, FIRST)
+        add_connection(conn, SECOND)
+    finally:
+        conn.close()
+
+    _status(monkeypatch)
+
+    assert queried == [FIRST, SECOND]
+
+
+def test_status_without_item_and_without_connections_points_at_the_screen(
+    database, queried, monkeypatch
+):
+    with pytest.raises(SystemExit) as stop:
+        _status(monkeypatch)
+
+    assert str(stop.value) == "Nenhuma conexão cadastrada. Cadastre em Conexões ou passe --item."
+    assert queried == []
+
+
+def test_status_with_item_queries_only_it_and_leaves_the_database_alone(
+    database, queried, monkeypatch
+):
+    _status(monkeypatch, "--item", SECOND)
+
+    assert queried == [SECOND]
+    assert not database.exists()
