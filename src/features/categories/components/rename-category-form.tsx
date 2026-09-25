@@ -7,7 +7,7 @@ import { ApiError } from '@/lib/api-client'
 import { useRenameCategory } from '@/features/categories/api/rename-category'
 import { categoryLabelSchema } from '@/features/categories/types/category-label-schema'
 import type { CategoryLabelInput } from '@/features/categories/types/category-label-schema'
-import type { CatalogueCategory } from '@/features/categories/types/category'
+import type { Category } from '@/types/category'
 
 function isLabelError(error: unknown): error is ApiError {
   return error instanceof ApiError && error.status === 422
@@ -17,7 +17,7 @@ export function RenameCategoryForm({
   category,
   onDone,
 }: {
-  category: CatalogueCategory
+  category: Category
   onDone: () => void
 }): React.JSX.Element {
   const {

@@ -1,6 +1,6 @@
 import { http, HttpResponse } from 'msw'
 import type { SyncStatus } from '@/features/sync/types/sync-status'
-import type { CatalogueCategory } from '@/features/categories/types/category'
+import type { Category } from '@/types/category'
 import type { PluggyConnection } from '@/features/pluggy-connections/types/pluggy-connection'
 import type {
   CategoryGroup,
@@ -43,7 +43,7 @@ export const fakeAccounts = [
   },
 ]
 
-function generateFakeCategories(): CatalogueCategory[] {
+function generateFakeCategories(): Category[] {
   return [
     { key: 'Food', label: 'Alimentação', is_system: true, usage_count: 1, monthly_limit_cents: 80000 },
     { key: 'Shopping', label: 'Compras', is_system: true, usage_count: 40, monthly_limit_cents: 150000 },
@@ -54,7 +54,7 @@ function generateFakeCategories(): CatalogueCategory[] {
   ]
 }
 
-export const fakeCategories: CatalogueCategory[] = generateFakeCategories()
+export const fakeCategories: Category[] = generateFakeCategories()
 
 export function resetCategories(): void {
   fakeCategories.splice(0, fakeCategories.length, ...generateFakeCategories())
@@ -570,7 +570,7 @@ export const handlers = [
       key = `${slugify(trimmed)}-${String(suffix)}`
       suffix += 1
     }
-    const item: CatalogueCategory = {
+    const item: Category = {
       key,
       label: trimmed,
       is_system: false,

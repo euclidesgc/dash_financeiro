@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiRequest } from '@/lib/api-client'
+import { categoriesQueryKey } from '@/hooks/use-categories'
 import type { CategoryUpdateBody, Expense } from '@/features/expenses/types/expense'
 
 export interface UpdateCategoryVariables {
@@ -21,7 +22,7 @@ export function useUpdateCategory() {
     mutationFn: updateCategory,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['expenses'] })
-      void queryClient.invalidateQueries({ queryKey: ['categories'] })
+      void queryClient.invalidateQueries({ queryKey: categoriesQueryKey })
     },
   })
 }

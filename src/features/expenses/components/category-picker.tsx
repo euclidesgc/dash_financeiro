@@ -3,7 +3,8 @@ import type { ChangeEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { useUpdateCategory } from '@/features/expenses/api/update-category'
 import { SimilarOffer } from '@/features/expenses/components/similar-offer'
-import type { Category, CategoryUpdateBody, Expense } from '@/features/expenses/types/expense'
+import type { CategoryUpdateBody, Expense } from '@/features/expenses/types/expense'
+import type { Category } from '@/types/category'
 
 const AUTO_OPTION = '__auto__'
 

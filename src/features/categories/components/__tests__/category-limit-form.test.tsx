@@ -6,9 +6,9 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { CategoryLimitForm } from '@/features/categories/components/category-limit-form'
 import { renderWithProviders } from '@/testing/test-utils'
 import { server } from '@/testing/mocks/server'
-import type { CatalogueCategory } from '@/features/categories/types/category'
+import type { Category } from '@/types/category'
 
-const shopping: CatalogueCategory = {
+const shopping: Category = {
   key: 'Shopping',
   label: 'Compras',
   is_system: true,
