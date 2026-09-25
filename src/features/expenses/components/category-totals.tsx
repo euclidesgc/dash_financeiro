@@ -4,9 +4,15 @@ import { Button } from '@/components/ui/button'
 import { useCategoryTotals } from '@/features/expenses/api/get-category-totals'
 import type { CategoryTotalsQuery } from '@/features/expenses/types/expense'
 import { SIGNAL_LABELS } from '@/features/expenses/utils/signal-labels'
+import { EXPENSE_NOUN, formatCount, type CountNoun } from '@/utils/format-count'
 import { formatMoney } from '@/utils/format-money'
 
 const VISIBLE_GROUPS = 8
+
+const OVER_LIMIT_NOUN: CountNoun = {
+  one: 'categoria acima do limite',
+  many: 'categorias acima do limite',
+}
 
 function limitText(totalCents: number, limitCents: number): string {
   const spent = Math.abs(totalCents)
@@ -50,9 +56,7 @@ export function CategoryTotals({ query }: { query: CategoryTotalsQuery }): React
       </h2>
       {data.over_limit_count > 0 ? (
         <p className="mt-2 text-sm font-medium text-red-800">
-          {data.over_limit_count === 1
-            ? '1 categoria acima do limite'
-            : `${String(data.over_limit_count)} categorias acima do limite`}
+          {formatCount(data.over_limit_count, OVER_LIMIT_NOUN)}
         </p>
       ) : null}
       {data.signal_scope === 'none' && data.groups.some((group) => group.limit_cents !== null) ? (
@@ -87,7 +91,7 @@ export function CategoryTotals({ query }: { query: CategoryTotalsQuery }): React
                 ) : null}
               </td>
               <td className="whitespace-nowrap py-2 pl-4 text-right text-gray-600 tabular-nums">
-                {group.count === 1 ? '1 gasto' : `${String(group.count)} gastos`}
+                {formatCount(group.count, EXPENSE_NOUN)}
               </td>
               <td className="whitespace-nowrap py-2 pl-4 text-right tabular-nums font-medium text-gray-900">
                 {formatMoney(Math.abs(group.total_cents))}

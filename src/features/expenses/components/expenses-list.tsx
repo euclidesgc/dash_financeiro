@@ -24,6 +24,7 @@ import type {
   Period,
 } from '@/features/expenses/types/expense'
 import { currentMonth, readPeriod, shiftMonth, toDateBounds, writePeriod } from '@/features/expenses/utils/period'
+import { EXPENSE_NOUN, type CountNoun } from '@/utils/format-count'
 
 const SORTS = ['date', 'amount', 'category'] as const
 const ORDERS = ['asc', 'desc'] as const
@@ -64,7 +65,7 @@ const VIEW_TEXT: Record<
     error: string
     emptyFiltered: string
     emptyAll: string
-    noun: { one: string; many: string }
+    noun: CountNoun
     excludedNotice: (name: string) => string
   }
 > = {
@@ -73,7 +74,7 @@ const VIEW_TEXT: Record<
     error: 'Não foi possível carregar os gastos.',
     emptyFiltered: 'Nenhum gasto para esse filtro.',
     emptyAll: 'Nenhum gasto registrado ainda.',
-    noun: { one: 'gasto', many: 'gastos' },
+    noun: EXPENSE_NOUN,
     excludedNotice: (name) => `${name} não conta mais como gasto.`,
   },
   excluded: {

@@ -1,6 +1,7 @@
 import { http, HttpResponse } from 'msw'
 import type { SyncStatus } from '@/features/sync/types/sync-status'
 import type { Category } from '@/types/category'
+import { EXPENSE_NOUN, formatCount } from '@/utils/format-count'
 import type { PluggyConnection } from '@/features/pluggy-connections/types/pluggy-connection'
 import type {
   CategoryGroup,
@@ -627,9 +628,7 @@ export const handlers = [
       return HttpResponse.json(
         {
           detail:
-            'Esta categoria está em uso por ' +
-            String(item.usage_count) +
-            (item.usage_count === 1 ? ' gasto.' : ' gastos.'),
+            'Esta categoria está em uso por ' + formatCount(item.usage_count, EXPENSE_NOUN) + '.',
         },
         { status: 409 },
       )

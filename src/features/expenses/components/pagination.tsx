@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button'
+import { EXPENSE_NOUN, formatCount, type CountNoun } from '@/utils/format-count'
 import { formatMoney } from '@/utils/format-money'
 
 export function Pagination({
@@ -8,7 +9,7 @@ export function Pagination({
   totalCents,
   isFetching,
   onChange,
-  noun = { one: 'gasto', many: 'gastos' },
+  noun = EXPENSE_NOUN,
 }: {
   page: number
   pages: number
@@ -16,15 +17,13 @@ export function Pagination({
   totalCents: number
   isFetching: boolean
   onChange: (page: number) => void
-  noun?: { one: string; many: string }
+  noun?: CountNoun
 }): React.JSX.Element {
-  const unit = total === 1 ? ` ${noun.one}` : ` ${noun.many}`
-
   return (
     <nav aria-label="Paginação" className="mt-6 flex flex-wrap items-center justify-between gap-4">
       <p className="text-sm text-gray-600">
-        Página {page} de {pages} · {total}
-        {unit} · {formatMoney(Math.abs(totalCents))} no período
+        Página {page} de {pages} · {formatCount(total, noun)} ·{' '}
+        {formatMoney(Math.abs(totalCents))} no período
       </p>
       <div className="flex gap-2">
         <Button
