@@ -5,7 +5,7 @@ import httpx
 
 from app.config import Config
 from ingestao.pluggy_consolidate import NoRawAccountsError, consolidate
-from ingestao.pluggy_extract import salvar
+from ingestao.raw import salvar
 
 API = "https://api.pluggy.ai"
 SOURCE = "pluggy"
