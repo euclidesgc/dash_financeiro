@@ -12,6 +12,10 @@ EXTENSIONS = ("py", "sql", "html")
 FROZEN = (
     "10377233",
     "103772",
+    # Reason: item 041 — the same six-month total once the date is the day in
+    # São Paulo, not in UTC.
+    "10419731",
+    "104197",
     "1921711",
     "19217",
     "1942",

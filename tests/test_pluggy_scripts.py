@@ -7,7 +7,7 @@ from app.migrate import run_migrations
 from app.queries.pluggy_connections import list_item_ids
 from app.sync.connections import add_connection
 from ingestao import pluggy_consolidate, pluggy_extract
-from ingestao.pluggy_consolidate import NoRawAccountsError, consolidate
+from ingestao.pluggy_consolidate import NoRawAccountsError, consolidate, local_date
 from ingestao.pluggy_extract import (
     MissingCredentialsError,
     itens_salvos,
@@ -154,6 +154,13 @@ def test_the_consolidated_date_is_the_day_in_sao_paulo_not_in_utc(
         (tmp_path / "data" / "processed" / "transacoes.json").read_text(encoding="utf-8")
     )
     assert [row["data"] for row in rows] == [expected]
+
+
+def test_a_missing_date_stays_empty_and_a_date_without_zone_is_already_local():
+    assert local_date(None) == ""
+    assert local_date("") == ""
+    assert local_date("2026-03-31T23:59:00") == "2026-03-31"
+    assert local_date("2026-03-31") == "2026-03-31"
 
 
 def test_the_consolidation_command_still_exits_without_raw_accounts(tmp_path, monkeypatch):

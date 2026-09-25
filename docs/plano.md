@@ -4,7 +4,7 @@ Painel financeiro pessoal de um usuário. Roda local por enquanto.
 
 ## O que este produto é
 
-Não é "ver gráficos". É **sair de um déficit estrutural de R$ 4.940,72/mês e
+Não é "ver gráficos". É **sair de um déficit estrutural de R$ 5.661,30/mês e
 passar a viver com folga com o salário atual, sem viver como monge.**
 
 O painel é o instrumento; o plano é o produto. Toda tela existe para responder
@@ -22,15 +22,25 @@ Congelados nesta data de propósito: são a base dos critérios de verificação
 o dado vai crescer. Critério que se compara com um relatório regerável passa por
 construção em um mês.
 
+Os números medem o bruto extraído em 05/09/2026, com a data de cada lançamento
+no calendário de São Paulo. Em 25/09/2026 (item 041) três deles foram medidos de
+novo sobre o mesmo bruto: a primeira medição tomava o dia em UTC, e o que
+acontecia das 21h às 23h59 caía no dia seguinte — o salário de 31/03 às 23:59
+contava em abril, o de 30/04 em maio, e as cobranças da noite de 31/08 (boleto
+Mycon de R$ 424,98 e YouTube) em setembro. Déficit real era R$ 4.940,72/mês;
+gasto total de 6 meses, R$ 103.772,33; renda regular, R$ 9.123 a R$ 13.593/mês.
+Transferências, estornos, recorrências, parcelamentos, saldos e dívidas não
+mudam.
+
 | | |
 |---|---|
-| Renda regular | R$ 9.123 a R$ 13.593/mês, fonte única (GB Tech) |
-| Déficit real | **R$ 4.940,72/mês** (5 meses, excluído o crédito atípico de março) |
+| Renda regular | R$ 9.123 a R$ 13.148/mês, fonte única (GB Tech) |
+| Déficit real | **R$ 5.661,30/mês** (abril a agosto, excluído março e seu crédito atípico) |
 | Comprometimento fixo | R$ 6.563,57/mês — **58% da renda** |
 | Dívida líquida | **R$ 305.207,50** |
 | Ativos líquidos | R$ 488,84 |
 | Saldo em conta + cartão | −R$ 27.449,71 |
-| Gasto total, 6 meses | R$ 103.772,33 |
+| Gasto total, 6 meses | R$ 104.197,31 |
 | Transferências entre contas próprias (excluídas do gasto) | R$ 20.272,00 |
 | Lançamentos extraídos | 1.942 |
 
@@ -184,7 +194,7 @@ estética:
 - **Cor nunca é o único sinal.** Vermelho de déficit vem acompanhado de sinal ou
   rótulo; o painel se lê em tela de celular, sob sol, com pressa.
 - **O painel sustenta por baixo, não disputa atenção.** Sem confete, sem streak,
-  sem parabéns. Quem abre este painel está resolvendo um problema de R$ 4.940,72
+  sem parabéns. Quem abre este painel está resolvendo um problema de R$ 5.661,30
   por mês, não jogando.
 
 Token de cor, tipografia, espaçamento e raio ficam agrupados num único lugar
@@ -251,7 +261,7 @@ e sem o item. Nada mais que isso, e por isso é auditável.
 
 ### Três cenários, nunca uma data só
 
-Uma data única mentiria. A renda varia de R$ 9.123 a R$ 13.593 e o gasto
+Uma data única mentiria. A renda varia de R$ 9.123 a R$ 13.148 e o gasto
 variável oscila; uma projeção pontual saltaria de 27 para 41 meses porque um mês
 foi atípico, e uma linha do tempo que pula assim perde a confiança na primeira
 semana. A tela mostra sempre **conservador · base · otimista**, e diz de quais
@@ -368,7 +378,7 @@ Todo critério é falsificável e se compara com número congelado em 05/09/2026
 5. Gastos, últimos 6 meses até 05/09/2026, eixo grupo: **Escola R$ 12.992,18**
    no topo, **Financiamento imobiliário R$ 12.358,81** em seguida; o total
    **exclui** os R$ 20.272,00 de transferência e os pagamentos de fatura, e soma
-   **R$ 103.772,33**.
+   **R$ 104.197,31**.
 6. Dívidas mostra a escada na ordem 3,52% → 1,63% → 0,72%, e o simulador
    devolve, para R$ 10.000 no CDC, **14 parcelas quitadas e R$ 7.994,49 de juros
    evitados** — igual ao `financas/cdc_veiculo.py`.

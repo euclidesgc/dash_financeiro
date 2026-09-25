@@ -15,9 +15,16 @@ import unicodedata
 from collections import defaultdict
 from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 RAW = "data/raw"
 PROC = "data/processed"
+
+# Reason: Pluggy sends every date as a UTC instant, and the owner's bank
+# statement, month and budget run on the São Paulo calendar — cutting the
+# UTC text moves whatever happened after 21:00 to the next day, and the
+# 23:59 salary of the 31st to the next month.
+OWNER_ZONE = ZoneInfo("America/Sao_Paulo")
 
 REGRAS_CATEGORIA = [
     (
@@ -111,6 +118,15 @@ def carregar(padrao: str) -> list[dict[str, Any]]:
     return itens
 
 
+def local_date(instant: str | None) -> str:
+    if not instant:
+        return ""
+    moment = datetime.fromisoformat(instant)
+    if moment.tzinfo is not None:
+        moment = moment.astimezone(OWNER_ZONE)
+    return moment.date().isoformat()
+
+
 def dedup(registros: list[dict[str, Any]]) -> list[dict[str, Any]]:
     vistos: set[Any] = set()
     saida: list[dict[str, Any]] = []
@@ -195,7 +211,7 @@ def consolidate() -> dict[str, int]:
         linhas.append(
             {
                 "id": t.get("id"),
-                "data": (t.get("date") or "")[:10],
+                "data": local_date(t.get("date")),
                 "conta_id": t.get("accountId"),
                 "conta": conta.get("name"),
                 "conta_tipo": conta.get("type"),

@@ -17,9 +17,9 @@ O mesmo corte aparece no inventário da extração (`ingestao/pluggy_extract.py:
 - Medição sobre o bruto de 05/09/2026 (o mesmo dos números congelados), com a conta do relatório de origem reproduzida ao centavo antes da mudança: transferências (152), estornos (18), recorrências (55) e parcelamentos (100) não mudam; o fluxo mensal muda, porque os lançamentos das 21h às 23h59 do último dia do mês voltam ao mês certo.
 
 ## Correção proposta
-- `ingestao/raw.py` — função `local_date` que converte o instante da Pluggy para o dia em `America/Sao_Paulo` (`zoneinfo`, da biblioteca padrão); valor sem fuso é tratado como já local, e ausência continua como texto vazio.
-- `ingestao/pluggy_consolidate.py` — a coluna `data` usa `local_date`.
-- `ingestao/pluggy_extract.py` — primeira e última data do inventário usam `local_date`.
+- `ingestao/pluggy_consolidate.py` — função `local_date` que converte o instante da Pluggy para o dia em `America/Sao_Paulo` (`zoneinfo`, da biblioteca padrão); valor sem fuso é tratado como já local, e ausência continua como texto vazio.
+- `ingestao/pluggy_consolidate.py` — a coluna `data` usa `local_date`; o script continua rodando sozinho, sem importar outro módulo do projeto.
+- `ingestao/pluggy_extract.py` — primeira e última data do inventário usam `local_date`, importada da consolidação.
 - `docs/plano.md` — reconciliação dos números de referência que mudam (norma 28): déficit real R$ 4.940,72 → R$ 5.661,30/mês; gasto total de 6 meses R$ 103.772,33 → R$ 104.197,31; renda regular de R$ 9.123 a R$ 13.593 → R$ 9.123 a R$ 13.148.
 - `tests/test_frozen_numbers.py` — o novo total congelado entra na varredura que proíbe número de referência dentro de `app/`.
 - **Risco:** a carga (`app/ingest/loader.py`) grava a coluna `date` de novo em todo lançamento já existente (upsert por id), então a base real passa a ter a data certa na próxima sincronização, sem migração. Quem lê `date` (gastos, teto, comprometido, calendário) passa a ver os lançamentos no dia e mês certos.
