@@ -2,6 +2,7 @@ import pytest
 
 from app.db import connect
 from app.migrate import run_migrations
+from app.projection.position import positions
 from app.taxonomy.classify import classify_all
 from tests import e2e_seed
 
@@ -64,3 +65,13 @@ def test_main_exits_with_zero_on_a_clean_seed(tmp_path, monkeypatch):
     monkeypatch.setenv("DASH_DB_PATH", str(tmp_path / "dash.sqlite"))
 
     assert e2e_seed.main() == 0
+
+
+def test_the_seed_card_enters_as_debt_and_lowers_the_consolidated_position(conn):
+    e2e_seed.seed(conn)
+
+    assert positions(conn) == {
+        "cash_cents": 1234,
+        "card_cents": -4500,
+        "consolidated_cents": 1234 - 4500,
+    }
