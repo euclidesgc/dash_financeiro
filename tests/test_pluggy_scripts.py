@@ -112,6 +112,50 @@ def test_consolidating_returns_the_counts_and_prints_nothing(tmp_path, monkeypat
     assert (tmp_path / "data" / "processed" / "transacoes.json").exists()
 
 
+@pytest.mark.parametrize(
+    ("instant", "expected"),
+    [
+        ("2026-04-01T02:59:00.000Z", "2026-03-31"),
+        ("2026-09-01T01:25:35.091Z", "2026-08-31"),
+        ("2026-11-06T03:00:00.000Z", "2026-11-06"),
+        ("2026-08-04T03:43:04.000Z", "2026-08-04"),
+    ],
+)
+def test_the_consolidated_date_is_the_day_in_sao_paulo_not_in_utc(
+    tmp_path, monkeypatch, instant, expected
+):
+    monkeypatch.chdir(tmp_path)
+    raw = tmp_path / "data" / "raw"
+    raw.mkdir(parents=True)
+    (raw / "accounts_x.json").write_text(
+        json.dumps({"results": [{"id": "acc-1", "name": "Conta", "type": "BANK"}]}),
+        encoding="utf-8",
+    )
+    (raw / "v2_transactions_acc-1_p1.json").write_text(
+        json.dumps(
+            {
+                "results": [
+                    {
+                        "id": "tx-1",
+                        "accountId": "acc-1",
+                        "date": instant,
+                        "amount": 2928.46,
+                        "description": "Salário REMUNERACAO/SALARIO",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    consolidate()
+
+    rows = json.loads(
+        (tmp_path / "data" / "processed" / "transacoes.json").read_text(encoding="utf-8")
+    )
+    assert [row["data"] for row in rows] == [expected]
+
+
 def test_the_consolidation_command_still_exits_without_raw_accounts(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
 
