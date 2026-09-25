@@ -264,3 +264,11 @@ def test_the_position_caveat_appears_only_when_the_clock_date_is_asked_by_name(c
 
     assert "A posição é sempre a atual" not in unasked.text
     assert "A posição é sempre a atual" in asked_the_clock.text
+
+
+def test_a_base_never_synced_points_to_the_button_not_to_a_terminal_command(empty):
+    section = _section(_screen(empty).text, "sincronizacao")
+
+    assert "python -m" not in section
+    assert "<code>" not in section
+    assert "Use o botão abaixo para trazer suas contas" in section

@@ -149,7 +149,7 @@ def test_the_rate_of_a_card_is_declared_but_never_a_row(conn):
     with pytest.raises(InvalidValueError) as refusal:
         store.write(conn, CARD_RATE, "3,52")
 
-    assert "/dividas" in str(refusal.value)
+    assert "na tela Dívidas" in str(refusal.value)
     assert _facts(conn) == {}
 
 

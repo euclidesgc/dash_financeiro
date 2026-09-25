@@ -60,7 +60,9 @@ export function CategoryTotals({ query }: { query: CategoryTotalsQuery }): React
         </p>
       ) : null}
       {data.signal_scope === 'none' && data.groups.some((group) => group.limit_cents !== null) ? (
-        <p className="mt-2 text-sm text-gray-600">Sinal só por mês</p>
+        <p className="mt-2 text-sm text-gray-600">
+          Os avisos de limite por categoria aparecem só quando o período é um mês inteiro.
+        </p>
       ) : null}
       <table aria-labelledby={headingId} className="mt-3 w-full text-sm">
         <thead className="sr-only">

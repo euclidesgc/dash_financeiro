@@ -29,14 +29,14 @@ test('updates the records from the balances page', async ({ page }) => {
   await expect(page).toHaveURL(/\/app\/?$/)
 
   await expect(page.getByRole('heading', { level: 2, name: 'Atualização dos registros' })).toBeVisible()
-  await expect(page.getByText('Nunca atualizado')).toBeVisible()
+  await expect(page.getByText('Nenhuma atualização feita por este painel ainda')).toBeVisible()
 
   const url = page.url()
   await page.getByRole('button', { name: 'Atualizar agora' }).click()
 
-  await expect(page.getByText('Concluída')).toBeVisible()
+  await expect(page.getByText('Terminou sem erro')).toBeVisible()
   await expect(page.getByText(/Última atualização: \d{2}\/\d{2}\/\d{4}/)).toBeVisible()
-  await expect(page.getByText('Pedida na tela')).toBeVisible()
+  await expect(page.getByText('Você pediu pelo botão “Atualizar agora”')).toBeVisible()
 
   const item = page.getByRole('listitem').filter({ hasText: 'Conta de sincronização' })
   await expect(item).toBeVisible()
@@ -52,12 +52,12 @@ test('keeps the last update after a reload', async ({ page }) => {
   await expect(page).toHaveURL(/\/app\/?$/)
 
   await page.getByRole('button', { name: 'Atualizar agora' }).click()
-  await expect(page.getByText('Concluída')).toBeVisible()
+  await expect(page.getByText('Terminou sem erro')).toBeVisible()
 
   await page.reload()
 
   await expect(page.getByText(/Última atualização: /)).toBeVisible()
-  await expect(page.getByText('Nunca atualizado')).not.toBeVisible()
+  await expect(page.getByText('Nenhuma atualização feita por este painel ainda')).not.toBeVisible()
 })
 
 test('keeps a manual category across "Atualizar agora" and goes back to the automatic one', async ({
@@ -89,7 +89,7 @@ test('keeps a manual category across "Atualizar agora" and goes back to the auto
 
   await page.goto('/app/')
   await page.getByRole('button', { name: 'Atualizar agora' }).click()
-  await expect(page.getByText('Concluída')).toBeVisible()
+  await expect(page.getByText('Terminou sem erro')).toBeVisible()
 
   await page.goto('/app/expenses?month=2026-08')
   await expect(row).toContainText('Supermercado')

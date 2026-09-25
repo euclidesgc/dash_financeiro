@@ -18,7 +18,7 @@ export function ConnectionsRoute(): React.JSX.Element {
       <main className="mx-auto max-w-2xl p-8">
         <h1 className="text-2xl font-bold">Conexões</h1>
         <p className="mt-2 text-gray-600">
-          As conexões da Pluggy que a atualização busca, uma por banco. Quando um banco pedir novo
+          A Pluggy é o serviço que busca seus extratos nos bancos; cada conexão é o acesso dela a um banco. Quando um banco pedir novo
           login e a conexão for refeita, cadastre o identificador novo e remova o antigo.
         </p>
         <AddConnectionForm />

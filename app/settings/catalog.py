@@ -28,6 +28,15 @@ SIMULATOR_SCREEN = "/simulador"
 SETTINGS_SCREEN = "/configuracao"
 EXPENSES_SCREEN = "/app/expenses"
 
+# Reason: the owner reads a screen by the name the menu gives it, never by
+# its address; a path as link text is a word he has no use for.
+SCREEN_LABELS = {
+    DEBTS_SCREEN: "Dívidas",
+    SIMULATOR_SCREEN: "Simulador",
+    SETTINGS_SCREEN: "Configuração",
+    EXPENSES_SCREEN: "Gastos do painel novo",
+}
+
 # Reason: the order is the order of how much the answer moves the
 # projection, and it is the order the advisor asks in — a rate decides where
 # the next real goes, and a payoff balance decides a thirty-nine thousand
@@ -39,12 +48,13 @@ CATALOG = (
         "question": "a taxa mensal dos seus cartões",
         "help": (
             "A taxa que o cartão cobra sobre o saldo rotativo. Cada cartão tem a sua, e se "
-            "edita tanto aqui, na seção Cartões desta tela, quanto em /dividas, ao lado do "
+            "edita tanto aqui, na seção Cartões desta tela, quanto na tela Dívidas, ao lado do "
             "degrau do cartão — as duas escrevem no mesmo lugar."
         ),
         "unit": BASIS_POINTS,
         "kind": FACT,
         "screen": DEBTS_SCREEN,
+        "screen_label": SCREEN_LABELS[DEBTS_SCREEN],
         "moves": "a ordem da escada de dívida, e com ela onde o próximo real rende mais",
         "default": None,
         # Reason: one rate per debt, in debts.monthly_rate_bp — it is not a
@@ -63,6 +73,7 @@ CATALOG = (
         "unit": CENTS,
         "kind": FACT,
         "screen": SIMULATOR_SCREEN,
+        "screen_label": SCREEN_LABELS[SIMULATOR_SCREEN],
         "moves": "a conta de vender o carro, que é a maior decisão em aberto",
         "default": None,
         "stored": True,
@@ -78,6 +89,7 @@ CATALOG = (
         "unit": CENTS,
         "kind": FACT,
         "screen": SIMULATOR_SCREEN,
+        "screen_label": SCREEN_LABELS[SIMULATOR_SCREEN],
         "moves": "o fluxo líquido que a venda do carro libera",
         "default": None,
         "stored": True,
@@ -93,6 +105,7 @@ CATALOG = (
         "unit": MONTHS,
         "kind": GOAL,
         "screen": SETTINGS_SCREEN,
+        "screen_label": SCREEN_LABELS[SETTINGS_SCREEN],
         "moves": "a reserva alvo do objetivo, e com ela o tempo até alcançá-lo",
         "default": RESERVE_MONTHS,
         "stored": True,
@@ -108,6 +121,7 @@ CATALOG = (
         "unit": MONTHS,
         "kind": GOAL,
         "screen": SETTINGS_SCREEN,
+        "screen_label": SCREEN_LABELS[SETTINGS_SCREEN],
         "moves": (
             "o mês típico da projeção, e com ele o piso de sobrevivência e a reserva alvo — "
             "os dois não são independentes"
@@ -127,6 +141,7 @@ CATALOG = (
         "unit": CENTS,
         "kind": GOAL,
         "screen": EXPENSES_SCREEN,
+        "screen_label": SCREEN_LABELS[EXPENSES_SCREEN],
         "moves": "o sinal do mês na página de gastos",
         "default": None,
         "stored": True,
