@@ -14,9 +14,9 @@ test('the balances page shows the month plan and links to the month expenses', a
 
   const card = page.getByRole('region', { name: /^Plano de / })
   await expect(card).toBeVisible()
-  await expect(card.getByText('Gasto no mês')).toBeVisible()
-  await expect(card.getByText('Teto do mês')).toBeVisible()
-  await expect(card.getByText('Resultado até hoje')).toBeVisible()
+  await expect(card.getByText('Gasto no mês', { exact: true })).toBeVisible()
+  await expect(card.getByText('Teto do mês', { exact: true })).toBeVisible()
+  await expect(card.getByText('Resultado até hoje', { exact: true })).toBeVisible()
 
   await card.getByRole('link').click()
   await expect(page).toHaveURL(/\/app\/expenses\?month=\d{4}-\d{2}$/)
