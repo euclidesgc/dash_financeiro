@@ -23,8 +23,8 @@ São duas causas.
 
 ## Correção proposta
 - `app/db.py` — a faixa do INTEGER do SQLite (`SQLITE_INTEGER_MIN`, `SQLITE_INTEGER_MAX`) e `storable_int(text)`, que lê um inteiro de um texto e devolve `None` quando não é número ou não cabe na faixa.
-- `app/routers/transactions.py` — o id do lançamento vira um tipo com a faixa do SQLite; a página ganha teto `SQLITE_INTEGER_MAX // 100` (o maior `page_size`), para o deslocamento sempre caber. Fora disso, a FastAPI responde 422.
-- `app/routers/rules.py` — o id da regra usa o mesmo tipo; `_number` passa a usar `storable_int`, e um grupo fora da faixa é "grupo inválido", como um texto.
+- `app/routers/row_id.py` e `app/routers/transactions.py` — o id do lançamento vira `RowId`, inteiro com a faixa do SQLite; a página ganha teto `SQLITE_INTEGER_MAX // 100` (o maior `page_size`), para o deslocamento sempre caber. Fora disso, a FastAPI responde 422.
+- `app/routers/rules.py` — o id da regra usa o mesmo tipo; `_refused` passa a usar `storable_int` no lugar de `_number`, e um grupo fora da faixa é "grupo inválido", como um texto.
 - `app/routers/debts.py` e `app/routers/spending.py` — `_identifier` e `_as_int` passam a usar `storable_int`: degrau fora da faixa é "Dívida não encontrada."; alvo e grupo fora da faixa são "nenhum", como um texto.
 - `app/settings/limits.py` — `MAX_CENTS`, o maior valor que `parse_money` aceita (12 algarismos, R$ 9.999.999.999,99).
 - `app/plan/ceiling.py` e `app/taxonomy/catalogue.py` — o teto e o limite acima de `MAX_CENTS` são recusados pela mesma regra que recusa zero; `plan_api.py` e `categories.py` respondem 422 com "O teto passa do maior valor aceito, R$ 9.999.999.999,99." ou "O limite passa do maior valor aceito, R$ 9.999.999.999,99.". A tela da SPA já mostra o `detail` do 422 embaixo do campo.

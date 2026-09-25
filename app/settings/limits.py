@@ -7,6 +7,11 @@
 # this panel will ever need to add up.
 MAX_DIGITS = 12
 
+# Reason: the largest amount parse_money reads, R$ 9.999.999.999,99. An
+# amount that arrives as a number, and not as typed text, is held to the
+# same ceiling.
+MAX_CENTS = 10**MAX_DIGITS - 1
+
 # Reason: a name typed by hand on a credit offer; the offers list on the
 # configuration screen reads comfortably up to this length.
 NAME_MAX = 60

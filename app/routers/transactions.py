@@ -4,7 +4,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
-from app.db import connect
+from app.db import SQLITE_INTEGER_MAX, connect
 from app.plan.ceiling import month_signal, read_ceiling
 from app.queries.expenses import (
     Order,
@@ -17,6 +17,7 @@ from app.queries.expenses import (
     sum_expenses,
 )
 from app.queries.similar import count_similar
+from app.routers.row_id import RowId
 from app.taxonomy.limits import Scope, Signal, is_whole_month, signal_for
 from app.taxonomy.override import (
     NotCountableError,
@@ -30,6 +31,12 @@ from app.taxonomy.override import (
 )
 
 router = APIRouter(prefix="/api/transactions")
+
+MAX_PAGE_SIZE = 100
+# Reason: the query skips (page - 1) * page_size rows, and SQLite refuses an
+# offset past its INTEGER range; bounded by the largest page size, the rule
+# does not depend on the size asked for.
+MAX_PAGE = SQLITE_INTEGER_MAX // MAX_PAGE_SIZE
 
 UNKNOWN_EXPENSE = "Gasto não encontrado."
 UNKNOWN_CATEGORY = "Categoria desconhecida."
@@ -128,8 +135,8 @@ def _search_term(q: str | None) -> str | None:
 
 @router.get("/expenses")
 def expenses(
-    page: Annotated[int, Query(ge=1)] = 1,
-    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    page: Annotated[int, Query(ge=1, le=MAX_PAGE)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=MAX_PAGE_SIZE)] = 20,
     sort: Annotated[Sort, Query()] = "date",
     order: Annotated[Order, Query()] = "desc",
     from_: Annotated[date | None, Query(alias="from")] = None,
@@ -259,7 +266,7 @@ def period_result_of_period(
 
 
 @router.patch("/{transaction_id}/category")
-def update_category(transaction_id: int, body: CategoryUpdate) -> Expense:
+def update_category(transaction_id: RowId, body: CategoryUpdate) -> Expense:
     conn = connect()
     try:
         try:
@@ -280,7 +287,7 @@ def update_category(transaction_id: int, body: CategoryUpdate) -> Expense:
 
 
 @router.put("/{transaction_id}/not-expense")
-def set_not_expense_of(transaction_id: int, body: NotExpenseBody) -> Expense:
+def set_not_expense_of(transaction_id: RowId, body: NotExpenseBody) -> Expense:
     conn = connect()
     try:
         try:
@@ -298,7 +305,7 @@ def set_not_expense_of(transaction_id: int, body: NotExpenseBody) -> Expense:
 
 
 @router.delete("/{transaction_id}/not-expense")
-def clear_not_expense_of(transaction_id: int) -> Expense:
+def clear_not_expense_of(transaction_id: RowId) -> Expense:
     conn = connect()
     try:
         try:
@@ -314,7 +321,7 @@ def clear_not_expense_of(transaction_id: int) -> Expense:
 
 
 @router.get("/{transaction_id}/similar")
-def similar(transaction_id: int) -> SimilarResponse:
+def similar(transaction_id: RowId) -> SimilarResponse:
     conn = connect()
     try:
         if get_expense(conn, transaction_id) is None:
@@ -327,7 +334,7 @@ def similar(transaction_id: int) -> SimilarResponse:
 
 @router.post("/{transaction_id}/category/apply-to-similar")
 def apply_category_to_similar(
-    transaction_id: int, body: ApplyToSimilarBody
+    transaction_id: RowId, body: ApplyToSimilarBody
 ) -> ApplyToSimilarResponse:
     conn = connect()
     try:

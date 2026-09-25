@@ -7,7 +7,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from app.config import reference_date
-from app.db import connect
+from app.db import connect, storable_int
 from app.debts.ladder import (
     DebtNotFoundError,
     ladder,
@@ -108,13 +108,13 @@ def store_parameter(
 
 
 def _identifier(asked: str) -> int:
-    # Reason: a key that is not a number is a debt that does not exist, and
-    # the reader says so in pt-BR instead of letting the interpreter answer
-    # in English.
-    try:
-        return int(asked)
-    except ValueError:
-        raise DebtNotFoundError(NOT_FOUND) from None
+    # Reason: a key that is not a number, or one no row can carry, is a debt
+    # that does not exist, and the reader says so in pt-BR instead of
+    # letting the interpreter answer in English.
+    identifier = storable_int(asked)
+    if identifier is None:
+        raise DebtNotFoundError(NOT_FOUND)
+    return identifier
 
 
 def _debt(conn: sqlite3.Connection, asked: str) -> dict[str, Any] | None:

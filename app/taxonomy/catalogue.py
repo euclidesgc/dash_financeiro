@@ -3,6 +3,7 @@ import sqlite3
 from typing import cast
 
 from app.db import fold
+from app.settings.limits import MAX_CENTS
 from app.taxonomy.classify import MissingFallbackError
 from app.taxonomy.seed import UNCATEGORISED
 
@@ -104,7 +105,7 @@ def rename_category(conn: sqlite3.Connection, key: str, label: str) -> None:
 
 def set_monthly_limit(conn: sqlite3.Connection, key: str, cents: int | None) -> None:
     _require(conn, key)
-    if cents is not None and cents <= 0:
+    if cents is not None and not 0 < cents <= MAX_CENTS:
         raise InvalidLimitError(cents)
     conn.execute("UPDATE categories SET monthly_limit_cents = ? WHERE name = ?", (cents, key))
     conn.commit()

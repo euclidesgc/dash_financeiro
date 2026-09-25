@@ -7,6 +7,8 @@ from pydantic import BaseModel
 
 from app.db import connect
 from app.queries.categories import CategoryRow, get_category, list_categories
+from app.routers.render import brl
+from app.settings.limits import MAX_CENTS
 from app.taxonomy.catalogue import (
     CategoryInUseError,
     CategoryNotFoundError,
@@ -27,6 +29,7 @@ DUPLICATE_LABEL = "Já existe uma categoria com esse nome."
 NOT_FOUND = "Categoria não encontrada."
 SYSTEM_CATEGORY = "Categoria do sistema não pode ser apagada."
 INVALID_LIMIT = "O limite precisa ser maior que zero."
+LIMIT_TOO_LARGE = f"O limite passa do maior valor aceito, {brl(MAX_CENTS)}."
 
 
 def _in_use_detail(count: int) -> str:
@@ -74,7 +77,8 @@ def _translated() -> Iterator[None]:
     except DuplicateLabelError as error:
         raise HTTPException(status_code=422, detail=DUPLICATE_LABEL) from error
     except InvalidLimitError as error:
-        raise HTTPException(status_code=422, detail=INVALID_LIMIT) from error
+        detail = LIMIT_TOO_LARGE if error.cents > 0 else INVALID_LIMIT
+        raise HTTPException(status_code=422, detail=detail) from error
     except CategoryNotFoundError as error:
         raise HTTPException(status_code=404, detail=NOT_FOUND) from error
     except SystemCategoryError as error:

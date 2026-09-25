@@ -1,4 +1,5 @@
-from datetime import date, timedelta
+import calendar
+from datetime import date
 
 START_FIELD = "inicio"
 END_FIELD = "fim"
@@ -45,7 +46,9 @@ def default_period(today: date) -> tuple[str, str]:
 
 
 def month_end(anchor: date) -> date:
-    return shift(anchor, 1) - timedelta(days=1)
+    # Reason: stepping into the next month and back one day has no next
+    # month to step into in December 9999, the last one date can hold.
+    return date(anchor.year, anchor.month, calendar.monthrange(anchor.year, anchor.month)[1])
 
 
 def covers_whole_months(start: str, end: str) -> bool:

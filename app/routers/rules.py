@@ -5,7 +5,7 @@ from fastapi import APIRouter, Form
 from starlette.requests import Request
 from starlette.responses import Response
 
-from app.db import connect
+from app.db import connect, storable_int
 from app.queries.categories import category_labels
 from app.queries.rules import (
     held_by_rule,
@@ -22,6 +22,7 @@ from app.taxonomy.rules import RuleError, create_rule, delete_rule, update_rule
 from app.taxonomy.seed import message
 
 from .render import TEMPLATES
+from .row_id import RowId
 
 router = APIRouter()
 
@@ -90,7 +91,7 @@ def write_rule(
 @router.post(f"{SCREEN}/{{rule_id}}{EDIT}")
 def edit_rule(
     request: Request,
-    rule_id: int,
+    rule_id: RowId,
     match_kind: Annotated[str, Form()] = "",
     match_value: Annotated[str, Form()] = "",
     group_id: Annotated[str, Form()] = "",
@@ -124,7 +125,7 @@ def edit_rule(
 
 
 @router.post(f"{SCREEN}/{{rule_id}}{REMOVE}")
-def remove_rule(request: Request, rule_id: int) -> Response:
+def remove_rule(request: Request, rule_id: RowId) -> Response:
     conn = connect()
     try:
         try:
@@ -182,7 +183,7 @@ def _refused(form: dict[str, str]) -> str | None:
     # the write would succeed and drag the whole base under a single rule.
     if not form["match_value"]:
         return EMPTY_MATCH_MESSAGE
-    if _number(form["group_id"]) is None:
+    if storable_int(form["group_id"]) is None:
         return message("invalid_group", form["group_id"])
     return None
 
@@ -241,10 +242,3 @@ def form_text(raw: str) -> str:
 
 def _blank() -> dict[str, str]:
     return _submitted(None, classify.MATCH_CATEGORY, "", "", "", "")
-
-
-def _number(raw: str) -> int | None:
-    try:
-        return int(raw)
-    except ValueError:
-        return None

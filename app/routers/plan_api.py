@@ -3,10 +3,13 @@ from pydantic import BaseModel
 
 from app.db import connect
 from app.plan.ceiling import InvalidCeilingError, read_ceiling, set_ceiling
+from app.routers.render import brl
+from app.settings.limits import MAX_CENTS
 
 router = APIRouter(prefix="/api/plan")
 
 INVALID_CEILING = "O teto precisa ser maior que zero."
+CEILING_TOO_LARGE = f"O teto passa do maior valor aceito, {brl(MAX_CENTS)}."
 
 
 class CeilingBody(BaseModel):
@@ -34,7 +37,8 @@ def put_ceiling(body: CeilingBody) -> CeilingResponse:
         try:
             set_ceiling(conn, body.monthly_ceiling_cents)
         except InvalidCeilingError as error:
-            raise HTTPException(status_code=422, detail=INVALID_CEILING) from error
+            detail = CEILING_TOO_LARGE if error.cents > 0 else INVALID_CEILING
+            raise HTTPException(status_code=422, detail=detail) from error
         stored = read_ceiling(conn)
     finally:
         conn.close()
