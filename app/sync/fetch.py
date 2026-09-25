@@ -4,7 +4,7 @@ from urllib.parse import urlencode, urlparse
 import httpx
 
 from app.config import Config
-from ingestao.pluggy_consolidate import main as consolidate
+from ingestao.pluggy_consolidate import NoRawAccountsError, consolidate
 from ingestao.pluggy_extract import itens_salvos, salvar
 
 API = "https://api.pluggy.ai"
@@ -45,9 +45,7 @@ def fetch_from_pluggy(config: Config, *, transport: httpx.BaseTransport | None =
         raise PluggyFetchError(UNREACHABLE) from failure
     try:
         consolidate()
-    except SystemExit as failure:
-        # Reason: the consolidator is a script and signals "no raw accounts"
-        # by exiting; inside the server that would kill the worker thread.
+    except NoRawAccountsError as failure:
         raise PluggyFetchError(CONSOLIDATION_FAILED) from failure
 
 

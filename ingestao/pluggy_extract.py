@@ -17,11 +17,15 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections.abc import Mapping
 from datetime import date, datetime
 from typing import Any, cast
 
+from dotenv import load_dotenv
+
 API = "https://api.pluggy.ai"
-ENV_PATH = ".env"
+DEFAULT_ENV_FILE = ".env"
+CREDENTIALS = ("PLUGGY_CLIENT_ID", "PLUGGY_CLIENT_SECRET")
 RAW = "data/raw"
 ITEM_FILE = "data/item_id.txt"
 ITENS_FILE = "data/item_ids.txt"
@@ -30,26 +34,25 @@ CONNECTOR_MEU_PLUGGY = 200
 ESCRITA_PROIBIDA = ("/payments", "/payment-", "/transfers", "/smart-transfers", "/boletos")
 
 
-def carregar_env(path: str) -> dict[str, str]:
-    valores: dict[str, str] = {}
-    with open(path) as arquivo:
-        for linha in arquivo:
-            linha = linha.strip()
-            if not linha or linha.startswith("#") or "=" not in linha:
-                continue
-            chave, valor = linha.split("=", 1)
-            valores[chave.strip()] = valor.strip().strip('"').strip("'")
-    return valores
+class MissingCredentialsError(RuntimeError):
+    pass
+
+
+def read_credentials(env: Mapping[str, str] | None = None) -> tuple[str, str]:
+    if env is None:
+        # Reason: same rule as app/config.py — the file named by DASH_ENV_FILE
+        # fills only what the process environment does not already define.
+        load_dotenv(os.environ.get("DASH_ENV_FILE", DEFAULT_ENV_FILE), override=False)
+        env = os.environ
+    missing = [name for name in CREDENTIALS if not env.get(name)]
+    if missing:
+        raise MissingCredentialsError(f"Faltam as credenciais da Pluggy: {', '.join(missing)}.")
+    return env["PLUGGY_CLIENT_ID"], env["PLUGGY_CLIENT_SECRET"]
 
 
 def autenticar() -> str:
-    env = carregar_env(ENV_PATH)
-    corpo = json.dumps(
-        {
-            "clientId": env["PLUGGY_CLIENT_ID"],
-            "clientSecret": env["PLUGGY_CLIENT_SECRET"],
-        }
-    ).encode()
+    client_id, client_secret = read_credentials()
+    corpo = json.dumps({"clientId": client_id, "clientSecret": client_secret}).encode()
     req = urllib.request.Request(
         f"{API}/auth", data=corpo, headers={"Content-Type": "application/json"}, method="POST"
     )
@@ -363,7 +366,10 @@ def main() -> None:
     p.set_defaults(func=cmd_extrair)
 
     args = parser.parse_args()
-    args.func(args)
+    try:
+        args.func(args)
+    except MissingCredentialsError as erro:
+        raise SystemExit(str(erro)) from erro
 
 
 if __name__ == "__main__":
