@@ -40,6 +40,7 @@ def set_manual(conn: sqlite3.Connection, transaction_id: int, category: str | No
         conn,
         "UPDATE transactions SET category = ?, category_source = 'manual' WHERE id = ?",
         (category, transaction_id),
+        reclassify=True,
     )
 
 
@@ -49,6 +50,7 @@ def restore_auto(conn: sqlite3.Connection, transaction_id: int) -> None:
         conn,
         "UPDATE transactions SET category = category_auto, category_source = 'auto' WHERE id = ?",
         (transaction_id,),
+        reclassify=True,
     )
 
 
@@ -60,6 +62,7 @@ def apply_to_similar(conn: sqlite3.Connection, transaction_id: int, category: st
         "UPDATE transactions SET category = ?, category_source = 'manual' "
         f"WHERE id IN ({SIMILAR_IDS})",
         (category, transaction_id),
+        reclassify=True,
     )
 
 
@@ -74,6 +77,7 @@ def set_not_expense(conn: sqlite3.Connection, transaction_id: int, reason: Reaso
         conn,
         "UPDATE transactions SET not_expense_reason = ? WHERE id = ?",
         (reason, transaction_id),
+        reclassify=False,
     )
 
 
@@ -83,6 +87,7 @@ def clear_not_expense(conn: sqlite3.Connection, transaction_id: int) -> None:
         conn,
         "UPDATE transactions SET not_expense_reason = NULL WHERE id = ?",
         (transaction_id,),
+        reclassify=False,
     )
 
 
@@ -92,13 +97,22 @@ def _require(conn: sqlite3.Connection, transaction_id: int) -> None:
         raise UnknownTransactionError(transaction_id)
 
 
-def _write(conn: sqlite3.Connection, statement: str, params: tuple[object, ...]) -> int:
+def _write(
+    conn: sqlite3.Connection,
+    statement: str,
+    params: tuple[object, ...],
+    *,
+    reclassify: bool,
+) -> int:
     # Reason: the write and the reclassification it triggers share one SQL
-    # transaction (the same shape as app/taxonomy/rules.py:_write).
+    # transaction (the same shape as app/taxonomy/rules.py:_write). Only a
+    # write to a column classify_all reads (category, category_source) needs
+    # reclassify; not_expense_reason is not one of them.
     try:
         cursor = conn.execute(statement, params)
         updated = cursor.rowcount
-        classify.classify_all(conn)
+        if reclassify:
+            classify.classify_all(conn)
     except Exception:
         conn.rollback()
         raise
