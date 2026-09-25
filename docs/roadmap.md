@@ -5,7 +5,7 @@ prova o caminho de ponta a ponta (tela React → API FastAPI → SQLite) e as ou
 
 | # | Fatia | O usuário consegue… | Origem | Depende de | Status |
 |---|---|---|---|---|---|
-| 001 | `login-e-saldos` | entrar no painel e ver o saldo de hoje de cada conta | Pedido de 22/09 | — | planned |
+| 001 | `login-e-saldos` | entrar no painel e ver o saldo de hoje de cada conta | Pedido de 22/09 | — | in-review |
 | 002 | `atualizar-registros` | apertar um botão e ter todos os registros bancários atualizados na base, vendo quando foi a última atualização | Pedido de 22/09 | 001 | planned |
 | 003 | `lista-de-gastos` | ver uma lista paginada com todos os gastos de todas as contas | Pedido de 22/09 | 001 | planned |
 | 004 | `ordenar-gastos` | ordenar os gastos por data, valor ou categoria | Pedido de 22/09 | 003 | planned |
@@ -21,3 +21,9 @@ prova o caminho de ponta a ponta (tela React → API FastAPI → SQLite) e as ou
 | 014 | `sinal-do-mes` | ver se o total do mês está dentro, acima ou abaixo do teto do plano de recuperação | Pedido de 22/09 | 005 | planned |
 | 015 | `marcar-nao-gasto` | tirar dos totais um lançamento que não é gasto (transferência entre contas próprias, estorno) | Pedido de 22/09 | 003 | planned |
 | 016 | `entradas` | ver as entradas (salário e outras receitas) separadas dos gastos, no mesmo período | Pedido de 22/09 | 005 | planned |
+
+## Dívidas técnicas
+
+| # | Fatia | Resolução necessária | Origem | Depende de | Status |
+|---|---|---|---|---|---|
+| 017 | `jinja-router-extraction` | manter a lógica de consulta única quando uma tela migra de Jinja para React, em vez de reescrever SQL | bug | 001 | planned |

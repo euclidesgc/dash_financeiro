@@ -19,8 +19,8 @@ Fonte única da aparência. Este arquivo é seu: `/br:init` cria uma vez e nunca
 | Texto de apoio | `mt-2 text-gray-600` |
 | Lista | `<ul className="mt-6 divide-y divide-gray-200">`; item `flex items-center justify-between gap-4 py-3` |
 | Selo de status | `rounded-full px-2 py-0.5 text-sm` + par de cor (`bg-green-100 text-green-800`, `bg-amber-100 text-amber-800`, `bg-gray-100 text-gray-700`) |
-| Botão principal | `rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50` |
-| Botão secundário | `rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600` |
+| Botão principal | `rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50 min-h-10` |
+| Botão secundário | `rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50 min-h-10` |
 | Link de navegação | `font-medium text-blue-600 underline-offset-4 hover:underline` |
 | Carregando | `<p role="status" className="mt-6 text-gray-600">` |
 | Vazio | `<p className="mt-6 rounded-md border border-dashed border-gray-300 p-6 text-center text-gray-600">` |
@@ -29,3 +29,9 @@ Fonte única da aparência. Este arquivo é seu: `/br:init` cria uma vez e nunca
 ## Padrões acrescentados pelas entregas
 
 <!-- uma linha por padrão novo: | Padrão | Classes | fatia que criou | -->
+
+| Padrão | Classes | Fatia |
+|---|---|---|
+| Campo de formulário | `<label className="block text-sm font-medium text-gray-900">` + `<input className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">`; erro de campo `mt-1 text-sm text-red-700` | 001 |
+| Valor monetário | `tabular-nums font-medium`; negativo `text-red-700`; positivo `text-gray-900` | 001 |
+| Cabeçalho de app | `<header className="border-b border-gray-200">` com `mx-auto flex max-w-2xl items-center justify-between p-4`; nome do painel à esquerda, ação à direita | 001 |

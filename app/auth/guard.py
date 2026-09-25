@@ -10,8 +10,17 @@ from app.db import connect
 
 # Reason: the login form is the only door that can be reached without a
 # session — guarding it too would turn the redirect of RF-26 into a loop.
-PUBLIC_PATHS = frozenset({"/login"})
+PUBLIC_PATHS = frozenset({"/login", "/api/auth/login"})
+# Reason: the SPA shell (index.html and bundles) carries no data — the data
+# lives behind /api/*, which still demands a session (invariant 24).
+PUBLIC_PREFIXES = ("/app",)
 JSON_PATHS = frozenset({"/health"})
+
+
+def _is_public(path: str) -> bool:
+    if path in PUBLIC_PATHS:
+        return True
+    return any(path == prefix or path.startswith(prefix + "/") for prefix in PUBLIC_PREFIXES)
 
 
 def _answers_json(path: str) -> bool:
@@ -47,7 +56,7 @@ async def require_session(
     call_next: Callable[[Request], Awaitable[Response]],
 ) -> Response:
     path = request.url.path
-    if path in PUBLIC_PATHS:
+    if _is_public(path):
         return await call_next(request)
     login = _session_login(request)
     if login is None:

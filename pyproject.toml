@@ -20,6 +20,7 @@ dev = [
     "ruff>=0.16.6",
     "debugpy>=1.8.21",
     "mypy>=2.3.1",
+    "pytest-cov>=7.1.0",
 ]
 
 [tool.uv]

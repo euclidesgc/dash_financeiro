@@ -4,10 +4,17 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from app.auth.attempt import REJECTED_MESSAGE
 from app.main import create_app
-from app.routers.auth import REJECTED_MESSAGE
 
-PUBLIC = {("GET", "/login"), ("POST", "/login")}
+PUBLIC = {
+    ("GET", "/login"),
+    ("POST", "/login"),
+    ("POST", "/api/auth/login"),
+    ("GET", "/app"),
+    ("GET", "/app/assets"),
+    ("GET", "/app/{path:path}"),
+}
 
 
 @pytest.fixture()
