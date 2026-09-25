@@ -1,10 +1,12 @@
 import type { ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, renderHook, waitFor } from '@testing-library/react'
+import { http, HttpResponse } from 'msw'
 import { expect, test } from 'vitest'
 
 import { useRunSync } from '@/features/sync/api/run-sync'
 import { fakeSyncStatus } from '@/testing/mocks/handlers'
+import { server } from '@/testing/mocks/server'
 
 const bankDataKeys = [
   ['accounts', 'balances'],
@@ -61,4 +63,22 @@ test('keeps the signed-in user and stores the returned sync status', async () =>
   expect(queryClient.getQueryState(['auth', 'me'])?.isInvalidated).toBe(false)
   expect(queryClient.getQueryData(['sync', 'status'])).toEqual(fakeSyncStatus)
   expect(queryClient.getQueryState(['sync', 'status'])?.isInvalidated).toBe(false)
+})
+
+test.each([409, 503, 500])('leaves the bank data alone when the sync answers %i', async (status) => {
+  server.use(http.post('/api/sync/run', () => HttpResponse.json({ detail: 'x' }, { status })))
+  const { queryClient, result } = renderRunSync()
+  queryClient.setQueryData(['sync', 'status'], fakeSyncStatus)
+
+  act(() => {
+    result.current.mutate()
+  })
+  await waitFor(() => {
+    expect(result.current.isError).toBe(true)
+  })
+
+  for (const key of bankDataKeys) {
+    expect(queryClient.getQueryState(key)?.isInvalidated, JSON.stringify(key)).toBe(false)
+  }
+  expect(queryClient.getQueryState(['sync', 'status'])?.isInvalidated).toBe(true)
 })
