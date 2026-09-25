@@ -607,6 +607,176 @@ def test_a_debit_pairs_with_the_closest_credit_of_the_same_value(own_accounts_ra
     )
 
 
+def _at(day, movement):
+    return {**movement, "date": f"{day}T15:00:00.000Z"}
+
+
+def _refund_links(rows, *keys):
+    return [(rows[key]["eh_estorno"], rows[key]["estornada_por"]) for key in keys]
+
+
+def test_a_card_refund_never_cancels_a_bill_payment_in_the_bank(own_accounts_raw):
+    rows = _consolidate_movements(
+        own_accounts_raw,
+        [
+            _at(
+                "2025-10-26",
+                _movement(
+                    "boleto",
+                    "bank",
+                    -16.65,
+                    "Pagamento de boleto INT PASSAI ITAU",
+                    "Transfer - Bank Slip",
+                ),
+            ),
+            _at(
+                "2025-10-27",
+                _movement("paid", "card", -16.65, "Pagamento recebido", "Credit card payment"),
+            ),
+            _at(
+                "2025-10-30",
+                _movement(
+                    "refund",
+                    "card",
+                    -16.65,
+                    "ESTORNO ANUIDADE DIFERENCIADA M RENOV",
+                    "Late payment and overdraft costs",
+                ),
+            ),
+        ],
+    )
+
+    assert _refund_links(rows, "boleto", "paid", "refund") == [
+        (False, ""),
+        (False, ""),
+        (True, ""),
+    ]
+
+
+def test_a_card_refund_cancels_the_charge_of_its_own_card_not_a_later_bank_debit(
+    own_accounts_raw,
+):
+    rows = _consolidate_movements(
+        own_accounts_raw,
+        [
+            _at(
+                "2025-10-06",
+                _movement(
+                    "annuity",
+                    "card",
+                    16.65,
+                    "ANUIDADE DIFERENCI03/12",
+                    "Late payment and overdraft costs",
+                ),
+            ),
+            _at(
+                "2025-10-26",
+                _movement("pix", "bank", -16.65, "Pix enviado PADARIA DO BAIRRO", "Food"),
+            ),
+            _at(
+                "2025-10-30",
+                _movement(
+                    "refund",
+                    "card",
+                    -16.65,
+                    "ESTORNO ANUIDADE DIFERENCIADA M RENOV",
+                    "Late payment and overdraft costs",
+                ),
+            ),
+        ],
+    )
+
+    assert rows["annuity"]["estornada_por"] == "refund"
+    assert rows["refund"]["estornada_por"] == "annuity"
+    assert rows["pix"]["estornada_por"] == ""
+
+
+def test_a_refund_prefers_the_debit_of_the_same_merchant_over_a_later_one(own_accounts_raw):
+    rows = _consolidate_movements(
+        own_accounts_raw,
+        [
+            _at("2026-01-08", _movement("bakery", "bank", -13.0, "Compra débito QUICOPAO", "Food")),
+            _at(
+                "2026-01-09",
+                _movement("kiosk", "bank", -13.0, "Compra débito BANCA CENTRAL", "Food"),
+            ),
+            _at(
+                "2026-01-09",
+                _movement("refund", "bank", 13.0, "Estorno de compra débito QUICOPAO", "Food"),
+            ),
+        ],
+    )
+
+    assert rows["bakery"]["estornada_por"] == "refund"
+    assert rows["kiosk"]["estornada_por"] == ""
+
+
+def test_a_refund_never_cancels_a_transfer_in_its_own_account(own_accounts_raw):
+    rows = _consolidate_movements(
+        own_accounts_raw,
+        [
+            _at(
+                "2026-01-05",
+                _movement("purchase", "bank", -250.0, "Compra débito LOJA ONLINE", "Shopping"),
+            ),
+            _at(
+                "2026-01-06",
+                _movement(
+                    "out", "bank", -250.0, "Pix enviado MARIA EXEMPLO TESTE", "Same person transfer"
+                ),
+            ),
+            _at(
+                "2026-01-06",
+                _movement("in", "other", 250.0, "PIX RECEBIDO", "Same person transfer"),
+            ),
+            _at(
+                "2026-01-07",
+                _movement("refund", "bank", 250.0, "Estorno de compra", "Shopping"),
+            ),
+        ],
+    )
+
+    assert rows["purchase"]["estornada_por"] == "refund"
+    assert rows["out"]["estornada_por"] == ""
+
+
+@pytest.mark.parametrize(
+    ("account", "charge", "refund"),
+    [
+        (
+            "card",
+            ("2025-11-06", 16.65, "ANUIDADE DIFERENCI04/12"),
+            ("2025-11-29", -16.65, "ESTORNO ANUIDADE DIFERENCIADA M RENOV"),
+        ),
+        (
+            "card",
+            ("2026-01-28", 149.9, "Selfit - Varzea"),
+            ("2026-01-30", -149.9, "Estorno de compra"),
+        ),
+        (
+            "bank",
+            ("2026-01-28", -481.37, "Compra débito A P M DA SILVA PIZZARI"),
+            ("2026-01-28", 481.37, "Estorno de compra débito A P M DA SIL"),
+        ),
+        (
+            "bank",
+            ("2025-10-06", -2462.56, "DEBITO PRESTACAO HAB"),
+            ("2025-10-08", 2462.56, "ESTORNO PRESTACAO HAB"),
+        ),
+    ],
+)
+def test_a_refund_still_cancels_the_charge_it_returns(own_accounts_raw, account, charge, refund):
+    rows = _consolidate_movements(
+        own_accounts_raw,
+        [
+            _at(charge[0], _movement("charge", account, charge[1], charge[2], "Shopping")),
+            _at(refund[0], _movement("refund", account, refund[1], refund[2], "Shopping")),
+        ],
+    )
+
+    assert _refund_links(rows, "charge", "refund") == [(False, "refund"), (True, "charge")]
+
+
 def test_a_missing_date_stays_empty_and_a_date_without_zone_is_already_local():
     assert local_date(None) == ""
     assert local_date("") == ""
