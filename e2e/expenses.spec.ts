@@ -193,6 +193,9 @@ test.describe('typing the dates by keyboard', () => {
 
     await page.getByRole('button', { name: 'Próximo mês' }).click()
     await expect(page).toHaveURL(/month=/)
+    // Reason: with no ceiling, the month opens the ceiling form, and its field
+    // takes the focus when it loads; typing before that loses the keys.
+    await expect(page.getByLabel('Teto mensal (R$)')).toBeFocused()
 
     // Reason: a click lands on the segment under the pointer; the left edge
     // is the day, where a person starts typing a dd/mm/aaaa date.

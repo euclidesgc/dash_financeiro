@@ -1,7 +1,47 @@
-import { useId } from 'react'
+import { useId, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import type { Period } from '@/features/expenses/types/expense'
-import { formatMonth, toDateBounds } from '@/features/expenses/utils/period'
+import { formatMonth, readTypedDate, toDateBounds } from '@/features/expenses/utils/period'
+
+type DateField = 'from' | 'to'
+
+interface DateDraft {
+  value: string
+  isPending: boolean
+}
+
+interface RangeDraft {
+  boundsKey: string
+  from: DateDraft
+  to: DateDraft
+}
+
+const INVERTED_RANGE_MESSAGE = '"Até" não pode ser antes de "De".'
+
+function toDraft(bounds: { from: string | null; to: string | null }): RangeDraft {
+  return {
+    boundsKey: `${bounds.from ?? ''}|${bounds.to ?? ''}`,
+    from: { value: bounds.from ?? '', isPending: false },
+    to: { value: bounds.to ?? '', isPending: false },
+  }
+}
+
+// Reason: a date field with a segment still half typed reports an empty
+// value and flags badInput; only an empty value without it is a date the
+// person erased.
+function readDateInput(input: HTMLInputElement): DateDraft {
+  if (input.value === '') {
+    return { value: '', isPending: input.validity.badInput }
+  }
+  return { value: input.value, isPending: readTypedDate(input.value) === null }
+}
+
+function isInverted(draft: RangeDraft): boolean {
+  if (draft.from.isPending || draft.to.isPending) {
+    return false
+  }
+  return draft.from.value !== '' && draft.to.value !== '' && draft.to.value < draft.from.value
+}
 
 export function PeriodControls({
   period,
@@ -11,12 +51,34 @@ export function PeriodControls({
 }: {
   period: Period
   onMonthChange: (delta: -1 | 1) => void
-  onRangeChange: (field: 'from' | 'to', value: string) => void
+  onRangeChange: (from: string | null, to: string | null) => void
   onClear: () => void
 }): React.JSX.Element {
   const fromId = useId()
   const toId = useId()
+  const errorId = useId()
   const bounds = toDateBounds(period)
+  const boundsDraft = toDraft(bounds)
+  const [draft, setDraft] = useState(boundsDraft)
+
+  // Reason: the fields hold what is typed until the range is whole; a period
+  // changed from outside (month buttons, "Todo o período", the URL) replaces
+  // that draft, the React way of resetting state when a prop changes.
+  let shownDraft = draft
+  if (draft.boundsKey !== boundsDraft.boundsKey) {
+    shownDraft = boundsDraft
+    setDraft(boundsDraft)
+  }
+  const inverted = isInverted(shownDraft)
+
+  function handleDateInput(field: DateField, input: HTMLInputElement): void {
+    const next = { ...shownDraft, [field]: readDateInput(input) }
+    setDraft(next)
+    if (next.from.isPending || next.to.isPending || isInverted(next)) {
+      return
+    }
+    onRangeChange(next.from.value || null, next.to.value || null)
+  }
 
   let monthLabel = 'Todo o período'
   if (period.kind === 'month') {
@@ -62,9 +124,11 @@ export function PeriodControls({
           <input
             type="date"
             id={fromId}
-            value={bounds.from ?? ''}
+            value={shownDraft.from.value}
+            aria-invalid={inverted}
+            aria-describedby={inverted ? errorId : undefined}
             onChange={(event) => {
-              onRangeChange('from', event.target.value)
+              handleDateInput('from', event.target)
             }}
             className="mt-1 block min-h-10 rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
           />
@@ -76,14 +140,21 @@ export function PeriodControls({
           <input
             type="date"
             id={toId}
-            value={bounds.to ?? ''}
+            value={shownDraft.to.value}
+            aria-invalid={inverted}
+            aria-describedby={inverted ? errorId : undefined}
             onChange={(event) => {
-              onRangeChange('to', event.target.value)
+              handleDateInput('to', event.target)
             }}
             className="mt-1 block min-h-10 rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
           />
         </div>
       </div>
+      {inverted ? (
+        <p id={errorId} role="alert" className="mt-1 text-sm text-red-700">
+          {INVERTED_RANGE_MESSAGE}
+        </p>
+      ) : null}
     </fieldset>
   )
 }
