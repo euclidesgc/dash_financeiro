@@ -402,12 +402,71 @@ test('marks an expense as not an expense, undoes it, lists it under "Não são g
   await expect(page.getByLabel('Mostrar')).toHaveValue('excluded')
   await expect(page.getByRole('listitem')).toHaveCount(1)
 
-  await page.getByRole('button', { name: 'Voltar AÇOUGUE SÃO JORGE a ser gasto' }).click()
+  await page.getByRole('button', { name: 'Voltar AÇOUGUE SÃO JORGE a contar' }).click()
   await expect(page.getByText('Nenhum lançamento marcado como não-gasto.')).toBeVisible()
 
   await page.getByLabel('Mostrar').selectOption('expenses')
   await expect(page).not.toHaveURL(/view=/)
   await expect(page.getByText('Página 1 de 1 · 2 gastos · R$ 105,00 no período')).toBeVisible()
+})
+
+test('lists the incomes, shows the period result, marks an income as not an income and leaves the base as it found it', async ({
+  page,
+}) => {
+  await page.goto('/app/login')
+  await page.getByLabel('Login').fill(LOGIN)
+  await page.getByLabel('Senha').fill(PASSWORD)
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page).toHaveURL(/\/app\/?$/)
+
+  await page.goto('/app/expenses?month=2026-09')
+  const result = page.getByRole('region', { name: 'Resultado do período' })
+  await expect(page.getByRole('heading', { level: 2, name: 'Resultado do período' })).toBeVisible()
+  await expect(result.getByText('R$ 6.000,00', { exact: true })).toBeVisible()
+  await expect(result.getByText('R$ 234,90', { exact: true })).toBeVisible()
+  await expect(result.getByText('R$ 5.765,10', { exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 2, name: 'Teto do mês' })).toBeVisible()
+
+  await page.getByLabel('Mostrar').selectOption('income')
+  await expect(page).toHaveURL(/view=income/)
+  const row = page.getByRole('listitem').filter({ hasText: 'SALARIO' })
+  await expect(page.getByRole('listitem')).toHaveCount(1)
+  await expect(page.getByText('Página 1 de 1 · 1 entrada · R$ 6.000,00 no período')).toBeVisible()
+  await expect(page.getByRole('heading', { level: 2, name: 'Por categoria' })).toHaveCount(0)
+  await expect(page.getByRole('heading', { level: 2, name: 'Teto do mês' })).toHaveCount(0)
+  await expect(result).toBeVisible()
+
+  await row.getByRole('button', { name: 'Marcar SALARIO como não-entrada' }).click()
+  const reason = row.getByLabel('Motivo')
+  await expect(reason).toBeFocused()
+  await reason.selectOption('other')
+  await row.getByRole('button', { name: 'Confirmar' }).click()
+
+  const notice = page.getByRole('status').filter({ hasText: 'SALARIO não conta mais como entrada.' })
+  await expect(notice).toBeVisible()
+  await expect(page.getByText('Nenhuma entrada nesse período.')).toBeVisible()
+  await expect(result.getByText('R$ 0,00', { exact: true })).toBeVisible()
+  await expect(result.getByText('−R$ 234,90', { exact: true })).toBeVisible()
+
+  await page.reload()
+  await expect(page.getByLabel('Mostrar')).toHaveValue('income')
+  await expect(page.getByText('Nenhuma entrada nesse período.')).toBeVisible()
+
+  await page.getByLabel('Mostrar').selectOption('excluded')
+  await expect(page).toHaveURL(/view=excluded/)
+  await expect(page.getByRole('listitem')).toHaveCount(1)
+  await expect(page.getByRole('listitem')).toContainText('SALARIO')
+  await expect(page.getByRole('listitem').getByText('Outro', { exact: true })).toBeVisible()
+  await expect(page.getByText('Página 1 de 1 · 1 lançamento · R$ 6.000,00 no período')).toBeVisible()
+
+  await page.getByRole('button', { name: 'Voltar SALARIO a contar' }).click()
+  await expect(page.getByText('Nenhum lançamento marcado como não-gasto.')).toBeVisible()
+
+  await page.getByLabel('Mostrar').selectOption('income')
+  await expect(page.getByText('Página 1 de 1 · 1 entrada · R$ 6.000,00 no período')).toBeVisible()
+  await expect(result.getByText('R$ 5.765,10', { exact: true })).toBeVisible()
+  await page.getByLabel('Mostrar').selectOption('expenses')
+  await expect(page).not.toHaveURL(/view=/)
 })
 
 test('goes back to the balances page', async ({ page }) => {

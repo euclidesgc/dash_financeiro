@@ -12,13 +12,14 @@ from app.queries.expenses import (
     View,
     get_expense,
     list_expenses,
+    period_result,
     sum_by_category,
     sum_expenses,
 )
 from app.queries.similar import count_similar
 from app.taxonomy.limits import Scope, Signal, is_whole_month, signal_for
 from app.taxonomy.override import (
-    NotAnOutflowError,
+    NotCountableError,
     UnknownCategoryError,
     UnknownTransactionError,
     apply_to_similar,
@@ -32,7 +33,7 @@ router = APIRouter(prefix="/api/transactions")
 
 UNKNOWN_EXPENSE = "Gasto não encontrado."
 UNKNOWN_CATEGORY = "Categoria desconhecida."
-NOT_AN_OUTFLOW = "Só uma saída que conta como gasto pode ser marcada."
+NOT_COUNTABLE = "Só um lançamento que conta como gasto ou como entrada pode ser marcado."
 
 
 class Expense(BaseModel):
@@ -81,6 +82,12 @@ class MonthSignalResponse(BaseModel):
     ceiling_cents: int | None
     signal: Signal | None
     remaining_cents: int | None
+
+
+class PeriodResultResponse(BaseModel):
+    income_cents: int
+    spending_cents: int
+    balance_cents: int
 
 
 class CategoryUpdate(BaseModel):
@@ -224,6 +231,29 @@ def month_signal_of_period(
     )
 
 
+@router.get("/expenses/period-result")
+def period_result_of_period(
+    from_: Annotated[date | None, Query(alias="from")] = None,
+    to: Annotated[date | None, Query()] = None,
+    account_id: Annotated[str | None, Query(min_length=1)] = None,
+    q: Annotated[str | None, Query()] = None,
+) -> PeriodResultResponse:
+    date_from, date_to = _date_bounds(from_, to)
+    search = _search_term(q)
+    conn = connect()
+    try:
+        found = period_result(
+            conn, date_from=date_from, date_to=date_to, account_id=account_id, search=search
+        )
+    finally:
+        conn.close()
+    return PeriodResultResponse(
+        income_cents=found.income_cents,
+        spending_cents=found.spending_cents,
+        balance_cents=found.balance_cents,
+    )
+
+
 @router.patch("/{transaction_id}/category")
 def update_category(transaction_id: int, body: CategoryUpdate) -> Expense:
     conn = connect()
@@ -253,8 +283,8 @@ def set_not_expense_of(transaction_id: int, body: NotExpenseBody) -> Expense:
             set_not_expense(conn, transaction_id, body.reason)
         except UnknownTransactionError as error:
             raise HTTPException(status_code=404, detail=UNKNOWN_EXPENSE) from error
-        except NotAnOutflowError as error:
-            raise HTTPException(status_code=422, detail=NOT_AN_OUTFLOW) from error
+        except NotCountableError as error:
+            raise HTTPException(status_code=422, detail=NOT_COUNTABLE) from error
         item = get_expense(conn, transaction_id)
     finally:
         conn.close()

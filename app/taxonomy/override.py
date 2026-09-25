@@ -2,7 +2,7 @@ import sqlite3
 from typing import Literal
 
 from app.queries.similar import SIMILAR_IDS
-from app.queries.spending import OUTFLOW
+from app.queries.spending import INFLOW, OUTFLOW
 from app.taxonomy import classify
 from app.taxonomy.seed import pickable_categories
 
@@ -16,9 +16,9 @@ class UnknownTransactionError(LookupError):
         self.transaction_id = transaction_id
 
 
-class NotAnOutflowError(ValueError):
+class NotCountableError(ValueError):
     def __init__(self, transaction_id: object) -> None:
-        super().__init__(f"lançamento não é uma saída que conta como gasto: {transaction_id}")
+        super().__init__(f"lançamento não conta como gasto nem como entrada: {transaction_id}")
         self.transaction_id = transaction_id
 
 
@@ -66,10 +66,10 @@ def apply_to_similar(conn: sqlite3.Connection, transaction_id: int, category: st
 def set_not_expense(conn: sqlite3.Connection, transaction_id: int, reason: Reason) -> None:
     _require(conn, transaction_id)
     row = conn.execute(
-        f"SELECT 1 FROM transactions WHERE id = ? AND {OUTFLOW}", (transaction_id,)
+        f"SELECT 1 FROM transactions WHERE id = ? AND ({OUTFLOW} OR {INFLOW})", (transaction_id,)
     ).fetchone()
     if row is None:
-        raise NotAnOutflowError(transaction_id)
+        raise NotCountableError(transaction_id)
     _write(
         conn,
         "UPDATE transactions SET not_expense_reason = ? WHERE id = ?",

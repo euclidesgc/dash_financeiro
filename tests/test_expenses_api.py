@@ -2120,7 +2120,9 @@ def test_put_not_expense_refuses_an_automatic_transfer_with_422(client):
     response = _put_not_expense(client, id, {"reason": "own_transfer"})
 
     assert response.status_code == 422
-    assert response.json() == {"detail": "Só uma saída que conta como gasto pode ser marcada."}
+    assert response.json() == {
+        "detail": "Só um lançamento que conta como gasto ou como entrada pode ser marcado."
+    }
     body = client.get("/api/transactions/expenses?view=excluded").json()
     assert body["items"] == []
 
@@ -2181,3 +2183,259 @@ def test_the_openapi_lists_put_and_delete_of_not_expense_and_view_on_both_gets(c
     }
     assert "view" in by_category_params
     assert "not_expense_reason" in body["components"]["schemas"]["Expense"]["properties"]
+
+
+def _load_income_fixture() -> None:
+    _load(
+        [
+            _transaction("ne-1", "2026-08-20", -60.0, categoria="Groceries", descricao="ACOUGUE"),
+            _transaction("ne-2", "2026-08-15", -45.0, categoria="Healthcare", descricao="FARMACIA"),
+            _transaction("ne-t", "2026-08-05", -500.0, eh_transferencia=True, descricao="TED"),
+            _transaction("in-1", "2026-08-05", 6000.0, tipo="CREDIT", descricao="SALARIO"),
+            _transaction(
+                "in-2",
+                "2026-08-10",
+                150.0,
+                tipo="CREDIT",
+                descricao="PIX RECEBIDO",
+                conta_id="sync-acc-2",
+            ),
+            _transaction(
+                "in-t",
+                "2026-08-06",
+                500.0,
+                tipo="CREDIT",
+                eh_transferencia=True,
+                descricao="TED RECEBIDA",
+            ),
+            _transaction(
+                "in-r", "2026-08-07", 40.0, tipo="CREDIT", eh_estorno=True, descricao="ESTORNO"
+            ),
+            _transaction(
+                "in-x",
+                "2026-08-08",
+                30.0,
+                tipo="CREDIT",
+                estornada_por="ne-1",
+                descricao="CREDITO ESTORNADO",
+            ),
+        ],
+        accounts=[CREDIT_ACCOUNT],
+    )
+
+
+def _period_result(client: TestClient, query: str = "") -> dict[str, Any]:
+    return client.get(f"/api/transactions/expenses/period-result?{query}").json()
+
+
+def _income_id(client: TestClient, text: str) -> int:
+    body = client.get("/api/transactions/expenses?view=income").json()
+    return next(item["id"] for item in body["items"] if item["description"] == text)
+
+
+def _pluggy_row_id(pluggy_id: str) -> int:
+    conn = connect()
+    row = conn.execute("SELECT id FROM transactions WHERE pluggy_id = ?", (pluggy_id,)).fetchone()
+    conn.close()
+    return int(row["id"])
+
+
+def test_view_income_lists_only_the_clean_positive_rows_with_a_positive_total(client):
+    _load_income_fixture()
+    _sign_in(client)
+
+    body = client.get(f"/api/transactions/expenses?view=income&{MONTH}").json()
+
+    assert body["total"] == 2
+    assert body["total_cents"] == 615000
+    assert [item["description"] for item in body["items"]] == ["PIX RECEBIDO", "SALARIO"]
+    descriptions = [item["description"] for item in body["items"]]
+    for text in ("TED RECEBIDA", "ESTORNO", "CREDITO ESTORNADO", "ACOUGUE"):
+        assert text not in descriptions
+
+
+def test_view_income_sorts_by_absolute_amount(client):
+    _load_income_fixture()
+    _sign_in(client)
+
+    desc = client.get(
+        "/api/transactions/expenses", params={"view": "income", "sort": "amount", "order": "desc"}
+    ).json()
+    asc = client.get(
+        "/api/transactions/expenses", params={"view": "income", "sort": "amount", "order": "asc"}
+    ).json()
+
+    assert [item["description"] for item in desc["items"]] == ["SALARIO", "PIX RECEBIDO"]
+    assert [item["description"] for item in asc["items"]] == ["PIX RECEBIDO", "SALARIO"]
+
+
+def test_period_result_without_session_answers_401(client):
+    response = client.get("/api/transactions/expenses/period-result")
+
+    assert response.status_code == 401
+    assert response.json() == {"detail": "nao autenticado"}
+
+
+def test_period_result_answers_income_spending_and_balance_for_the_month(client):
+    _load_income_fixture()
+    _sign_in(client)
+
+    assert _period_result(client, MONTH) == {
+        "income_cents": 615000,
+        "spending_cents": -10500,
+        "balance_cents": 604500,
+    }
+
+
+def test_period_result_with_only_from_is_an_open_ended_interval(client):
+    _load_income_fixture()
+    _sign_in(client)
+
+    assert _period_result(client, "from=2026-08-10") == {
+        "income_cents": 15000,
+        "spending_cents": -10500,
+        "balance_cents": 4500,
+    }
+    assert _period_result(client) == _period_result(client, MONTH)
+
+
+def test_period_result_filters_by_account_id(client):
+    _load_income_fixture()
+    _sign_in(client)
+
+    assert _period_result(client, f"account_id=sync-acc-2&{MONTH}") == {
+        "income_cents": 15000,
+        "spending_cents": 0,
+        "balance_cents": 15000,
+    }
+
+
+def test_period_result_filters_by_q_and_ignores_a_short_q(client):
+    _load_income_fixture()
+    _sign_in(client)
+
+    assert _period_result(client, "q=SALARIO") == {
+        "income_cents": 600000,
+        "spending_cents": 0,
+        "balance_cents": 600000,
+    }
+    assert _period_result(client, "q=S") == _period_result(client, MONTH)
+
+
+def test_period_result_refuses_an_inverted_interval_and_an_empty_account_id(client):
+    _load_income_fixture()
+    _sign_in(client)
+
+    inverted = client.get(
+        "/api/transactions/expenses/period-result",
+        params={"from": "2026-08-31", "to": "2026-08-01"},
+    )
+    assert inverted.status_code == 422
+
+    empty_account = client.get(
+        "/api/transactions/expenses/period-result", params={"account_id": ""}
+    )
+    assert empty_account.status_code == 422
+
+
+def test_put_not_expense_on_an_income_moves_it_to_excluded_and_drops_the_period_result(client):
+    _load_income_fixture()
+    _sign_in(client)
+    before_by_category = _by_category(client, MONTH)
+    before_month_signal = _month_signal(client, MONTH)
+
+    salario_id = _income_id(client, "SALARIO")
+    response = _put_not_expense(client, salario_id, {"reason": "other"})
+
+    assert response.status_code == 200
+    assert response.json()["not_expense_reason"] == "other"
+    assert response.json()["amount_cents"] == 600000
+
+    income_body = client.get(f"/api/transactions/expenses?view=income&{MONTH}").json()
+    assert income_body["total"] == 1
+    assert [item["description"] for item in income_body["items"]] == ["PIX RECEBIDO"]
+
+    assert _period_result(client, MONTH) == {
+        "income_cents": 15000,
+        "spending_cents": -10500,
+        "balance_cents": 4500,
+    }
+    assert _by_category(client, MONTH) == before_by_category
+    assert _month_signal(client, MONTH) == before_month_signal
+
+    acougue_id = _id_by_description(client, "ACOUGUE")
+    _put_not_expense(client, acougue_id, {"reason": "own_transfer"})
+
+    excluded_body = client.get(f"/api/transactions/expenses?view=excluded&{MONTH}").json()
+    assert excluded_body["total"] == 2
+    assert {item["description"] for item in excluded_body["items"]} == {"SALARIO", "ACOUGUE"}
+    assert excluded_body["total_cents"] == 594000
+
+
+def test_delete_not_expense_on_an_income_brings_it_back_to_income(client):
+    _load_income_fixture()
+    _sign_in(client)
+    salario_id = _income_id(client, "SALARIO")
+    _put_not_expense(client, salario_id, {"reason": "other"})
+
+    response = _delete_not_expense(client, salario_id)
+
+    assert response.status_code == 200
+    income_body = client.get(f"/api/transactions/expenses?view=income&{MONTH}").json()
+    assert income_body["total"] == 2
+    assert _period_result(client, MONTH)["income_cents"] == 615000
+
+
+def test_a_not_income_mark_survives_reingesting_the_same_source(client):
+    _load_income_fixture()
+    _sign_in(client)
+    salario_id = _income_id(client, "SALARIO")
+    _put_not_expense(client, salario_id, {"reason": "other"})
+
+    _load_income_fixture()
+
+    income_body = client.get(f"/api/transactions/expenses?view=income&{MONTH}").json()
+    assert all(item["description"] != "SALARIO" for item in income_body["items"])
+    excluded_body = client.get(f"/api/transactions/expenses?view=excluded&{MONTH}").json()
+    item = next(item for item in excluded_body["items"] if item["description"] == "SALARIO")
+    assert item["not_expense_reason"] == "other"
+
+
+def test_put_not_expense_refuses_a_positive_transfer_a_refund_and_a_refunded_credit_with_422(
+    client,
+):
+    _load_income_fixture()
+    _sign_in(client)
+
+    for pluggy_id in ("in-t", "in-r", "in-x"):
+        id = _pluggy_row_id(pluggy_id)
+
+        response = _put_not_expense(client, id, {"reason": "other"})
+
+        assert response.status_code == 422
+        assert response.json() == {
+            "detail": "Só um lançamento que conta como gasto ou como entrada pode ser marcado."
+        }
+
+    assert client.get("/api/transactions/expenses?view=excluded").json()["items"] == []
+
+
+def test_the_openapi_lists_period_result_and_income_in_the_view_enum(client):
+    _sign_in(client)
+
+    response = client.get("/openapi.json")
+
+    body = response.json()
+    period_result_params = {
+        param["name"]
+        for param in body["paths"]["/api/transactions/expenses/period-result"]["get"]["parameters"]
+    }
+    assert period_result_params == {"from", "to", "account_id", "q"}
+
+    expenses_params = body["paths"]["/api/transactions/expenses"]["get"]["parameters"]
+    view_param = next(param for param in expenses_params if param["name"] == "view")
+    assert view_param["schema"]["enum"] == ["expenses", "excluded", "income"]
+    assert view_param["schema"]["default"] == "expenses"
+
+    properties = body["components"]["schemas"]["PeriodResultResponse"]["properties"]
+    assert set(properties) >= {"income_cents", "spending_cents", "balance_cents"}

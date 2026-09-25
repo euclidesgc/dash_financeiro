@@ -12,6 +12,7 @@ import { ExpenseItem } from '@/features/expenses/components/expense-item'
 import { MonthCeiling } from '@/features/expenses/components/month-ceiling'
 import { Pagination } from '@/features/expenses/components/pagination'
 import { PeriodControls } from '@/features/expenses/components/period-controls'
+import { PeriodResult } from '@/features/expenses/components/period-result'
 import { SearchInput } from '@/features/expenses/components/search-input'
 import { SortControls } from '@/features/expenses/components/sort-controls'
 import { ViewSelect } from '@/features/expenses/components/view-select'
@@ -56,8 +57,47 @@ function readSearch(value: string | null): string | null {
   return term.length >= 2 ? term : null
 }
 
+const VIEW_TEXT: Record<
+  ExpenseView,
+  {
+    loading: string
+    error: string
+    emptyFiltered: string
+    emptyAll: string
+    noun: { one: string; many: string }
+    excludedNotice: (name: string) => string
+  }
+> = {
+  expenses: {
+    loading: 'Carregando gastos…',
+    error: 'Não foi possível carregar os gastos.',
+    emptyFiltered: 'Nenhum gasto para esse filtro.',
+    emptyAll: 'Nenhum gasto registrado ainda.',
+    noun: { one: 'gasto', many: 'gastos' },
+    excludedNotice: (name) => `${name} não conta mais como gasto.`,
+  },
+  excluded: {
+    loading: 'Carregando gastos…',
+    error: 'Não foi possível carregar os gastos.',
+    emptyFiltered: 'Nenhum lançamento marcado como não-gasto.',
+    emptyAll: 'Nenhum lançamento marcado como não-gasto.',
+    noun: { one: 'lançamento', many: 'lançamentos' },
+    excludedNotice: (name) => `${name} não conta mais como gasto.`,
+  },
+  income: {
+    loading: 'Carregando entradas…',
+    error: 'Não foi possível carregar as entradas.',
+    emptyFiltered: 'Nenhuma entrada nesse período.',
+    emptyAll: 'Nenhuma entrada registrada ainda.',
+    noun: { one: 'entrada', many: 'entradas' },
+    excludedNotice: (name) => `${name} não conta mais como entrada.`,
+  },
+}
+
 function readView(value: string | null): ExpenseView {
-  return value === 'excluded' ? 'excluded' : 'expenses'
+  if (value === 'income') return 'income'
+  if (value === 'excluded') return 'excluded'
+  return 'expenses'
 }
 
 function writeView(params: URLSearchParams, view: ExpenseView): void {
@@ -65,7 +105,7 @@ function writeView(params: URLSearchParams, view: ExpenseView): void {
   if (view === 'expenses') {
     params.delete('view')
   } else {
-    params.set('view', 'excluded')
+    params.set('view', view)
   }
 }
 
@@ -117,6 +157,7 @@ export function ExpensesList(): React.JSX.Element {
   const account = readAccount(searchParams.get('account'))
   const search = readSearch(searchParams.get('q'))
   const view = readView(searchParams.get('view'))
+  const text = VIEW_TEXT[view]
   const accounts = useExpenseAccounts()
   const categories = useCategories()
   const accountKnown = accounts.data
@@ -253,8 +294,11 @@ export function ExpensesList(): React.JSX.Element {
         />
         <ViewSelect value={view} onChange={handleViewChange} />
       </div>
+      {period.kind !== 'all' ? (
+        <PeriodResult query={{ from, to, account: filters.account, search }} />
+      ) : null}
       {period.kind === 'month' && view === 'expenses' ? <MonthCeiling query={{ from, to }} /> : null}
-      <CategoryTotals query={filters} />
+      {view === 'expenses' ? <CategoryTotals query={filters} /> : null}
     </>
   )
 
@@ -291,7 +335,7 @@ export function ExpensesList(): React.JSX.Element {
         className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-md border border-green-200 bg-green-50 p-3"
       >
         <p className="text-sm text-green-800">
-          {`${lastExcluded.description ?? 'Sem descrição'} não conta mais como gasto.`}
+          {text.excludedNotice(lastExcluded.description ?? 'Sem descrição')}
         </p>
         <Button
           variant="secondary"
@@ -311,7 +355,7 @@ export function ExpensesList(): React.JSX.Element {
       <>
         {header}
         <p role="status" className="mt-6 text-gray-600">
-          Carregando gastos…
+          {text.loading}
         </p>
       </>
     )
@@ -322,7 +366,7 @@ export function ExpensesList(): React.JSX.Element {
       <>
         {header}
         <Alert
-          message="Não foi possível carregar os gastos."
+          message={text.error}
           action={{ label: 'Tentar de novo', onClick: () => void refetch() }}
         />
       </>
@@ -331,18 +375,12 @@ export function ExpensesList(): React.JSX.Element {
 
   if (data.total === 0) {
     const filtered = period.kind !== 'all' || account !== null || search !== null
-    const emptyText =
-      view === 'excluded'
-        ? 'Nenhum lançamento marcado como não-gasto.'
-        : filtered
-          ? 'Nenhum gasto para esse filtro.'
-          : 'Nenhum gasto registrado ainda.'
     return (
       <>
         {header}
         {notice}
         <p className="mt-6 rounded-md border border-dashed border-gray-300 p-6 text-center text-gray-600">
-          {emptyText}
+          {filtered ? text.emptyFiltered : text.emptyAll}
         </p>
       </>
     )
@@ -373,7 +411,7 @@ export function ExpensesList(): React.JSX.Element {
         total={data.total}
         totalCents={data.total_cents}
         isFetching={isPlaceholderData}
-        noun={view === 'excluded' ? { one: 'lançamento', many: 'lançamentos' } : undefined}
+        noun={text.noun}
         onChange={(next) => {
           const params = new URLSearchParams(searchParams)
           params.set('page', String(next))

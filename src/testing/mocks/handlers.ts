@@ -91,7 +91,7 @@ export const fakeSyncStatus: SyncStatus = {
 function generateFakeExpenses(): Expense[] {
   const total = 45
   const startDate = Date.UTC(2026, 7, 1)
-  return Array.from({ length: total }, (_, index) => {
+  const spent: Expense[] = Array.from({ length: total }, (_, index) => {
     const id = total - index
     const date = new Date(startDate - index * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
 
@@ -213,6 +213,26 @@ function generateFakeExpenses(): Expense[] {
       amount_cents: -1000 * id,
     }
   })
+  return [...spent, ...generateFakeIncomeExpenses()]
+}
+
+function generateFakeIncomeExpenses(): Expense[] {
+  const base = {
+    payee_name: null,
+    account_name: 'Conta corrente',
+    account_institution: 'Banco de teste',
+    account_type: 'BANK' as const,
+    account_id: 'acc-bank-1',
+    category: null,
+    category_key: null,
+    category_source: 'auto' as const,
+    not_expense_reason: null,
+  }
+  return [
+    { id: 46, date: '2026-08-05', description: 'SALARIO EMPRESA X', amount_cents: 600000, ...base },
+    { id: 47, date: '2026-08-10', description: 'PIX RECEBIDO', amount_cents: 15000, ...base },
+    { id: 48, date: '2026-08-15', description: 'RENDIMENTO CDB', amount_cents: 3250, ...base },
+  ]
 }
 
 export const fakeExpenses: Expense[] = generateFakeExpenses()
@@ -248,6 +268,16 @@ function sortExpenses(items: Expense[], sort: ExpenseSort, order: ExpenseOrder):
   })
 }
 
+function matchesView(item: Expense, view: string | null): boolean {
+  if (view === 'income') {
+    return item.amount_cents > 0 && item.not_expense_reason === null
+  }
+  if (view === 'excluded') {
+    return item.not_expense_reason !== null
+  }
+  return item.amount_cents < 0 && item.not_expense_reason === null
+}
+
 export function filterExpenses(url: URL): Expense[] {
   const from = url.searchParams.get('from')
   const to = url.searchParams.get('to')
@@ -263,7 +293,7 @@ export function filterExpenses(url: URL): Expense[] {
       (term === null ||
         foldText(item.description ?? '').includes(term) ||
         foldText(item.payee_name ?? '').includes(term)) &&
-      (view === 'excluded' ? item.not_expense_reason !== null : item.not_expense_reason === null),
+      matchesView(item, view),
   )
 }
 
@@ -445,6 +475,24 @@ export const handlers = [
     const remaining_cents =
       scope === 'month' && ceiling_cents !== null ? ceiling_cents - spent_cents : null
     return HttpResponse.json({ scope, spent_cents, ceiling_cents, signal, remaining_cents })
+  }),
+
+  http.get('/api/transactions/expenses/period-result', ({ request }) => {
+    const url = new URL(request.url)
+    const incomeUrl = new URL(url)
+    incomeUrl.searchParams.set('view', 'income')
+    const spendingUrl = new URL(url)
+    spendingUrl.searchParams.set('view', 'expenses')
+    const income_cents = filterExpenses(incomeUrl).reduce((sum, item) => sum + item.amount_cents, 0)
+    const spending_cents = filterExpenses(spendingUrl).reduce(
+      (sum, item) => sum + item.amount_cents,
+      0,
+    )
+    return HttpResponse.json({
+      income_cents,
+      spending_cents,
+      balance_cents: income_cents + spending_cents,
+    })
   }),
 
   http.get('/api/categories', () => {

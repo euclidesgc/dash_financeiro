@@ -25,7 +25,12 @@ export function ExpenseItem({
   view: ExpenseView
   onExcluded: (excluded: { id: number; description: string | null }) => void
 }): React.JSX.Element {
-  const amountColor = expense.amount_cents < 0 ? 'text-red-700' : 'text-gray-900'
+  const amountColor =
+    expense.amount_cents < 0
+      ? 'text-red-700'
+      : expense.amount_cents > 0
+        ? 'text-green-700'
+        : 'text-gray-900'
 
   return (
     <li className="flex items-start justify-between gap-4 py-3">
@@ -44,9 +49,10 @@ export function ExpenseItem({
           <span className="rounded-full px-2 py-0.5 text-sm bg-gray-100 text-gray-700">
             {REASON_LABELS[expense.not_expense_reason ?? 'other']}
           </span>
-        ) : (
+        ) : null}
+        {view === 'expenses' ? (
           <CategoryPicker expense={expense} categories={categories} categoriesReady={categoriesReady} />
-        )}
+        ) : null}
         <span className={`tabular-nums font-medium ${amountColor}`}>
           {formatMoney(expense.amount_cents)}
         </span>

@@ -4,13 +4,13 @@ from typing import Any, Literal
 
 from app.db import fold
 from app.payees.names import labels
-from app.queries.spending import EXCLUDED, SPENDING, date_window
+from app.queries.spending import EXCLUDED, INCOME, SPENDING, date_window
 
 Sort = Literal["date", "amount", "category"]
 Order = Literal["asc", "desc"]
-View = Literal["expenses", "excluded"]
+View = Literal["expenses", "excluded", "income"]
 
-_PREDICATE: dict[View, str] = {"expenses": SPENDING, "excluded": EXCLUDED}
+_PREDICATE: dict[View, str] = {"expenses": SPENDING, "excluded": EXCLUDED, "income": INCOME}
 
 _ORDER_SQL: dict[Order, str] = {"asc": "ASC", "desc": "DESC"}
 
@@ -69,6 +69,13 @@ class CategoryTotal:
     count: int
     total_cents: int
     limit_cents: int | None
+
+
+@dataclass(frozen=True)
+class PeriodResult:
+    income_cents: int
+    spending_cents: int
+    balance_cents: int
 
 
 def _like_pattern(term: str) -> str:
@@ -212,3 +219,32 @@ def sum_by_category(
             )
         )
     return result
+
+
+def period_result(
+    conn: sqlite3.Connection,
+    *,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    account_id: str | None = None,
+    search: str | None = None,
+) -> PeriodResult:
+    income = sum_expenses(
+        conn,
+        view="income",
+        date_from=date_from,
+        date_to=date_to,
+        account_id=account_id,
+        search=search,
+    )
+    spending = sum_expenses(
+        conn,
+        view="expenses",
+        date_from=date_from,
+        date_to=date_to,
+        account_id=account_id,
+        search=search,
+    )
+    return PeriodResult(
+        income_cents=income, spending_cents=spending, balance_cents=income + spending
+    )

@@ -19,12 +19,23 @@ function LocationProbe(): React.JSX.Element {
   return <span data-testid="search">{location.search}</span>
 }
 
+function matchesViewForSpy(item: Expense, view: string | null): boolean {
+  if (view === 'income') {
+    return item.amount_cents > 0 && item.not_expense_reason === null
+  }
+  if (view === 'excluded') {
+    return item.not_expense_reason !== null
+  }
+  return item.amount_cents < 0 && item.not_expense_reason === null
+}
+
 function filterForSpy(
   items: Expense[],
   from: string | null,
   to: string | null,
   accountId: string | null,
   term: string | null,
+  view: string | null,
 ): Expense[] {
   return items.filter(
     (item) =>
@@ -33,7 +44,8 @@ function filterForSpy(
       (accountId === null || item.account_id === accountId) &&
       (term === null ||
         foldText(item.description ?? '').includes(term) ||
-        foldText(item.payee_name ?? '').includes(term)),
+        foldText(item.payee_name ?? '').includes(term)) &&
+      matchesViewForSpy(item, view),
   )
 }
 
@@ -75,7 +87,8 @@ function spyOnExpensesRequests(): URLSearchParams[] {
       const accountId = url.searchParams.get('account_id')
       const rawTerm = url.searchParams.get('q')?.trim() ?? ''
       const term = rawTerm.length >= 2 ? foldText(rawTerm) : null
-      const filtered = filterForSpy(fakeExpenses, from, to, accountId, term)
+      const view = url.searchParams.get('view')
+      const filtered = filterForSpy(fakeExpenses, from, to, accountId, term, view)
       const items = sortForSpy(filtered, sort, order)
       return HttpResponse.json({
         items: items.slice((page - 1) * pageSize, page * pageSize),
@@ -99,6 +112,28 @@ function spyOnCategoryTotalsRequests(): URLSearchParams[] {
       return HttpResponse.json({
         groups,
         total_cents: groups.reduce((sum, group) => sum + group.total_cents, 0),
+      })
+    }),
+  )
+  return calls
+}
+
+function spyOnPeriodResultRequests(): URLSearchParams[] {
+  const calls: URLSearchParams[] = []
+  server.use(
+    http.get('/api/transactions/expenses/period-result', ({ request }) => {
+      const url = new URL(request.url)
+      calls.push(url.searchParams)
+      const incomeUrl = new URL(url)
+      incomeUrl.searchParams.set('view', 'income')
+      const spendingUrl = new URL(url)
+      spendingUrl.searchParams.set('view', 'expenses')
+      const income_cents = filterExpenses(incomeUrl).reduce((sum, item) => sum + item.amount_cents, 0)
+      const spending_cents = filterExpenses(spendingUrl).reduce((sum, item) => sum + item.amount_cents, 0)
+      return HttpResponse.json({
+        income_cents,
+        spending_cents,
+        balance_cents: income_cents + spending_cents,
       })
     }),
   )
@@ -284,12 +319,13 @@ test('keeps the previous rows while the next page loads', async () => {
         await delay(50)
       }
       const pageSize = 20
+      const filtered = fakeExpenses.filter((item) => matchesViewForSpy(item, null))
       return HttpResponse.json({
-        items: fakeExpenses.slice((page - 1) * pageSize, page * pageSize),
+        items: filtered.slice((page - 1) * pageSize, page * pageSize),
         page,
         page_size: pageSize,
-        total: fakeExpenses.length,
-        total_cents: fakeExpenses.reduce((sum, item) => sum + item.amount_cents, 0),
+        total: filtered.length,
+        total_cents: filtered.reduce((sum, item) => sum + item.amount_cents, 0),
       })
     }),
   )
@@ -1713,6 +1749,259 @@ test('marking the last row of a filter shows the notice above the empty state', 
   expect(screen.getByText('Nenhum gasto para esse filtro.')).toBeInTheDocument()
 })
 
+async function markIncomeAsNotIncome(): Promise<void> {
+  await screen.findByRole('list')
+  await userEvent.click(
+    screen.getByRole('button', { name: 'Marcar SALARIO EMPRESA X como não-entrada' }),
+  )
+  const row = screen.getByRole('button', { name: 'Confirmar' }).closest('li')
+  if (row === null) {
+    throw new Error('row not found')
+  }
+  await userEvent.click(within(row).getByRole('button', { name: 'Confirmar' }))
+}
+
+test('?view=income lists the incomes in green without category, totals or ceiling', async () => {
+  renderWithProviders(<ExpensesList />, { route: '/expenses?view=income&month=2026-08' })
+
+  expect(await screen.findByLabelText('Mostrar')).toHaveValue('income')
+
+  const items = await screen.findAllByRole('listitem')
+  expect(items).toHaveLength(3)
+  expect(items.map((item) => item.textContent)).toEqual([
+    expect.stringContaining('RENDIMENTO CDB'),
+    expect.stringContaining('PIX RECEBIDO'),
+    expect.stringContaining('SALARIO EMPRESA X'),
+  ])
+
+  expect(screen.getByText('R$ 6.000,00')).toHaveClass('text-green-700')
+  expect(screen.queryByRole('button', { name: /^Trocar categoria de / })).not.toBeInTheDocument()
+  expect(screen.queryByRole('table')).not.toBeInTheDocument()
+  expect(screen.queryByText('Teto do mês')).not.toBeInTheDocument()
+  expect(
+    await screen.findByText('Página 1 de 1 · 3 entradas · R$ 6.182,50 no período'),
+  ).toBeInTheDocument()
+})
+
+test('shows "Resultado do período" for a month in the expenses view and in the income view', async () => {
+  renderWithProviders(<ExpensesList />, { route: '/expenses?month=2026-08' })
+
+  const resultHeading = await screen.findByRole('heading', { level: 2, name: 'Resultado do período' })
+  const region = screen.getByRole('region', { name: 'Resultado do período' })
+  expect(within(region).getByText('R$ 6.182,50')).toBeInTheDocument()
+  expect(within(region).getByText('R$ 84,90')).toBeInTheDocument()
+  expect(within(region).getByText('R$ 6.097,60')).toBeInTheDocument()
+
+  const ceilingHeading = await screen.findByRole('heading', { level: 2, name: 'Teto do mês' })
+  expect(
+    resultHeading.compareDocumentPosition(ceilingHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy()
+
+  cleanup()
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses?view=income&month=2026-08' })
+  const incomeRegion = await screen.findByRole('region', { name: 'Resultado do período' })
+  expect(within(incomeRegion).getByText('R$ 6.182,50')).toBeInTheDocument()
+  expect(within(incomeRegion).getByText('R$ 84,90')).toBeInTheDocument()
+  expect(within(incomeRegion).getByText('R$ 6.097,60')).toBeInTheDocument()
+})
+
+test('hides "Resultado do período" without a period and does not call the API', async () => {
+  const calls = spyOnPeriodResultRequests()
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+
+  await screen.findByRole('list')
+
+  expect(screen.queryByRole('region', { name: 'Resultado do período' })).not.toBeInTheDocument()
+  expect(calls.length).toBe(0)
+})
+
+test('shows "Resultado do período" for an open range', async () => {
+  const calls = spyOnPeriodResultRequests()
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses?from=2026-08-10' })
+
+  expect(await screen.findByRole('region', { name: 'Resultado do período' })).toBeInTheDocument()
+
+  await waitFor(() => {
+    const last = calls.at(-1)
+    expect(last?.get('from')).toBe('2026-08-10')
+    expect(last?.has('to')).toBe(false)
+  })
+})
+
+test('marking an income as not an income removes it, drops the period result and shows the undo notice', async () => {
+  renderWithProviders(<ExpensesList />, { route: '/expenses?view=income&month=2026-08' })
+
+  await markIncomeAsNotIncome()
+
+  const notice = await screen.findByRole('status')
+  expect(notice).toHaveTextContent('SALARIO EMPRESA X não conta mais como entrada.')
+  expect(within(notice).getByRole('button', { name: 'Desfazer' })).toBeInTheDocument()
+
+  await waitFor(() => {
+    expect(screen.queryByText('SALARIO EMPRESA X')).not.toBeInTheDocument()
+  })
+
+  expect(
+    await screen.findByText('Página 1 de 1 · 2 entradas · R$ 182,50 no período'),
+  ).toBeInTheDocument()
+
+  const region = screen.getByRole('region', { name: 'Resultado do período' })
+  await waitFor(() => {
+    expect(within(region).getByText('R$ 182,50')).toBeInTheDocument()
+  })
+})
+
+test('"Desfazer" brings the income back', async () => {
+  renderWithProviders(<ExpensesList />, { route: '/expenses?view=income&month=2026-08' })
+
+  await markIncomeAsNotIncome()
+
+  const notice = await screen.findByRole('status')
+  await userEvent.click(within(notice).getByRole('button', { name: 'Desfazer' }))
+
+  await waitFor(() => {
+    expect(screen.getByText('SALARIO EMPRESA X')).toBeInTheDocument()
+  })
+  expect(
+    await screen.findByText('Página 1 de 1 · 3 entradas · R$ 6.182,50 no período'),
+  ).toBeInTheDocument()
+  expect(
+    screen.queryByText('SALARIO EMPRESA X não conta mais como entrada.'),
+  ).not.toBeInTheDocument()
+})
+
+test('marking the last income of a filter shows the notice above "Nenhuma entrada nesse período."', async () => {
+  server.use(
+    http.get('/api/transactions/expenses', ({ request }) => {
+      const url = new URL(request.url)
+      const view = url.searchParams.get('view')
+      const salario = fakeExpenses.find((item) => item.id === 46)
+      if (view === 'income' && salario?.not_expense_reason === null) {
+        return HttpResponse.json({
+          items: [salario],
+          page: 1,
+          page_size: 20,
+          total: 1,
+          total_cents: salario.amount_cents,
+        })
+      }
+      return HttpResponse.json({ items: [], page: 1, page_size: 20, total: 0, total_cents: 0 })
+    }),
+  )
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses?view=income&month=2026-08' })
+
+  await markIncomeAsNotIncome()
+
+  const notice = await screen.findByRole('status')
+  expect(notice).toHaveTextContent('SALARIO EMPRESA X não conta mais como entrada.')
+  expect(screen.getByText('Nenhuma entrada nesse período.')).toBeInTheDocument()
+})
+
+test('?view=excluded lists a marked income next to a marked expense and "Voltar a contar" returns each', async () => {
+  fakeExpenses[0].not_expense_reason = 'own_transfer'
+  const salario = fakeExpenses.find((item) => item.id === 46)
+  if (salario !== undefined) {
+    salario.not_expense_reason = 'other'
+  }
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses?view=excluded' })
+
+  const items = await screen.findAllByRole('listitem')
+  expect(items).toHaveLength(2)
+  expect(screen.getByText('R$ 6.000,00')).toHaveClass('text-green-700')
+  expect(screen.getByText('-R$ 84,90')).toHaveClass('text-red-700')
+  expect(screen.getByText('Outro', { exact: true })).toBeInTheDocument()
+  expect(screen.getByText('Transferência entre minhas contas')).toBeInTheDocument()
+  expect(screen.getByText(/2 lançamentos/)).toBeInTheDocument()
+  expect(screen.queryByRole('table')).not.toBeInTheDocument()
+
+  await userEvent.click(screen.getByRole('button', { name: 'Voltar SALARIO EMPRESA X a contar' }))
+
+  await waitFor(() => {
+    expect(screen.getAllByRole('listitem')).toHaveLength(1)
+  })
+
+  await userEvent.click(screen.getByRole('button', { name: 'Voltar MERCADO DO BAIRRO a contar' }))
+
+  await waitFor(() => {
+    expect(screen.getByText('Nenhum lançamento marcado como não-gasto.')).toBeInTheDocument()
+  })
+})
+
+test('shows the income loading and error texts', async () => {
+  server.use(
+    http.get('/api/transactions/expenses', async () => {
+      await delay('infinite')
+      return HttpResponse.json({})
+    }),
+  )
+  renderWithProviders(<ExpensesList />, { route: '/expenses?view=income' })
+
+  expect(await screen.findByRole('status')).toHaveTextContent('Carregando entradas…')
+
+  cleanup()
+
+  server.use(http.get('/api/transactions/expenses', () => HttpResponse.json({}, { status: 500 })))
+  renderWithProviders(<ExpensesList />, { route: '/expenses?view=income' })
+
+  const alert = await screen.findByRole('alert')
+  expect(alert).toHaveTextContent('Não foi possível carregar as entradas.')
+  expect(screen.getByRole('button', { name: 'Tentar de novo' })).toBeInTheDocument()
+})
+
+test('shows the income empty states', async () => {
+  renderWithProviders(<ExpensesList />, { route: '/expenses?view=income&month=2026-07' })
+
+  expect(await screen.findByText('Nenhuma entrada nesse período.')).toBeInTheDocument()
+
+  cleanup()
+
+  server.use(
+    http.get('/api/transactions/expenses', () =>
+      HttpResponse.json({ items: [], page: 1, page_size: 20, total: 0, total_cents: 0 }),
+    ),
+  )
+  renderWithProviders(<ExpensesList />, { route: '/expenses?view=income' })
+
+  expect(await screen.findByText('Nenhuma entrada registrada ainda.')).toBeInTheDocument()
+})
+
+test('changing "Mostrar" to "Entradas" writes view=income, drops the page and sends view to the API', async () => {
+  const calls = spyOnExpensesRequests()
+
+  renderWithProviders(
+    <>
+      <ExpensesList />
+      <LocationProbe />
+    </>,
+    { route: '/expenses?page=2' },
+  )
+
+  await screen.findByRole('list')
+
+  await userEvent.selectOptions(screen.getByLabelText('Mostrar'), 'income')
+
+  await waitFor(() => {
+    const search = screen.getByTestId('search').textContent
+    expect(search).toContain('view=income')
+    expect(search).not.toContain('page=')
+  })
+
+  await waitFor(() => {
+    expect(calls.at(-1)?.get('view')).toBe('income')
+  })
+
+  await userEvent.selectOptions(screen.getByLabelText('Mostrar'), 'expenses')
+
+  await waitFor(() => {
+    expect(screen.getByTestId('search').textContent).not.toContain('view=')
+  })
+})
+
 test('?view=excluded with no marks shows the excluded empty state and no month ceiling', async () => {
   renderWithProviders(<ExpensesList />, { route: '/expenses?view=excluded&month=2026-08' })
 
@@ -1723,7 +2012,7 @@ test('?view=excluded with no marks shows the excluded empty state and no month c
   expect(screen.getByLabelText('Mostrar')).toHaveValue('excluded')
 })
 
-test('?view=excluded lists the marked rows with the reason badge and "Voltar a ser gasto" returns them', async () => {
+test('?view=excluded lists the marked rows with the reason badge and "Voltar a contar" returns them', async () => {
   fakeExpenses[0].not_expense_reason = 'own_transfer'
 
   renderWithProviders(<ExpensesList />, { route: '/expenses?view=excluded' })
@@ -1741,7 +2030,7 @@ test('?view=excluded lists the marked rows with the reason badge and "Voltar a s
   ).toBeInTheDocument()
 
   await userEvent.click(
-    screen.getByRole('button', { name: 'Voltar MERCADO DO BAIRRO a ser gasto' }),
+    screen.getByRole('button', { name: 'Voltar MERCADO DO BAIRRO a contar' }),
   )
 
   await waitFor(() => {

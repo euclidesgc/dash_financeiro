@@ -24,6 +24,15 @@ const BASE: Expense = {
   not_expense_reason: null,
 }
 
+const INCOME: Expense = {
+  ...BASE,
+  id: 46,
+  description: 'SALARIO EMPRESA X',
+  amount_cents: 600000,
+  category: null,
+  category_key: null,
+}
+
 interface PutCall {
   id: string
   body: { reason: NotExpenseReason }
@@ -238,7 +247,66 @@ test('saving invalidates the expenses queries', async () => {
   })
 })
 
-test('in the excluded view shows "Voltar a ser gasto" that sends DELETE', async () => {
+test('in the income view shows "Não é entrada" with the accessible name and no combobox', () => {
+  renderControl('income', vi.fn(), INCOME)
+
+  const button = screen.getByRole('button', { name: 'Marcar SALARIO EMPRESA X como não-entrada' })
+  expect(button).toHaveTextContent('Não é entrada')
+  expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+})
+
+test('in the income view "Confirmar" with "Outro" sends the same PUT and calls onExcluded', async () => {
+  const onExcluded = vi.fn()
+  const calls = spyOnPut()
+  renderControl('income', onExcluded, INCOME)
+
+  await userEvent.click(
+    screen.getByRole('button', { name: 'Marcar SALARIO EMPRESA X como não-entrada' }),
+  )
+  await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Motivo' }), 'other')
+  await userEvent.click(screen.getByRole('button', { name: 'Confirmar' }))
+
+  await waitFor(() => {
+    expect(calls).toEqual([{ id: '46', body: { reason: 'other' } }])
+  })
+  await waitFor(() => {
+    expect(onExcluded).toHaveBeenCalledWith({ id: 46, description: 'SALARIO EMPRESA X' })
+  })
+})
+
+test('in the income view a 500 shows "Não foi possível marcar como não-entrada." and "Tentar de novo" repeats', async () => {
+  const calls: PutCall[] = []
+  let first = true
+  server.use(
+    http.put('/api/transactions/:id/not-expense', async ({ params, request }) => {
+      const body = (await request.json()) as { reason: NotExpenseReason }
+      calls.push({ id: params.id as string, body })
+      if (first) {
+        first = false
+        return HttpResponse.json({ detail: 'erro' }, { status: 500 })
+      }
+      return HttpResponse.json({ ...INCOME, not_expense_reason: body.reason })
+    }),
+  )
+  renderControl('income', vi.fn(), INCOME)
+
+  await userEvent.click(
+    screen.getByRole('button', { name: 'Marcar SALARIO EMPRESA X como não-entrada' }),
+  )
+  await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Motivo' }), 'other')
+  await userEvent.click(screen.getByRole('button', { name: 'Confirmar' }))
+
+  const alert = await screen.findByRole('alert')
+  expect(alert).toHaveTextContent('Não foi possível marcar como não-entrada.')
+
+  await userEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }))
+
+  await waitFor(() => {
+    expect(calls.length).toBe(2)
+  })
+})
+
+test('in the excluded view shows "Voltar a contar" that sends DELETE', async () => {
   const calls = spyOnDelete()
   const { queryClient } = renderControl('excluded', vi.fn(), {
     ...BASE,
@@ -246,8 +314,8 @@ test('in the excluded view shows "Voltar a ser gasto" that sends DELETE', async 
   })
   const spy = vi.spyOn(queryClient, 'invalidateQueries')
 
-  const button = screen.getByRole('button', { name: 'Voltar GASTO 44 a ser gasto' })
-  expect(button).toHaveTextContent('Voltar a ser gasto')
+  const button = screen.getByRole('button', { name: 'Voltar GASTO 44 a contar' })
+  expect(button).toHaveTextContent('Voltar a contar')
 
   await userEvent.click(button)
 
@@ -274,14 +342,22 @@ test('in the excluded view a 500 shows the alert and "Tentar de novo" repeats', 
   )
   renderControl('excluded', vi.fn(), { ...BASE, not_expense_reason: 'refund' })
 
-  await userEvent.click(screen.getByRole('button', { name: 'Voltar GASTO 44 a ser gasto' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Voltar GASTO 44 a contar' }))
 
   const alert = await screen.findByRole('alert')
-  expect(alert).toHaveTextContent('Não foi possível voltar a contar como gasto.')
+  expect(alert).toHaveTextContent('Não foi possível voltar a contar.')
 
   await userEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }))
 
   await waitFor(() => {
     expect(calls.length).toBe(2)
   })
+})
+
+test('in the excluded view a marked income also shows "Voltar a contar"', () => {
+  renderControl('excluded', vi.fn(), { ...INCOME, not_expense_reason: 'other' })
+
+  expect(
+    screen.getByRole('button', { name: 'Voltar SALARIO EMPRESA X a contar' }),
+  ).toBeInTheDocument()
 })

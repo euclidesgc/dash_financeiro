@@ -20,7 +20,7 @@ prova o caminho de ponta a ponta (tela React → API FastAPI → SQLite) e as ou
 | 013 | `sinal-por-categoria` | ver, em cada categoria, se está dentro, acima ou abaixo do limite no período | Pedido de 22/09 | 008, 012 | in-review |
 | 014 | `sinal-do-mes` | ver se o total do mês está dentro, acima ou abaixo do teto do plano de recuperação | Pedido de 22/09 | 005 | in-review |
 | 015 | `marcar-nao-gasto` | tirar dos totais um lançamento que não é gasto (transferência entre contas próprias, estorno) | Pedido de 22/09 | 003 | in-review |
-| 016 | `entradas` | ver as entradas (salário e outras receitas) separadas dos gastos, no mesmo período | Pedido de 22/09 | 005 | planned |
+| 016 | `entradas` | ver as entradas (salário e outras receitas) separadas dos gastos, no mesmo período | Pedido de 22/09 | 005 | in-review |
 
 ## Dívidas técnicas
 
@@ -42,5 +42,6 @@ prova o caminho de ponta a ponta (tela React → API FastAPI → SQLite) e as ou
 | 030 | `shared-categories-query` | `src/features/expenses/api/get-categories.ts` e `src/features/categories/api/get-categories.ts` buscam `GET /api/categories` com a mesma chave `['categories']`; mover hook e tipo para `src/hooks/` e `src/types/` pela regra "usado por duas features → compartilhado" | 010 | 010 | planned |
 | 031 | `expense-count-label` | `pagination.tsx:19`, `category-totals.tsx:57` e `similar-offer.tsx` escrevem o plural de "gasto" cada um do seu jeito; um utilitário em `src/features/expenses/utils/` usado pelos três | 011 | — | planned |
 | 032 | `e2e-seed-classifies` | `scripts/e2e-backend.sh` ingere sem `classify_all`, então `payee` fica nulo até a primeira escrita de categoria e a contagem de parecidos cai no ramo por descrição, estado que a produção nunca tem; rodar `classify_all` no seed | 011 | 024 | planned |
-| 033 | `income-predicate-unification` | unificar o predicado de "entrada" (receita) que está escrito à mão em `app/plan/forecast.py`, `app/plan/monthly.py` e `app/plan/objective.py` em `app/queries/spending.py` como `INCOME`, antes de 016, para evitar divergência entre plano e tela de entradas | 015 | — | planned |
+| 033 | `income-predicate-unification` | unificar o predicado de "entrada" (receita) que está escrito à mão em `app/projection/forecast.py`, `app/projection/monthly.py` e `app/plan/objective.py` em `app/queries/spending.py` como `INCOME`, antes de 016, para evitar divergência entre plano e tela de entradas | 015 | — | done |
 | 034 | `override-unnecessary-reclassify` | `app/taxonomy/override.py::_write` reclassifica tudo via `classify_all` mesmo quando a coluna escrita (`not_expense_reason`) não é lida pela classificação; remover custo desnecessário a cada marcação de não-gasto | 015 | — | planned |
+| 035 | `mocks-spending-rule-duplication` | os mocks MSW em `src/testing/mocks/handlers.ts` (`matchesView`, `period-result`) duplicam a regra de entrada/gasto da API; se `app/queries/spending.py` mudar, os testes de componente continuam verdes com regra antiga | 016 | — | planned |

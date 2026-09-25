@@ -23,8 +23,8 @@ export function getExpenses(query: ExpensesQuery): Promise<ExpensesResponse> {
   if (query.search !== null) {
     params.set('q', query.search)
   }
-  if (query.view === 'excluded') {
-    params.set('view', 'excluded')
+  if (query.view !== 'expenses') {
+    params.set('view', query.view)
   }
   return apiRequest<ExpensesResponse>(`/api/transactions/expenses?${params.toString()}`)
 }

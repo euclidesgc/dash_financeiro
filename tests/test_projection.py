@@ -139,3 +139,35 @@ def test_the_undated_spending_is_never_an_inflow(taxonomy_conn, seed):
     assert monthly(conn, today=far)["months"] == []
     assert forecast(conn, today=far)["variable_cents"] == 0
     assert all(day["variable_cents"] <= 0 for day in forecast(conn, today=far)["days"])
+
+
+def test_a_salary_marked_as_not_income_leaves_the_median_and_the_income_day(taxonomy_conn, seed):
+    rows = [
+        transaction(f"in-{month}", f"{month}-14", 5000.0, descricao="Salario")
+        for month in ("2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08")
+    ]
+    conn = prepare(taxonomy_conn, seed, rows)
+    assert monthly(conn, today=REFERENCE)["income_cents"] == 500000
+    assert forecast(conn, today=REFERENCE)["income_day"] == 14
+
+    conn.execute("UPDATE transactions SET not_expense_reason = 'other' WHERE amount_cents > 0")
+    conn.commit()
+
+    assert monthly(conn, today=REFERENCE)["income_cents"] == 0
+    assert forecast(conn, today=REFERENCE)["income_day"] is None
+
+
+def test_a_refunded_credit_leaves_the_median_and_the_income_day(taxonomy_conn, seed):
+    rows = [
+        transaction(f"in-{month}", f"{month}-14", 5000.0, descricao="Salario")
+        for month in ("2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08")
+    ]
+    conn = prepare(taxonomy_conn, seed, rows)
+    assert monthly(conn, today=REFERENCE)["income_cents"] == 500000
+    assert forecast(conn, today=REFERENCE)["income_day"] == 14
+
+    conn.execute("UPDATE transactions SET refunded_by = 'x' WHERE amount_cents > 0")
+    conn.commit()
+
+    assert monthly(conn, today=REFERENCE)["income_cents"] == 0
+    assert forecast(conn, today=REFERENCE)["income_day"] is None
