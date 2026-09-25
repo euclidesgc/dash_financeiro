@@ -16,7 +16,7 @@ function renderRouter(initialEntries: string[]) {
     </QueryClientProvider>,
   )
 
-  return { router }
+  return { router, queryClient }
 }
 
 async function login() {
@@ -67,4 +67,32 @@ test('an authenticated user opening /login is sent to the dashboard', async () =
   })
 
   expect(await screen.findByRole('heading', { name: 'Saldos de hoje' })).toBeInTheDocument()
+})
+
+test('a session that expires while the app is open lands on the login page and stays there', async () => {
+  const { router, queryClient } = renderRouter(['/login'])
+
+  await screen.findByRole('heading', { name: 'Entrar' })
+  await login()
+  await screen.findByRole('heading', { name: 'Saldos de hoje' })
+
+  await fetch('/api/auth/logout', { method: 'POST' })
+
+  const visited: string[] = []
+  const unsubscribe = router.subscribe((state) => {
+    visited.push(state.location.pathname)
+    // Breaks a redirect loop so the test fails on the count instead of hanging.
+    if (visited.length > 20) {
+      queryClient.removeQueries({ queryKey: ['auth', 'me'] })
+    }
+  })
+
+  await act(async () => {
+    await queryClient.invalidateQueries({ queryKey: ['auth', 'me'] })
+  })
+  expect(await screen.findByRole('heading', { name: 'Entrar' })).toBeInTheDocument()
+  unsubscribe()
+
+  expect(visited).toEqual(['/login'])
+  expect(router.state.location.pathname).toBe('/login')
 })
