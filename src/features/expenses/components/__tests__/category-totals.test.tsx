@@ -369,7 +369,7 @@ test('shows no summary when no category is over the limit', async () => {
   expect(screen.queryByText(/acima do limite/)).not.toBeInTheDocument()
 })
 
-test('shows "Sinal só por mês" outside a whole month when some group has a limit', async () => {
+test('shows the month-only limit note outside a whole month when some group has a limit', async () => {
   respondWith(
     [
       { category: 'Groceries', label: 'Supermercado', count: 1, total_cents: -3000, limit_cents: 5000, signal: null },
@@ -379,13 +379,13 @@ test('shows "Sinal só por mês" outside a whole month when some group has a lim
 
   renderWithProviders(<CategoryTotals query={ALL} />)
 
-  expect(await screen.findByText('Sinal só por mês')).toBeInTheDocument()
+  expect(await screen.findByText('Os avisos de limite por categoria aparecem só quando o período é um mês inteiro.')).toBeInTheDocument()
   expect(screen.queryByText('Dentro')).not.toBeInTheDocument()
   expect(screen.queryByText('Atenção')).not.toBeInTheDocument()
   expect(screen.queryByText('Acima')).not.toBeInTheDocument()
 })
 
-test('shows no "Sinal só por mês" when no group has a limit', async () => {
+test('shows no the month-only limit note when no group has a limit', async () => {
   respondWith(
     [
       { category: 'Groceries', label: 'Supermercado', count: 1, total_cents: -3000, limit_cents: null, signal: null },
@@ -396,10 +396,10 @@ test('shows no "Sinal só por mês" when no group has a limit', async () => {
   renderWithProviders(<CategoryTotals query={ALL} />)
 
   await screen.findByRole('table')
-  expect(screen.queryByText('Sinal só por mês')).not.toBeInTheDocument()
+  expect(screen.queryByText('Os avisos de limite por categoria aparecem só quando o período é um mês inteiro.')).not.toBeInTheDocument()
 })
 
-test('shows no "Sinal só por mês" in a whole month', async () => {
+test('shows no the month-only limit note in a whole month', async () => {
   respondWith(
     [
       { category: 'Groceries', label: 'Supermercado', count: 1, total_cents: -3000, limit_cents: 5000, signal: 'within' },
@@ -410,7 +410,7 @@ test('shows no "Sinal só por mês" in a whole month', async () => {
   renderWithProviders(<CategoryTotals query={MONTH} />)
 
   await screen.findByRole('table')
-  expect(screen.queryByText('Sinal só por mês')).not.toBeInTheDocument()
+  expect(screen.queryByText('Os avisos de limite por categoria aparecem só quando o período é um mês inteiro.')).not.toBeInTheDocument()
 })
 
 test('rounds the percentage', async () => {

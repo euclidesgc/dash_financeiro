@@ -167,14 +167,26 @@ test('shows the error and "Tentar de novo" refetches', async () => {
   expect(await screen.findAllByRole('listitem')).toHaveLength(6)
 })
 
-test('lists the catalogue in the order of the API with badges and counts', async () => {
+function labelsOf(items: HTMLElement[]): (string | null)[] {
+  return items.map((item) => within(item).getByText(/./, { selector: '[title]' }).textContent)
+}
+
+test('lists categories with spending or limit first, each group in the order of the API', async () => {
   renderWithProviders(<CategoriesList />)
 
   const items = await screen.findAllByRole('listitem')
   expect(items).toHaveLength(6)
-  expect(items.map((item) => within(item).getByText(/./, { selector: '[title]' }).textContent)).toEqual(
-    ['Alimentação', 'Compras', 'Lazer', 'Pet shop', 'Supermercado', 'Transporte'],
-  )
+  expect(labelsOf(items)).toEqual([
+    'Alimentação',
+    'Compras',
+    'Lazer',
+    'Transporte',
+    'Pet shop',
+    'Supermercado',
+  ])
+  expect(
+    screen.getByText(/com gastos ou limite aparecem primeiro/).textContent,
+  ).toBe('4 com gastos ou limite aparecem primeiro; depois, 2 sem uso.')
 
   expect(within(itemOf('Alimentação')).getByText('Do sistema')).toBeInTheDocument()
   expect(within(itemOf('Alimentação')).getByText('1 gasto')).toBeInTheDocument()
@@ -532,4 +544,30 @@ test('"Remover limite" sends null and the row shows "Sem limite"', async () => {
   await user.click(within(item).getByRole('button', { name: 'Remover limite' }))
 
   expect(await within(item).findByText('Sem limite')).toBeInTheDocument()
+})
+
+test('filters the catalogue by name ignoring accents and clears the search', async () => {
+  const user = userEvent.setup()
+  renderWithProviders(<CategoriesList />)
+  await screen.findAllByRole('listitem')
+
+  await user.type(screen.getByRole('searchbox', { name: 'Buscar categoria' }), 'alimentacao')
+
+  expect(labelsOf(screen.getAllByRole('listitem'))).toEqual(['Alimentação'])
+
+  await user.click(screen.getByRole('button', { name: 'Limpar busca' }))
+
+  expect(screen.getAllByRole('listitem')).toHaveLength(6)
+  expect(screen.getByRole('searchbox', { name: 'Buscar categoria' })).toHaveValue('')
+})
+
+test('tells when no category matches the search', async () => {
+  const user = userEvent.setup()
+  renderWithProviders(<CategoriesList />)
+  await screen.findAllByRole('listitem')
+
+  await user.type(screen.getByRole('searchbox', { name: 'Buscar categoria' }), 'xyz')
+
+  expect(screen.queryAllByRole('listitem')).toHaveLength(0)
+  expect(screen.getByText(/Nenhuma categoria com “xyz”/)).toBeInTheDocument()
 })

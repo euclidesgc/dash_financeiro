@@ -18,7 +18,7 @@ export function DashboardRoute(): React.JSX.Element {
       <AppHeader userLogin={data?.login} action={<LogoutButton />} />
       <main className="mx-auto max-w-2xl p-8">
         <h1 className="text-2xl font-bold">Saldos de hoje</h1>
-        <p className="mt-2 text-gray-600">Contas e cartões sincronizados da Pluggy.</p>
+        <p className="mt-2 text-gray-600">Contas e cartões trazidos dos seus bancos pela Pluggy, o serviço que conecta este painel aos bancos.</p>
         <SyncPanel />
         <MonthPlanCard />
         <BalancesList />

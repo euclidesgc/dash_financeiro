@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest'
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 
 import { AppHeader } from '@/components/layouts/app-header'
 import { renderWithProviders } from '@/testing/test-utils'
@@ -49,4 +50,27 @@ test('marks "Conexões" as current on the connections page', () => {
 
   expect(screen.getByRole('link', { name: 'Conexões' })).toHaveAttribute('aria-current', 'page')
   expect(screen.getByRole('link', { name: 'Categorias' })).not.toHaveAttribute('aria-current')
+})
+
+test('"Mais telas" opens full-page links to the old panel screens', async () => {
+  const user = userEvent.setup()
+  renderWithProviders(<AppHeader />, { route: '/expenses' })
+
+  const navigation = screen.getByRole('navigation', { name: 'Principal' })
+  await user.click(within(navigation).getByText('Mais telas'))
+
+  const expected = [
+    ['Resumo', '/'],
+    ['Objetivo', '/objetivo'],
+    ['Dívidas', '/dividas'],
+    ['Simulador', '/simulador'],
+    ['Consultor', '/consultor'],
+    ['Configuração', '/configuracao'],
+  ]
+  for (const [name, href] of expected) {
+    const link = within(navigation).getByRole('link', { name })
+    expect(link).toBeVisible()
+    expect(link).toHaveAttribute('href', href)
+    expect(link).not.toHaveAttribute('aria-current')
+  }
 })

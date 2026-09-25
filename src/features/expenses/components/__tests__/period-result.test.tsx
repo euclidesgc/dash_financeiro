@@ -1,7 +1,7 @@
 import { http, HttpResponse, delay } from 'msw'
 import { expect, test } from 'vitest'
 import userEvent from '@testing-library/user-event'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 
 import { PeriodResult } from '@/features/expenses/components/period-result'
 import { renderWithProviders } from '@/testing/test-utils'
@@ -21,7 +21,7 @@ test('shows the loading state with role status', async () => {
       return HttpResponse.json({})
     }),
   )
-  renderWithProviders(<PeriodResult query={QUERY} />)
+  renderWithProviders(<PeriodResult query={QUERY} periodLabel="setembro de 2026" />)
 
   expect(await screen.findByRole('status')).toHaveTextContent('Carregando resultado do período…')
 })
@@ -38,7 +38,7 @@ test('shows the alert and "Tentar de novo" refetches', async () => {
       return HttpResponse.json({ income_cents: 600000, spending_cents: -23490, balance_cents: 576510 })
     }),
   )
-  renderWithProviders(<PeriodResult query={QUERY} />)
+  renderWithProviders(<PeriodResult query={QUERY} periodLabel="setembro de 2026" />)
 
   const alert = await screen.findByRole('alert')
   expect(alert).toHaveTextContent('Não foi possível carregar o resultado do período.')
@@ -50,11 +50,12 @@ test('shows the alert and "Tentar de novo" refetches', async () => {
 
 test('shows "Entradas", "Gastos" and "Saldo" with the colour of each sign', async () => {
   respondWith({ income_cents: 600000, spending_cents: -23490, balance_cents: 576510 })
-  renderWithProviders(<PeriodResult query={QUERY} />)
+  renderWithProviders(<PeriodResult query={QUERY} periodLabel="setembro de 2026" />)
 
   const region = await screen.findByRole('region', { name: 'Resultado do período' })
   const terms = region.querySelectorAll('dt')
   expect(Array.from(terms).map((term) => term.textContent)).toEqual(['Entradas', 'Gastos', 'Saldo'])
+  expect(within(region).getByText('setembro de 2026')).toBeInTheDocument()
 
   expect(screen.getByText('R$ 6.000,00')).toHaveClass('text-green-700')
   expect(screen.getByText('R$ 234,90')).toHaveClass('text-red-700')
@@ -63,7 +64,7 @@ test('shows "Entradas", "Gastos" and "Saldo" with the colour of each sign', asyn
 
 test('shows a negative balance in red with the minus sign', async () => {
   respondWith({ income_cents: 0, spending_cents: -23490, balance_cents: -23490 })
-  renderWithProviders(<PeriodResult query={QUERY} />)
+  renderWithProviders(<PeriodResult query={QUERY} periodLabel="setembro de 2026" />)
 
   await screen.findByRole('region', { name: 'Resultado do período' })
 
@@ -73,7 +74,7 @@ test('shows a negative balance in red with the minus sign', async () => {
 
 test('shows a zero balance in the neutral colour', async () => {
   respondWith({ income_cents: 10000, spending_cents: -10000, balance_cents: 0 })
-  renderWithProviders(<PeriodResult query={QUERY} />)
+  renderWithProviders(<PeriodResult query={QUERY} periodLabel="setembro de 2026" />)
 
   await screen.findByRole('region', { name: 'Resultado do período' })
 
@@ -96,7 +97,7 @@ test('sends from, to, account_id and q to the API', async () => {
     account: 'acc-bank-1',
     search: 'sal',
   }
-  renderWithProviders(<PeriodResult query={query} />)
+  renderWithProviders(<PeriodResult query={query} periodLabel="setembro de 2026" />)
 
   await waitFor(() => {
     const last = calls.at(-1)
@@ -106,7 +107,7 @@ test('sends from, to, account_id and q to the API', async () => {
     expect(last?.get('q')).toBe('sal')
   })
 
-  renderWithProviders(<PeriodResult query={QUERY} />)
+  renderWithProviders(<PeriodResult query={QUERY} periodLabel="setembro de 2026" />)
 
   await waitFor(() => {
     const last = calls.at(-1)

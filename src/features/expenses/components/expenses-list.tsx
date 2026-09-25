@@ -23,7 +23,14 @@ import type {
   ExpenseView,
   Period,
 } from '@/features/expenses/types/expense'
-import { currentMonth, readPeriod, shiftMonth, toDateBounds, writePeriod } from '@/features/expenses/utils/period'
+import {
+  currentMonth,
+  formatPeriod,
+  readPeriod,
+  shiftMonth,
+  toDateBounds,
+  writePeriod,
+} from '@/features/expenses/utils/period'
 import { EXPENSE_NOUN, type CountNoun } from '@/utils/format-count'
 
 const SORTS = ['date', 'amount', 'category'] as const
@@ -268,6 +275,13 @@ export function ExpensesList(): React.JSX.Element {
 
   const header = (
     <>
+      {period.kind !== 'all' ? (
+        <PeriodResult
+          query={{ from, to, account: filters.account, search }}
+          periodLabel={formatPeriod(period)}
+        />
+      ) : null}
+      {period.kind === 'month' && view === 'expenses' ? <MonthCeiling query={{ from, to }} /> : null}
       <div className="mt-6 flex flex-wrap items-end gap-3">
         <SearchInput value={search} onCommit={handleSearchCommit} />
         <AccountSelect
@@ -292,10 +306,6 @@ export function ExpensesList(): React.JSX.Element {
         />
         <ViewSelect value={view} onChange={handleViewChange} />
       </div>
-      {period.kind !== 'all' ? (
-        <PeriodResult query={{ from, to, account: filters.account, search }} />
-      ) : null}
-      {period.kind === 'month' && view === 'expenses' ? <MonthCeiling query={{ from, to }} /> : null}
       {view === 'expenses' ? <CategoryTotals query={filters} /> : null}
     </>
   )

@@ -86,7 +86,8 @@ def test_without_a_key_the_advisor_says_the_numbers_do_not_depend_on_it():
     with pytest.raises(AdvisorUnavailableError) as refusal:
         ask("e daí?", "contexto", api_key=None, model="gemini-2.5-flash")
 
-    assert "/configuracao" in str(refusal.value)
+    assert "na tela Configuração" in str(refusal.value)
+    assert "/configuracao" not in str(refusal.value)
     assert "não dependem dela" in str(refusal.value)
 
 
@@ -187,6 +188,7 @@ def test_a_question_added_to_the_catalogue_reaches_the_advisor(taxonomy_conn, mo
         "unit": CENTS,
         "kind": FACT,
         "screen": "/configuracao",
+        "screen_label": "Configuração",
         "moves": "o caixa do mês em que a mudança acontecer",
         "default": None,
         "stored": True,
@@ -199,6 +201,7 @@ def test_a_question_added_to_the_catalogue_reaches_the_advisor(taxonomy_conn, mo
     assert "custo-mudanca" in asked
     assert asked["custo-mudanca"]["label"] == extra["question"]
     assert asked["custo-mudanca"]["where"] == extra["screen"]
+    assert asked["custo-mudanca"]["where_label"] == extra["screen_label"]
 
 
 def test_the_refusal_of_the_provider_is_said_in_portuguese(monkeypatch):

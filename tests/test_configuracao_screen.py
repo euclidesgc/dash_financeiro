@@ -143,3 +143,12 @@ def test_the_median_window_moves_the_survival_floor_and_the_reserve_with_it(clie
 
     assert _saved(MEDIAN) == 1
     assert after != before
+
+
+def test_every_link_names_the_screen_instead_of_printing_its_address(client):
+    page = client.get(SCREEN).text
+
+    assert re.findall(r'<a href="[^"]*">/', page) == []
+    assert '<a href="/simulador">Simulador</a>' in page
+    assert '<a href="/app/expenses">Gastos do painel novo</a>' in page
+    assert "em /dividas" not in page

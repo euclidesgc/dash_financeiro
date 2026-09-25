@@ -30,7 +30,7 @@ def seed(conn: sqlite3.Connection) -> IngestResult:
         return result
     classify_all(conn)
     # Reason: the seed ingest is fixture furniture, not a real sync run; the
-    # screen must start from "Nunca atualizado", not from this bootstrap row.
+    # screen must start from "Nenhuma atualização feita por este painel ainda", not from this bootstrap row.
     conn.execute("DELETE FROM sync_runs")
     conn.commit()
     return result

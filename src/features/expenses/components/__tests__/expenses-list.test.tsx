@@ -79,7 +79,7 @@ function cellsOf(row: HTMLElement): string[] {
 }
 
 test('shows the loading state', () => {
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   expect(screen.getByText('Carregando gastos…')).toBeInTheDocument()
 })
@@ -91,7 +91,7 @@ test('shows the empty state', async () => {
     ),
   )
 
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   expect(await screen.findByText('Nenhum gasto registrado ainda.')).toBeInTheDocument()
   expect(screen.queryByRole('list')).not.toBeInTheDocument()
@@ -130,7 +130,7 @@ test('shows the error and retries', async () => {
     }),
   )
 
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   const alert = await screen.findByRole('alert')
   expect(alert).toHaveTextContent('Não foi possível carregar os gastos.')
@@ -141,7 +141,7 @@ test('shows the error and retries', async () => {
 })
 
 test('renders the fields of a row', async () => {
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   await screen.findByRole('list')
 
@@ -158,7 +158,7 @@ test('renders the fields of a row', async () => {
 })
 
 test('hides the payee when it is null', async () => {
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   await screen.findByRole('list')
 
@@ -166,7 +166,7 @@ test('hides the payee when it is null', async () => {
 })
 
 test('shows "Sem categoria" and "Sem descrição" fallbacks', async () => {
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   await screen.findByRole('list')
 
@@ -176,7 +176,7 @@ test('shows "Sem categoria" and "Sem descrição" fallbacks', async () => {
 })
 
 test('shows twenty rows on the first page', async () => {
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   await screen.findByRole('list')
 
@@ -184,7 +184,7 @@ test('shows twenty rows on the first page', async () => {
 })
 
 test('reads the page from the URL', async () => {
-  renderWithProviders(<ExpensesList />, { route: '/expenses?page=3' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all&page=3' })
 
   await screen.findByRole('list')
 
@@ -194,7 +194,7 @@ test('reads the page from the URL', async () => {
 })
 
 test('treats an invalid page as the first', async () => {
-  renderWithProviders(<ExpensesList />, { route: '/expenses?page=abc' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all&page=abc' })
 
   await screen.findByRole('list')
 
@@ -203,7 +203,7 @@ test('treats an invalid page as the first', async () => {
 })
 
 test('shows the pagination summary', async () => {
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   expect(await screen.findByText('Página 1 de 3 · 45 gastos · R$ 10.774,90 no período')).toBeInTheDocument()
 })
@@ -215,7 +215,7 @@ test('hides the pagination when empty', async () => {
     ),
   )
 
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   await screen.findByText('Nenhum gasto registrado ainda.')
   expect(screen.queryByRole('navigation', { name: 'Paginação' })).not.toBeInTheDocument()
@@ -227,7 +227,7 @@ test('"Próxima" moves to page 2 in the URL and in the API', async () => {
       <ExpensesList />
       <LocationProbe />
     </>,
-    { route: '/expenses' },
+    { route: '/expenses?period=all' },
   )
 
   await screen.findByRole('list')
@@ -235,7 +235,7 @@ test('"Próxima" moves to page 2 in the URL and in the API', async () => {
   await userEvent.click(screen.getByRole('button', { name: 'Próxima' }))
 
   expect(await screen.findByText('Página 2 de 3 · 45 gastos · R$ 10.774,90 no período')).toBeInTheDocument()
-  expect(screen.getByTestId('search')).toHaveTextContent('?page=2')
+  expect(screen.getByTestId('search')).toHaveTextContent('?period=all&page=2')
   const items = screen.getAllByRole('listitem')
   expect(within(items[0]).getByText('GASTO 25')).toBeInTheDocument()
 })
@@ -252,7 +252,7 @@ test('keeps the previous rows while the next page loads', async () => {
     }),
   )
 
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   await screen.findByRole('list')
 
@@ -265,7 +265,7 @@ test('keeps the previous rows while the next page loads', async () => {
 })
 
 test('falls back to the last page when the URL is past the end', async () => {
-  renderWithProviders(<ExpensesList />, { route: '/expenses?page=9' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all&page=9' })
 
   expect(await screen.findByText('Página 3 de 3 · 45 gastos · R$ 10.774,90 no período')).toBeInTheDocument()
 })
@@ -278,7 +278,7 @@ test('shows the default sorting controls', async () => {
       <ExpensesList />
       <LocationProbe />
     </>,
-    { route: '/expenses' },
+    { route: '/expenses?period=all' },
   )
 
   const combobox = await screen.findByRole('combobox', { name: 'Ordenar por' })
@@ -288,7 +288,7 @@ test('shows the default sorting controls', async () => {
   const button = screen.getByRole('button', { name: 'Inverter direção da ordenação' })
   expect(button).toHaveTextContent('Decrescente')
 
-  expect(screen.getByTestId('search')).toHaveTextContent('')
+  expect(screen.getByTestId('search')).toHaveTextContent('?period=all')
 
   await waitFor(() => {
     expect(calls[0]?.get('sort')).toBe('date')
@@ -304,14 +304,14 @@ test('sorting by amount puts the biggest spending first', async () => {
       <ExpensesList />
       <LocationProbe />
     </>,
-    { route: '/expenses' },
+    { route: '/expenses?period=all' },
   )
 
   await screen.findByRole('list')
 
   await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Ordenar por' }), 'amount')
 
-  expect(screen.getByTestId('search')).toHaveTextContent('?sort=amount')
+  expect(screen.getByTestId('search')).toHaveTextContent('?period=all&sort=amount')
   expect(screen.getByRole('button', { name: 'Inverter direção da ordenação' })).toHaveTextContent(
     'Decrescente',
   )
@@ -334,14 +334,14 @@ test('sorting by category starts ascending', async () => {
       <ExpensesList />
       <LocationProbe />
     </>,
-    { route: '/expenses' },
+    { route: '/expenses?period=all' },
   )
 
   await screen.findByRole('list')
 
   await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Ordenar por' }), 'category')
 
-  expect(screen.getByTestId('search')).toHaveTextContent('?sort=category&order=asc')
+  expect(screen.getByTestId('search')).toHaveTextContent('?period=all&sort=category&order=asc')
   expect(screen.getByRole('button', { name: 'Inverter direção da ordenação' })).toHaveTextContent(
     'Crescente',
   )
@@ -358,14 +358,14 @@ test('toggling the direction inverts the order', async () => {
       <ExpensesList />
       <LocationProbe />
     </>,
-    { route: '/expenses?sort=category&order=asc' },
+    { route: '/expenses?period=all&sort=category&order=asc' },
   )
 
   await screen.findByRole('list')
 
   await userEvent.click(screen.getByRole('button', { name: 'Inverter direção da ordenação' }))
 
-  expect(screen.getByTestId('search')).toHaveTextContent('?sort=category')
+  expect(screen.getByTestId('search')).toHaveTextContent('?period=all&sort=category')
   expect(screen.getByRole('button', { name: 'Inverter direção da ordenação' })).toHaveTextContent(
     'Decrescente',
   )
@@ -382,14 +382,14 @@ test('toggling the direction on the default sort writes only the order', async (
       <ExpensesList />
       <LocationProbe />
     </>,
-    { route: '/expenses' },
+    { route: '/expenses?period=all' },
   )
 
   await screen.findByRole('list')
 
   await userEvent.click(screen.getByRole('button', { name: 'Inverter direção da ordenação' }))
 
-  expect(screen.getByTestId('search')).toHaveTextContent('?order=asc')
+  expect(screen.getByTestId('search')).toHaveTextContent('?period=all&order=asc')
   expect(screen.getByRole('button', { name: 'Inverter direção da ordenação' })).toHaveTextContent(
     'Crescente',
   )
@@ -406,14 +406,14 @@ test('changing the sorting drops the page', async () => {
       <ExpensesList />
       <LocationProbe />
     </>,
-    { route: '/expenses?page=2' },
+    { route: '/expenses?period=all&page=2' },
   )
 
   await screen.findByRole('list')
 
   await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Ordenar por' }), 'amount')
 
-  expect(screen.getByTestId('search')).toHaveTextContent('?sort=amount')
+  expect(screen.getByTestId('search')).toHaveTextContent('?period=all&sort=amount')
   expect(await screen.findByText('Página 1 de 3 · 45 gastos · R$ 10.774,90 no período')).toBeInTheDocument()
 })
 
@@ -425,14 +425,14 @@ test('pagination keeps the sorting', async () => {
       <ExpensesList />
       <LocationProbe />
     </>,
-    { route: '/expenses?sort=amount' },
+    { route: '/expenses?period=all&sort=amount' },
   )
 
   await screen.findByRole('list')
 
   await userEvent.click(screen.getByRole('button', { name: 'Próxima' }))
 
-  expect(await screen.findByTestId('search')).toHaveTextContent('?sort=amount&page=2')
+  expect(await screen.findByTestId('search')).toHaveTextContent('?period=all&sort=amount&page=2')
 
   await waitFor(() => {
     const last = calls.at(-1)
@@ -445,7 +445,7 @@ test('pagination keeps the sorting', async () => {
 test('falls back to the defaults on unknown sort and order', async () => {
   const calls = spyOnExpensesRequests()
 
-  renderWithProviders(<ExpensesList />, { route: '/expenses?sort=foo&order=bar' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all&sort=foo&order=bar' })
 
   const combobox = await screen.findByRole('combobox', { name: 'Ordenar por' })
   expect(combobox).toHaveValue('date')
@@ -467,7 +467,7 @@ test('keeps the controls visible in the error state', async () => {
     http.get('/api/transactions/expenses', () => HttpResponse.json({}, { status: 500 })),
   )
 
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   const alert = await screen.findByRole('alert')
   expect(alert).toHaveTextContent('Não foi possível carregar os gastos.')
@@ -481,16 +481,42 @@ test('keeps the controls visible in the empty state', async () => {
     ),
   )
 
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   expect(await screen.findByText('Nenhum gasto registrado ainda.')).toBeInTheDocument()
   expect(screen.getByRole('combobox', { name: 'Ordenar por' })).toBeInTheDocument()
 })
 
-test('shows the whole period by default', async () => {
+test('opens in the current month with the result and the ceiling before the filters', async () => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date(2026, 6, 15))
   const calls = spyOnExpensesRequests()
 
   renderWithProviders(<ExpensesList />, { route: '/expenses' })
+
+  await screen.findByRole('list')
+
+  await waitFor(() => {
+    expect(calls[0]?.get('from')).toBe('2026-07-01')
+    expect(calls[0]?.get('to')).toBe('2026-07-31')
+  })
+  expect(screen.getByText('julho de 2026', { selector: 'span' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Todo o período' })).toBeEnabled()
+
+  const result = await screen.findByRole('heading', { name: 'Resultado do período' })
+  const ceiling = await screen.findByRole('heading', { name: 'Teto do mês' })
+  const search = screen.getByRole('searchbox', { name: 'Buscar' })
+  expect(result.compareDocumentPosition(search) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  expect(ceiling.compareDocumentPosition(search) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  expect(screen.getByText('julho de 2026', { selector: 'p' })).toBeInTheDocument()
+
+  vi.useRealTimers()
+})
+
+test('shows the whole period with period=all', async () => {
+  const calls = spyOnExpensesRequests()
+
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   await screen.findByRole('list')
 
@@ -519,7 +545,7 @@ test('reads the month from the URL', async () => {
     expect(calls[0]?.get('to')).toBe('2026-07-31')
   })
 
-  expect(screen.getByText('julho de 2026')).toBeInTheDocument()
+  expect(screen.getByText('julho de 2026', { selector: 'span' })).toBeInTheDocument()
   expect(await screen.findByText(/31 gastos/)).toBeInTheDocument()
   expect(screen.getByLabelText('De', { exact: true })).toHaveValue('2026-07-01')
   expect(screen.getByLabelText('Até', { exact: true })).toHaveValue('2026-07-31')
@@ -564,7 +590,7 @@ test('"Próximo mês" moves one month forward', async () => {
   expect(within(items[0]).getByText('MERCADO DO BAIRRO')).toBeInTheDocument()
 })
 
-test('"Mês anterior" without a month starts from the current month', async () => {
+test('"Mês anterior" from the whole period starts from the current month', async () => {
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(new Date(2026, 8, 15))
 
@@ -573,7 +599,7 @@ test('"Mês anterior" without a month starts from the current month', async () =
       <ExpensesList />
       <LocationProbe />
     </>,
-    { route: '/expenses' },
+    { route: '/expenses?period=all' },
   )
 
   await userEvent.click(await screen.findByRole('button', { name: 'Mês anterior' }))
@@ -605,7 +631,7 @@ test('"Todo o período" clears the month', async () => {
 
   await userEvent.click(screen.getByRole('button', { name: 'Todo o período' }))
 
-  expect(screen.getByTestId('search')).toHaveTextContent('')
+  expect(screen.getByTestId('search')).toHaveTextContent('?period=all')
   expect(await screen.findByText(/45 gastos/)).toBeInTheDocument()
 })
 
@@ -698,7 +724,7 @@ test('a date field with a segment half typed keeps the filter and the other fiel
 
   expect(screen.getByTestId('search')).toHaveTextContent('?month=2026-07')
   expect(screen.getByLabelText('Até', { exact: true })).toHaveValue('2026-07-31')
-  expect(screen.getByText('julho de 2026')).toBeInTheDocument()
+  expect(screen.getByText('julho de 2026', { selector: 'span' })).toBeInTheDocument()
 })
 
 test('a year still being typed does not reach the URL', async () => {
@@ -762,7 +788,7 @@ test('the month wins when the URL has both formats', async () => {
     expect(calls[0]?.get('to')).toBe('2026-07-31')
   })
 
-  expect(screen.getByText('julho de 2026')).toBeInTheDocument()
+  expect(screen.getByText('julho de 2026', { selector: 'span' })).toBeInTheDocument()
 })
 
 test('changing the period drops the page and keeps the sorting', async () => {
@@ -815,25 +841,29 @@ test('pagination keeps the period', async () => {
   })
 })
 
-test('falls back to the whole period on an invalid month', async () => {
+test('falls back to the current month on an invalid month', async () => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date(2026, 6, 15))
   const calls = spyOnExpensesRequests()
 
   renderWithProviders(<ExpensesList />, { route: '/expenses?month=13' })
 
   await screen.findByRole('list')
 
-  expect(screen.getByText('Todo o período', { selector: 'span' })).toBeInTheDocument()
+  expect(screen.getByText('julho de 2026', { selector: 'span' })).toBeInTheDocument()
 
   await waitFor(() => {
-    expect(calls[0]?.get('from')).toBeNull()
-    expect(calls[0]?.get('to')).toBeNull()
+    expect(calls[0]?.get('from')).toBe('2026-07-01')
+    expect(calls[0]?.get('to')).toBe('2026-07-31')
   })
+
+  vi.useRealTimers()
 })
 
 test('keeps the period controls visible in the error state', async () => {
   server.use(http.get('/api/transactions/expenses', () => HttpResponse.json({}, { status: 500 })))
 
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   const alert = await screen.findByRole('alert')
   expect(alert).toHaveTextContent('Não foi possível carregar os gastos.')
@@ -843,7 +873,7 @@ test('keeps the period controls visible in the error state', async () => {
 test('shows "Todas as contas" by default and calls the API without account_id', async () => {
   const calls = spyOnExpensesRequests()
 
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   expect(screen.getByLabelText('Conta')).toHaveValue('')
   expect(await screen.findByText(/45 gastos/)).toBeInTheDocument()
@@ -856,7 +886,7 @@ test('shows "Todas as contas" by default and calls the API without account_id', 
 test('reads the account from the URL', async () => {
   const calls = spyOnExpensesRequests()
 
-  renderWithProviders(<ExpensesList />, { route: '/expenses?account=acc-credit-1' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all&account=acc-credit-1' })
 
   await waitFor(() => {
     expect(calls.at(-1)?.get('account_id')).toBe('acc-credit-1')
@@ -917,7 +947,7 @@ test('choosing "Todas as contas" removes the account from the URL', async () => 
       <ExpensesList />
       <LocationProbe />
     </>,
-    { route: '/expenses?account=acc-credit-1' },
+    { route: '/expenses?period=all&account=acc-credit-1' },
   )
 
   await screen.findByRole('list')
@@ -942,7 +972,7 @@ test('pagination keeps the account', async () => {
       <ExpensesList />
       <LocationProbe />
     </>,
-    { route: '/expenses?account=acc-bank-1' },
+    { route: '/expenses?period=all&account=acc-bank-1' },
   )
 
   await screen.findByRole('list')
@@ -982,7 +1012,7 @@ test('drops an unknown account from the URL once the accounts load', async () =>
       <ExpensesList />
       <LocationProbe />
     </>,
-    { route: '/expenses?account=nao-existe' },
+    { route: '/expenses?period=all&account=nao-existe' },
   )
 
   await waitFor(() => {
@@ -1001,7 +1031,7 @@ test('drops an unknown account from the URL once the accounts load', async () =>
 test('keeps the expenses list when the accounts request fails', async () => {
   server.use(http.get('/api/accounts/balances', () => HttpResponse.json({}, { status: 500 })))
 
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível carregar as contas.')
   expect(within(screen.getByLabelText('Conta')).getAllByRole('option')).toHaveLength(1)
@@ -1013,7 +1043,7 @@ test('keeps the expenses list when the accounts request fails', async () => {
 test('keeps the account select visible in the error state', async () => {
   server.use(http.get('/api/transactions/expenses', () => HttpResponse.json({}, { status: 500 })))
 
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   const alert = await screen.findByRole('alert')
   expect(alert).toHaveTextContent('Não foi possível carregar os gastos.')
@@ -1023,7 +1053,7 @@ test('keeps the account select visible in the error state', async () => {
 test('shows an empty "Buscar" field by default and calls the API without q', async () => {
   const calls = spyOnExpensesRequests()
 
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   expect(screen.getByLabelText('Buscar')).toHaveValue('')
   expect(screen.queryByRole('button', { name: 'Limpar busca' })).not.toBeInTheDocument()
@@ -1038,7 +1068,7 @@ test('shows an empty "Buscar" field by default and calls the API without q', asy
 test('reads the search from the URL', async () => {
   const calls = spyOnExpensesRequests()
 
-  renderWithProviders(<ExpensesList />, { route: '/expenses?q=mercado' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all&q=mercado' })
 
   await waitFor(() => {
     expect(calls.at(-1)?.get('q')).toBe('mercado')
@@ -1063,7 +1093,7 @@ test('typing writes q to the URL after 300 ms and filters the list', async () =>
       <ExpensesList />
       <LocationProbe />
     </>,
-    { route: '/expenses' },
+    { route: '/expenses?period=all' },
   )
 
   fireEvent.change(screen.getByLabelText('Buscar'), { target: { value: 'acougue' } })
@@ -1097,7 +1127,7 @@ test('a one-character search does not touch the URL nor the API', async () => {
       <ExpensesList />
       <LocationProbe />
     </>,
-    { route: '/expenses' },
+    { route: '/expenses?period=all' },
   )
 
   await vi.waitFor(() => {
@@ -1121,7 +1151,7 @@ test('Enter commits the search immediately', async () => {
       <ExpensesList />
       <LocationProbe />
     </>,
-    { route: '/expenses' },
+    { route: '/expenses?period=all' },
   )
 
   await screen.findByText(/45 gastos/)
@@ -1147,7 +1177,7 @@ test('searching drops the page and keeps the account and the sorting', async () 
       <ExpensesList />
       <LocationProbe />
     </>,
-    { route: '/expenses?page=2&account=acc-bank-1&sort=amount' },
+    { route: '/expenses?period=all&page=2&account=acc-bank-1&sort=amount' },
   )
 
   fireEvent.change(screen.getByLabelText('Buscar'), { target: { value: 'gasto' } })
@@ -1178,7 +1208,7 @@ test('clearing the search removes q from the URL', async () => {
       <ExpensesList />
       <LocationProbe />
     </>,
-    { route: '/expenses?q=mercado' },
+    { route: '/expenses?period=all&q=mercado' },
   )
 
   await screen.findByRole('button', { name: 'Limpar busca' })
@@ -1191,7 +1221,7 @@ test('clearing the search removes q from the URL', async () => {
 })
 
 test('shows the filtered empty state for a search without results', async () => {
-  renderWithProviders(<ExpensesList />, { route: '/expenses?q=zzzz' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all&q=zzzz' })
 
   expect(await screen.findByText('Nenhum gasto para esse filtro.')).toBeInTheDocument()
   expect(screen.getByLabelText('Buscar')).toHaveValue('zzzz')
@@ -1207,7 +1237,7 @@ test('pagination keeps the search', async () => {
       <ExpensesList />
       <LocationProbe />
     </>,
-    { route: '/expenses?q=gasto' },
+    { route: '/expenses?period=all&q=gasto' },
   )
 
   expect(await screen.findByText(/43 gastos/)).toBeInTheDocument()
@@ -1230,7 +1260,7 @@ test('pagination keeps the search', async () => {
 test('keeps the search field visible in the error state', async () => {
   server.use(http.get('/api/transactions/expenses', () => HttpResponse.json({}, { status: 500 })))
 
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   const alert = await screen.findByRole('alert')
   expect(alert).toHaveTextContent('Não foi possível carregar os gastos.')
@@ -1272,7 +1302,7 @@ test('retrying keeps the search', async () => {
     }),
   )
 
-  renderWithProviders(<ExpensesList />, { route: '/expenses?q=mercado' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all&q=mercado' })
 
   const alert = await screen.findByRole('alert')
   expect(alert).toHaveTextContent('Não foi possível carregar os gastos.')
@@ -1285,7 +1315,7 @@ test('retrying keeps the search', async () => {
 })
 
 test('shows the totals by category above the list', async () => {
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   await screen.findByRole('heading', { level: 2, name: 'Por categoria' })
 
@@ -1323,7 +1353,7 @@ test('shows the totals by category above the list', async () => {
 test('filters the totals by account and sends account_id to by-category', async () => {
   const calls = spyOnCategoryTotalsRequests()
 
-  renderWithProviders(<ExpensesList />, { route: '/expenses?account=acc-credit-1' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all&account=acc-credit-1' })
 
   await screen.findByRole('heading', { level: 2, name: 'Por categoria' })
 
@@ -1340,7 +1370,7 @@ test('filters the totals by account and sends account_id to by-category', async 
 })
 
 test('hides the totals block for a search without results', async () => {
-  renderWithProviders(<ExpensesList />, { route: '/expenses?q=zzzz' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all&q=zzzz' })
 
   await screen.findByText('Nenhum gasto para esse filtro.')
 
@@ -1353,7 +1383,7 @@ test('keeps the list when by-category fails', async () => {
     http.get('/api/transactions/expenses/by-category', () => HttpResponse.json({}, { status: 500 })),
   )
 
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   const alert = await screen.findByRole('alert')
   expect(alert).toHaveTextContent('Não foi possível carregar os totais por categoria.')
@@ -1366,7 +1396,7 @@ test('"Próxima" does not refetch by-category', async () => {
   const categoryCalls = spyOnCategoryTotalsRequests()
   const expensesCalls = spyOnExpensesRequests()
 
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   await screen.findByRole('list')
   await waitFor(() => {
@@ -1404,7 +1434,7 @@ test('changing the period refetches by-category with from and to', async () => {
 })
 
 test('renders every category badge as a button that is enabled once the catalogue loads', async () => {
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   const rows = await screen.findAllByRole('listitem')
   expect(rows).toHaveLength(20)
@@ -1421,7 +1451,7 @@ test('renders every category badge as a button that is enabled once the catalogu
 
 test('changing the category of an uncategorised row refetches the list and the totals and marks it manual', async () => {
   const user = userEvent.setup()
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   const list = await screen.findByRole('list')
   const row = within(list).getByText('Sem categoria').closest('li')
@@ -1457,7 +1487,7 @@ test('changing the category of an uncategorised row refetches the list and the t
 
 test('"Voltar para a automática" restores the row and removes "manual"', async () => {
   const user = userEvent.setup()
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   const list = await screen.findByRole('list')
   const row = within(list).getByText('Sem categoria').closest('li')
@@ -1502,7 +1532,7 @@ test('applying the category to the similar expenses updates the other row and th
   fakeExpenses[5].description = 'MERCADO DO BAIRRO'
   fakeExpenses[5].payee_name = 'Mercado do Bairro'
 
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   const list = await screen.findByRole('list')
   const items = within(list).getAllByRole('listitem')
@@ -1543,7 +1573,7 @@ test('applying the category to the similar expenses updates the other row and th
 test('keeps the list usable when the categories request fails', async () => {
   server.use(http.get('/api/categories', () => HttpResponse.json({}, { status: 500 })))
 
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   const rows = await screen.findAllByRole('listitem')
   expect(rows).toHaveLength(20)
@@ -1584,15 +1614,15 @@ test('shows the signal badges and the summary for a month', async () => {
   }
 
   expect(screen.getByText('1 categoria acima do limite')).toBeInTheDocument()
-  expect(screen.queryByText('Sinal só por mês')).not.toBeInTheDocument()
+  expect(screen.queryByText('Os avisos de limite por categoria aparecem só quando o período é um mês inteiro.')).not.toBeInTheDocument()
 })
 
-test('shows "Sinal só por mês" and no badge for the whole period', async () => {
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+test('shows the month-only limit note and no badge for the whole period', async () => {
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   await screen.findByRole('heading', { level: 2, name: 'Por categoria' })
 
-  expect(screen.getByText('Sinal só por mês')).toBeInTheDocument()
+  expect(screen.getByText('Os avisos de limite por categoria aparecem só quando o período é um mês inteiro.')).toBeInTheDocument()
 
   for (const row of categoryRows()) {
     const text = cellsOf(row)[0] ?? ''
@@ -1627,7 +1657,7 @@ test('hides the month ceiling block and does not call month-signal outside a mon
     }),
   )
 
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
   await screen.findByRole('heading', { level: 2, name: 'Por categoria' })
   expect(screen.queryByText('Teto do mês')).not.toBeInTheDocument()
 
@@ -1662,7 +1692,7 @@ async function markFirstRowAsNotExpense(): Promise<void> {
 }
 
 test('marking a row as not an expense removes it, drops the totals and shows the undo notice', async () => {
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   await markFirstRowAsNotExpense()
 
@@ -1689,7 +1719,7 @@ test('marking a row as not an expense removes it, drops the totals and shows the
 })
 
 test('"Desfazer" brings the row back and removes the notice', async () => {
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   await markFirstRowAsNotExpense()
 
@@ -1721,7 +1751,7 @@ test('a failed undo turns the notice into an alert with "Tentar de novo"', async
     }),
   )
 
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   await markFirstRowAsNotExpense()
 
@@ -1811,7 +1841,7 @@ test('shows "Resultado do período" for a month in the expenses view and in the 
 test('hides "Resultado do período" without a period and does not call the API', async () => {
   const calls = spyOnPeriodResultRequests()
 
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   await screen.findByRole('list')
 
@@ -1912,7 +1942,7 @@ test('?view=excluded lists a marked income next to a marked expense and "Voltar 
     salario.not_expense_reason = 'other'
   }
 
-  renderWithProviders(<ExpensesList />, { route: '/expenses?view=excluded' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all&view=excluded' })
 
   const items = await screen.findAllByRole('listitem')
   expect(items).toHaveLength(2)
@@ -1945,7 +1975,7 @@ test('?view=excluded shows what went out and what came in apart, not their diffe
     salario.not_expense_reason = 'own_transfer'
   }
 
-  renderWithProviders(<ExpensesList />, { route: '/expenses?view=excluded' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all&view=excluded' })
 
   const pagination = await screen.findByRole('navigation', { name: 'Paginação' })
   expect(pagination).toHaveTextContent(
@@ -1960,14 +1990,14 @@ test('shows the income loading and error texts', async () => {
       return HttpResponse.json({})
     }),
   )
-  renderWithProviders(<ExpensesList />, { route: '/expenses?view=income' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all&view=income' })
 
   expect(await screen.findByRole('status')).toHaveTextContent('Carregando entradas…')
 
   cleanup()
 
   server.use(http.get('/api/transactions/expenses', () => HttpResponse.json({}, { status: 500 })))
-  renderWithProviders(<ExpensesList />, { route: '/expenses?view=income' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all&view=income' })
 
   const alert = await screen.findByRole('alert')
   expect(alert).toHaveTextContent('Não foi possível carregar as entradas.')
@@ -1986,7 +2016,7 @@ test('shows the income empty states', async () => {
       HttpResponse.json({ items: [], page: 1, page_size: 20, total: 0, total_cents: 0, outflow_cents: 0, inflow_cents: 0 }),
     ),
   )
-  renderWithProviders(<ExpensesList />, { route: '/expenses?view=income' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all&view=income' })
 
   expect(await screen.findByText('Nenhuma entrada registrada ainda.')).toBeInTheDocument()
 })
@@ -1999,7 +2029,7 @@ test('changing "Mostrar" to "Entradas" writes view=income, drops the page and se
       <ExpensesList />
       <LocationProbe />
     </>,
-    { route: '/expenses?page=2' },
+    { route: '/expenses?period=all&page=2' },
   )
 
   await screen.findByRole('list')
@@ -2036,7 +2066,7 @@ test('?view=excluded with no marks shows the excluded empty state and no month c
 test('?view=excluded lists the marked rows with the reason badge and "Voltar a contar" returns them', async () => {
   fakeExpenses[0].not_expense_reason = 'own_transfer'
 
-  renderWithProviders(<ExpensesList />, { route: '/expenses?view=excluded' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all&view=excluded' })
 
   const items = await screen.findAllByRole('listitem')
   expect(items).toHaveLength(1)
@@ -2062,7 +2092,7 @@ test('?view=excluded lists the marked rows with the reason badge and "Voltar a c
 test('an unknown view falls back to the expenses view', async () => {
   const calls = spyOnExpensesRequests()
 
-  renderWithProviders(<ExpensesList />, { route: '/expenses?view=x' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all&view=x' })
 
   await screen.findByRole('list')
 
@@ -2082,7 +2112,7 @@ test('changing "Mostrar" writes view=excluded, drops the page and sends view to 
       <ExpensesList />
       <LocationProbe />
     </>,
-    { route: '/expenses?page=2' },
+    { route: '/expenses?period=all&page=2' },
   )
 
   await screen.findByRole('list')
@@ -2107,7 +2137,7 @@ test('changing "Mostrar" writes view=excluded, drops the page and sends view to 
 })
 
 test('changing the view clears the undo notice', async () => {
-  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+  renderWithProviders(<ExpensesList />, { route: '/expenses?period=all' })
 
   await markFirstRowAsNotExpense()
 

@@ -89,3 +89,22 @@ def test_no_screen_route_is_missing_from_the_rail():
         )
     }
     assert declared == {item["href"] for item in navigation.SCREENS}
+
+
+SPA_LINK = re.compile(r'class="rail-spa-link"\s+href="([^"]+)">([^<]+)</a>')
+
+
+@pytest.mark.parametrize("screen", navigation.SCREENS, ids=lambda item: item["href"])
+def test_every_screen_links_to_the_new_panel(client, screen):
+    page = client.get(screen["href"])
+    assert SPA_LINK.findall(page.text) == [
+        ("/app/", "Saldos"),
+        ("/app/expenses", "Gastos"),
+        ("/app/categories", "Categorias"),
+        ("/app/connections", "Conexões"),
+    ]
+    assert 'id="rail-spa-title">Painel novo<' in page.text
+
+
+def test_the_login_has_no_link_to_the_new_panel(client):
+    assert not SPA_LINK.findall(client.get("/login").text)

@@ -56,7 +56,10 @@ test.afterEach(async ({ request }) => {
   }
 })
 
-test('opens the expenses page and lists only the spending', async ({ page }) => {
+test('opens the expenses page in the current month with the result before the filters', async ({
+  page,
+}) => {
+  await page.clock.setFixedTime(new Date('2026-09-15T12:00:00-03:00'))
   await page.goto('/app/login')
   await page.getByLabel('Login').fill(LOGIN)
   await page.getByLabel('Senha').fill(PASSWORD)
@@ -68,6 +71,19 @@ test('opens the expenses page and lists only the spending', async ({ page }) => 
 
   await expect(page.getByRole('heading', { level: 1, name: 'Gastos' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Gastos' })).toHaveAttribute('aria-current', 'page')
+  await expect(page.getByText('setembro de 2026', { exact: true }).first()).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Todo o período' })).toBeEnabled()
+
+  const result = page.getByRole('heading', { level: 2, name: 'Resultado do período' })
+  const ceiling = page.getByRole('heading', { level: 2, name: 'Teto do mês' })
+  const search = page.getByRole('searchbox', { name: 'Buscar' })
+  await expect(result).toBeVisible()
+  await expect(ceiling).toBeVisible()
+  const resultBox = await result.boundingBox()
+  const ceilingBox = await ceiling.boundingBox()
+  const searchBox = await search.boundingBox()
+  expect(resultBox?.y ?? Infinity).toBeLessThan(searchBox?.y ?? 0)
+  expect(ceilingBox?.y ?? Infinity).toBeLessThan(searchBox?.y ?? 0)
 
   const item = page.getByRole('listitem').filter({ hasText: 'MERCADO DO BAIRRO' })
   await expect(item).toBeVisible()
@@ -77,9 +93,20 @@ test('opens the expenses page and lists only the spending', async ({ page }) => 
   await expect(page.getByText('TED PARA POUPANCA')).toHaveCount(0)
   await expect(page.getByText('SALARIO')).toHaveCount(0)
 
-  await expect(page.getByText('Página 1 de 1 · 5 gastos')).toBeVisible()
+  await expect(page.getByText('Página 1 de 1 · 2 gastos · R$ 234,90 no período')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Anterior', exact: true })).toBeDisabled()
   await expect(page.getByRole('button', { name: 'Próxima' })).toBeDisabled()
+
+  await page.getByRole('button', { name: 'Todo o período' }).click()
+  await expect(page).toHaveURL(/period=all/)
+  await expect(page.getByText('Página 1 de 1 · 5 gastos')).toBeVisible()
+  await expect(result).toHaveCount(0)
+
+  await page.reload()
+  await page.getByLabel('Ordenar por').selectOption('amount')
+  await expect(page).toHaveURL(/period=all/)
+  await expect(page.getByRole('button', { name: 'Todo o período' })).toBeDisabled()
+  await expect(page.getByText('Página 1 de 1 · 5 gastos')).toBeVisible()
 })
 
 test('reorders the expenses by amount and by category and keeps the order on reload', async ({
@@ -93,6 +120,8 @@ test('reorders the expenses by amount and by category and keeps the order on rel
 
   await page.getByRole('link', { name: 'Gastos' }).click()
   await expect(page).toHaveURL(/\/app\/expenses$/)
+  await page.getByRole('button', { name: 'Todo o período' }).click()
+  await expect(page).toHaveURL(/period=all/)
 
   const orderButton = page.getByRole('button', { name: 'Inverter direção da ordenação' })
 
@@ -138,17 +167,19 @@ test('filters the expenses by month and by date range and keeps the period on re
 
   await page.getByRole('link', { name: 'Gastos' }).click()
   await expect(page).toHaveURL(/\/app\/expenses$/)
+  await page.getByRole('button', { name: 'Todo o período' }).click()
+  await expect(page).toHaveURL(/period=all/)
 
   await expect(page.getByText('Página 1 de 1 · 5 gastos · R$ 369,90 no período')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Todo o período' })).toBeDisabled()
 
   await page.goto('/app/expenses?month=2026-10')
   await expect(page.getByText('Nenhum gasto para esse filtro.')).toBeVisible()
-  await expect(page.getByText('outubro de 2026')).toBeVisible()
+  await expect(page.getByRole('group', { name: 'Mês' }).getByText('outubro de 2026')).toBeVisible()
 
   await page.getByRole('button', { name: 'Mês anterior' }).click()
   await expect(page).toHaveURL(/month=2026-09/)
-  await expect(page.getByText('setembro de 2026')).toBeVisible()
+  await expect(page.getByRole('group', { name: 'Mês' }).getByText('setembro de 2026')).toBeVisible()
   await expect(page.getByRole('listitem')).toHaveCount(2)
   await expect(page.getByLabel('De', { exact: true })).toHaveValue('2026-09-01')
   await expect(page.getByLabel('Até', { exact: true })).toHaveValue('2026-09-30')
@@ -189,6 +220,7 @@ test.describe('typing the dates by keyboard', () => {
     await expect(page).toHaveURL(/\/app\/?$/)
 
     await page.getByRole('link', { name: 'Gastos' }).click()
+    await page.getByRole('button', { name: 'Todo o período' }).click()
     await expect(page.getByText('Página 1 de 1 · 5 gastos · R$ 369,90 no período')).toBeVisible()
 
     await page.getByRole('button', { name: 'Próximo mês' }).click()
@@ -244,6 +276,8 @@ test('filters the expenses by account and keeps the account on reload', async ({
 
   await page.getByRole('link', { name: 'Gastos' }).click()
   await expect(page).toHaveURL(/\/app\/expenses$/)
+  await page.getByRole('button', { name: 'Todo o período' }).click()
+  await expect(page).toHaveURL(/period=all/)
 
   const accountSelect = page.getByLabel('Conta', { exact: true })
   await expect(accountSelect).toHaveValue('')
@@ -273,7 +307,7 @@ test('filters the expenses by account and keeps the account on reload', async ({
   await expect(page).not.toHaveURL(/account=/)
   await expect.poll(() => page.getByRole('listitem').count()).toBeGreaterThanOrEqual(4)
 
-  await page.goto('/app/expenses?account=nao-existe')
+  await page.goto('/app/expenses?account=nao-existe&period=all')
   await expect(page).not.toHaveURL(/account=/)
   await expect(accountSelect).toHaveValue('')
   await expect.poll(() => page.getByRole('listitem').count()).toBeGreaterThanOrEqual(4)
@@ -288,6 +322,8 @@ test('searches the expenses by text and keeps the search on reload', async ({ pa
 
   await page.getByRole('link', { name: 'Gastos' }).click()
   await expect(page).toHaveURL(/\/app\/expenses$/)
+  await page.getByRole('button', { name: 'Todo o período' }).click()
+  await expect(page).toHaveURL(/period=all/)
 
   const searchInput = page.getByLabel('Buscar')
   await expect(searchInput).toHaveValue('')
@@ -387,10 +423,10 @@ test('shows the signal of each category against its limit only in a whole month 
   await expect(health).not.toContainText('Dentro')
   await expect(health).not.toContainText('Atenção')
   await expect(health).not.toContainText('Acima')
-  await expect(page.getByText('Sinal só por mês', { exact: true })).toHaveCount(0)
+  await expect(page.getByText('Os avisos de limite por categoria aparecem só quando o período é um mês inteiro.', { exact: true })).toHaveCount(0)
 
   await page.goto('/app/expenses?from=2026-08-01&to=2026-08-20')
-  await expect(page.getByText('Sinal só por mês', { exact: true })).toBeVisible()
+  await expect(page.getByText('Os avisos de limite por categoria aparecem só quando o período é um mês inteiro.', { exact: true })).toBeVisible()
   await expect(page.getByRole('table', { name: 'Por categoria' })).not.toContainText('Acima')
   await expect(page.getByText(/acima do limite/)).toHaveCount(0)
 
@@ -403,7 +439,7 @@ test('shows the signal of each category against its limit only in a whole month 
   await expect(page.getByRole('table', { name: 'Por categoria' })).toBeVisible()
   await expect(page.getByRole('table', { name: 'Por categoria' })).not.toContainText('Acima')
   await expect(page.getByText(/acima do limite/)).toHaveCount(0)
-  await expect(page.getByText('Sinal só por mês', { exact: true })).toHaveCount(0)
+  await expect(page.getByText('Os avisos de limite por categoria aparecem só quando o período é um mês inteiro.', { exact: true })).toHaveCount(0)
 })
 
 test('shows the month against its ceiling, edits the ceiling inline and leaves the base as it found it', async ({
@@ -594,6 +630,8 @@ test('goes back to the balances page', async ({ page }) => {
 
   await page.getByRole('link', { name: 'Gastos' }).click()
   await expect(page).toHaveURL(/\/app\/expenses$/)
+  await page.getByRole('button', { name: 'Todo o período' }).click()
+  await expect(page).toHaveURL(/period=all/)
 
   await page.getByRole('link', { name: 'Saldos' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Saldos de hoje' })).toBeVisible()

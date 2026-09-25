@@ -34,29 +34,33 @@ export function ExpenseItem({
         : 'text-gray-900'
 
   return (
-    <li className="flex items-start justify-between gap-4 py-3">
-      <div className="min-w-0 flex-1">
-        <p className="font-medium truncate text-gray-900">
-          {expense.description ?? 'Sem descrição'}
-        </p>
-        {expense.payee_name !== null ? (
-          <p className="text-sm text-gray-600 truncate">{expense.payee_name}</p>
-        ) : null}
-        <p className="text-sm text-gray-600 truncate">{accountLabel(expense)}</p>
-      </div>
-      <div className="flex shrink-0 flex-col items-end gap-1">
-        <span className="text-sm text-gray-600 tabular-nums">{formatDate(expense.date)}</span>
-        {view === 'excluded' ? (
-          <span className="rounded-full px-2 py-0.5 text-sm bg-gray-100 text-gray-700">
-            {REASON_LABELS[expense.not_expense_reason ?? 'other']}
+    <li className="py-3">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="font-medium truncate text-gray-900">
+            {expense.description ?? 'Sem descrição'}
+          </p>
+          {expense.payee_name !== null ? (
+            <p className="text-sm text-gray-600 truncate">{expense.payee_name}</p>
+          ) : null}
+          <p className="text-sm text-gray-600 truncate">{accountLabel(expense)}</p>
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <span className="text-sm text-gray-600 tabular-nums">{formatDate(expense.date)}</span>
+          {view === 'excluded' ? (
+            <span className="rounded-full px-2 py-0.5 text-sm bg-gray-100 text-gray-700">
+              {REASON_LABELS[expense.not_expense_reason ?? 'other']}
+            </span>
+          ) : null}
+          {view === 'expenses' ? (
+            <CategoryPicker expense={expense} categories={categories} categoriesReady={categoriesReady} />
+          ) : null}
+          <span className={`tabular-nums font-medium ${amountColor}`}>
+            {formatMoney(expense.amount_cents)}
           </span>
-        ) : null}
-        {view === 'expenses' ? (
-          <CategoryPicker expense={expense} categories={categories} categoriesReady={categoriesReady} />
-        ) : null}
-        <span className={`tabular-nums font-medium ${amountColor}`}>
-          {formatMoney(expense.amount_cents)}
-        </span>
+        </div>
+      </div>
+      <div className="mt-1 flex justify-end">
         <NotExpenseControl expense={expense} view={view} onExcluded={onExcluded} />
       </div>
     </li>
