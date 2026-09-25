@@ -269,3 +269,53 @@ def test_the_residue_stops_counting_a_row_marked_as_not_expense(taxonomy_conn, s
     result = residue(taxonomy_conn, start="2026-09-01", end="2026-09-30")
     assert result["entries"] == 0
     assert result["amount_cents"] == 0
+
+
+def held_by_an_expression_rule(conn: sqlite3.Connection, seed: dict) -> int:
+    rows = [
+        transaction("t-1", "2026-09-01", -10.0, descricao="NEVERCODE LTDA", categoria="Healthcare")
+    ]
+    load(conn, rows)
+    seed_taxonomy(conn, seed)
+    classify_all(conn)
+    conn.commit()
+    row = conn.execute("SELECT id FROM transactions WHERE pluggy_id = 't-1'").fetchone()
+    return int(row["id"])
+
+
+def test_set_manual_moves_a_row_held_by_an_expression_rule_to_the_category_group(
+    taxonomy_conn, seed
+):
+    id = held_by_an_expression_rule(taxonomy_conn, seed)
+    assert state(taxonomy_conn, id)[3] == "Assinaturas"
+
+    set_manual(taxonomy_conn, id, "Groceries")
+
+    assert state(taxonomy_conn, id) == ("Groceries", "Healthcare", "manual", "Alimentação")
+
+
+def test_a_sync_keeps_the_manual_row_in_the_category_group(taxonomy_conn, seed):
+    id = held_by_an_expression_rule(taxonomy_conn, seed)
+    set_manual(taxonomy_conn, id, "Groceries")
+
+    load(
+        taxonomy_conn,
+        [
+            transaction(
+                "t-1", "2026-09-01", -10.0, descricao="NEVERCODE LTDA", categoria="Healthcare"
+            )
+        ],
+    )
+    classify_all(taxonomy_conn)
+    taxonomy_conn.commit()
+
+    assert state(taxonomy_conn, id) == ("Groceries", "Healthcare", "manual", "Alimentação")
+
+
+def test_restore_auto_puts_the_row_back_under_the_expression_rule(taxonomy_conn, seed):
+    id = held_by_an_expression_rule(taxonomy_conn, seed)
+    set_manual(taxonomy_conn, id, "Groceries")
+
+    restore_auto(taxonomy_conn, id)
+
+    assert state(taxonomy_conn, id) == ("Healthcare", "Healthcare", "auto", "Assinaturas")

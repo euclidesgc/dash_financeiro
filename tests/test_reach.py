@@ -149,3 +149,23 @@ def test_holders_names_the_competing_rule_of_lower_id(taxonomy_conn, seed, three
     found = holders(conn, payee="mercado livre", rule_id=higher_id)
 
     assert [(row["id"], row["match_value"]) for row in found] == [(lower_id, "^mercado")]
+
+
+def test_payee_reach_and_holders_leave_manual_rows_out(taxonomy_conn, seed, three_payments):
+    conn = load(taxonomy_conn, three_payments)
+    seed_taxonomy(
+        conn, narrowed(seed, [rule("description", "^mercado", FINANCEIRO, "fixa", "essencial")])
+    )
+    classify_all(conn)
+    conn.execute(
+        "UPDATE transactions SET category = NULL, category_source = 'manual' "
+        "WHERE pluggy_id IN ('t-ml-1', 't-ml-2')"
+    )
+    classify_all(conn)
+    conn.commit()
+
+    exact = payee_reach(conn, "mercado livre")
+    found = holders(conn, payee="mercado livre", rule_id=0)
+
+    assert (exact["entries"], exact["amount_cents"]) == (0, 0)
+    assert found == []

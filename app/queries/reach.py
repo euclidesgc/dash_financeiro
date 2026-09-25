@@ -16,12 +16,18 @@ _REACH = (
 _HOLDERS = (
     "SELECT DISTINCT r.id AS id, r.match_value AS match_value "
     "FROM transactions AS t JOIN category_rules AS r ON r.id = t.rule_id "
-    "WHERE t.payee = ? AND r.id != ? ORDER BY r.id"
+    "WHERE t.payee = ? AND t.category_source = 'auto' AND r.id != ? ORDER BY r.id"
 )
 
 
+# Reason: a row whose category the owner chose by hand is classified by
+# that category alone (app/taxonomy/classify.py:_match), so no payee rule
+# ever moves it — counting it would promise the correction a reach it
+# cannot deliver.
 def payee_reach(conn: sqlite3.Connection, payee: str) -> sqlite3.Row:
-    row: sqlite3.Row = conn.execute(_REACH.format(filtro="payee = ?"), (payee,)).fetchone()
+    row: sqlite3.Row = conn.execute(
+        _REACH.format(filtro="payee = ? AND category_source = 'auto'"), (payee,)
+    ).fetchone()
     return row
 
 
