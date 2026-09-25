@@ -1518,3 +1518,49 @@ test('keeps the list usable when the categories request fails', async () => {
 
   expect(screen.queryByText('Não foi possível carregar os gastos.')).not.toBeInTheDocument()
 })
+
+test('shows the signal badges and the summary for a month', async () => {
+  renderWithProviders(<ExpensesList />, { route: '/expenses?month=2026-07' })
+
+  await screen.findByRole('heading', { level: 2, name: 'Por categoria' })
+
+  const rows = categoryRows()
+  const compras = rows.find((r) => cellsOf(r)[0]?.includes('Compras'))
+  const alimentacao = rows.find((r) => cellsOf(r)[0]?.includes('Alimentação'))
+  const transporte = rows.find((r) => cellsOf(r)[0]?.includes('Transporte'))
+  expect(compras).toBeDefined()
+  expect(alimentacao).toBeDefined()
+  expect(transporte).toBeDefined()
+
+  if (compras) {
+    expect(cellsOf(compras)[0]).toContain('Acima')
+  }
+  if (alimentacao) {
+    expect(cellsOf(alimentacao)[0]).toContain('Dentro')
+  }
+  if (transporte) {
+    const transporteText = cellsOf(transporte)[0] ?? ''
+    expect(transporteText).not.toContain('Dentro')
+    expect(transporteText).not.toContain('Atenção')
+    expect(transporteText).not.toContain('Acima')
+  }
+
+  expect(screen.getByText('1 categoria acima do limite')).toBeInTheDocument()
+  expect(screen.queryByText('Sinal só por mês')).not.toBeInTheDocument()
+})
+
+test('shows "Sinal só por mês" and no badge for the whole period', async () => {
+  renderWithProviders(<ExpensesList />, { route: '/expenses' })
+
+  await screen.findByRole('heading', { level: 2, name: 'Por categoria' })
+
+  expect(screen.getByText('Sinal só por mês')).toBeInTheDocument()
+
+  for (const row of categoryRows()) {
+    const text = cellsOf(row)[0] ?? ''
+    expect(text).not.toContain('Dentro')
+    expect(text).not.toContain('Atenção')
+    expect(text).not.toContain('Acima')
+  }
+  expect(screen.queryByText(/acima do limite/)).not.toBeInTheDocument()
+})

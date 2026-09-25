@@ -1053,6 +1053,31 @@ def _group_tuples(body: dict[str, Any]) -> list[tuple[str | None, str, int, int]
     ]
 
 
+def _put_limit(client: TestClient, key: str, cents: int | None) -> Any:
+    return client.put(f"/api/categories/{key}/limit", json={"monthly_limit_cents": cents})
+
+
+def _group_of(body: dict[str, Any], category: str | None) -> dict[str, Any]:
+    return next(group for group in body["groups"] if group["category"] == category)
+
+
+_SIGNAL_ROWS = [
+    _transaction("s-over", "2026-08-10", -60.0, categoria="Groceries"),
+    _transaction("s-warn", "2026-08-11", -40.0, categoria="Shopping"),
+    _transaction("s-in", "2026-08-12", -30.0, categoria="Housing"),
+    _transaction("s-none", "2026-08-13", -20.0, categoria="Healthcare"),
+    _transaction("s-unc", "2026-08-14", -10.0, categoria=""),
+]
+
+
+def _load_signal_fixture(client: TestClient) -> None:
+    _sign_in(client)
+    _load(_SIGNAL_ROWS)
+    _put_limit(client, "Groceries", 5000)
+    _put_limit(client, "Shopping", 5000)
+    _put_limit(client, "Housing", 5000)
+
+
 def test_by_category_without_session_answers_401(client):
     response = client.get("/api/transactions/expenses/by-category")
 
@@ -1066,7 +1091,12 @@ def test_an_empty_base_answers_no_groups(client):
     response = client.get("/api/transactions/expenses/by-category")
 
     assert response.status_code == 200
-    assert response.json() == {"groups": [], "total_cents": 0}
+    assert response.json() == {
+        "groups": [],
+        "total_cents": 0,
+        "over_limit_count": 0,
+        "signal_scope": "none",
+    }
 
 
 def test_the_by_category_response_has_the_contract_fields(client):
@@ -1075,9 +1105,16 @@ def test_the_by_category_response_has_the_contract_fields(client):
 
     body = _by_category(client)
 
-    assert set(body) == {"groups", "total_cents"}
+    assert set(body) == {"groups", "total_cents", "over_limit_count", "signal_scope"}
     for group in body["groups"]:
-        assert set(group) == {"category", "label", "count", "total_cents"}
+        assert set(group) == {
+            "category",
+            "label",
+            "count",
+            "total_cents",
+            "limit_cents",
+            "signal",
+        }
 
 
 def test_groups_come_biggest_first_with_the_seed_label_and_the_count(client):
@@ -1649,6 +1686,106 @@ def test_applied_categories_survive_reingesting_the_same_source(client):
             continue
         assert item["category_key"] == "Groceries"
         assert item["category_source"] == "manual"
+
+
+def test_a_whole_month_carries_limit_signal_count_and_scope(client):
+    _load_signal_fixture(client)
+
+    body = _by_category(client, "from=2026-08-01&to=2026-08-31")
+
+    groceries = _group_of(body, "Groceries")
+    assert groceries["limit_cents"] == 5000
+    assert groceries["signal"] == "over"
+
+    shopping = _group_of(body, "Shopping")
+    assert shopping["signal"] == "warning"
+
+    housing = _group_of(body, "Housing")
+    assert housing["signal"] == "within"
+
+    healthcare = _group_of(body, "Healthcare")
+    assert healthcare["limit_cents"] is None
+    assert healthcare["signal"] is None
+
+    uncategorised = _group_of(body, None)
+    assert uncategorised["limit_cents"] is None
+    assert uncategorised["signal"] is None
+
+    assert body["over_limit_count"] == 1
+    assert body["signal_scope"] == "month"
+
+
+def test_a_partial_interval_keeps_the_limit_but_no_signal(client):
+    _load_signal_fixture(client)
+
+    body = _by_category(client, "from=2026-08-01&to=2026-08-30")
+
+    assert all(group["signal"] is None for group in body["groups"])
+    assert body["over_limit_count"] == 0
+    assert body["signal_scope"] == "none"
+    assert _group_of(body, "Groceries")["limit_cents"] == 5000
+
+
+def test_only_from_and_no_dates_give_no_signal(client):
+    _load_signal_fixture(client)
+
+    with_from = _by_category(client, "from=2026-08-01")
+    without_dates = _by_category(client, "")
+
+    for body in (with_from, without_dates):
+        assert all(group["signal"] is None for group in body["groups"])
+        assert body["over_limit_count"] == 0
+        assert body["signal_scope"] == "none"
+        assert _group_of(body, "Groceries")["limit_cents"] == 5000
+
+
+def test_setting_a_limit_changes_the_signal_of_the_next_by_category(client):
+    _sign_in(client)
+    _load(_SIGNAL_ROWS)
+
+    body = _by_category(client, "from=2026-08-01&to=2026-08-31")
+    assert _group_of(body, "Groceries")["signal"] is None
+
+    _put_limit(client, "Groceries", 5000)
+    body = _by_category(client, "from=2026-08-01&to=2026-08-31")
+    assert _group_of(body, "Groceries")["signal"] == "over"
+
+    _put_limit(client, "Groceries", 7500)
+    body = _by_category(client, "from=2026-08-01&to=2026-08-31")
+    assert _group_of(body, "Groceries")["signal"] == "warning"
+
+    _put_limit(client, "Groceries", None)
+    body = _by_category(client, "from=2026-08-01&to=2026-08-31")
+    groceries = _group_of(body, "Groceries")
+    assert groceries["signal"] is None
+    assert groceries["limit_cents"] is None
+
+
+def test_the_signal_fields_keep_the_order_and_totals_of_the_groups(client):
+    _load_signal_fixture(client)
+
+    body = _by_category(client, "from=2026-08-01&to=2026-08-31")
+
+    assert _group_tuples(body) == [
+        ("Groceries", "Supermercado", 1, -6000),
+        ("Shopping", "Compras", 1, -4000),
+        ("Housing", "Casa", 1, -3000),
+        ("Healthcare", "Plano de saúde", 1, -2000),
+        (None, "Sem categoria", 1, -1000),
+    ]
+    assert body["total_cents"] == -16000
+
+
+def test_the_openapi_lists_the_signal_fields_of_by_category(client):
+    _sign_in(client)
+
+    response = client.get("/openapi.json")
+
+    schemas = response.json()["components"]["schemas"]
+    assert "limit_cents" in schemas["CategoryGroup"]["properties"]
+    assert "signal" in schemas["CategoryGroup"]["properties"]
+    assert "over_limit_count" in schemas["CategoryTotalsResponse"]["properties"]
+    assert "signal_scope" in schemas["CategoryTotalsResponse"]["properties"]
 
 
 def test_the_openapi_lists_similar_and_apply_to_similar(client):

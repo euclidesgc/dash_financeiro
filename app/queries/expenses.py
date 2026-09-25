@@ -39,7 +39,8 @@ _SELECT = f"""SELECT t.id, t.date, t.description, t.payee, t.category, t.categor
 _TOTAL = f"SELECT count(*), coalesce(sum(t.amount_cents), 0) {_FROM}"
 _BY_CATEGORY = (
     f"SELECT NULLIF(t.category, '') AS category, {_LABEL} AS label, count(*) AS count,"
-    f" coalesce(sum(t.amount_cents), 0) AS total {_FROM}"
+    f" coalesce(sum(t.amount_cents), 0) AS total,"
+    f" max(c.monthly_limit_cents) AS limit_cents {_FROM}"
 )
 
 # Reason: reproduces app.payees.names._chosen's precedence row by row (debt
@@ -64,6 +65,7 @@ class CategoryTotal:
     label: str
     count: int
     total_cents: int
+    limit_cents: int | None
 
 
 def _like_pattern(term: str) -> str:
@@ -179,6 +181,7 @@ def sum_by_category(
                 label=label,
                 count=row["count"],
                 total_cents=int(row["total"]),
+                limit_cents=None if row["limit_cents"] is None else int(row["limit_cents"]),
             )
         )
     return result

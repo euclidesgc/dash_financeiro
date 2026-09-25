@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from app.db import connect
 from app.queries.expenses import Order, Sort, get_expense, list_expenses, sum_by_category
 from app.queries.similar import count_similar
+from app.taxonomy.limits import Scope, Signal, is_whole_month, signal_for
 from app.taxonomy.override import (
     UnknownCategoryError,
     UnknownTransactionError,
@@ -49,11 +50,15 @@ class CategoryGroup(BaseModel):
     label: str
     count: int
     total_cents: int
+    limit_cents: int | None
+    signal: Signal | None
 
 
 class CategoryTotalsResponse(BaseModel):
     groups: list[CategoryGroup]
     total_cents: int
+    over_limit_count: int
+    signal_scope: Scope
 
 
 class CategoryUpdate(BaseModel):
@@ -143,14 +148,23 @@ def expenses_by_category(
         )
     finally:
         conn.close()
+    scope: Scope = "month" if is_whole_month(date_from, date_to) else "none"
+    items = [
+        CategoryGroup(
+            category=g.category,
+            label=g.label,
+            count=g.count,
+            total_cents=g.total_cents,
+            limit_cents=g.limit_cents,
+            signal=signal_for(abs(g.total_cents), g.limit_cents) if scope == "month" else None,
+        )
+        for g in groups
+    ]
     return CategoryTotalsResponse(
-        groups=[
-            CategoryGroup(
-                category=g.category, label=g.label, count=g.count, total_cents=g.total_cents
-            )
-            for g in groups
-        ],
+        groups=items,
         total_cents=sum(g.total_cents for g in groups),
+        over_limit_count=sum(1 for item in items if item.signal == "over"),
+        signal_scope=scope,
     )
 
 

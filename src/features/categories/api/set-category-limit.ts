@@ -24,6 +24,7 @@ export function useSetCategoryLimit() {
     mutationFn: setCategoryLimit,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['categories'] })
+      void queryClient.invalidateQueries({ queryKey: ['expenses'] })
     },
   })
 }

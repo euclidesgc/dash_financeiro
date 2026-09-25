@@ -3,6 +3,7 @@ import type { SyncStatus } from '@/features/sync/types/sync-status'
 import type { CatalogueCategory } from '@/features/categories/types/category'
 import type {
   CategoryGroup,
+  CategorySignal,
   CategoryUpdateBody,
   Expense,
   ExpenseOrder,
@@ -250,6 +251,29 @@ export function filterExpenses(url: URL): Expense[] {
   )
 }
 
+function isWholeMonth(from: string | null, to: string | null): boolean {
+  if (from === null || to === null || !from.endsWith('-01')) {
+    return false
+  }
+  const year = Number(from.slice(0, 4))
+  const month = Number(from.slice(5, 7))
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate()
+  return to === `${from.slice(0, 7)}-${String(lastDay).padStart(2, '0')}`
+}
+
+function signalFor(spentCents: number, limitCents: number | null): CategorySignal | null {
+  if (limitCents === null) {
+    return null
+  }
+  if (spentCents > limitCents) {
+    return 'over'
+  }
+  if (spentCents * 5 >= limitCents * 4) {
+    return 'warning'
+  }
+  return 'within'
+}
+
 export function groupByCategory(items: Expense[]): CategoryGroup[] {
   const byCategory = new Map<string | null, CategoryGroup>()
   for (const item of items) {
@@ -264,6 +288,8 @@ export function groupByCategory(items: Expense[]): CategoryGroup[] {
         label: category ?? 'Sem categoria',
         count: 1,
         total_cents: item.amount_cents,
+        limit_cents: null,
+        signal: null,
       })
     }
   }
@@ -357,10 +383,20 @@ export const handlers = [
 
   http.get('/api/transactions/expenses/by-category', ({ request }) => {
     const url = new URL(request.url)
-    const groups = groupByCategory(filterExpenses(url))
+    const from = url.searchParams.get('from')
+    const to = url.searchParams.get('to')
+    const scope = isWholeMonth(from, to) ? 'month' : 'none'
+    const groups = groupByCategory(filterExpenses(url)).map((group) => {
+      const limit_cents =
+        fakeCategories.find((c) => c.label === group.label)?.monthly_limit_cents ?? null
+      const signal = scope === 'month' ? signalFor(Math.abs(group.total_cents), limit_cents) : null
+      return { ...group, limit_cents, signal }
+    })
     return HttpResponse.json({
       groups,
       total_cents: groups.reduce((sum, group) => sum + group.total_cents, 0),
+      over_limit_count: groups.filter((g) => g.signal === 'over').length,
+      signal_scope: scope,
     })
   }),
 

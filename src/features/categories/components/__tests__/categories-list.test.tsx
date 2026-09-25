@@ -500,7 +500,9 @@ test('saving a limit sends PUT, the row shows it and the categories query is inv
   await waitFor(() => {
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['categories'] }))
   })
-  expect(spy).not.toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['expenses'] }))
+  await waitFor(() => {
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['expenses'] }))
+  })
 })
 
 test('clearing the limit sends null and the row shows "Sem limite"', async () => {

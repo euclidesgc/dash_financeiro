@@ -34,16 +34,22 @@ export interface ExpensesQuery {
   search: string | null
 }
 
+export type CategorySignal = 'within' | 'warning' | 'over'
+
 export interface CategoryGroup {
   category: string | null
   label: string
   count: number
   total_cents: number
+  limit_cents: number | null
+  signal: CategorySignal | null
 }
 
 export interface CategoryTotalsResponse {
   groups: CategoryGroup[]
   total_cents: number
+  over_limit_count: number
+  signal_scope: 'month' | 'none'
 }
 
 export type CategoryTotalsQuery = Pick<ExpensesQuery, 'from' | 'to' | 'account' | 'search'>
