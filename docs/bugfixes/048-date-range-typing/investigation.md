@@ -28,7 +28,7 @@ Os dois campos gravam na URL **cada** evento de digitação do campo de data do 
 - **Risco:** escolher no calendário continua aplicando na hora, porque entrega a data completa. Digitar um dia completo num campo já preenchido aplica o filtro já com esse dia (ex.: `20/09` antes de terminar de trocar o mês): o filtro acompanha cada data completa, como já acontece hoje.
 
 ## Fora da correção
-Nenhum.
+- Num mês sem teto, o formulário "Teto mensal (R$)" abre sozinho e puxa o foco quando carrega; quem já estava digitando a data perde as teclas seguintes, e quem troca de mês pelo teclado perde o lugar. Registrado no roadmap como item 064 (`ceiling-form-no-autofocus`); o teste e2e espera esse foco antes de digitar.
 
 ## Pontos em aberto
 Nenhum.
