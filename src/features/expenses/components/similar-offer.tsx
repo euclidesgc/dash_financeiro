@@ -1,16 +1,19 @@
 import { Button } from '@/components/ui/button'
 import { useApplyCategoryToSimilar } from '@/features/expenses/api/apply-category-to-similar'
 import { useSimilarCount } from '@/features/expenses/api/get-similar-count'
+import { EXPENSE_NOUN, formatCount, type CountNoun } from '@/utils/format-count'
 
 const OFFER_CLASSES =
   'mt-1 flex flex-wrap items-center justify-end gap-2 rounded-md border border-blue-200 bg-blue-50 p-2'
 
+const SIMILAR_NOUN: CountNoun = { one: 'gasto parecido', many: 'gastos parecidos' }
+
 function offerText(n: number): string {
-  return n === 1 ? 'Aplicar a 1 gasto parecido' : `Aplicar a ${String(n)} gastos parecidos`
+  return `Aplicar a ${formatCount(n, SIMILAR_NOUN)}`
 }
 
 function appliedText(n: number): string {
-  return n === 1 ? 'Categoria aplicada a 1 gasto' : `Categoria aplicada a ${String(n)} gastos`
+  return `Categoria aplicada a ${formatCount(n, EXPENSE_NOUN)}`
 }
 
 export function SimilarOffer({

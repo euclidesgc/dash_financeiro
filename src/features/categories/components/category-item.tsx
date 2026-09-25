@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ApiError } from '@/lib/api-client'
+import { EXPENSE_NOUN, formatCount } from '@/utils/format-count'
 import { formatMoney } from '@/utils/format-money'
 import { useDeleteCategory } from '@/features/categories/api/delete-category'
 import { CategoryLimitForm } from '@/features/categories/components/category-limit-form'
@@ -10,8 +11,7 @@ import type { Category } from '@/types/category'
 
 function usageText(count: number): string {
   if (count === 0) return 'Nenhum gasto'
-  if (count === 1) return '1 gasto'
-  return `${String(count)} gastos`
+  return formatCount(count, EXPENSE_NOUN)
 }
 
 function limitText(cents: number | null): string {
