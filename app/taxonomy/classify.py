@@ -6,6 +6,7 @@ from app.queries.spending import SPENDING
 
 MATCH_DESCRIPTION = "description"
 MATCH_CATEGORY = "category"
+MANUAL = "manual"
 
 # Reason: a bare tuple has no field names, so the order is written here
 # once — rule_id (None only for the fallback), group_id, nature,
@@ -25,7 +26,8 @@ def classify_all(conn: sqlite3.Connection) -> int:
     expressions, categories = _rules(conn)
     updates = []
     for row in conn.execute(
-        "SELECT id, payee, category, rule_id, group_id, nature, essentiality FROM transactions"
+        "SELECT id, payee, category, category_source, rule_id, group_id, nature, essentiality "
+        "FROM transactions"
     ).fetchall():
         target = _match(row, expressions, categories) or fallback
         current = (row["rule_id"], row["group_id"], row["nature"], row["essentiality"])
@@ -53,6 +55,8 @@ def _match(
     expressions: list[tuple[re.Pattern[str], _Target]],
     categories: dict[str, _Target],
 ) -> _Target | None:
+    if row["category_source"] == MANUAL:
+        return categories.get(row["category"])
     payee = row["payee"] or ""
     for pattern, target in expressions:
         if pattern.search(payee):

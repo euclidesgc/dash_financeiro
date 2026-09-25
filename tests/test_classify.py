@@ -255,3 +255,92 @@ def test_removing_a_rule_row_drops_its_transactions_into_the_residue(
     row = state(conn, "t-shop")
     assert row["match_value"] is None
     assert row["group_name"] == vocabulary["fallback"]
+
+
+def manual(conn, pluggy_id, category):
+    conn.execute(
+        "UPDATE transactions SET category = ?, category_source = 'manual' WHERE pluggy_id = ?",
+        (category, pluggy_id),
+    )
+    classify_all(conn)
+    conn.commit()
+
+
+@pytest.fixture
+def overlapping(vocabulary):
+    return [
+        rule(
+            "description",
+            "loja",
+            vocabulary["health"],
+            vocabulary["natures"][1],
+            vocabulary["essentialities"][1],
+        ),
+        rule(
+            "category",
+            "Saude",
+            vocabulary["housing"],
+            vocabulary["natures"][0],
+            vocabulary["essentialities"][0],
+        ),
+    ]
+
+
+def test_a_manual_category_beats_the_expression_rule_that_matches_its_payee(
+    taxonomy_conn, seed, vocabulary, rows, overlapping
+):
+    conn = classified(load(taxonomy_conn, rows), seed, vocabulary, overlapping)
+    assert state(conn, "t-shop")["match_value"] == "loja"
+
+    manual(conn, "t-shop", "Saude")
+
+    row = state(conn, "t-shop")
+    assert row["match_value"] == "Saude"
+    assert row["group_name"] == vocabulary["housing"]
+    assert row["nature"] == vocabulary["natures"][0]
+    assert row["essentiality"] == vocabulary["essentialities"][0]
+
+
+@pytest.mark.parametrize("category", [None, "Nada"])
+def test_a_manual_row_without_category_rule_falls_into_the_fallback_not_the_expression_rule(
+    taxonomy_conn, seed, vocabulary, rows, overlapping, category
+):
+    conn = classified(load(taxonomy_conn, rows), seed, vocabulary, overlapping)
+
+    manual(conn, "t-shop", category)
+
+    row = state(conn, "t-shop")
+    assert row["match_value"] is None
+    assert row["group_name"] == vocabulary["fallback"]
+    assert row["nature"] == vocabulary["fallback_nature"]
+    assert row["essentiality"] == vocabulary["fallback_essentiality"]
+
+
+def test_restoring_auto_gives_the_expression_rule_back_its_precedence(
+    taxonomy_conn, seed, vocabulary, rows, overlapping
+):
+    conn = classified(load(taxonomy_conn, rows), seed, vocabulary, overlapping)
+    manual(conn, "t-shop", "Saude")
+
+    conn.execute(
+        "UPDATE transactions SET category = category_auto, category_source = 'auto' "
+        "WHERE pluggy_id = 't-shop'"
+    )
+    classify_all(conn)
+    conn.commit()
+
+    row = state(conn, "t-shop")
+    assert row["match_value"] == "loja"
+    assert row["group_name"] == vocabulary["health"]
+
+
+def test_an_auto_row_of_a_category_with_a_rule_still_follows_the_expression_rule_first(
+    taxonomy_conn, seed, vocabulary, rows, overlapping
+):
+    conn = classified(load(taxonomy_conn, rows), seed, vocabulary, overlapping)
+    conn.execute("UPDATE transactions SET category = 'Saude' WHERE pluggy_id = 't-shop'")
+    classify_all(conn)
+    conn.commit()
+
+    assert state(conn, "t-shop")["match_value"] == "loja"
+    assert state(conn, "t-clinic")["match_value"] == "Saude"

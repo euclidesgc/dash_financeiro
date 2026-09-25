@@ -238,3 +238,29 @@ def test_a_broken_reclassification_leaves_the_rule_the_group_and_every_row_untou
         == 0
     )
     assert snapshot(base) == rows_before
+
+
+def test_a_correction_over_a_payee_with_a_manual_row_reaches_what_the_preview_promised(base):
+    base.execute(
+        "UPDATE transactions SET category = NULL, category_source = 'manual' "
+        "WHERE pluggy_id = 't-ml-1'"
+    )
+    classify_all(base)
+    base.commit()
+    before = payee_reach(base, "mercado livre")
+
+    result = correct_payee(
+        base,
+        payee="mercado livre",
+        group_id=group_id(base, PESSOAL),
+        nature="variável",
+        essentiality="supérfluo",
+    )
+
+    assert (before["entries"], before["amount_cents"]) == (1, -5000)
+    assert (result.entries, result.amount_cents) == (before["entries"], before["amount_cents"])
+    manual = base.execute(
+        "SELECT rule_id, group_id FROM transactions WHERE pluggy_id = 't-ml-1'"
+    ).fetchone()
+    assert manual["rule_id"] is None
+    assert manual["group_id"] != group_id(base, PESSOAL)
