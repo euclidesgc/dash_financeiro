@@ -158,7 +158,7 @@ def test_set_manual_accepts_a_key_created_in_the_catalogue(taxonomy_conn, seed):
     assert source == "manual"
 
 
-def test_set_not_expense_writes_the_reason_and_reclassifies(tmp_path, seed):
+def test_set_not_expense_writes_the_reason_and_persists_it(tmp_path, seed):
     from app.db import connect
     from app.migrate import run_migrations
 
@@ -170,11 +170,37 @@ def test_set_not_expense_writes_the_reason_and_reclassifies(tmp_path, seed):
     set_not_expense(conn, id, "refund")
 
     assert reason_of(conn, id) == "refund"
-    assert state(conn, id)[3] == "Saúde"
     conn.close()
     fresh = connect(path)
     assert reason_of(fresh, id) == "refund"
     fresh.close()
+
+
+def stale_group(conn: sqlite3.Connection, id: int) -> str:
+    row = conn.execute("SELECT id, name FROM category_groups WHERE is_fallback = 1").fetchone()
+    conn.execute("UPDATE transactions SET group_id = ? WHERE id = ?", (row["id"], id))
+    conn.commit()
+    return str(row["name"])
+
+
+def test_marking_and_clearing_not_expense_leave_the_classification_untouched(taxonomy_conn, seed):
+    id = prepared(taxonomy_conn, seed)
+    stale = stale_group(taxonomy_conn, id)
+
+    set_not_expense(taxonomy_conn, id, "own_transfer")
+    assert state(taxonomy_conn, id)[3] == stale
+
+    clear_not_expense(taxonomy_conn, id)
+    assert state(taxonomy_conn, id)[3] == stale
+
+
+def test_set_manual_still_reclassifies_a_stale_row(taxonomy_conn, seed):
+    id = prepared(taxonomy_conn, seed)
+    stale_group(taxonomy_conn, id)
+
+    set_manual(taxonomy_conn, id, "Healthcare")
+
+    assert state(taxonomy_conn, id)[3] == "Saúde"
 
 
 def test_clear_not_expense_returns_to_null(taxonomy_conn, seed):
