@@ -9,6 +9,7 @@ from app.db import connect
 from app.payees.names import labels as payee_labels
 from app.queries.ahead import Ahead, posted_ahead
 from app.queries.axes import AXES, ESSENTIALITY_AXIS, PAYEE_AXIS, aggregate, transactions_of
+from app.queries.categories import category_labels
 from app.queries.crossings import candidates, crossing, crossing_definitions
 from app.queries.period import (
     InvalidPeriodError,
@@ -25,7 +26,6 @@ from app.queries.vocabulary import fallback_term, group_name, groups, natures, t
 from app.routers.reference import DATE_FIELD, Reference, screen_date
 from app.routers.rules import form_text
 from app.taxonomy.rules import Correction, RuleError, correct_payee
-from app.taxonomy.seed import seed_labels
 
 from .render import TEMPLATES
 
@@ -46,11 +46,6 @@ CORRECTION_HELD_MESSAGE = (
     "ainda segura {payee}."
 )
 CORRECTION_MISSING_TARGET_MESSAGE = "Nenhum lançamento selecionado para corrigir."
-
-# Reason: the category key stays the raw name the source sends, because
-# that is what matches it again on the next sync; the reading label is data
-# next to it.
-LABELS: dict[str, str] = seed_labels()
 
 
 @router.get(SCREEN)
@@ -200,14 +195,16 @@ def _as_int(value: str) -> int | None:
         return None
 
 
-def _base(axis: str, start: str, end: str, reference: Reference) -> dict[str, Any]:
+def _base(
+    conn: sqlite3.Connection, axis: str, start: str, end: str, reference: Reference
+) -> dict[str, Any]:
     return {
         "axes": AXES,
         "axis": axis,
         "start": start,
         "end": end,
         "reference": reference.date.isoformat(),
-        "labels": LABELS,
+        "labels": category_labels(conn),
         "screen": SCREEN,
         "table_url": TABLE,
         "panel_url": PANEL,
@@ -241,7 +238,7 @@ def _table_context(
     correction_result: Correction | None = None,
 ) -> dict[str, Any]:
     rows = aggregate(conn, axis=axis, start=start, end=end)
-    context = _base(axis, start, end, reference)
+    context = _base(conn, axis, start, end, reference)
     if axis == PAYEE_AXIS:
         # Reason: only the label. row['key'] is the label and the drill-down
         # parameter at once, and replacing the rendered value would kill the
@@ -279,7 +276,7 @@ def _detail_context(
     correction_notice: str | None = None,
     correction_result: Correction | None = None,
 ) -> dict[str, Any]:
-    context = _base(axis, start, end, reference)
+    context = _base(conn, axis, start, end, reference)
     context["correction"] = _correction_context(
         conn, corrigir, notice=correction_notice, result=correction_result
     )
@@ -371,7 +368,7 @@ def _panel_context(
         "residue": residue(conn, start=start, end=end),
         "period_total_cents": total_spending_cents(conn, start, end),
         "whole_months": covers_whole_months(start, end),
-        "labels": LABELS,
+        "labels": category_labels(conn),
         "start": start,
         "end": end,
         "reference": reference.date.isoformat(),

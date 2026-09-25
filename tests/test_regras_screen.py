@@ -9,7 +9,7 @@ from app.main import create_app
 from app.routers.rules import EMPTY_MATCH_MESSAGE
 from app.taxonomy.classify import MATCH_CATEGORY, MATCH_DESCRIPTION, classify_all
 from app.taxonomy.seed import message, seed_taxonomy
-from tests.conftest import load, narrowed, rule, transaction
+from tests.conftest import label_category, load, narrowed, rule, transaction
 
 LOGIN = "teste"
 PASSWORD = "senha-teste-9k2"
@@ -26,6 +26,8 @@ LOOSE = "Categoria que nenhuma regra alcanca"
 PAYEE = "loja do bairro"
 UNKNOWN_GROUP = "9999"
 BROKEN_EXPRESSION = "[a-"
+RENAMED_LABEL = "Pão de cada dia"
+CREATED_LABEL = "Comércio do bairro"
 
 HELD_AMOUNT = -40000
 SECOND_AMOUNT = -25000
@@ -321,3 +323,23 @@ def test_a_form_body_that_carries_raw_utf8_bytes_still_finds_the_vocabulary(clie
         )
         == 1
     )
+
+
+def test_a_renamed_category_shows_its_new_label_on_the_rules_screen(client):
+    label_category(HELD, RENAMED_LABEL)
+
+    screen = client.get(SCREEN)
+
+    assert f'<span class="cell-label">{RENAMED_LABEL}</span>' in screen.text
+    assert f'<span class="cell-key">{HELD}</span>' in screen.text
+
+
+def test_a_category_the_owner_created_shows_its_label_among_the_loose_categories(client):
+    label_category(LOOSE, CREATED_LABEL)
+
+    screen = client.get(SCREEN)
+    loose = LOOSE_BODY.search(screen.text)
+
+    assert loose is not None
+    assert f'<span class="cell-label">{CREATED_LABEL}</span>' in loose.group(1)
+    assert f'<span class="cell-key">{LOOSE}</span>' in loose.group(1)

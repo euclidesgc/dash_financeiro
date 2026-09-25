@@ -44,3 +44,7 @@ def list_categories(conn: sqlite3.Connection) -> list[CategoryRow]:
 def get_category(conn: sqlite3.Connection, key: str) -> CategoryRow | None:
     row = conn.execute(f"{_SELECT} WHERE c.name = ? GROUP BY c.id", (key,)).fetchone()
     return None if row is None else _row(row)
+
+
+def category_labels(conn: sqlite3.Connection) -> dict[str, str]:
+    return {row["name"]: row["label"] for row in conn.execute("SELECT name, label FROM categories")}

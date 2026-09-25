@@ -6,6 +6,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from app.db import connect
+from app.queries.categories import category_labels
 from app.queries.rules import (
     held_by_rule,
     payee_samples,
@@ -18,7 +19,7 @@ from app.queries.rules import (
 from app.queries.vocabulary import groups, natures, terms
 from app.taxonomy import classify
 from app.taxonomy.rules import RuleError, create_rule, delete_rule, update_rule
-from app.taxonomy.seed import message, seed_labels
+from app.taxonomy.seed import message
 
 from .render import TEMPLATES
 
@@ -30,8 +31,6 @@ REMOVE = "/remover"
 
 CANDIDATES = 12
 SAMPLES = 3
-
-LABELS: dict[str, str] = seed_labels()
 
 KINDS: tuple[tuple[str, str], ...] = (
     (classify.MATCH_CATEGORY, "Categoria"),
@@ -169,7 +168,7 @@ def _context(conn: sqlite3.Connection, form: dict[str, str]) -> dict[str, Any]:
         "kinds": KINDS,
         "kind_names": dict(KINDS),
         "form": form,
-        "labels": LABELS,
+        "labels": category_labels(conn),
         "screen": SCREEN,
         "edit_suffix": EDIT,
         "remove_suffix": REMOVE,

@@ -10,6 +10,7 @@ from app.ingest.loader import ingest
 from app.ingest.source import load_accounts
 from app.ingest.trigger import COMMAND
 from app.main import create_app
+from app.queries.categories import category_labels
 from app.taxonomy.seed import UNCATEGORISED, pickable_categories, seed_taxonomy
 
 LOGIN = "teste"
@@ -456,3 +457,19 @@ def test_the_openapi_lists_the_limit_route(client):
     response = client.get("/openapi.json")
 
     assert "put" in response.json()["paths"]["/api/categories/{key}/limit"]
+
+
+def test_category_labels_reads_every_row_of_categories(client):
+    conn = connect()
+    try:
+        conn.execute(
+            "UPDATE categories SET label = 'Rótulo do dono' WHERE name = ?", (UNCATEGORISED,)
+        )
+        conn.commit()
+        rows = conn.execute("SELECT name, label FROM categories").fetchall()
+        labels = category_labels(conn)
+    finally:
+        conn.close()
+
+    assert labels == {row["name"]: row["label"] for row in rows}
+    assert labels[UNCATEGORISED] == "Rótulo do dono"
