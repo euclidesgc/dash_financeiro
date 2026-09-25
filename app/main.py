@@ -28,7 +28,7 @@ from app.routers import (
     transactions,
     whatif,
 )
-from app.routers.navigation import marked
+from app.routers.navigation import SPA_SCREENS, marked
 from app.routers.render import (
     TEMPLATES,
     brl,
@@ -58,6 +58,7 @@ def create_app() -> FastAPI:
     TEMPLATES.env.globals["tokens_css"] = _stylesheet("tokens.css")
     TEMPLATES.env.globals["app_css"] = _stylesheet("app.css")
     TEMPLATES.env.globals["screens"] = marked
+    TEMPLATES.env.globals["spa_screens"] = SPA_SCREENS
     # Reason: RF-03 asks for the same number on both sides — the template
     # reads the ceiling from here instead of repeating it.
     TEMPLATES.env.globals["limits"] = limits

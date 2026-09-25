@@ -9,6 +9,12 @@
       </li>
       {% endfor %}
     </ul>
+    <p class="rail-mark rail-mark-group" id="rail-spa-title">Painel novo</p>
+    <ul class="rail-list" aria-labelledby="rail-spa-title">
+      {% for screen in spa_screens %}
+      <li><a class="rail-spa-link" href="{{ screen.href }}">{{ screen.label }}</a></li>
+      {% endfor %}
+    </ul>
     <form class="rail-exit" method="post" action="/logout">
       <button class="rail-exit-button" type="submit">Sair</button>
     </form>
