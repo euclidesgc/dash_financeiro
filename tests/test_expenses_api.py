@@ -74,6 +74,11 @@ def _load(rows: list[dict[str, Any]]) -> None:
     conn.close()
 
 
+def _descriptions(client: TestClient, query: str) -> list[str]:
+    response = client.get(f"/api/transactions/expenses?{query}")
+    return [item["description"] for item in response.json()["items"]]
+
+
 def test_expenses_without_session_answers_401(client):
     response = client.get("/api/transactions/expenses")
 
@@ -241,3 +246,191 @@ def test_the_response_has_the_contract_fields(client):
         "amount_cents",
     }
     assert item["amount_cents"] == -5000
+
+
+def test_the_default_order_is_date_desc_then_id_desc(client):
+    _load(
+        [
+            _transaction("a", "2026-08-01", -10.0),
+            _transaction("b", "2026-08-03", -20.0),
+            _transaction("c", "2026-08-03", -30.0),
+        ]
+    )
+    _sign_in(client)
+
+    default = client.get("/api/transactions/expenses")
+    explicit = client.get("/api/transactions/expenses", params={"sort": "date", "order": "desc"})
+
+    default_dates = [item["date"] for item in default.json()["items"]]
+    explicit_dates = [item["date"] for item in explicit.json()["items"]]
+    assert default_dates == ["2026-08-03", "2026-08-03", "2026-08-01"]
+    assert explicit_dates == default_dates
+    assert default.json()["items"] == explicit.json()["items"]
+
+
+def test_sort_date_asc_puts_the_oldest_first(client):
+    _load(
+        [
+            _transaction("a", "2026-08-01", -10.0),
+            _transaction("b", "2026-08-03", -20.0),
+            _transaction("c", "2026-08-03", -30.0),
+        ]
+    )
+    _sign_in(client)
+
+    response = client.get("/api/transactions/expenses", params={"sort": "date", "order": "asc"})
+
+    items = response.json()["items"]
+    assert [item["date"] for item in items] == ["2026-08-01", "2026-08-03", "2026-08-03"]
+    assert items[1]["id"] > items[2]["id"]
+
+
+def test_sort_amount_desc_puts_the_biggest_spending_first(client):
+    _load(
+        [
+            _transaction("small", "2026-09-01", -50.0),
+            _transaction("biggest", "2026-09-02", -300.0),
+            _transaction("medium", "2026-09-03", -120.0),
+        ]
+    )
+    _sign_in(client)
+
+    response = client.get("/api/transactions/expenses", params={"sort": "amount", "order": "desc"})
+
+    amounts = [item["amount_cents"] for item in response.json()["items"]]
+    assert amounts == [-30000, -12000, -5000]
+
+
+def test_sort_amount_asc_puts_the_smallest_spending_first(client):
+    _load(
+        [
+            _transaction("small", "2026-09-01", -50.0),
+            _transaction("biggest", "2026-09-02", -300.0),
+            _transaction("medium", "2026-09-03", -120.0),
+        ]
+    )
+    _sign_in(client)
+
+    response = client.get("/api/transactions/expenses", params={"sort": "amount", "order": "asc"})
+
+    amounts = [item["amount_cents"] for item in response.json()["items"]]
+    assert amounts == [-5000, -12000, -30000]
+
+
+def test_sort_category_asc_follows_the_label_with_uncategorised_last(client):
+    _load(
+        [
+            _transaction("groceries", "2026-09-01", -10.0, categoria="Groceries"),
+            _transaction("housing", "2026-09-02", -20.0, categoria="Housing"),
+            _transaction("uncategorised", "2026-09-03", -30.0, categoria=""),
+        ]
+    )
+    _sign_in(client)
+
+    response = client.get("/api/transactions/expenses", params={"sort": "category", "order": "asc"})
+
+    categories = [item["category"] for item in response.json()["items"]]
+    assert categories == ["Casa", "Supermercado", None]
+
+
+def test_sort_category_desc_reverses_the_labels_and_keeps_uncategorised_last(client):
+    _load(
+        [
+            _transaction("groceries", "2026-09-01", -10.0, categoria="Groceries"),
+            _transaction("housing", "2026-09-02", -20.0, categoria="Housing"),
+            _transaction("uncategorised", "2026-09-03", -30.0, categoria=""),
+        ]
+    )
+    _sign_in(client)
+
+    response = client.get(
+        "/api/transactions/expenses", params={"sort": "category", "order": "desc"}
+    )
+
+    categories = [item["category"] for item in response.json()["items"]]
+    assert categories == ["Supermercado", "Casa", None]
+
+
+def test_accented_labels_sort_by_their_base_letter(client):
+    _load(
+        [
+            _transaction("water", "2026-09-01", -10.0, categoria="Water"),
+            _transaction("housing", "2026-09-02", -20.0, categoria="Housing"),
+        ]
+    )
+    _sign_in(client)
+
+    asc = client.get("/api/transactions/expenses", params={"sort": "category", "order": "asc"})
+    desc = client.get("/api/transactions/expenses", params={"sort": "category", "order": "desc"})
+
+    assert [item["category"] for item in asc.json()["items"]] == ["Água", "Casa"]
+    assert [item["category"] for item in desc.json()["items"]] == ["Casa", "Água"]
+
+
+def test_a_category_outside_the_seed_comes_after_the_labelled_ones(client):
+    _load(
+        [
+            _transaction("groceries", "2026-09-01", -10.0, categoria="Groceries"),
+            _transaction("unlabelled", "2026-09-02", -20.0, categoria="Zzz-desconhecida"),
+            _transaction("uncategorised", "2026-09-03", -30.0, categoria=""),
+        ]
+    )
+    _sign_in(client)
+
+    response = client.get("/api/transactions/expenses", params={"sort": "category", "order": "asc"})
+
+    categories = [item["category"] for item in response.json()["items"]]
+    assert categories == ["Supermercado", "Zzz-desconhecida", None]
+
+
+def test_equal_amounts_break_ties_by_id_desc(client):
+    _load(
+        [
+            _transaction("first", "2026-09-01", -50.0),
+            _transaction("second", "2026-09-02", -50.0),
+        ]
+    )
+    _sign_in(client)
+
+    asc = client.get("/api/transactions/expenses", params={"sort": "amount", "order": "asc"})
+    desc = client.get("/api/transactions/expenses", params={"sort": "amount", "order": "desc"})
+
+    asc_ids = [item["id"] for item in asc.json()["items"]]
+    desc_ids = [item["id"] for item in desc.json()["items"]]
+    assert asc_ids[0] > asc_ids[1]
+    assert desc_ids[0] > desc_ids[1]
+
+
+def test_sorting_applies_before_pagination(client):
+    _load([_transaction(f"e{i}", f"2026-08-{i:02d}", -(i * 10.0)) for i in range(1, 26)])
+    _sign_in(client)
+
+    response = client.get(
+        "/api/transactions/expenses",
+        params={"sort": "amount", "order": "desc", "page": 2},
+    )
+
+    body = response.json()
+    amounts = [item["amount_cents"] for item in body["items"]]
+    assert amounts == [-5000, -4000, -3000, -2000, -1000]
+    assert body["total"] == 25
+
+
+def test_unknown_sort_and_order_answer_422(client):
+    _sign_in(client)
+
+    assert client.get("/api/transactions/expenses", params={"sort": "payee"}).status_code == 422
+    assert client.get("/api/transactions/expenses", params={"order": "up"}).status_code == 422
+
+
+def test_the_openapi_lists_the_sort_and_order_enums(client):
+    _sign_in(client)
+
+    response = client.get("/openapi.json")
+
+    parameters = response.json()["paths"]["/api/transactions/expenses"]["get"]["parameters"]
+    by_name = {parameter["name"]: parameter for parameter in parameters}
+    assert by_name["sort"]["schema"]["enum"] == ["date", "amount", "category"]
+    assert by_name["sort"]["schema"]["default"] == "date"
+    assert by_name["order"]["schema"]["enum"] == ["asc", "desc"]
+    assert by_name["order"]["schema"]["default"] == "desc"
