@@ -27,8 +27,8 @@ prova o caminho de ponta a ponta (tela React → API FastAPI → SQLite) e as ou
 | # | Fatia | Resolução necessária | Origem | Depende de | Status |
 |---|---|---|---|---|---|
 | 017 | `jinja-router-extraction` | manter a lógica de consulta única quando uma tela migra de Jinja para React, em vez de reescrever SQL | bug | 001 | done |
-| 018 | `sync-runs-source-field` | rastrear origem do disparo (tela vs comando diário) em `sync_runs.source` em vez de só guardar o caminho do arquivo lido | 002 | — | in-review |
-| 019 | `pluggy-extract-env-handling` | embrulhar leitura de `.env` e `SystemExit` em `ingestao/pluggy_extract.py` em função limpa, não chamar direto do serviço | 002 | — | planned |
+| 018 | `sync-runs-source-field` | rastrear origem do disparo (tela vs comando diário) em `sync_runs.source` em vez de só guardar o caminho do arquivo lido | 002 | — | done |
+| 019 | `pluggy-extract-env-handling` | embrulhar leitura de `.env` e `SystemExit` em `ingestao/pluggy_extract.py` em função limpa, não chamar direto do serviço | 002 | — | in-progress |
 | 020 | `jinja-sync-button-exclusive-lock` | fazer o botão Jinja `/sincronizar` passar pela trava de execução única de `app/sync/exclusive.py` | 002 | — | planned |
 | 021 | `pluggy-connections-editable-ui` | mover lista de conexões Pluggy de `data/item_ids.txt` para tela editável (norma 26) | 002 | — | planned |
 | 022 | `setup-secrets-pluggy-credentials` | atualizar `docs/setup-secrets.md` para citar `PLUGGY_CLIENT_ID` e `PLUGGY_CLIENT_SECRET` | 002 | — | planned |
