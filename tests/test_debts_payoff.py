@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import date
 
 import pytest
@@ -8,10 +9,12 @@ from app.debts.payoff import (
     INFORMED,
     NOMINAL,
     Debt,
+    InvalidBudgetError,
     InvalidSavingError,
     PastTargetError,
     list_debts,
     payoff_at,
+    rank_by_liquidity,
     saving_plan,
     unnumbered,
 )
@@ -244,3 +247,136 @@ def test_list_debts_carries_the_settlement_the_owner_typed(conn):
 
     assert cdc.settlement_cents == 3800000
     assert payoff_at(cdc, TODAY, today=TODAY).basis == INFORMED
+
+
+def plan(key, *, first_due=date(2026, 10, 11), total=5, payment=-10000):
+    return replace(purchase(first_due=first_due, total=total, payment=payment), key=key)
+
+
+def _keys(rows):
+    return [row.debt.key for row in rows]
+
+
+def test_ranking_puts_the_most_cash_freed_per_real_paid_first():
+    two_left = plan("installment-1", first_due=date(2026, 7, 11))
+    five_left = plan("installment-2")
+    quoted = vehicle(settlement=3800000)
+
+    ranking = rank_by_liquidity([quoted, five_left, two_left], today=TODAY)
+
+    assert _keys(ranking.ranked) == ["installment-1", "installment-2", "debt-7"]
+    first, second, cdc = ranking.ranked
+    assert (first.payoff.target_cents, first.monthly_freed_cents, first.freed_bp) == (
+        20000,
+        10000,
+        5000,
+    )
+    assert second.freed_bp == 2000
+    assert cdc.freed_bp == 325
+    assert not cdc.ceiling
+    assert ranking.selection is None
+
+
+def test_a_tie_goes_to_the_smaller_payoff_then_to_the_key():
+    small = plan("installment-9", total=2, payment=-10000)
+    large = plan("installment-1", total=2, payment=-30000)
+    twin = plan("installment-5", total=2, payment=-10000)
+
+    ranking = rank_by_liquidity([large, small, twin], today=TODAY)
+
+    assert _keys(ranking.ranked) == ["installment-5", "installment-9", "installment-1"]
+    assert {row.freed_bp for row in ranking.ranked} == {5000}
+
+
+def test_unknown_settlement_ranks_by_the_ceiling_and_says_so():
+    row = rank_by_liquidity([vehicle()], today=TODAY).ranked[0]
+
+    assert row.ceiling
+    assert row.payoff.payoff_cents is None
+    assert row.payoff.target_cents == 44 * 123533
+    assert row.monthly_freed_cents == 123533
+    assert row.freed_bp == 227
+
+
+def test_instalment_purchase_ranks_at_its_nominal_remainder():
+    row = rank_by_liquidity([plan("installment-1", total=4, payment=-2500)], today=TODAY).ranked[0]
+
+    assert row.payoff.basis == NOMINAL
+    assert row.payoff.target_cents == 10000
+    assert not row.ceiling
+    assert row.freed_bp == 2500
+
+
+def test_a_debt_with_no_instalment_is_left_out_of_the_ranking():
+    mortgage = replace(revolving("mortgage", -2000000), key="debt-2", installment_total=300)
+    debts = [revolving(), replace(revolving("card", -99999), key="debt-4"), mortgage]
+
+    ranking = rank_by_liquidity(debts + [plan("installment-1")], today=TODAY, budget_cents=10**9)
+
+    assert _keys(ranking.ranked) == ["installment-1"]
+    assert [item.debt.key for item in ranking.unranked] == ["debt-1", "debt-4", "debt-2"]
+    assert ranking.unranked[1].payoff.target_cents == 99999
+    assert ranking.selection is not None
+    assert ranking.selection.spent_cents == 50000
+
+
+def test_a_budget_smaller_than_any_debt_pays_off_nothing():
+    ranking = rank_by_liquidity([plan("installment-1"), vehicle()], today=TODAY, budget_cents=49999)
+
+    selection = ranking.selection
+    assert selection is not None
+    assert selection.chosen == []
+    assert (selection.spent_cents, selection.left_cents, selection.monthly_freed_cents) == (
+        0,
+        49999,
+        0,
+    )
+    assert not selection.ceiling
+
+
+def test_an_exact_budget_pays_off_down_the_list_and_leaves_nothing():
+    debts = [plan("installment-1", first_due=date(2026, 7, 11)), plan("installment-2")]
+
+    selection = rank_by_liquidity(debts, today=TODAY, budget_cents=70000).selection
+
+    assert selection is not None
+    assert _keys(selection.chosen) == ["installment-1", "installment-2"]
+    assert (selection.spent_cents, selection.left_cents, selection.monthly_freed_cents) == (
+        70000,
+        0,
+        20000,
+    )
+
+
+def test_the_choice_skips_what_does_not_fit_and_tries_the_next():
+    debts = [
+        plan("installment-1", first_due=date(2026, 7, 11)),
+        plan("installment-2"),
+        plan("installment-3", total=10, payment=-1000),
+        vehicle(),
+    ]
+
+    selection = rank_by_liquidity(debts, today=TODAY, budget_cents=35000).selection
+
+    assert selection is not None
+    assert _keys(selection.chosen) == ["installment-1", "installment-3"]
+    assert (selection.spent_cents, selection.left_cents, selection.monthly_freed_cents) == (
+        30000,
+        5000,
+        11000,
+    )
+
+
+def test_a_choice_at_the_ceiling_is_flagged_as_an_estimate():
+    selection = rank_by_liquidity([vehicle()], today=TODAY, budget_cents=10**8).selection
+
+    assert selection is not None
+    assert selection.ceiling
+    assert selection.spent_cents == 44 * 123533
+
+
+def test_zero_or_negative_budget_is_refused():
+    with pytest.raises(InvalidBudgetError):
+        rank_by_liquidity([vehicle()], today=TODAY, budget_cents=0)
+    with pytest.raises(InvalidBudgetError):
+        rank_by_liquidity([vehicle()], today=TODAY, budget_cents=-1)

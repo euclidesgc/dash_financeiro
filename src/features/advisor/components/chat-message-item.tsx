@@ -12,6 +12,7 @@ const TOOL_LABELS: Record<string, string> = {
   propose_recategorization: 'a troca de categoria',
   commitments_by_month: 'as parcelas e contas dos próximos meses',
   debt_payoff: 'o valor para quitar as dívidas',
+  debts_by_liquidity: 'as dívidas que mais liberam dinheiro no mês',
 }
 
 function describeTools(tools: string[]): string | null {
