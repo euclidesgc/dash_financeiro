@@ -96,7 +96,7 @@ aplicam esse filtro.
 | `spending_summary` | período, conta | gasto e contagem por categoria, entradas, gastos e saldo do período, e entradas, gastos e saldo de cada mês com lançamento | `sum_by_category`, `period_result` e função nova `monthly_totals` em `app/queries/expenses.py` | 071 |
 | `propose_recategorization` | categoria de destino e, para escolher os lançamentos, os ids devolvidos pela busca ou o mesmo filtro dela (período, texto, categoria atual, conta, visão) | proposta pendente (id, quantos mudam, soma, itens) — **não grava a categoria** | `app/advisor/tools.py::propose_recategorization`, que resolve os ids pelo mesmo `list_expenses` da busca e valida a categoria contra as existentes, e `app/advisor/proposals.py::propose` | 072 |
 | `commitments_by_month` | meses à frente (1 a 24, padrão 6), a partir do mês seguinte a hoje | por mês: compras parceladas, financiamentos, contas recorrentes e assinaturas vivas, total e o que termina naquele mês; cada linha com descrição, conta, parcela k/n no primeiro e no último mês da janela e mês da última parcela; o que não se projeta e por quê | `app/projection/schedule.py::schedule_by_month`, sobre `app/commitments/live.py` (`charged` e `subscriptions`) e os contratos de `app/financings/store.py` | 073 |
-| `debt_payoff` | dívida, prazo em meses (opcional) | valor para quitar hoje e no fim do prazo, e quanto guardar por mês para chegar lá | função nova `app/debts/payoff.py::payoff_at` e `saving_plan`, sobre `present_value_cents` e a escada de `app/debts/ladder.py` | 074 |
+| `debt_payoff` | dívida (chave ou parte do nome; sem ela, a lista) e, opcional, data, prazo em meses (1 a 360) ou valor guardado por mês | lista das dívidas com chave e valor para quitar hoje; para uma dívida, o valor hoje e na data, a soma das parcelas que faltam, quanto guardar por mês ou o mês em que o guardado alcança o valor | `app/debts/payoff.py` (`list_debts`, `payoff_at`, `saving_plan`), sobre a escada de `app/debts/ladder.py`, o contrato de `app/financings/store.py`, o saldo de quitação de `plan_facts` e `app/commitments/live.py::charged` | 074 |
 | `debts_by_liquidity` | — | dívidas e compras parceladas ordenadas por dinheiro liberado no mês por real pago, com o valor de quitação e a parcela liberada | função nova `app/debts/payoff.py::rank_by_liquidity` | 075 |
 
 ## Projeção dos próximos meses
@@ -109,6 +109,22 @@ aplicam esse filtro.
   saída os lista como não projetados, com o motivo. O valor da parcela é parâmetro da tela
   Configuração (invariante 26), nunca derivado de saldo e taxa pelo modelo nem pelo código.
 - O gasto do dia a dia sem série e a renda ficam fora: a projeção é do que já está contratado.
+
+## Quitação de dívidas
+
+- A lista junta cheque especial e saldo de cartão (o saldo informado pelo banco), os financiamentos
+  e as compras parceladas com parcela a vencer. Cada dívida tem uma chave (`debt-<id>`,
+  `installment-<id>`) que o modelo repete na segunda chamada.
+- O valor para quitar tem uma base declarada: o saldo (cheque especial, cartão, imobiliário), a soma
+  nominal das parcelas que faltam (compra parcelada) ou o saldo de quitação informado pelo dono na
+  tela Dívidas (financiamento do veículo), válido só no mês corrente e dentro da validade.
+- Sem saldo de quitação, o valor vem nulo, a saída diz que ele se registra na tela Dívidas e o alvo
+  é a soma das parcelas que faltam, que é o teto. O painel não estima desconto de juros, nem pelo
+  valor presente à taxa do contrato (invariante 26).
+- O plano considera as parcelas pagas até a data: o valor guardado é à parte delas, e o alvo numa
+  data futura é o que falta depois das parcelas vencidas até lá. Data no mês corrente pede o valor
+  inteiro agora; data no passado e valor mensal zero voltam como erro.
+- Os valores dessa ferramenta são positivos: são quanto juntar, não lançamentos.
 
 ## Regras de escrita
 
