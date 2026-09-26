@@ -171,7 +171,7 @@ def test_zero_or_negative_saving_is_refused():
 
 
 def test_a_saving_too_small_never_reaches_a_balance():
-    plan = saving_plan(revolving(balance=-10**12), today=TODAY, monthly_saving_cents=1)
+    plan = saving_plan(revolving(balance=-(10**12)), today=TODAY, monthly_saving_cents=1)
 
     assert plan.reached_month is None
     assert plan.months is None
@@ -191,7 +191,17 @@ def conn(taxonomy_conn):
         "payment_cents, source, account_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
             (1, "overdraft", "Conta corrente", -50000, None, None, None, "accounts", None),
-            (2, "mortgage", "Financiamento imobiliário", -2000000, 72, 300, None, "financings", None),
+            (
+                2,
+                "mortgage",
+                "Financiamento imobiliário",
+                -2000000,
+                72,
+                300,
+                None,
+                "financings",
+                None,
+            ),
             (3, "vehicle", "CDC do veículo", -3857960, 163, 44, PAYMENT, "financings", None),
         ],
     )
