@@ -63,9 +63,15 @@ SPA /app/advisor ──POST /api/advisor/conversations/{id}/messages──▶ ro
 - **Resposta inteira, sem streaming:** o chat envia a pergunta e mostra "Consultando suas contas…" até
   a resposta pronta. Streaming com ferramentas no meio custa um protocolo de eventos na API e na tela
   por um ganho pequeno em respostas curtas; fica fora do escopo inicial.
+- **Poucas chamadas por pergunta:** o prompt de sistema lista as categorias do painel e diz qual
+  ferramenta serve a cada tipo de pergunta (resumo por categoria ou mês a mês → `spending_summary`;
+  lista de lançamentos → `search_transactions`). Sem a lista, o modelo testava uma busca por texto
+  antes do filtro de categoria, e uma pergunta simples custava três chamadas; com chave gratuita do
+  Gemini, isso esgotava o limite por minuto já na segunda pergunta.
 - **Erros:** recusa do modelo, resposta cortada, chave recusada, excesso de chamadas, sobrecarga,
-  modelo inexistente e falta de rede viram mensagem em pt-BR que diz o próximo passo. Falha do
-  provedor não grava nada; a pergunta continua no campo.
+  modelo inexistente e falta de rede viram mensagem em pt-BR que diz o próximo passo. No excesso de
+  chamadas do Gemini, a mensagem diz quantos segundos esperar quando o Gemini informa, ou que a cota
+  do dia acabou. Falha do provedor não grava nada; a pergunta continua no campo.
 - **Persistência:** migração `026_advisor_chat.sql` com `advisor_conversations` (id, título, criada e
   atualizada em) e `advisor_messages` (conversa, ordem, papel `user`/`assistant`/`tool`, conteúdo em
   JSON com as partes neutras e os blocos crus, provedor, modelo, tokens de entrada e saída). O
@@ -86,7 +92,7 @@ aplicam esse filtro.
 | Ferramenta | Entrada | Saída | Função determinística | Fatia |
 |---|---|---|---|---|
 | `search_transactions` | período, conta, texto, categoria, visão (gastos ou entradas), limite ≤ 50 | lançamentos (id, data, descrição, recebedor, valor, categoria) e total e contagem do filtro inteiro | `app/queries/expenses.py::list_expenses` e `sum_expenses`, com filtro novo por categoria em `_where` | 070 |
-| `spending_summary` | período, conta | total por categoria, entradas, gastos e saldo do período, e o total de cada mês do período | `sum_by_category`, `period_result` e função nova `monthly_totals` em `app/queries/expenses.py` | 071 |
+| `spending_summary` | período, conta | gasto e contagem por categoria, entradas, gastos e saldo do período, e entradas, gastos e saldo de cada mês com lançamento | `sum_by_category`, `period_result` e função nova `monthly_totals` em `app/queries/expenses.py` | 071 |
 | `propose_recategorization` | ids de lançamento, categoria de destino | proposta pendente (id, quantos mudam, soma) — **não grava a categoria** | função nova `app/advisor/proposals.py::propose`, que valida ids e categoria | 072 |
 | `commitments_by_month` | meses à frente (1 a 24) | por mês: parcelas de cartão, financiamentos, assinaturas vivas, total, e o que termina naquele mês | função nova `app/projection/schedule.py::schedule_by_month`, sobre `app/commitments/live.py` e `app/financings/math.py` | 073 |
 | `debt_payoff` | dívida, prazo em meses (opcional) | valor para quitar hoje e no fim do prazo, e quanto guardar por mês para chegar lá | função nova `app/debts/payoff.py::payoff_at` e `saving_plan`, sobre `present_value_cents` e a escada de `app/debts/ladder.py` | 074 |

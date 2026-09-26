@@ -5,9 +5,19 @@ const PROVIDER_LABELS: Record<string, string> = {
   gemini: 'Gemini',
 }
 
+const TOOL_LABELS: Record<string, string> = {
+  search_transactions: 'seus lançamentos',
+  spending_summary: 'o resumo de gastos',
+}
+
+function describeTools(tools: string[]): string | null {
+  const labels = [...new Set(tools.map((tool) => TOOL_LABELS[tool] ?? 'seus lançamentos'))]
+  return labels.length > 0 ? `consultou ${labels.join(' e ')}` : null
+}
+
 function describeAnswer(message: ChatMessage): string | null {
   const provider = message.provider ? (PROVIDER_LABELS[message.provider] ?? message.provider) : null
-  const consulted = message.tools.length > 0 ? 'consultou seus lançamentos' : null
+  const consulted = describeTools(message.tools)
   const parts = [provider ? `Respondido por ${provider}` : null, consulted].filter(Boolean)
   return parts.length > 0 ? parts.join(' · ') : null
 }

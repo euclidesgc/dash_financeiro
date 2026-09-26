@@ -7,8 +7,15 @@ from app.advisor.tools import (
     resolve_category,
     run_tool,
     search_transactions,
+    spending_summary,
 )
-from app.queries.expenses import list_expenses, sum_expenses
+from app.queries.expenses import (
+    list_expenses,
+    monthly_totals,
+    period_result,
+    sum_by_category,
+    sum_expenses,
+)
 from app.taxonomy.seed import seed_taxonomy
 from tests.conftest import load, transaction
 
@@ -121,3 +128,45 @@ def test_run_tool_turns_bad_input_and_unknown_tool_into_errors(conn):
     assert bad.is_error and "limit" in bad.content["error"]
     assert unknown.is_error and "desconhecida" in unknown.content["error"]
     assert not good.is_error and good.content["count"] == 3
+
+
+def test_spending_summary_gives_categories_period_and_months_as_the_panel(conn):
+    window = {"date_from": "2026-07-01", "date_to": "2026-08-31"}
+    found = spending_summary(conn, window)
+
+    whole = period_result(conn, **window)
+    assert (found["income_cents"], found["spending_cents"], found["balance_cents"]) == (
+        whole.income_cents,
+        whole.spending_cents,
+        whole.balance_cents,
+    )
+    assert found["spending"] == "−R$ 248,95"
+    assert found["income"] == "R$ 5.000,00"
+    assert [(row["category"], row["total_cents"]) for row in found["by_category"]] == [
+        (row.label, row.total_cents) for row in sum_by_category(conn, **window)
+    ]
+    assert [row["month"] for row in found["months"]] == [
+        row.month for row in monthly_totals(conn, **window)
+    ]
+    assert found["months"][1]["spending"] == "−R$ 208,95"
+    assert found["filters"] == {"date_from": "2026-07-01", "date_to": "2026-08-31", "account": None}
+
+
+def test_spending_summary_by_category_leaves_the_own_transfer_out(conn):
+    found = spending_summary(conn, {"date_from": "2026-08-01", "date_to": "2026-08-31"})
+
+    assert [(row["category"], row["count"], row["total"]) for row in found["by_category"]] == [
+        ("Posto de combustível", 2, "−R$ 185,50"),
+        ("Farmácia", 1, "−R$ 23,45"),
+    ]
+    assert found["spending_cents"] == -20895
+
+
+def test_spending_summary_filters_by_account_and_refuses_bad_input(conn):
+    assert spending_summary(conn, {"account": "conta de teste"})["filters"]["account"]
+    with pytest.raises(ToolInputError, match="não encontrada"):
+        spending_summary(conn, {"account": "Banco imaginário"})
+    with pytest.raises(ToolInputError, match="date_to"):
+        spending_summary(conn, {"date_from": "2026-08-31", "date_to": "2026-08-01"})
+    bad = run_tool(conn, ToolCall(id="c1", name="spending_summary", input={"date_to": "ontem"}))
+    assert bad.is_error and "AAAA-MM-DD" in bad.content["error"]
