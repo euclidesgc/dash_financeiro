@@ -80,6 +80,13 @@ def _accounts_ok(request: httpx.Request) -> httpx.Response:
 
 
 def _transactions_ok(request: httpx.Request) -> httpx.Response:
+    # Reason: the real /v2/transactions answers 400 to pageSize, and a fake
+    # that accepted it let the button fail on every run while the suite stayed
+    # green.
+    if "pageSize" in request.url.params:
+        return httpx.Response(
+            400, json={"message": "property pageSize should not exist", "code": 400}
+        )
     if "after=c2" in str(request.url):
         return httpx.Response(
             200,
@@ -169,6 +176,21 @@ def test_the_transaction_pages_follow_the_next_cursor(workspace):
     ]
     assert len(transaction_requests) == 2
     assert "after=c2" in str(transaction_requests[1].url)
+
+
+def test_the_transaction_requests_never_send_page_size(workspace):
+    mock = recording_transport(happy_routes())
+
+    fetch_from_pluggy(config_with(), ITEMS, transport=mock)
+
+    transaction_requests = [
+        request
+        for request in mock.seen  # type: ignore[attr-defined]
+        if request.url.path == "/v2/transactions"
+    ]
+    assert transaction_requests
+    for request in transaction_requests:
+        assert "pageSize" not in request.url.params
 
 
 def test_a_401_on_auth_means_refused_credentials(workspace):
