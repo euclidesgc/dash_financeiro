@@ -247,7 +247,7 @@ def _quota(quota_id):
         ),
         (
             _exhausted(_quota("GenerateRequestsPerDayPerProjectPerModel-FreeTier"), RETRY),
-            "cota diária do Gemini acabou; tente amanhã",
+            "cota diária do Gemini para gemini-2.5-flash acabou; tente amanhã, troque o modelo",
         ),
         (_exhausted(), "excesso de chamadas ao Gemini; tente daqui a pouco"),
         ({"error": "texto"}, "excesso de chamadas ao Gemini; tente daqui a pouco"),

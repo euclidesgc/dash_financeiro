@@ -19,10 +19,14 @@ Desenho geral em `docs/consultor-chat.md`. Esta SPEC fixa o que a fatia 071 acre
    "gastos com posto em agosto" custou 3 chamadas, porque o modelo não conhecia as categorias e tentou
    texto antes de categoria. `system_prompt(today, categories)` passa a listar os rótulos das
    categorias (de `list_categories`) e diz qual ferramenta serve a cada pergunta; pergunta por
-   categoria ou mês a mês resolve com um `spending_summary` em vez de várias buscas.
+   categoria ou mês a mês resolve com um `spending_summary` em vez de várias buscas. O limite que
+   estourou é o da cota gratuita: 20 chamadas por dia para `gemini-3.8-flash`; com duas chamadas por
+   pergunta, dá cerca de dez perguntas por dia.
 4. **429 claro.** `app/advisor/gemini_provider.py` lê o corpo do erro: `RetryInfo.retryDelay` vira
    "tente de novo em N segundos"; cota diária (`quotaId` com `PerDay`) vira "a cota diária do Gemini
-   acabou; tente amanhã". Sem detalhe, fica a mensagem genérica de excesso.
+   acabou", com o modelo e as saídas (`DASH_ADVISOR_GEMINI_MODEL` ou a Anthropic), verificada antes do
+   `retryDelay` porque o corpo da cota diária também traz uma espera de segundos. Sem detalhe, fica a
+   mensagem genérica de excesso.
 5. **Tela:** `chat-message-item.tsx` descreve as ferramentas consultadas por nome
    (`search_transactions` → "seus lançamentos", `spending_summary` → "o resumo de gastos").
 

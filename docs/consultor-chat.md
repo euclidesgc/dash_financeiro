@@ -66,12 +66,13 @@ SPA /app/advisor ──POST /api/advisor/conversations/{id}/messages──▶ ro
 - **Poucas chamadas por pergunta:** o prompt de sistema lista as categorias do painel e diz qual
   ferramenta serve a cada tipo de pergunta (resumo por categoria ou mês a mês → `spending_summary`;
   lista de lançamentos → `search_transactions`). Sem a lista, o modelo testava uma busca por texto
-  antes do filtro de categoria, e uma pergunta simples custava três chamadas; com chave gratuita do
-  Gemini, isso esgotava o limite por minuto já na segunda pergunta.
+  antes do filtro de categoria, e uma pergunta simples custava três chamadas. Com a lista, custa duas
+  (a ferramenta e a resposta). Conta: a chave gratuita do Gemini tem 20 chamadas por dia para
+  `gemini-3.8-flash` (medido em 26/09/2026), cerca de dez perguntas.
 - **Erros:** recusa do modelo, resposta cortada, chave recusada, excesso de chamadas, sobrecarga,
   modelo inexistente e falta de rede viram mensagem em pt-BR que diz o próximo passo. No excesso de
   chamadas do Gemini, a mensagem diz quantos segundos esperar quando o Gemini informa, ou que a cota
-  do dia acabou. Falha do provedor não grava nada; a pergunta continua no campo.
+  do dia acabou e como seguir (trocar o modelo em `DASH_ADVISOR_GEMINI_MODEL` ou usar a Anthropic). Falha do provedor não grava nada; a pergunta continua no campo.
 - **Persistência:** migração `026_advisor_chat.sql` com `advisor_conversations` (id, título, criada e
   atualizada em) e `advisor_messages` (conversa, ordem, papel `user`/`assistant`/`tool`, conteúdo em
   JSON com as partes neutras e os blocos crus, provedor, modelo, tokens de entrada e saída). O

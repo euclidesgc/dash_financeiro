@@ -57,7 +57,7 @@ def _details(response: httpx.Response) -> list[dict[str, Any]]:
     return [item for item in details if isinstance(item, dict)] if isinstance(details, list) else []
 
 
-def _too_many(response: httpx.Response) -> str:
+def _too_many(response: httpx.Response, model: str) -> str:
     details = _details(response)
     quotas = [
         str(violation.get("quotaId", ""))
@@ -66,7 +66,14 @@ def _too_many(response: httpx.Response) -> str:
         if isinstance(violation, dict)
     ]
     if any(DAILY_QUOTA in quota for quota in quotas):
-        return "a cota diária do Gemini acabou; tente amanhã ou configure ANTHROPIC_API_KEY no .env"
+        # Reason: the free tier caps gemini-3.8-flash at 20 requests a day
+        # (measured 26/09/2026) and the body still carries a retryDelay of
+        # seconds, so the daily case is checked first or the owner would be
+        # told to wait seconds for a quota that only resets the next day.
+        return (
+            f"a cota diária do Gemini para {model} acabou; tente amanhã, troque o modelo em "
+            "DASH_ADVISOR_GEMINI_MODEL ou configure ANTHROPIC_API_KEY no .env"
+        )
     for item in details:
         found = _DELAY.match(str(item.get("retryDelay", "")))
         if found:
@@ -157,7 +164,7 @@ class GeminiProvider:
             raise _unavailable("o Gemini demorou demais para responder") from None
         except httpx.HTTPStatusError as failure:
             if failure.response.status_code == TOO_MANY:
-                raise _unavailable(_too_many(failure.response)) from None
+                raise _unavailable(_too_many(failure.response, self.model)) from None
             raise _unavailable(_refused(failure.response.status_code, self.model)) from None
         except httpx.HTTPError:
             raise _unavailable("não foi possível alcançar o Gemini") from None
