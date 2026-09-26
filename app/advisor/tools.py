@@ -8,6 +8,15 @@ from app.advisor.proposals import propose
 from app.advisor.provider import ToolCall, ToolResult, ToolSpec
 from app.db import fold
 from app.formatting import brl
+from app.projection.schedule import (
+    CARD_INSTALLMENT,
+    DEFAULT_MONTHS,
+    FINANCING,
+    MAX_MONTHS,
+    RECURRING_FIXED,
+    ScheduleLine,
+    schedule_by_month,
+)
 from app.queries.advisor_proposals import ProposalRow, transaction_snapshots
 from app.queries.balances import list_balances
 from app.queries.categories import list_categories
@@ -22,6 +31,7 @@ from app.queries.expenses import (
 SEARCH_TRANSACTIONS = "search_transactions"
 SPENDING_SUMMARY = "spending_summary"
 PROPOSE_RECATEGORIZATION = "propose_recategorization"
+COMMITMENTS_BY_MONTH = "commitments_by_month"
 DEFAULT_LIMIT = 20
 MAX_LIMIT = 50
 MAX_PROPOSAL = 200
@@ -144,7 +154,37 @@ PROPOSE_SPEC = ToolSpec(
     },
 )
 
-TOOLS = [SEARCH_SPEC, SUMMARY_SPEC, PROPOSE_SPEC]
+COMMITMENTS_SPEC = ToolSpec(
+    name=COMMITMENTS_BY_MONTH,
+    description=(
+        "Projeção do que já está contratado para sair em cada um dos próximos meses, a partir do "
+        "mês seguinte a hoje: parcelas de compras parceladas (cartão e crediário), parcelas de "
+        "financiamento pelo contrato cadastrado e contas recorrentes e assinaturas vivas. "
+        "Devolve por mês o total de cada origem, o total do mês e o que termina naquele mês; e "
+        "cada linha com descrição, conta, valor da parcela, parcela k/n no primeiro e no último "
+        "mês da janela e o mês da última parcela. Não inclui o gasto do dia a dia (mercado, "
+        "delivery). Valores em centavos e já escritos em reais; saída tem valor negativo."
+    ),
+    parameters={
+        "type": "object",
+        "properties": {
+            "months": {
+                "type": "integer",
+                "description": (
+                    f"Quantos meses à frente, de 1 a {MAX_MONTHS}. Padrão {DEFAULT_MONTHS}."
+                ),
+            },
+        },
+    },
+)
+
+TOOLS = [SEARCH_SPEC, SUMMARY_SPEC, PROPOSE_SPEC, COMMITMENTS_SPEC]
+
+SOURCE_LABELS = {
+    CARD_INSTALLMENT: "Compras parceladas",
+    FINANCING: "Financiamentos",
+    RECURRING_FIXED: "Contas recorrentes e assinaturas",
+}
 
 
 class ToolInputError(ValueError):
@@ -322,6 +362,7 @@ def spending_summary(conn: sqlite3.Connection, arguments: dict[str, Any]) -> dic
 class ToolContext:
     conversation_id: int
     now: str
+    today: date
 
 
 def _ids(arguments: dict[str, Any]) -> list[int] | None:
@@ -432,12 +473,80 @@ def propose_recategorization(
     return _proposal_content(proposal, len(snapshots) - len(changing), {target.key: target.label})
 
 
+def _months(arguments: dict[str, Any]) -> int:
+    value = arguments.get("months", DEFAULT_MONTHS)
+    if isinstance(value, float) and value.is_integer():
+        value = int(value)
+    if not isinstance(value, int) or isinstance(value, bool) or not 1 <= value <= MAX_MONTHS:
+        raise ToolInputError(f"months precisa ser um número inteiro de 1 a {MAX_MONTHS}.")
+    return value
+
+
+def _installment(number: int | None, total: int | None) -> str | None:
+    return f"{number}/{total}" if number is not None and total is not None else None
+
+
+def _schedule_line(line: ScheduleLine) -> dict[str, Any]:
+    return {
+        "source": SOURCE_LABELS[line.source],
+        "description": line.description,
+        "account": line.account,
+        **_money("amount", line.amount_cents),
+        "first_month": line.first_month,
+        "last_month": line.last_month,
+        "months_in_window": line.months_in_window,
+        **_money("window_total", line.window_total_cents),
+        "first_installment": _installment(line.first_installment, line.installment_total),
+        "last_installment_in_window": _installment(line.last_installment, line.installment_total),
+        "end_month": line.end_month,
+        "replaces_fixed_bill": line.replaces,
+    }
+
+
+def commitments_by_month(
+    conn: sqlite3.Connection, arguments: dict[str, Any], context: ToolContext
+) -> dict[str, Any]:
+    schedule = schedule_by_month(conn, today=context.today, months=_months(arguments))
+    return {
+        "months": [
+            {
+                "month": row.month,
+                "by_source": {
+                    SOURCE_LABELS[source]: brl(cents) for source, cents in row.by_source.items()
+                },
+                "by_source_cents": {
+                    SOURCE_LABELS[source]: cents for source, cents in row.by_source.items()
+                },
+                **_money("total", row.total_cents),
+                "ending": row.ending,
+            }
+            for row in schedule.months
+        ],
+        **_money("window_total", schedule.total_cents),
+        "lines": [_schedule_line(line) for line in schedule.lines],
+        "not_projected": [
+            {
+                "source": SOURCE_LABELS[item.source],
+                "description": item.description,
+                "reason": item.reason,
+            }
+            for item in schedule.unprojected
+        ],
+        "notes": (
+            "Parcela de cartão vem da última parcela vista na fatura; financiamento vem do "
+            "contrato da tela Configuração; conta recorrente é a média da série e vale para todos "
+            "os meses. O gasto do dia a dia não entra."
+        ),
+    }
+
+
 Handler = Callable[[sqlite3.Connection, dict[str, Any], ToolContext], dict[str, Any]]
 
 _HANDLERS: dict[str, Handler] = {
     SEARCH_TRANSACTIONS: lambda conn, arguments, _: search_transactions(conn, arguments),
     SPENDING_SUMMARY: lambda conn, arguments, _: spending_summary(conn, arguments),
     PROPOSE_RECATEGORIZATION: propose_recategorization,
+    COMMITMENTS_BY_MONTH: commitments_by_month,
 }
 
 

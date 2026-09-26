@@ -95,9 +95,20 @@ aplicam esse filtro.
 | `search_transactions` | período, conta, texto, categoria, visão (gastos ou entradas), limite ≤ 50 | lançamentos (id, data, descrição, recebedor, valor, categoria) e total e contagem do filtro inteiro | `app/queries/expenses.py::list_expenses` e `sum_expenses`, com filtro novo por categoria em `_where` | 070 |
 | `spending_summary` | período, conta | gasto e contagem por categoria, entradas, gastos e saldo do período, e entradas, gastos e saldo de cada mês com lançamento | `sum_by_category`, `period_result` e função nova `monthly_totals` em `app/queries/expenses.py` | 071 |
 | `propose_recategorization` | categoria de destino e, para escolher os lançamentos, os ids devolvidos pela busca ou o mesmo filtro dela (período, texto, categoria atual, conta, visão) | proposta pendente (id, quantos mudam, soma, itens) — **não grava a categoria** | `app/advisor/tools.py::propose_recategorization`, que resolve os ids pelo mesmo `list_expenses` da busca e valida a categoria contra as existentes, e `app/advisor/proposals.py::propose` | 072 |
-| `commitments_by_month` | meses à frente (1 a 24) | por mês: parcelas de cartão, financiamentos, assinaturas vivas, total, e o que termina naquele mês | função nova `app/projection/schedule.py::schedule_by_month`, sobre `app/commitments/live.py` e `app/financings/math.py` | 073 |
+| `commitments_by_month` | meses à frente (1 a 24, padrão 6), a partir do mês seguinte a hoje | por mês: compras parceladas, financiamentos, contas recorrentes e assinaturas vivas, total e o que termina naquele mês; cada linha com descrição, conta, parcela k/n no primeiro e no último mês da janela e mês da última parcela; o que não se projeta e por quê | `app/projection/schedule.py::schedule_by_month`, sobre `app/commitments/live.py` (`charged` e `subscriptions`) e os contratos de `app/financings/store.py` | 073 |
 | `debt_payoff` | dívida, prazo em meses (opcional) | valor para quitar hoje e no fim do prazo, e quanto guardar por mês para chegar lá | função nova `app/debts/payoff.py::payoff_at` e `saving_plan`, sobre `present_value_cents` e a escada de `app/debts/ladder.py` | 074 |
 | `debts_by_liquidity` | — | dívidas e compras parceladas ordenadas por dinheiro liberado no mês por real pago, com o valor de quitação e a parcela liberada | função nova `app/debts/payoff.py::rank_by_liquidity` | 075 |
+
+## Projeção dos próximos meses
+
+- A parcela de compra parcelada em cada mês sai da última parcela vista (`k = última + meses desde
+  ela`), porque a fatura do cartão lança as parcelas futuras de uma vez; conta enquanto `k ≤ n`.
+- O financiamento conta pelo contrato da tela Configuração (valor, prazo, primeiro vencimento). A
+  conta recorrente com valor a até 2% da parcela do contrato é o boleto dele e não conta de novo.
+- Contrato sem valor de parcela (o imobiliário hoje) e parcela sem número não são adivinhados: a
+  saída os lista como não projetados, com o motivo. O valor da parcela é parâmetro da tela
+  Configuração (invariante 26), nunca derivado de saldo e taxa pelo modelo nem pelo código.
+- O gasto do dia a dia sem série e a renda ficam fora: a projeção é do que já está contratado.
 
 ## Regras de escrita
 

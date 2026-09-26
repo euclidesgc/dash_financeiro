@@ -10,6 +10,7 @@ const TOOL_LABELS: Record<string, string> = {
   search_transactions: 'seus lançamentos',
   spending_summary: 'o resumo de gastos',
   propose_recategorization: 'a troca de categoria',
+  commitments_by_month: 'as parcelas e contas dos próximos meses',
 }
 
 function describeTools(tools: string[]): string | null {

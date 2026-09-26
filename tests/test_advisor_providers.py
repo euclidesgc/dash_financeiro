@@ -83,6 +83,7 @@ def test_anthropic_translates_a_tool_request_and_keeps_raw_blocks():
         "search_transactions",
         "spending_summary",
         "propose_recategorization",
+        "commitments_by_month",
     ]
     assert all("input_schema" in tool for tool in sent["tools"])
     assert sent["thinking"] == {"type": "adaptive"}
@@ -182,6 +183,7 @@ def test_gemini_translates_a_function_call_and_keeps_the_signature():
         "search_transactions",
         "spending_summary",
         "propose_recategorization",
+        "commitments_by_month",
     ]
     assert all(item["parameters"]["type"] == "object" for item in declarations)
 

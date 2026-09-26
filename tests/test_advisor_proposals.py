@@ -1,3 +1,5 @@
+from datetime import date
+
 import pytest
 
 from app.advisor.proposals import (
@@ -53,7 +55,7 @@ def conn(taxonomy_conn):
 
 @pytest.fixture
 def context():
-    return ToolContext(conversation_id=1, now=NOW)
+    return ToolContext(conversation_id=1, now=NOW, today=date(2026, 9, 26))
 
 
 def _id(conn, pluggy_id):
