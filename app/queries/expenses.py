@@ -70,6 +70,14 @@ class CategoryTotal:
 
 
 @dataclass(frozen=True)
+class MonthTotal:
+    month: str
+    income_cents: int
+    spending_cents: int
+    balance_cents: int
+
+
+@dataclass(frozen=True)
 class PeriodResult:
     income_cents: int
     spending_cents: int
@@ -245,3 +253,35 @@ def period_result(
     return PeriodResult(
         income_cents=income, spending_cents=spending, balance_cents=income + spending
     )
+
+
+_MONTHLY = (
+    "SELECT substr(t.date, 1, 7) AS month,"
+    f" coalesce(sum(CASE WHEN {INCOME} THEN t.amount_cents END), 0) AS income,"
+    f" coalesce(sum(CASE WHEN {SPENDING} THEN t.amount_cents END), 0) AS spending"
+    f" FROM transactions AS t WHERE (({INCOME}) OR ({SPENDING}))"
+)
+
+
+def monthly_totals(
+    conn: sqlite3.Connection,
+    *,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    account_id: str | None = None,
+) -> list[MonthTotal]:
+    window, params = date_window(date_from, date_to, "t.date")
+    sql = f"{_MONTHLY}{window}"
+    if account_id is not None:
+        sql += " AND t.account_id = ?"
+        params.append(account_id)
+    rows = conn.execute(f"{sql} GROUP BY month ORDER BY month", params).fetchall()
+    return [
+        MonthTotal(
+            month=row["month"],
+            income_cents=int(row["income"]),
+            spending_cents=int(row["spending"]),
+            balance_cents=int(row["income"]) + int(row["spending"]),
+        )
+        for row in rows
+    ]

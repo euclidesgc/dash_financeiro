@@ -134,7 +134,7 @@ def test_question_runs_the_tool_and_answers_with_its_numbers(app, client):
     assert tool_round.role == "tool"
     assert tool_round.parts[0].content["total"] == "−R$ 185,50"
     assert "2026-09-26" in provider.systems[0]
-    assert [spec.name for spec in provider.tools[0]] == ["search_transactions"]
+    assert [spec.name for spec in provider.tools[0]] == ["search_transactions", "spending_summary"]
     roles = [row["role"] for row in _stored_roles(conversation_id)]
     assert roles == ["user", "assistant", "tool", "assistant"]
 
@@ -270,8 +270,88 @@ def test_stored_assistant_turn_keeps_the_provider_raw_blocks(app, client):
 def test_system_prompt_forbids_arithmetic_and_carries_today():
     from datetime import date
 
-    prompt = system_prompt(date(2026, 9, 26))
+    prompt = system_prompt(date(2026, 9, 26), ["Farmácia", "Posto de combustível"])
 
     assert "2026-09-26" in prompt
     assert "NUNCA CALCULA" in prompt
     assert "português" in prompt
+
+
+def test_system_prompt_lists_the_panel_categories_and_the_tool_for_each_question(app, client):
+    provider = ScriptedProvider(script=[answer("Pergunte sobre seus gastos.")])
+    _use(app, provider)
+    conversation_id = _new_conversation(client)
+
+    client.post(f"/api/advisor/conversations/{conversation_id}/messages", json={"text": "oi"})
+
+    system = provider.systems[0]
+    assert "Farmácia" in system and "Posto de combustível" in system
+    assert "spending_summary" in system and "search_transactions" in system
+
+
+SUMMARY = {"date_from": "2026-08-01", "date_to": "2026-08-31"}
+
+
+def test_summary_question_answers_with_the_totals_of_each_category(app, client):
+    conn = connect()
+    conn.execute("UPDATE transactions SET category = 'Gas stations'")
+    conn.commit()
+    conn.close()
+    provider = ScriptedProvider(
+        script=[
+            call("spending_summary", SUMMARY),
+            answer("Em agosto: Posto de combustível −R$ 185,50, gasto total −R$ 185,50."),
+        ]
+    )
+    _use(app, provider)
+    conversation_id = _new_conversation(client)
+
+    response = client.post(
+        f"/api/advisor/conversations/{conversation_id}/messages",
+        json={"text": "quanto gastei por categoria em agosto?"},
+    )
+
+    assistant = response.json()["messages"][1]
+    assert assistant["text"].startswith("Em agosto: Posto de combustível −R$ 185,50")
+    assert assistant["tools"] == ["spending_summary"]
+    summary = provider.seen[1][-1].parts[0].content
+    assert summary["by_category"] == [
+        {
+            "category": "Posto de combustível",
+            "count": 2,
+            "total_cents": -18550,
+            "total": "−R$ 185,50",
+        }
+    ]
+    assert summary["months"][0]["month"] == "2026-08"
+    assert len(provider.seen) == 2
+
+
+def test_a_sum_of_categories_the_summary_did_not_return_is_withheld(app, client):
+    conn = connect()
+    load(conn, [transaction("f1", "2026-08-12", -23.45, descricao="Drogaria")])
+    conn.execute("UPDATE transactions SET category = 'Gas stations' WHERE pluggy_id = 'p1'")
+    conn.execute("UPDATE transactions SET category = 'Pharmacy' WHERE pluggy_id = 'p2'")
+    conn.commit()
+    conn.close()
+    _use(
+        app,
+        ScriptedProvider(
+            script=[
+                call("spending_summary", SUMMARY),
+                answer("Posto e farmácia juntos somam −R$ 185,50."),
+            ]
+        ),
+    )
+    conversation_id = _new_conversation(client)
+
+    response = client.post(
+        f"/api/advisor/conversations/{conversation_id}/messages",
+        json={"text": "quanto foi posto mais farmácia?"},
+    )
+
+    assert response.json()["messages"][1]["text"] == UNCHECKED
+    conn = connect()
+    count = conn.execute("SELECT count(*) FROM transactions").fetchone()[0]
+    conn.close()
+    assert count == 3

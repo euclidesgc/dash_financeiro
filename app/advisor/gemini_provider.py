@@ -1,4 +1,6 @@
 import json
+import math
+import re
 import uuid
 from typing import Any
 
@@ -43,6 +45,43 @@ def _unavailable(reason: str) -> ProviderError:
     return ProviderError(f"O consultor está indisponível: {reason}.")
 
 
+_DELAY = re.compile(r"^(\d+(?:\.\d+)?)s$")
+DAILY_QUOTA = "PerDay"
+
+
+def _details(response: httpx.Response) -> list[dict[str, Any]]:
+    try:
+        details = response.json()["error"]["details"]
+    except (KeyError, TypeError, ValueError):
+        return []
+    return [item for item in details if isinstance(item, dict)] if isinstance(details, list) else []
+
+
+def _too_many(response: httpx.Response, model: str) -> str:
+    details = _details(response)
+    quotas = [
+        str(violation.get("quotaId", ""))
+        for item in details
+        for violation in item.get("violations") or []
+        if isinstance(violation, dict)
+    ]
+    if any(DAILY_QUOTA in quota for quota in quotas):
+        # Reason: the free tier caps gemini-3.8-flash at 20 requests a day
+        # (measured 26/09/2026) and the body still carries a retryDelay of
+        # seconds, so the daily case is checked first or the owner would be
+        # told to wait seconds for a quota that only resets the next day.
+        return (
+            f"a cota diária do Gemini para {model} acabou; tente amanhã, troque o modelo em "
+            "DASH_ADVISOR_GEMINI_MODEL ou configure ANTHROPIC_API_KEY no .env"
+        )
+    for item in details:
+        found = _DELAY.match(str(item.get("retryDelay", "")))
+        if found:
+            seconds = max(1, math.ceil(float(found.group(1))))
+            return f"excesso de chamadas ao Gemini; tente de novo em {seconds} segundos"
+    return "excesso de chamadas ao Gemini; tente daqui a pouco"
+
+
 def _refused(status: int, model: str) -> str:
     if status == NOT_FOUND:
         return f"o modelo {model} não está disponível no Gemini; confira DASH_ADVISOR_GEMINI_MODEL"
@@ -50,8 +89,6 @@ def _refused(status: int, model: str) -> str:
         return "a chave do Gemini foi recusada; confira GEMINI_API_KEY ou a tela Configuração"
     if status == BAD_REQUEST:
         return "o Gemini recusou o pedido (a chave pode ser inválida)"
-    if status == TOO_MANY:
-        return "excesso de chamadas ao Gemini; tente daqui a pouco"
     if status == OVERLOADED:
         return "o Gemini está sobrecarregado; tente daqui a pouco"
     return f"o Gemini respondeu com erro (HTTP {status})"
@@ -126,6 +163,8 @@ class GeminiProvider:
         except httpx.TimeoutException:
             raise _unavailable("o Gemini demorou demais para responder") from None
         except httpx.HTTPStatusError as failure:
+            if failure.response.status_code == TOO_MANY:
+                raise _unavailable(_too_many(failure.response, self.model)) from None
             raise _unavailable(_refused(failure.response.status_code, self.model)) from None
         except httpx.HTTPError:
             raise _unavailable("não foi possível alcançar o Gemini") from None

@@ -8,13 +8,33 @@ from app.db import fold
 from app.formatting import brl
 from app.queries.balances import list_balances
 from app.queries.categories import list_categories
-from app.queries.expenses import View, list_expenses
+from app.queries.expenses import (
+    View,
+    list_expenses,
+    monthly_totals,
+    period_result,
+    sum_by_category,
+)
 
 SEARCH_TRANSACTIONS = "search_transactions"
+SPENDING_SUMMARY = "spending_summary"
 DEFAULT_LIMIT = 20
 MAX_LIMIT = 50
 MIN_TEXT = 2
 KINDS: dict[str, View] = {"expenses": "expenses", "income": "income"}
+
+_DATE_FROM = {
+    "type": "string",
+    "description": "Primeiro dia do período, AAAA-MM-DD. Omita para desde o início.",
+}
+_DATE_TO = {
+    "type": "string",
+    "description": "Último dia do período, AAAA-MM-DD, inclusive. Omita para até hoje.",
+}
+_ACCOUNT = {
+    "type": "string",
+    "description": "Nome da conta ou do banco (ex.: Nubank). Omita para todas as contas.",
+}
 
 SEARCH_SPEC = ToolSpec(
     name=SEARCH_TRANSACTIONS,
@@ -27,14 +47,8 @@ SEARCH_SPEC = ToolSpec(
     parameters={
         "type": "object",
         "properties": {
-            "date_from": {
-                "type": "string",
-                "description": "Primeiro dia do período, AAAA-MM-DD. Omita para desde o início.",
-            },
-            "date_to": {
-                "type": "string",
-                "description": "Último dia do período, AAAA-MM-DD, inclusive. Omita para até hoje.",
-            },
+            "date_from": _DATE_FROM,
+            "date_to": _DATE_TO,
             "text": {
                 "type": "string",
                 "description": (
@@ -46,10 +60,7 @@ SEARCH_SPEC = ToolSpec(
                 "type": "string",
                 "description": "Categoria como o painel mostra (ex.: Farmácia, Supermercado).",
             },
-            "account": {
-                "type": "string",
-                "description": "Nome da conta ou do banco (ex.: Nubank).",
-            },
+            "account": _ACCOUNT,
             "kind": {
                 "type": "string",
                 "enum": list(KINDS),
@@ -65,7 +76,23 @@ SEARCH_SPEC = ToolSpec(
     },
 )
 
-TOOLS = [SEARCH_SPEC]
+SUMMARY_SPEC = ToolSpec(
+    name=SPENDING_SUMMARY,
+    description=(
+        "Resumo de um período como o painel calcula: entradas, gastos e saldo; o gasto de cada "
+        "categoria (com contagem); e entradas, gastos e saldo de cada mês que teve lançamento. "
+        "Use para 'quanto gastei por categoria', 'em que mais gastei', 'mês a mês' e 'quanto "
+        "entrou e saiu'. Valores em centavos e já escritos em reais. Transferência entre contas "
+        "próprias, estorno e o que foi marcado como não é gasto já ficam de fora. Gasto tem "
+        "valor negativo."
+    ),
+    parameters={
+        "type": "object",
+        "properties": {"date_from": _DATE_FROM, "date_to": _DATE_TO, "account": _ACCOUNT},
+    },
+)
+
+TOOLS = [SEARCH_SPEC, SUMMARY_SPEC]
 
 
 class ToolInputError(ValueError):
@@ -133,11 +160,24 @@ def resolve_account(conn: sqlite3.Connection, asked: str) -> _Resolved:
     raise ToolInputError(f"'{asked}' corresponde a mais de uma conta: {matches}. Seja específico.")
 
 
-def search_transactions(conn: sqlite3.Connection, arguments: dict[str, Any]) -> dict[str, Any]:
+def _period(arguments: dict[str, Any]) -> tuple[date | None, date | None]:
     date_from = _day(arguments, "date_from")
     date_to = _day(arguments, "date_to")
     if date_from and date_to and date_to < date_from:
         raise ToolInputError("date_to precisa ser igual ou posterior a date_from.")
+    return date_from, date_to
+
+
+def _iso(day: date | None) -> str | None:
+    return day.isoformat() if day else None
+
+
+def _money(prefix: str, cents: int) -> dict[str, Any]:
+    return {f"{prefix}_cents": cents, prefix: brl(cents)}
+
+
+def search_transactions(conn: sqlite3.Connection, arguments: dict[str, Any]) -> dict[str, Any]:
+    date_from, date_to = _period(arguments)
     text = _text(arguments, "text")
     if text is not None and len(text) < MIN_TEXT:
         raise ToolInputError(f"text precisa de pelo menos {MIN_TEXT} letras.")
@@ -192,7 +232,41 @@ def search_transactions(conn: sqlite3.Connection, arguments: dict[str, Any]) -> 
     }
 
 
-_HANDLERS = {SEARCH_TRANSACTIONS: search_transactions}
+def spending_summary(conn: sqlite3.Connection, arguments: dict[str, Any]) -> dict[str, Any]:
+    date_from, date_to = _period(arguments)
+    asked_account = _text(arguments, "account")
+    account = resolve_account(conn, asked_account) if asked_account else None
+    start, end = _iso(date_from), _iso(date_to)
+    account_id = account.key if account else None
+    result = period_result(conn, date_from=start, date_to=end, account_id=account_id)
+    categories = [
+        {"category": row.label, "count": row.count, **_money("total", row.total_cents)}
+        for row in sum_by_category(conn, date_from=start, date_to=end, account_id=account_id)
+    ]
+    months = [
+        {
+            "month": row.month,
+            **_money("income", row.income_cents),
+            **_money("spending", row.spending_cents),
+            **_money("balance", row.balance_cents),
+        }
+        for row in monthly_totals(conn, date_from=start, date_to=end, account_id=account_id)
+    ]
+    return {
+        "filters": {
+            "date_from": start,
+            "date_to": end,
+            "account": account.label if account else None,
+        },
+        **_money("income", result.income_cents),
+        **_money("spending", result.spending_cents),
+        **_money("balance", result.balance_cents),
+        "by_category": categories,
+        "months": months,
+    }
+
+
+_HANDLERS = {SEARCH_TRANSACTIONS: search_transactions, SPENDING_SUMMARY: spending_summary}
 
 
 def run_tool(conn: sqlite3.Connection, call: ToolCall) -> ToolResult:

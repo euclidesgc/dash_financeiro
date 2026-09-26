@@ -79,8 +79,8 @@ def test_anthropic_translates_a_tool_request_and_keeps_raw_blocks():
     sent = create.kwargs[0]
     assert sent["model"] == "claude-opus-5"
     assert sent["system"] == "sistema"
-    assert sent["tools"][0]["name"] == "search_transactions"
-    assert "input_schema" in sent["tools"][0]
+    assert [tool["name"] for tool in sent["tools"]] == ["search_transactions", "spending_summary"]
+    assert all("input_schema" in tool for tool in sent["tools"])
     assert sent["thinking"] == {"type": "adaptive"}
 
 
@@ -173,8 +173,9 @@ def test_gemini_translates_a_function_call_and_keeps_the_signature():
     assert seen[0].headers["x-goog-api-key"] == "chave"
     assert "gemini-2.5-flash:generateContent" in str(seen[0].url)
     assert sent["systemInstruction"]["parts"][0]["text"] == "sistema"
-    declaration = sent["tools"][0]["functionDeclarations"][0]
-    assert declaration["name"] == "search_transactions"
+    declarations = sent["tools"][0]["functionDeclarations"]
+    assert [item["name"] for item in declarations] == ["search_transactions", "spending_summary"]
+    assert all(item["parameters"]["type"] == "object" for item in declarations)
 
 
 def test_gemini_rebuilds_function_response_and_resends_own_raw_turn():
@@ -220,6 +221,49 @@ def test_gemini_http_errors_become_pt_br(status, fragment):
     provider, _ = _gemini(lambda request: httpx.Response(status, json={}))
 
     with pytest.raises(ProviderError, match=fragment):
+        provider.reply("s", [QUESTION], TOOLS)
+
+
+def _exhausted(*details):
+    return {"error": {"code": 429, "status": "RESOURCE_EXHAUSTED", "details": list(details)}}
+
+
+RETRY = {"@type": "type.googleapis.com/google.rpc.RetryInfo", "retryDelay": "32.4s"}
+
+
+def _quota(quota_id):
+    return {
+        "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+        "violations": [{"quotaMetric": "generate_content_requests", "quotaId": quota_id}],
+    }
+
+
+@pytest.mark.parametrize(
+    ("body", "fragment"),
+    [
+        (
+            _exhausted(_quota("GenerateRequestsPerMinutePerProjectPerModel-FreeTier"), RETRY),
+            "tente de novo em 33 segundos",
+        ),
+        (
+            _exhausted(_quota("GenerateRequestsPerDayPerProjectPerModel-FreeTier"), RETRY),
+            "cota diária do Gemini para gemini-2.5-flash acabou; tente amanhã, troque o modelo",
+        ),
+        (_exhausted(), "excesso de chamadas ao Gemini; tente daqui a pouco"),
+        ({"error": "texto"}, "excesso de chamadas ao Gemini; tente daqui a pouco"),
+    ],
+)
+def test_gemini_rate_limit_says_how_long_to_wait_or_that_the_day_is_over(body, fragment):
+    provider, _ = _gemini(lambda request: httpx.Response(429, json=body))
+
+    with pytest.raises(ProviderError, match=fragment):
+        provider.reply("s", [QUESTION], TOOLS)
+
+
+def test_gemini_rate_limit_with_a_body_that_is_not_json_keeps_the_generic_text():
+    provider, _ = _gemini(lambda request: httpx.Response(429, text="Too Many Requests"))
+
+    with pytest.raises(ProviderError, match="excesso de chamadas ao Gemini; tente daqui a pouco"):
         provider.reply("s", [QUESTION], TOOLS)
 
 
