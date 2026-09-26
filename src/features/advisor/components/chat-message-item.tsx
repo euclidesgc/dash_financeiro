@@ -11,6 +11,7 @@ const TOOL_LABELS: Record<string, string> = {
   spending_summary: 'o resumo de gastos',
   propose_recategorization: 'a troca de categoria',
   commitments_by_month: 'as parcelas e contas dos próximos meses',
+  debt_payoff: 'o valor para quitar as dívidas',
 }
 
 function describeTools(tools: string[]): string | null {

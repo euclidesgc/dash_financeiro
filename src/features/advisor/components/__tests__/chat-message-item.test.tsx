@@ -48,6 +48,14 @@ test('names the monthly projection when the advisor used it', () => {
   ).toBeVisible()
 })
 
+test('names the payoff lookup when the advisor used it', () => {
+  renderItem(answer(['debt_payoff']))
+
+  expect(
+    screen.getByText('Respondido por Gemini · consultou o valor para quitar as dívidas'),
+  ).toBeVisible()
+})
+
 test('leaves the note to the provider when no tool was used', () => {
   renderItem(answer([]))
 
