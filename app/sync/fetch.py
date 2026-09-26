@@ -88,7 +88,9 @@ def _fetch_item(client: httpx.Client, item_id: str) -> None:
 
 
 def _fetch_transactions(client: httpx.Client, account_id: str) -> None:
-    params: dict[str, Any] = {"accountId": account_id, "pageSize": PAGE_SIZE}
+    # Reason: unlike /accounts, /v2/transactions refuses pageSize with a 400
+    # ("property pageSize should not exist"); its page size is the server's.
+    params: dict[str, Any] = {"accountId": account_id}
     query = urlencode(params)
     page = 1
     while True:
