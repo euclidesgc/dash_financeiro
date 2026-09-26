@@ -64,7 +64,7 @@ test('"Mais telas" opens full-page links to the old panel screens', async () => 
     ['Objetivo', '/objetivo'],
     ['Dívidas', '/dividas'],
     ['Simulador', '/simulador'],
-    ['Consultor', '/consultor'],
+    ['Consultor antigo', '/consultor'],
     ['Configuração', '/configuracao'],
   ]
   for (const [name, href] of expected) {
@@ -73,4 +73,11 @@ test('"Mais telas" opens full-page links to the old panel screens', async () => 
     expect(link).toHaveAttribute('href', href)
     expect(link).not.toHaveAttribute('aria-current')
   }
+})
+
+test('marks "Consultor" as current on the advisor page', () => {
+  renderWithProviders(<AppHeader />, { route: '/advisor' })
+
+  expect(screen.getByRole('link', { name: 'Consultor' })).toHaveAttribute('aria-current', 'page')
+  expect(screen.getByRole('link', { name: 'Consultor' })).toHaveAttribute('href', '/advisor')
 })

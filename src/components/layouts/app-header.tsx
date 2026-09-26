@@ -34,6 +34,9 @@ export function AppHeader({
           <NavLink to={paths.connections} className={navLinkClassName}>
             Conexões
           </NavLink>
+          <NavLink to={paths.advisor} className={navLinkClassName}>
+            Consultor
+          </NavLink>
           <details className="group open:basis-full">
             <summary className="cursor-pointer text-sm font-medium text-gray-600 underline-offset-4 hover:underline">
               Mais telas

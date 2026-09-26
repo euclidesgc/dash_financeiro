@@ -4,6 +4,7 @@ export const paths = {
   expenses: '/expenses',
   categories: '/categories',
   connections: '/connections',
+  advisor: '/advisor',
 } as const
 
 // Reason: these screens live in the server-rendered panel outside the SPA, so
@@ -13,6 +14,6 @@ export const legacyScreens = [
   { href: '/objetivo', label: 'Objetivo' },
   { href: '/dividas', label: 'Dívidas' },
   { href: '/simulador', label: 'Simulador' },
-  { href: '/consultor', label: 'Consultor' },
+  { href: '/consultor', label: 'Consultor antigo' },
   { href: '/configuracao', label: 'Configuração' },
 ] as const

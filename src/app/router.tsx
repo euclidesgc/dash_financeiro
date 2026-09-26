@@ -3,6 +3,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router'
 import type { RouteObject } from 'react-router'
 import { paths } from '@/config/paths'
 import { ProtectedRoute } from '@/lib/auth'
+import { AdvisorRoute } from '@/app/routes/advisor'
 import { CategoriesRoute } from '@/app/routes/categories'
 import { ConnectionsRoute } from '@/app/routes/connections'
 import { DashboardRoute } from '@/app/routes/dashboard'
@@ -45,6 +46,14 @@ export const routes: RouteObject[] = [
         element: (
           <ProtectedRoute>
             <ConnectionsRoute />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: paths.advisor,
+        element: (
+          <ProtectedRoute>
+            <AdvisorRoute />
           </ProtectedRoute>
         ),
       },

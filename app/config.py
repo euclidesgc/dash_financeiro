@@ -27,6 +27,9 @@ class Config:
     login: str | None
     password: str | None
     gemini_api_key: str | None
+    anthropic_api_key: str | None
+    advisor_model: str | None
+    advisor_gemini_model: str | None
     db_path: str
     session_secret: str | None
     key_path: str
@@ -67,6 +70,9 @@ def load_config(env: Mapping[str, str] | None = None) -> Config:
         login=_first(env, "LOGIN"),
         password=_first(env, "PASSWORD"),
         gemini_api_key=_first(env, "GEMINI_API_KEY"),
+        anthropic_api_key=_first(env, "ANTHROPIC_API_KEY"),
+        advisor_model=_first(env, "DASH_ADVISOR_MODEL"),
+        advisor_gemini_model=_first(env, "DASH_ADVISOR_GEMINI_MODEL"),
         db_path=_first(env, "DASH_DB_PATH") or DEFAULT_DB_PATH,
         session_secret=_first(env, "SESSION_SECRET"),
         key_path=_first(env, "DASH_KEY_PATH") or DEFAULT_KEY_PATH,

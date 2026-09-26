@@ -8,6 +8,7 @@ from app.migrate import run_migrations
 from app.routers import (
     accounts,
     advisor,
+    advisor_chat,
     auth,
     auth_api,
     cards,
@@ -91,6 +92,7 @@ def create_app() -> FastAPI:
     app.include_router(financings.router)
     app.include_router(offers.router)
     app.include_router(advisor.router)
+    app.include_router(advisor_chat.router)
     app.include_router(health.router)
     mount_spa(app, Path("dist"))
     return app

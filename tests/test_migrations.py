@@ -21,6 +21,8 @@ ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_TABLES = [
     "accounts",
     "advisor_config",
+    "advisor_conversations",
+    "advisor_messages",
     "advisor_questions",
     "cards",
     "categories",
@@ -70,6 +72,7 @@ EXPECTED_MIGRATIONS = [
     "023_sync_trigger.sql",
     "024_pluggy_connections.sql",
     "025_sync_origin.sql",
+    "026_advisor_chat.sql",
 ]
 
 TABLE_NAMES = (
@@ -573,3 +576,22 @@ def test_the_origin_of_a_sync_run_only_accepts_screen_command_or_nothing(conn):
 
     with pytest.raises(sqlite3.IntegrityError):
         conn.execute(insert, ("outro",))
+
+
+def test_026_creates_the_advisor_chat_tables(conn):
+    apply_migrations(conn, SQL_FOLDER)
+    conn.execute(
+        "INSERT INTO advisor_conversations (id, title, created_at, updated_at)"
+        " VALUES (1, 'x', 'a', 'a')"
+    )
+    insert = (
+        "INSERT INTO advisor_messages (conversation_id, position, role, content, created_at)"
+        " VALUES (1, ?, ?, '{}', 'a')"
+    )
+    for position, role in enumerate(("user", "assistant", "tool"), start=1):
+        conn.execute(insert, (position, role))
+
+    with pytest.raises(sqlite3.IntegrityError, match="CHECK constraint failed"):
+        conn.execute(insert, (9, "system"))
+    with pytest.raises(sqlite3.IntegrityError, match="UNIQUE"):
+        conn.execute(insert, (1, "user"))

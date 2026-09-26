@@ -16,7 +16,9 @@ uv run python -m tests.e2e_seed
 # copies this snapshot back over the live database to start from the seed.
 cp "$DASH_DB_PATH" "$E2E_DIR/seed.sqlite"
 
+# Reason: the e2e app swaps the AI provider for an offline scripted one, so
+# the chat journey runs the real tool against the seed without network.
 # Reason: exec would replace the shell and the EXIT trap that removes the
 # temporary database would never run.
-uv run uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000 &
+uv run uvicorn tests.e2e_app:create_e2e_app --factory --host 127.0.0.1 --port 8000 &
 wait $!

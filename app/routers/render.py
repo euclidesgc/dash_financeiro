@@ -3,25 +3,14 @@ from pathlib import Path
 
 from fastapi.templating import Jinja2Templates
 
+from app.formatting import CENTS_IN_REAL
+from app.formatting import MINUS as MINUS
+from app.formatting import brl as brl
 from app.settings.catalog import BASIS_POINTS, CENTS, MONTHS
 
 TEMPLATES_FOLDER = Path(__file__).resolve().parents[1] / "templates"
 
 TEMPLATES = Jinja2Templates(directory=str(TEMPLATES_FOLDER))
-
-# Reason: U+2212, the mathematical minus. Colour is never the only sign a
-# value is an outflow, so the glyph travels glued to the figure in every
-# screen.
-MINUS = "−"
-
-CENTS_IN_REAL = 100
-
-
-def brl(cents: int | None) -> str:
-    value = cents or 0
-    units, remainder = divmod(abs(value), CENTS_IN_REAL)
-    grouped = f"{units:,}".replace(",", ".")
-    return f"{MINUS if value < 0 else ''}R$ {grouped},{remainder:02d}"
 
 
 def day(value: object) -> str:

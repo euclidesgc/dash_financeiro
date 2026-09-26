@@ -88,6 +88,7 @@ def _where(
     date_to: str | None,
     account_id: str | None,
     search: str | None,
+    category: str | None = None,
 ) -> tuple[str, list[str]]:
     sql = f"WHERE {_PREDICATE[view]}"
     window, params = date_window(date_from, date_to, "t.date")
@@ -99,6 +100,9 @@ def _where(
         sql += " AND (fold(t.description) LIKE ? ESCAPE '\\' OR fold(pn.name) LIKE ? ESCAPE '\\')"
         pattern = _like_pattern(search)
         params.extend([pattern, pattern])
+    if category is not None:
+        sql += " AND t.category = ?"
+        params.append(category)
     return sql, params
 
 
@@ -134,8 +138,9 @@ def sum_expenses(
     date_to: str | None = None,
     account_id: str | None = None,
     search: str | None = None,
+    category: str | None = None,
 ) -> int:
-    where, params = _where(view, date_from, date_to, account_id, search)
+    where, params = _where(view, date_from, date_to, account_id, search, category)
     _, total_cents, _, _ = conn.execute(f"{_TOTAL} {where}", params).fetchone()
     return int(total_cents)
 
@@ -152,9 +157,10 @@ def list_expenses(
     date_to: str | None = None,
     account_id: str | None = None,
     search: str | None = None,
+    category: str | None = None,
 ) -> ExpensesPage:
     offset = (page - 1) * page_size
-    where, where_params = _where(view, date_from, date_to, account_id, search)
+    where, where_params = _where(view, date_from, date_to, account_id, search, category)
     sql = _page_sql(sort, order, where)
     rows = conn.execute(sql, (*where_params, page_size, offset)).fetchall()
     total, total_cents, outflow_cents, inflow_cents = conn.execute(
