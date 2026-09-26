@@ -23,6 +23,8 @@ EXPECTED_TABLES = [
     "advisor_config",
     "advisor_conversations",
     "advisor_messages",
+    "advisor_proposal_items",
+    "advisor_proposals",
     "advisor_questions",
     "cards",
     "categories",
@@ -73,6 +75,7 @@ EXPECTED_MIGRATIONS = [
     "024_pluggy_connections.sql",
     "025_sync_origin.sql",
     "026_advisor_chat.sql",
+    "027_advisor_proposals.sql",
 ]
 
 TABLE_NAMES = (

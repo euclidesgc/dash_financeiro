@@ -2,6 +2,7 @@ import pytest
 
 from app.advisor.provider import ToolCall
 from app.advisor.tools import (
+    ToolContext,
     ToolInputError,
     resolve_account,
     resolve_category,
@@ -120,10 +121,17 @@ def test_invalid_input_is_refused(conn, arguments):
         search_transactions(conn, arguments)
 
 
+CONTEXT = ToolContext(conversation_id=1, now="2026-09-26T12:00:00+00:00")
+
+
 def test_run_tool_turns_bad_input_and_unknown_tool_into_errors(conn):
-    bad = run_tool(conn, ToolCall(id="c1", name="search_transactions", input={"limit": 99}))
-    unknown = run_tool(conn, ToolCall(id="c2", name="apagar_tudo", input={}))
-    good = run_tool(conn, ToolCall(id="c3", name="search_transactions", input={"text": "posto"}))
+    bad = run_tool(
+        conn, ToolCall(id="c1", name="search_transactions", input={"limit": 99}), CONTEXT
+    )
+    unknown = run_tool(conn, ToolCall(id="c2", name="apagar_tudo", input={}), CONTEXT)
+    good = run_tool(
+        conn, ToolCall(id="c3", name="search_transactions", input={"text": "posto"}), CONTEXT
+    )
 
     assert bad.is_error and "limit" in bad.content["error"]
     assert unknown.is_error and "desconhecida" in unknown.content["error"]
@@ -168,5 +176,7 @@ def test_spending_summary_filters_by_account_and_refuses_bad_input(conn):
         spending_summary(conn, {"account": "Banco imaginário"})
     with pytest.raises(ToolInputError, match="date_to"):
         spending_summary(conn, {"date_from": "2026-08-31", "date_to": "2026-08-01"})
-    bad = run_tool(conn, ToolCall(id="c1", name="spending_summary", input={"date_to": "ontem"}))
+    bad = run_tool(
+        conn, ToolCall(id="c1", name="spending_summary", input={"date_to": "ontem"}), CONTEXT
+    )
     assert bad.is_error and "AAAA-MM-DD" in bad.content["error"]

@@ -81,6 +81,9 @@ def test_every_advisor_route_demands_a_session(app):
             ("post", "/api/advisor/conversations"),
             ("get", "/api/advisor/conversations/1"),
             ("post", "/api/advisor/conversations/1/messages"),
+            ("post", "/api/advisor/proposals/1/apply"),
+            ("post", "/api/advisor/proposals/1/discard"),
+            ("post", "/api/advisor/proposals/1/undo"),
         ]:
             assert getattr(anonymous, method)(path).status_code == 401, path
 
@@ -134,7 +137,11 @@ def test_question_runs_the_tool_and_answers_with_its_numbers(app, client):
     assert tool_round.role == "tool"
     assert tool_round.parts[0].content["total"] == "−R$ 185,50"
     assert "2026-09-26" in provider.systems[0]
-    assert [spec.name for spec in provider.tools[0]] == ["search_transactions", "spending_summary"]
+    assert [spec.name for spec in provider.tools[0]] == [
+        "search_transactions",
+        "spending_summary",
+        "propose_recategorization",
+    ]
     roles = [row["role"] for row in _stored_roles(conversation_id)]
     assert roles == ["user", "assistant", "tool", "assistant"]
 
@@ -355,3 +362,110 @@ def test_a_sum_of_categories_the_summary_did_not_return_is_withheld(app, client)
     count = conn.execute("SELECT count(*) FROM transactions").fetchone()[0]
     conn.close()
     assert count == 3
+
+
+PROPOSE = {**SEARCH, "target_category": "Supermercado"}
+PROPOSED = "Preparei a mudança de 2 lançamentos para Supermercado, somando −R$ 185,50."
+
+
+def _categories():
+    conn = connect()
+    try:
+        rows = conn.execute(
+            "SELECT category, category_source FROM transactions ORDER BY pluggy_id"
+        ).fetchall()
+    finally:
+        conn.close()
+    return [(row["category"], row["category_source"]) for row in rows]
+
+
+def _ask_for_proposal(app, client):
+    _use(
+        app, ScriptedProvider(script=[call("propose_recategorization", PROPOSE), answer(PROPOSED)])
+    )
+    conversation_id = _new_conversation(client)
+    response = client.post(
+        f"/api/advisor/conversations/{conversation_id}/messages",
+        json={"text": "passe esses para Supermercado"},
+    )
+    assert response.status_code == 200
+    return conversation_id, response.json()["messages"][1]
+
+
+def test_a_proposal_shows_under_the_answer_and_changes_nothing(app, client):
+    before = _categories()
+
+    _, assistant = _ask_for_proposal(app, client)
+
+    assert assistant["text"] == PROPOSED
+    assert assistant["tools"] == ["propose_recategorization"]
+    (proposal,) = assistant["proposals"]
+    assert proposal["status"] == "pending"
+    assert proposal["target_category"] == "Supermercado"
+    assert proposal["total_cents"] == -18550
+    assert [
+        (item["date"], item["description"], item["amount_cents"], item["to_category"])
+        for item in proposal["items"]
+    ] == [
+        ("2026-08-31", "Posto dos Cavaleiros", -8550, "Supermercado"),
+        ("2026-08-04", "Posto Sao Joao", -10000, "Supermercado"),
+    ]
+    assert _categories() == before
+
+
+def test_apply_and_undo_through_the_api_and_the_conversation_keeps_the_status(app, client):
+    before = _categories()
+    conversation_id, assistant = _ask_for_proposal(app, client)
+    proposal_id = assistant["proposals"][0]["id"]
+
+    applied = client.post(f"/api/advisor/proposals/{proposal_id}/apply")
+    again = client.post(f"/api/advisor/proposals/{proposal_id}/apply")
+    after_apply = _categories()
+    reopened = client.get(f"/api/advisor/conversations/{conversation_id}").json()
+    undone = client.post(f"/api/advisor/proposals/{proposal_id}/undo")
+
+    assert applied.status_code == 200 and applied.json()["status"] == "applied"
+    assert again.status_code == 200 and again.json() == applied.json()
+    assert after_apply == [("Groceries", "manual"), ("Groceries", "manual")]
+    assert reopened["messages"][1]["proposals"][0]["status"] == "applied"
+    assert undone.status_code == 200 and undone.json()["status"] == "undone"
+    assert undone.json()["undo_skipped"] == 0
+    assert _categories() == before
+
+
+def test_proposal_routes_answer_unknown_and_wrong_state_in_portuguese(app, client):
+    _, assistant = _ask_for_proposal(app, client)
+    proposal_id = assistant["proposals"][0]["id"]
+
+    discarded = client.post(f"/api/advisor/proposals/{proposal_id}/discard")
+    refused = client.post(f"/api/advisor/proposals/{proposal_id}/apply")
+    unknown = client.post("/api/advisor/proposals/9999/apply")
+
+    assert discarded.json()["status"] == "discarded"
+    assert refused.status_code == 409
+    assert "descartada" in refused.json()["detail"]
+    assert unknown.status_code == 404
+    assert unknown.json()["detail"] == "Proposta não encontrada."
+
+
+def test_a_provider_failure_after_proposing_leaves_no_proposal(app, client):
+    _use(
+        app,
+        ScriptedProvider(
+            script=[call("propose_recategorization", PROPOSE), ProviderError("Sem rede.")]
+        ),
+    )
+    conversation_id = _new_conversation(client)
+
+    response = client.post(
+        f"/api/advisor/conversations/{conversation_id}/messages", json={"text": "passe esses"}
+    )
+
+    conn = connect()
+    try:
+        (count,) = conn.execute("SELECT count(*) FROM advisor_proposals").fetchone()
+    finally:
+        conn.close()
+    assert response.status_code == 502
+    assert count == 0
+    assert _stored_roles(conversation_id) == []

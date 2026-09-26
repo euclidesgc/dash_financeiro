@@ -94,7 +94,7 @@ aplicam esse filtro.
 |---|---|---|---|---|
 | `search_transactions` | período, conta, texto, categoria, visão (gastos ou entradas), limite ≤ 50 | lançamentos (id, data, descrição, recebedor, valor, categoria) e total e contagem do filtro inteiro | `app/queries/expenses.py::list_expenses` e `sum_expenses`, com filtro novo por categoria em `_where` | 070 |
 | `spending_summary` | período, conta | gasto e contagem por categoria, entradas, gastos e saldo do período, e entradas, gastos e saldo de cada mês com lançamento | `sum_by_category`, `period_result` e função nova `monthly_totals` em `app/queries/expenses.py` | 071 |
-| `propose_recategorization` | ids de lançamento, categoria de destino | proposta pendente (id, quantos mudam, soma) — **não grava a categoria** | função nova `app/advisor/proposals.py::propose`, que valida ids e categoria | 072 |
+| `propose_recategorization` | categoria de destino e, para escolher os lançamentos, os ids devolvidos pela busca ou o mesmo filtro dela (período, texto, categoria atual, conta, visão) | proposta pendente (id, quantos mudam, soma, itens) — **não grava a categoria** | `app/advisor/tools.py::propose_recategorization`, que resolve os ids pelo mesmo `list_expenses` da busca e valida a categoria contra as existentes, e `app/advisor/proposals.py::propose` | 072 |
 | `commitments_by_month` | meses à frente (1 a 24) | por mês: parcelas de cartão, financiamentos, assinaturas vivas, total, e o que termina naquele mês | função nova `app/projection/schedule.py::schedule_by_month`, sobre `app/commitments/live.py` e `app/financings/math.py` | 073 |
 | `debt_payoff` | dívida, prazo em meses (opcional) | valor para quitar hoje e no fim do prazo, e quanto guardar por mês para chegar lá | função nova `app/debts/payoff.py::payoff_at` e `saving_plan`, sobre `present_value_cents` e a escada de `app/debts/ladder.py` | 074 |
 | `debts_by_liquidity` | — | dívidas e compras parceladas ordenadas por dinheiro liberado no mês por real pago, com o valor de quitação e a parcela liberada | função nova `app/debts/payoff.py::rank_by_liquidity` | 075 |
@@ -102,18 +102,33 @@ aplicam esse filtro.
 ## Regras de escrita
 
 1. O modelo **nunca** grava. A única ferramenta de escrita, `propose_recategorization`, cria uma
-   proposta pendente em `advisor_proposals`, com um item por lançamento em `advisor_proposal_items`
-   guardando categoria e origem anteriores e a categoria nova.
-2. A tela mostra a proposta como um cartão dentro da conversa: cada lançamento com data, descrição,
-   valor, "categoria atual → nova", e os botões **Aplicar** e **Descartar**. Só o clique do dono chama
-   `POST /api/advisor/proposals/{id}/apply`, que aplica tudo numa transação só pela mesma regra de
-   ajuste manual de `app/taxonomy/override.py` (sobrevive à próxima atualização da Pluggy).
-3. A proposta aplicada pode ser desfeita (`POST /api/advisor/proposals/{id}/undo`), que devolve a
-   categoria e a origem anteriores de cada item. Se um lançamento mudou depois da aplicação, o desfazer
-   pula esse item e diz quantos pulou.
-4. A proposta não expira: fica pendente até o dono aplicar ou descartar, e o registro guarda quando
-   foi aplicada, descartada ou desfeita.
-5. Descrição de lançamento e nome de recebedor são dado, não instrução: chegam ao modelo dentro do
+   proposta pendente em `advisor_proposals` (migração `027_advisor_proposals.sql`), ligada à conversa,
+   com um item por lançamento em `advisor_proposal_items` guardando data, descrição, valor, categoria e
+   origem anteriores. A proposta entra na mesma transação que grava a volta da pergunta: falha do
+   provedor no meio do laço não deixa proposta.
+2. "Esses" é determinístico: pelo filtro, o servidor resolve os ids com o mesmo `list_expenses` da
+   busca anterior, inclusive além dos 50 que ela mostra; pelos ids, cada um precisa existir. Categoria
+   que não existe, filtro vazio, mais de 200 lançamentos ou todos já no destino voltam ao modelo como
+   erro com o próximo passo. Lançamento que já está no destino sai da proposta. O chat não cria
+   categoria: o prompt manda sugerir a tela Categorias.
+3. A tela mostra a proposta como um cartão abaixo da resposta: cada lançamento com data, descrição,
+   valor, "categoria atual → nova", o total e os botões **Aplicar** e **Descartar**. Só o clique do
+   dono chama `POST /api/advisor/proposals/{id}/apply`, que aplica tudo numa transação só por
+   `app/taxonomy/override.py::recategorize`, com as mesmas instruções da troca manual da tela de gastos
+   (categoria com origem `manual`, que vale sobre a regra e sobrevive à próxima atualização da Pluggy).
+   No momento de aplicar, a categoria e a origem anteriores de cada item são relidas do lançamento.
+4. Cada transição (`apply`, `discard`, `undo`) começa por `UPDATE … WHERE status = <anterior>`: o
+   segundo clique encontra o status já mudado e recebe a proposta como está. Transição que o status
+   não permite (aplicar descartada) é 409; lançamento ou categoria de destino apagados antes de
+   aplicar também são 409, sem gravar nada.
+5. A proposta aplicada pode ser desfeita (`POST /api/advisor/proposals/{id}/undo`), que devolve a
+   categoria e a origem anteriores de cada item. Item que mudou depois da aplicação (ou cuja categoria
+   anterior foi apagada) fica como está, e o cartão diz quantos ficaram.
+6. A proposta não expira: fica pendente até o dono aplicar ou descartar, e o registro guarda quando
+   foi criada, aplicada, descartada ou desfeita. Reabrir a conversa mostra o cartão no estado atual.
+7. Depois de aplicar ou desfazer, a tela invalida o cache de gastos (lista, totais por categoria,
+   resultado do período) e o das categorias.
+8. Descrição de lançamento e nome de recebedor são dado, não instrução: chegam ao modelo dentro do
    `tool_result`, e o prompt de sistema diz que texto de lançamento nunca muda o que ele faz.
 
 ## Fora do escopo

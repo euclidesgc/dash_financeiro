@@ -1,4 +1,6 @@
 import sqlite3
+from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import Literal
 
 from app.queries.similar import SIMILAR_IDS
@@ -8,6 +10,19 @@ from app.taxonomy.seed import pickable_categories
 
 Reason = Literal["own_transfer", "refund", "other"]
 REASONS: frozenset[str] = frozenset({"own_transfer", "refund", "other"})
+Source = Literal["auto", "manual"]
+
+_SET_MANUAL = "UPDATE transactions SET category = ?, category_source = 'manual' WHERE id = ?"
+_RESTORE_AUTO = (
+    "UPDATE transactions SET category = category_auto, category_source = 'auto' WHERE id = ?"
+)
+
+
+@dataclass(frozen=True)
+class CategoryChange:
+    transaction_id: int
+    category: str | None
+    source: Source
 
 
 class UnknownTransactionError(LookupError):
@@ -36,22 +51,29 @@ def _check_category(conn: sqlite3.Connection, category: str | None) -> None:
 def set_manual(conn: sqlite3.Connection, transaction_id: int, category: str | None) -> None:
     _check_category(conn, category)
     _require(conn, transaction_id)
-    _write(
-        conn,
-        "UPDATE transactions SET category = ?, category_source = 'manual' WHERE id = ?",
-        (category, transaction_id),
-        reclassify=True,
-    )
+    _write(conn, _SET_MANUAL, (category, transaction_id), reclassify=True)
 
 
 def restore_auto(conn: sqlite3.Connection, transaction_id: int) -> None:
     _require(conn, transaction_id)
-    _write(
-        conn,
-        "UPDATE transactions SET category = category_auto, category_source = 'auto' WHERE id = ?",
-        (transaction_id,),
-        reclassify=True,
-    )
+    _write(conn, _RESTORE_AUTO, (transaction_id,), reclassify=True)
+
+
+def recategorize(conn: sqlite3.Connection, changes: Sequence[CategoryChange]) -> None:
+    # Reason: the batch form of set_manual/restore_auto for a change the owner
+    # confirms at once (an advisor proposal). Same statements and the same
+    # single reclassification, but no commit: the caller also records the
+    # proposal's new status, and both must land in one SQL transaction.
+    for change in changes:
+        if change.source == "manual":
+            _check_category(conn, change.category)
+        _require(conn, change.transaction_id)
+    for change in changes:
+        if change.source == "manual":
+            conn.execute(_SET_MANUAL, (change.category, change.transaction_id))
+        else:
+            conn.execute(_RESTORE_AUTO, (change.transaction_id,))
+    classify.classify_all(conn)
 
 
 def apply_to_similar(conn: sqlite3.Connection, transaction_id: int, category: str | None) -> int:
