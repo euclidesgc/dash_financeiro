@@ -1,3 +1,5 @@
+from datetime import date
+
 import pytest
 
 from app.advisor.provider import ToolCall
@@ -121,7 +123,7 @@ def test_invalid_input_is_refused(conn, arguments):
         search_transactions(conn, arguments)
 
 
-CONTEXT = ToolContext(conversation_id=1, now="2026-09-26T12:00:00+00:00")
+CONTEXT = ToolContext(conversation_id=1, now="2026-09-26T12:00:00+00:00", today=date(2026, 9, 26))
 
 
 def test_run_tool_turns_bad_input_and_unknown_tool_into_errors(conn):
@@ -180,3 +182,57 @@ def test_spending_summary_filters_by_account_and_refuses_bad_input(conn):
         conn, ToolCall(id="c1", name="spending_summary", input={"date_to": "ontem"}), CONTEXT
     )
     assert bad.is_error and "AAAA-MM-DD" in bad.content["error"]
+
+
+def _commitments(conn):
+    conn.execute(
+        "INSERT INTO commitments (kind, series_key, description, account, amount_cents, "
+        "last_seen_date, last_installment, installment_total, installments_left, ends_month) "
+        "VALUES ('installment', 'loja', 'LOJA 3/5', 'Cartão', -10000, '2026-09-11', 3, 5, 2, "
+        "'2026-11')"
+    )
+    conn.execute(
+        "INSERT INTO financings (kind, monthly_rate_bp, term_months, balance_cents, "
+        "payment_cents, first_due_date) VALUES ('vehicle', 163, 60, NULL, -123533, '2025-06-11')"
+    )
+    conn.commit()
+
+
+def test_commitments_by_month_formats_every_figure_and_traces_each_line(conn):
+    _commitments(conn)
+
+    result = run_tool(
+        conn, ToolCall(id="c1", name="commitments_by_month", input={"months": 3}), CONTEXT
+    )
+
+    assert not result.is_error
+    content = result.content
+    assert [row["month"] for row in content["months"]] == ["2026-10", "2026-11", "2026-12"]
+    october = content["months"][0]
+    assert october["total"] == "−R$ 1.335,33"
+    assert october["by_source"] == {
+        "Compras parceladas": "−R$ 100,00",
+        "Financiamentos": "−R$ 1.235,33",
+        "Contas recorrentes e assinaturas": "R$ 0,00",
+    }
+    assert content["months"][1]["ending"] == ["LOJA 3/5"]
+    assert content["window_total"] == "−R$ 3.905,99"
+    loja = next(line for line in content["lines"] if line["description"] == "LOJA 3/5")
+    assert loja["first_installment"] == "4/5"
+    assert loja["last_installment_in_window"] == "5/5"
+    assert loja["end_month"] == "2026-11"
+    assert loja["amount"] == "−R$ 100,00"
+
+
+def test_commitments_by_month_defaults_to_six_months_and_refuses_bad_windows(conn):
+    default = run_tool(conn, ToolCall(id="c1", name="commitments_by_month", input={}), CONTEXT)
+    too_long = run_tool(
+        conn, ToolCall(id="c2", name="commitments_by_month", input={"months": 25}), CONTEXT
+    )
+    text = run_tool(
+        conn, ToolCall(id="c3", name="commitments_by_month", input={"months": "seis"}), CONTEXT
+    )
+
+    assert len(default.content["months"]) == 6
+    assert too_long.is_error and "months" in too_long.content["error"]
+    assert text.is_error

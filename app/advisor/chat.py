@@ -60,9 +60,10 @@ def system_prompt(today: date, categories: list[str]) -> str:
         "entradas, mesmo que a resposta pareça estar no histórico. Total por categoria, "
         "'em que mais gastei', mês a mês ou quanto entrou e saiu: spending_summary, uma chamada "
         "para o período inteiro. Listar, contar ou somar lançamentos de um recebedor, texto, "
-        "categoria ou conta: search_transactions. Peça tudo o que precisa de uma vez, sem "
-        "repetir a mesma busca. Se a ferramenta devolver erro, corrija o pedido com a lista que "
-        "ela devolve ou explique o que faltou.\n"
+        "categoria ou conta: search_transactions. Quanto sai de parcela, financiamento ou conta "
+        "recorrente nos próximos meses e o que termina quando: commitments_by_month. Peça tudo "
+        "o que precisa de uma vez, sem repetir a mesma busca. Se a ferramenta devolver erro, "
+        "corrija o pedido com a lista que ela devolve ou explique o que faltou.\n"
         f"Categorias do painel (use o nome exato no filtro category): {', '.join(categories)}.\n"
         "Para mudar a categoria de lançamentos ('passe esses para Farmácia'), chame "
         "propose_recategorization com o mesmo filtro da busca anterior, ou com os ids que ela "
@@ -247,7 +248,7 @@ def send(
     question_message = Message(role="user", parts=[TextPart(asked)])
     history.append(question_message)
     now = stamp()
-    context = ToolContext(conversation_id=conversation_id, now=now)
+    context = ToolContext(conversation_id=conversation_id, now=now, today=today)
     try:
         turn = _run_loop(conn, provider, history, today, context)
     except Exception:

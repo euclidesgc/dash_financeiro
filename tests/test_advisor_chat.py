@@ -141,6 +141,7 @@ def test_question_runs_the_tool_and_answers_with_its_numbers(app, client):
         "search_transactions",
         "spending_summary",
         "propose_recategorization",
+        "commitments_by_month",
     ]
     roles = [row["role"] for row in _stored_roles(conversation_id)]
     assert roles == ["user", "assistant", "tool", "assistant"]
@@ -469,3 +470,46 @@ def test_a_provider_failure_after_proposing_leaves_no_proposal(app, client):
     assert response.status_code == 502
     assert count == 0
     assert _stored_roles(conversation_id) == []
+
+
+def test_a_projection_answer_quoting_the_tool_passes_the_number_guard(app, client):
+    conn = connect()
+    conn.execute(
+        "INSERT INTO financings (kind, monthly_rate_bp, term_months, balance_cents, "
+        "payment_cents, first_due_date) VALUES ('vehicle', 163, 60, NULL, -123533, '2025-06-11')"
+    )
+    conn.commit()
+    conn.close()
+    reading = (
+        "Em outubro saem −R$ 1.235,33 do CDC do veículo, parcela 17/60, que termina em 2030-05."
+    )
+    provider = ScriptedProvider(
+        script=[call("commitments_by_month", {"months": 3}), answer(reading)]
+    )
+    _use(app, provider)
+    conversation_id = _new_conversation(client)
+
+    response = client.post(
+        f"/api/advisor/conversations/{conversation_id}/messages",
+        json={"text": "quanto sai de financiamento nos próximos meses?"},
+    )
+
+    assistant = response.json()["messages"][1]
+    assert assistant["text"] == reading
+    assert assistant["tools"] == ["commitments_by_month"]
+    assert provider.seen[1][-1].parts[0].content["months"][0]["month"] == "2026-10"
+
+
+def test_a_projection_answer_with_an_invented_total_is_replaced(app, client):
+    provider = ScriptedProvider(
+        script=[call("commitments_by_month", {}), answer("Nos seis meses saem −R$ 9.999,99.")]
+    )
+    _use(app, provider)
+    conversation_id = _new_conversation(client)
+
+    response = client.post(
+        f"/api/advisor/conversations/{conversation_id}/messages",
+        json={"text": "quanto sai nos próximos meses?"},
+    )
+
+    assert response.json()["messages"][1]["text"] == UNCHECKED

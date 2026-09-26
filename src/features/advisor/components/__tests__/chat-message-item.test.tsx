@@ -38,6 +38,16 @@ test('names both sources once each when the advisor used both tools', () => {
   ).toBeVisible()
 })
 
+test('names the monthly projection when the advisor used it', () => {
+  renderItem(answer(['commitments_by_month']))
+
+  expect(
+    screen.getByText(
+      'Respondido por Gemini · consultou as parcelas e contas dos próximos meses',
+    ),
+  ).toBeVisible()
+})
+
 test('leaves the note to the provider when no tool was used', () => {
   renderItem(answer([]))
 
