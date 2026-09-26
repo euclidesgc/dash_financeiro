@@ -3,7 +3,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import InvalidOperation
-from typing import Any
+from typing import Any, Literal
 
 from app.accounts import CREDIT
 from app.ingest.money import FractionalCentsError, to_cents
@@ -105,6 +105,8 @@ def ingest(
     accounts: list[dict[str, Any]],
     source: str,
     trigger: Trigger,
+    origin: Literal["pluggy", "file"] | None = None,
+    record: bool = True,
     now: datetime | None = None,
     discarded: Sequence[str] = (),
 ) -> IngestResult:
@@ -117,6 +119,8 @@ def ingest(
             now=started,
             source=source,
             trigger=trigger,
+            origin=origin,
+            record=record,
             message=STALE_CONSOLIDATED,
             rejections=(stale,),
             transactions_accepted=0,
@@ -136,6 +140,8 @@ def ingest(
             now=now,
             source=source,
             trigger=trigger,
+            origin=origin,
+            record=record,
             message=message,
             rejections=tuple(rejections),
             transactions_accepted=len(transaction_rows),
@@ -187,6 +193,8 @@ def ingest(
             now=now,
             source=source,
             trigger=trigger,
+            origin=origin,
+            record=record,
             message=f"erro de escrita: {type(failure).__name__}: {failure}",
             rejections=(),
             transactions_accepted=len(transaction_rows),
@@ -202,6 +210,8 @@ def ingest(
             now=now,
             source=source,
             trigger=trigger,
+            origin=origin,
+            record=record,
             message=(
                 f"transactions accepted={len(transaction_rows)} present={transactions_present} "
                 f"accounts accepted={len(account_rows)} present={accounts_present}"
@@ -218,10 +228,12 @@ def ingest(
     message = f"transactions={transactions_written} accounts={accounts_written}"
     run_id = _record_run(
         conn,
+        record=record,
         started=started,
         finished=now or datetime.now(UTC),
         source=source,
         trigger=trigger,
+        origin=origin,
         status="ok",
         transactions_count=transactions_written,
         accounts_count=accounts_written,
@@ -249,6 +261,8 @@ def _fail(
     now: datetime | None,
     source: str,
     trigger: Trigger,
+    origin: Literal["pluggy", "file"] | None,
+    record: bool,
     message: str,
     rejections: tuple[Rejection, ...],
     transactions_accepted: int,
@@ -263,10 +277,12 @@ def _fail(
     conn.rollback()
     run_id = _record_run(
         conn,
+        record=record,
         started=started,
         finished=now or datetime.now(UTC),
         source=source,
         trigger=trigger,
+        origin=origin,
         status="failed",
         transactions_count=transactions_written,
         accounts_count=accounts_written,
@@ -290,26 +306,31 @@ def _fail(
 def _record_run(
     conn: sqlite3.Connection,
     *,
+    record: bool,
     started: datetime,
     finished: datetime,
     source: str,
     trigger: Trigger,
+    origin: Literal["pluggy", "file"] | None,
     status: str,
     transactions_count: int,
     accounts_count: int,
     transactions_present: int,
     accounts_present: int,
     message: str,
-) -> int:
+) -> int | None:
+    if not record:
+        return None
     written = conn.execute(
-        "INSERT INTO sync_runs (started_at, finished_at, source, triggered_by, status, "
+        "INSERT INTO sync_runs (started_at, finished_at, source, triggered_by, origin, status, "
         "transactions_count, accounts_count, transactions_present, accounts_present, message) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
             started.isoformat(),
             finished.isoformat(),
             source,
             trigger,
+            origin,
             status,
             transactions_count,
             accounts_count,

@@ -114,6 +114,8 @@ export const fakeSyncStatus: SyncStatus = {
     status: 'ok',
     reason: null,
     triggered_by: 'command',
+    origin: 'pluggy',
+    new_transactions: 25,
   },
 }
 

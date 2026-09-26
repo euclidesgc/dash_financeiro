@@ -358,6 +358,63 @@ def test_a_pluggy_failure_records_who_asked_for_the_failed_run(taxonomy_conn, mo
     assert _trigger(taxonomy_conn) == "command"
 
 
+def _origin(conn):
+    return conn.execute("SELECT origin FROM sync_runs ORDER BY id DESC LIMIT 1").fetchone()[0]
+
+
+def test_synchronise_records_pluggy_origin_on_success(taxonomy_conn, seed, monkeypatch):
+    import app.sync as sync
+
+    seed_taxonomy(taxonomy_conn, seed)
+    monkeypatch.setenv("DASH_SYNC_SOURCE", "pluggy")
+    monkeypatch.setenv("PLUGGY_CLIENT_ID", "id-falso")
+    monkeypatch.setenv("PLUGGY_CLIENT_SECRET", "segredo-falso")
+    monkeypatch.setattr(sync, "fetch_from_pluggy", lambda config, item_ids: None)
+    _point_the_load_step_at_the_fixture(monkeypatch)
+
+    outcome = synchronise(taxonomy_conn, trigger=COMMAND, today=REFERENCE)
+
+    assert outcome.status == "ok", outcome.message
+    assert _origin(taxonomy_conn) == "pluggy"
+
+
+def test_synchronise_records_file_origin_on_success(taxonomy_conn, seed, monkeypatch):
+    seed_taxonomy(taxonomy_conn, seed)
+    _point_the_load_step_at_the_fixture(monkeypatch)
+
+    outcome = synchronise(taxonomy_conn, trigger=COMMAND, today=REFERENCE)
+
+    assert outcome.status == "ok", outcome.message
+    assert _origin(taxonomy_conn) == "file"
+
+
+def test_synchronise_records_origin_on_pluggy_failure(taxonomy_conn, monkeypatch):
+    import app.sync as sync
+
+    monkeypatch.setenv("DASH_SYNC_SOURCE", "pluggy")
+    monkeypatch.setenv("PLUGGY_CLIENT_ID", "id-falso")
+    monkeypatch.setenv("PLUGGY_CLIENT_SECRET", "segredo-falso")
+
+    def explode(config, item_ids):
+        raise sync.PluggyFetchError("pluggy: fora do ar")
+
+    monkeypatch.setattr(sync, "fetch_from_pluggy", explode)
+
+    outcome = synchronise(taxonomy_conn, trigger=COMMAND, today=REFERENCE)
+
+    assert outcome.status == "failed"
+    assert _origin(taxonomy_conn) == "pluggy"
+
+
+def test_synchronise_records_origin_on_unreadable_source(taxonomy_conn, monkeypatch):
+    monkeypatch.setenv("DASH_TRANSACTIONS_PATH", "/tmp/nao-existe-068.json")
+
+    outcome = synchronise(taxonomy_conn, trigger=COMMAND, today=REFERENCE)
+
+    assert outcome.status == "failed"
+    assert _origin(taxonomy_conn) == "file"
+
+
 def test_the_daily_command_says_it_was_a_command(monkeypatch):
     import app.sync as sync
 

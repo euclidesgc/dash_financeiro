@@ -69,6 +69,7 @@ EXPECTED_MIGRATIONS = [
     "022_not_expense.sql",
     "023_sync_trigger.sql",
     "024_pluggy_connections.sql",
+    "025_sync_origin.sql",
 ]
 
 TABLE_NAMES = (
@@ -514,6 +515,51 @@ def test_a_base_migrated_before_022_gets_a_null_reason_that_only_accepts_the_thr
         ).fetchone()[0]
         is None
     )
+
+
+def test_025_adds_nullable_origin_column(conn):
+    apply_migrations(conn, SQL_FOLDER)
+
+    column = conn.execute(
+        "select type, \"notnull\" from pragma_table_info('sync_runs') where name = 'origin'"
+    ).fetchone()
+
+    assert tuple(column) == ("TEXT", 0)
+
+
+def test_025_keeps_existing_runs_with_null_origin(tmp_path, conn):
+    folder = tmp_path / "sql"
+    folder.mkdir()
+    for name in _before("025_sync_origin.sql"):
+        _write_sql(folder, name, (ROOT / "app" / "migrations" / "sql" / name).read_text())
+    apply_migrations(conn, folder)
+
+    conn.execute(
+        "INSERT INTO sync_runs (started_at, source, status) VALUES ('2026-09-05T10:00:00', 'x', 'ok')"
+    )
+    conn.commit()
+
+    _write_sql(
+        folder,
+        "025_sync_origin.sql",
+        (ROOT / "app" / "migrations" / "sql" / "025_sync_origin.sql").read_text(),
+    )
+    apply_migrations(conn, folder)
+
+    assert conn.execute("SELECT origin FROM sync_runs").fetchone()[0] is None
+
+
+def test_025_rejects_unknown_origin(conn):
+    apply_migrations(conn, SQL_FOLDER)
+    insert = (
+        "INSERT INTO sync_runs (started_at, source, status, origin) "
+        "VALUES ('2026-09-05T10:00:00', 'x', 'ok', ?)"
+    )
+    for accepted in ("pluggy", "file", None):
+        conn.execute(insert, (accepted,))
+
+    with pytest.raises(sqlite3.IntegrityError, match="CHECK constraint failed"):
+        conn.execute(insert, ("outro",))
 
 
 def test_the_origin_of_a_sync_run_only_accepts_screen_command_or_nothing(conn):

@@ -4,11 +4,12 @@ import { ApiError } from '@/lib/api-client'
 import { formatDateTime } from '@/utils/format-date-time'
 import { useSyncStatus } from '@/features/sync/api/get-sync-status'
 import { useRunSync } from '@/features/sync/api/run-sync'
+import { describeOrigin } from '@/features/sync/utils/describe-origin'
 import type { SyncStatus, SyncTrigger } from '@/features/sync/types/sync-status'
 
 const TRIGGER_LABELS: Record<SyncTrigger, string> = {
   screen: 'Você pediu pelo botão “Atualizar agora”',
-  command: 'Feita pela rotina diária',
+  command: 'Feita por comando no terminal',
 }
 
 const GENERIC_MUTATION_ERROR =
@@ -74,6 +75,9 @@ function SyncStatusPanel({
   const busy = isRunning || data.running
   const lastRun = data.last_run
   const finishedAt = lastRun ? formatDateTime(lastRun.finished_at) : null
+  const originDescription = lastRun
+    ? describeOrigin(lastRun.origin, lastRun.new_transactions)
+    : null
 
   return (
     <section className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-md border border-gray-200 p-4">
@@ -81,6 +85,9 @@ function SyncStatusPanel({
         <p className="text-gray-900">
           {finishedAt ? `Última atualização: ${finishedAt}` : 'Nenhuma atualização feita por este painel ainda'}
         </p>
+        {originDescription ? (
+          <p className="text-sm text-gray-600">{originDescription}</p>
+        ) : null}
         {lastRun?.triggered_by ? (
           <p className="text-sm text-gray-600">{TRIGGER_LABELS[lastRun.triggered_by]}</p>
         ) : null}
