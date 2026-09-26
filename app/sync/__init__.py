@@ -2,7 +2,7 @@ import re
 import sqlite3
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
-from typing import Any
+from typing import Any, Literal
 
 from app.commitments.engine import recompute
 from app.config import PLUGGY_CREDENTIALS, load_config, reference_date
@@ -41,6 +41,7 @@ def synchronise(
     # that behaves differently from the cron and from the screen is the
     # defect that only shows up on the day it matters (D4).
     config = load_config()
+    origin: Literal["pluggy", "file"] = "pluggy" if config.sync_source == PLUGGY else "file"
     if config.sync_source == PLUGGY:
         missing = [name for name in PLUGGY_CREDENTIALS if not config.pluggy.get(name)]
         if missing:
@@ -56,7 +57,7 @@ def synchronise(
         try:
             fetch_from_pluggy(config, list_item_ids(conn))
         except PluggyFetchError as failure:
-            return _record_failed(conn, PLUGGY, trigger, str(failure))
+            return _record_failed(conn, PLUGGY, trigger, origin, str(failure))
     try:
         transactions = load_transactions(config.transactions_path)
         accounts = load_accounts(config.accounts_glob)
@@ -66,13 +67,14 @@ def synchronise(
         # accident of the day, and it used to raise before any row reached
         # sync_runs — the sync failed, left no trace, and the screen went on
         # announcing the last success (RF-20).
-        return _record_failure(conn, config.transactions_path, trigger, failure)
+        return _record_failure(conn, config.transactions_path, trigger, origin, failure)
     result = ingest(
         conn,
         transactions=transactions,
         accounts=accounts,
         source=config.transactions_path,
         trigger=trigger,
+        origin=origin,
         discarded=discarded,
     )
     if result.status != "ok":
@@ -102,19 +104,29 @@ def _demote(conn: sqlite3.Connection, run_id: int | None, failure: Exception) ->
 
 
 def _record_failure(
-    conn: sqlite3.Connection, source: str, trigger: Trigger, failure: Exception
+    conn: sqlite3.Connection,
+    source: str,
+    trigger: Trigger,
+    origin: Literal["pluggy", "file"],
+    failure: Exception,
 ) -> SyncOutcome:
-    return _record_failed(conn, source, trigger, f"fonte ilegível: {type(failure).__name__}")
+    return _record_failed(
+        conn, source, trigger, origin, f"fonte ilegível: {type(failure).__name__}"
+    )
 
 
 def _record_failed(
-    conn: sqlite3.Connection, source: str, trigger: Trigger, message: str
+    conn: sqlite3.Connection,
+    source: str,
+    trigger: Trigger,
+    origin: Literal["pluggy", "file"],
+    message: str,
 ) -> SyncOutcome:
     now = datetime.now(UTC).isoformat()
     conn.execute(
-        "INSERT INTO sync_runs (started_at, finished_at, source, triggered_by, status, message) "
-        "VALUES (?, ?, ?, ?, 'failed', ?)",
-        (now, now, source, trigger, message),
+        "INSERT INTO sync_runs (started_at, finished_at, source, triggered_by, origin, status, "
+        "message) VALUES (?, ?, ?, ?, ?, 'failed', ?)",
+        (now, now, source, trigger, origin, message),
     )
     conn.commit()
     return SyncOutcome(status="failed", message=message, transactions=0, accounts=0)

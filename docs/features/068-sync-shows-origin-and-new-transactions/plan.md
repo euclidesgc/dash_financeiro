@@ -4,19 +4,19 @@ Branch: `feature/068-sync-shows-origin-and-new-transactions`
 
 ## Fase 1 — API grava e devolve a origem e os lançamentos novos de cada atualização
 
-- [ ] T1.1 — Coluna `origin` em `sync_runs` e gravação pela ingestão, com opção de não gravar execução
+- [x] T1.1 — Coluna `origin` em `sync_runs` e gravação pela ingestão, com opção de não gravar execução
   - Arquivos: `app/migrations/sql/025_sync_origin.sql` (criar); `app/ingest/loader.py` (alterar); `app/ingest/__main__.py` (alterar)
   - O que fazer: a migração adiciona `origin TEXT NULL CHECK (origin IS NULL OR origin IN ('pluggy', 'file'))` a `sync_runs`, sem preencher linhas existentes. Em `loader.py`, `ingest` ganha os parâmetros nomeados `origin: Literal['pluggy', 'file'] | None = None` e `record: bool = True`; `_fail` recebe os mesmos; `_record_run` grava `origin`. Com `record=False`, nem o sucesso nem `_fail` chamam `_record_run` e o `run_id` devolvido é `None`. `app/ingest/__main__.py` chama `ingest(..., trigger=COMMAND, record=False)`; falha continua indo para stderr com código de saída 1.
   - Skills: —
   - Complexidade: média
 
-- [ ] T1.2 — `synchronise` resolve e repassa a origem; a API expõe `origin` e `new_transactions`
+- [x] T1.2 — `synchronise` resolve e repassa a origem; a API expõe `origin` e `new_transactions`
   - Arquivos: `app/sync/__init__.py` (alterar); `app/routers/sync.py` (alterar)
   - O que fazer: `synchronise` deriva a origem de `config.sync_source` (`pluggy` → `'pluggy'`, `arquivo` → `'file'`) e a passa a `ingest(..., origin=...)`, `_record_failed` e `_record_failure`, que gravam a coluna `origin`. O modelo Pydantic `SyncRun` ganha `origin: Literal['pluggy', 'file'] | None` e `new_transactions: int | None`, este igual a `transactions_count` quando `status == 'ok'` e `origin` não é nulo, senão `None`. `GET /api/sync` e `POST /api/sync` devolvem os dois campos. Nenhuma contagem de contas é exposta. `app/routers/summary.py` não muda.
   - Skills: —
   - Complexidade: média
 
-- [ ] T1.3 — Testes da fase 1
+- [x] T1.3 — Testes da fase 1
   - Arquivos: `tests/test_migrations.py`, `tests/test_ingest.py`, `tests/test_sync.py`, `tests/test_sync_api.py` (alterar)
   - O que fazer: casos
     - `test_migrations.py`: `test_025_adds_nullable_origin_column`, `test_025_keeps_existing_runs_with_null_origin`, `test_025_rejects_unknown_origin`;
@@ -28,12 +28,12 @@ Branch: `feature/068-sync-shows-origin-and-new-transactions`
 
 ### Critérios de aceite da fase 1
 
-- [ ] CA1.1 — (estrutural) Existe `app/migrations/sql/025_sync_origin.sql` com `origin TEXT NULL` e `CHECK (origin IS NULL OR origin IN ('pluggy', 'file'))`, sem `UPDATE` em `sync_runs`.
-- [ ] CA1.2 — (estrutural) `ingest` em `app/ingest/loader.py` aceita `origin` e `record: bool = True`; `app/ingest/__main__.py` chama `ingest` com `record=False`.
-- [ ] CA1.3 — (estrutural) `SyncRun` em `app/routers/sync.py` tem `origin: Literal['pluggy', 'file'] | None` e `new_transactions: int | None`, e nenhum campo de contagem de contas.
-- [ ] CA1.4 — (comportamental) Com `record=False`, `ingest` não insere linha em `sync_runs`, nem em sucesso nem em falha; provado por `test_ingest_without_record_writes_no_run_on_success` e `test_ingest_without_record_writes_no_run_on_failure`.
-- [ ] CA1.5 — (comportamental) Execução com falha devolve `new_transactions: null` e `origin` preenchida; linha anterior à 025 devolve `origin: null` e `new_transactions: null`; provado pelos testes `test_failed_run_has_null_new_transactions` e `test_legacy_run_has_null_origin_and_new_transactions`.
-- [ ] CA1.6 — (comando) `pytest tests/test_migrations.py tests/test_ingest.py tests/test_sync.py tests/test_sync_api.py` passa com todos os casos nomeados em T1.3; `bash scripts/lint.sh` e `bash scripts/gates/gates_runner.sh` passam; cobertura ≥ 80% em `app/ingest/loader.py`, `app/sync/__init__.py` e `app/routers/sync.py`.
+- [x] CA1.1 — (estrutural) Existe `app/migrations/sql/025_sync_origin.sql` com `origin TEXT NULL` e `CHECK (origin IS NULL OR origin IN ('pluggy', 'file'))`, sem `UPDATE` em `sync_runs`.
+- [x] CA1.2 — (estrutural) `ingest` em `app/ingest/loader.py` aceita `origin` e `record: bool = True`; `app/ingest/__main__.py` chama `ingest` com `record=False`.
+- [x] CA1.3 — (estrutural) `SyncRun` em `app/routers/sync.py` tem `origin: Literal['pluggy', 'file'] | None` e `new_transactions: int | None`, e nenhum campo de contagem de contas.
+- [x] CA1.4 — (comportamental) Com `record=False`, `ingest` não insere linha em `sync_runs`, nem em sucesso nem em falha; provado por `test_ingest_without_record_writes_no_run_on_success` e `test_ingest_without_record_writes_no_run_on_failure`.
+- [x] CA1.5 — (comportamental) Execução com falha devolve `new_transactions: null` e `origin` preenchida; linha anterior à 025 devolve `origin: null` e `new_transactions: null`; provado pelos testes `test_failed_run_has_null_new_transactions` e `test_legacy_run_has_null_origin_and_new_transactions`.
+- [x] CA1.6 — (comando) `pytest tests/test_migrations.py tests/test_ingest.py tests/test_sync.py tests/test_sync_api.py` passa com todos os casos nomeados em T1.3; `bash scripts/lint.sh` e `bash scripts/gates/gates_runner.sh` passam; cobertura ≥ 80% em `app/ingest/loader.py`, `app/sync/__init__.py` e `app/routers/sync.py`.
 
 ## Fase 2 — O painel mostra de onde veio e quantos lançamentos entraram
 

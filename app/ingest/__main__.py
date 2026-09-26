@@ -27,6 +27,7 @@ def main() -> int:
             source=config.transactions_path,
             trigger=COMMAND,
             discarded=discarded,
+            record=False,
         )
     finally:
         conn.close()

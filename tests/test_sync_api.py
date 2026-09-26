@@ -228,6 +228,108 @@ def test_the_old_screen_button_releases_the_lock_when_it_finishes(client):
     assert "A tela responde pela data de hoje." not in response.text
 
 
+def test_get_sync_returns_origin_and_new_transactions(client):
+    conn = connect()
+    ingest(
+        conn,
+        transactions=load_transactions(str(DATA / "sync_transactions.json")),
+        accounts=load_accounts(str(DATA / "sync_accounts.json")),
+        source="tests",
+        trigger=COMMAND,
+        origin="file",
+    )
+    conn.close()
+    _sign_in(client)
+
+    response = client.get("/api/sync/status")
+
+    body = response.json()
+    assert body["last_run"]["origin"] == "file"
+    assert body["last_run"]["new_transactions"] > 0
+
+
+def test_post_sync_returns_origin_and_new_transactions(client):
+    _sign_in(client)
+
+    response = client.post("/api/sync/run")
+
+    body = response.json()
+    assert body["last_run"]["origin"] == "file"
+    assert body["last_run"]["new_transactions"] > 0
+
+
+def test_new_transactions_zero_when_nothing_entered(client):
+    conn = connect()
+    transactions = load_transactions(str(DATA / "sync_transactions.json"))
+    accounts = load_accounts(str(DATA / "sync_accounts.json"))
+    ingest(
+        conn,
+        transactions=transactions,
+        accounts=accounts,
+        source="tests",
+        trigger=COMMAND,
+        origin="file",
+    )
+    ingest(
+        conn,
+        transactions=transactions,
+        accounts=accounts,
+        source="tests",
+        trigger=COMMAND,
+        origin="file",
+    )
+    conn.close()
+    _sign_in(client)
+
+    response = client.get("/api/sync/status")
+
+    assert response.json()["last_run"]["new_transactions"] == 0
+
+
+def test_failed_run_has_null_new_transactions(client):
+    conn = connect()
+    conn.execute(
+        "INSERT INTO sync_runs (started_at, finished_at, source, status, origin, message) "
+        "VALUES ('2026-09-05T10:00:00', '2026-09-05T10:00:01', 'pluggy', 'failed', 'pluggy', ?)",
+        (UNREACHABLE,),
+    )
+    conn.commit()
+    conn.close()
+    _sign_in(client)
+
+    response = client.get("/api/sync/status")
+
+    body = response.json()
+    assert body["last_run"]["origin"] == "pluggy"
+    assert body["last_run"]["new_transactions"] is None
+
+
+def test_legacy_run_has_null_origin_and_new_transactions(client):
+    conn = connect()
+    conn.execute(
+        "INSERT INTO sync_runs (started_at, finished_at, source, status, transactions_count) "
+        "VALUES ('2026-09-05T10:00:00', '2026-09-05T10:00:01', 'arquivo', 'ok', 5)"
+    )
+    conn.commit()
+    conn.close()
+    _sign_in(client)
+
+    response = client.get("/api/sync/status")
+
+    body = response.json()
+    assert body["last_run"]["origin"] is None
+    assert body["last_run"]["new_transactions"] is None
+
+
+def test_sync_payload_has_no_accounts_count(client):
+    _sign_in(client)
+
+    response = client.post("/api/sync/run")
+
+    assert "accounts_count" not in response.json()["last_run"]
+    assert "accounts" not in response.json()["last_run"]
+
+
 def test_the_old_screen_button_records_the_screen_as_origin(client):
     _sign_in(client)
 

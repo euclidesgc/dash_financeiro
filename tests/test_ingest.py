@@ -340,3 +340,65 @@ def test_the_run_records_who_asked_for_it_on_success_and_on_failure(conn, accoun
 
     recorded = conn.execute("SELECT status, triggered_by FROM sync_runs ORDER BY id").fetchall()
     assert [tuple(row) for row in recorded] == [("ok", "screen"), ("failed", "command")]
+
+
+def test_ingest_records_origin(conn, accounts):
+    transactions = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))[:2]
+
+    ingest(
+        conn,
+        transactions=transactions,
+        accounts=accounts,
+        source="fixture",
+        trigger=COMMAND,
+        origin="pluggy",
+    )
+
+    assert conn.execute("SELECT origin FROM sync_runs").fetchone()[0] == "pluggy"
+
+
+def test_ingest_without_record_writes_no_run_on_success(conn, accounts):
+    transactions = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))[:2]
+
+    result = ingest(
+        conn,
+        transactions=transactions,
+        accounts=accounts,
+        source="fixture",
+        trigger=COMMAND,
+        record=False,
+    )
+
+    assert result.status == "ok"
+    assert counts(conn) == (2, 1, 0)
+
+
+def test_ingest_without_record_writes_no_run_on_failure(conn, accounts):
+    transactions = load_transactions(str(FIXTURES / "transacoes_invalidas.json"))
+
+    result = ingest(
+        conn,
+        transactions=transactions,
+        accounts=accounts,
+        source="fixture",
+        trigger=COMMAND,
+        record=False,
+    )
+
+    assert result.status == "failed"
+    assert counts(conn) == (0, 0, 0)
+
+
+def test_ingest_without_record_returns_none_run_id(conn, accounts):
+    transactions = load_transactions(str(FIXTURES / "transacoes_id_duplicado.json"))[:2]
+
+    result = ingest(
+        conn,
+        transactions=transactions,
+        accounts=accounts,
+        source="fixture",
+        trigger=COMMAND,
+        record=False,
+    )
+
+    assert result.run_id is None
