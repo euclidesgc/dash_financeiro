@@ -1,4 +1,5 @@
 import sqlite3
+from calendar import monthrange
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
@@ -7,9 +8,26 @@ from typing import Any
 from app.advisor.proposals import propose
 from app.advisor.provider import ToolCall, ToolResult, ToolSpec
 from app.db import fold
+from app.debts.payoff import (
+    BALANCE,
+    CARD_INSTALLMENT,
+    INFORMED,
+    NOMINAL,
+    Debt,
+    InvalidSavingError,
+    PastTargetError,
+    Payoff,
+    SavingPlan,
+    list_debts,
+    payoff_at,
+    saving_plan,
+    unnumbered,
+)
 from app.formatting import brl
 from app.projection.schedule import (
-    CARD_INSTALLMENT,
+    CARD_INSTALLMENT as SCHEDULE_CARD_INSTALLMENT,
+)
+from app.projection.schedule import (
     DEFAULT_MONTHS,
     FINANCING,
     MAX_MONTHS,
@@ -27,11 +45,14 @@ from app.queries.expenses import (
     period_result,
     sum_by_category,
 )
+from app.queries.period import shift
 
 SEARCH_TRANSACTIONS = "search_transactions"
 SPENDING_SUMMARY = "spending_summary"
 PROPOSE_RECATEGORIZATION = "propose_recategorization"
 COMMITMENTS_BY_MONTH = "commitments_by_month"
+DEBT_PAYOFF = "debt_payoff"
+MAX_TARGET_MONTHS = 360
 DEFAULT_LIMIT = 20
 MAX_LIMIT = 50
 MAX_PROPOSAL = 200
@@ -178,10 +199,56 @@ COMMITMENTS_SPEC = ToolSpec(
     },
 )
 
-TOOLS = [SEARCH_SPEC, SUMMARY_SPEC, PROPOSE_SPEC, COMMITMENTS_SPEC]
+DEBT_PAYOFF_SPEC = ToolSpec(
+    name=DEBT_PAYOFF,
+    description=(
+        "Quanto custa quitar uma dívida e quanto juntar para isso. Sem 'debt', lista as dívidas "
+        "do painel (cheque especial, saldo de cartão, financiamentos e compras parceladas com "
+        "parcelas a vencer), cada uma com a chave, o valor para quitar hoje e a soma das "
+        "parcelas que faltam. Com 'debt', devolve o valor para quitar hoje e, se vier "
+        "'target_date' ou 'months', o valor na data e quanto guardar por mês até lá; se vier "
+        "'monthly_saving_cents', o mês em que o dinheiro guardado alcança o valor para quitar. "
+        "Considera que as parcelas continuam sendo pagas até a quitação. Quando o saldo de "
+        "quitação não foi informado, o valor para quitar vem nulo e o alvo é a soma das "
+        "parcelas que faltam, sem desconto. Valores em centavos e já escritos em reais, "
+        "positivos: é quanto juntar."
+    ),
+    parameters={
+        "type": "object",
+        "properties": {
+            "debt": {
+                "type": "string",
+                "description": (
+                    "Chave da dívida devolvida pela lista (ex.: debt-7, installment-12) ou "
+                    "parte do nome. Omita para listar as dívidas."
+                ),
+            },
+            "target_date": {
+                "type": "string",
+                "description": "Data em que quer quitar, AAAA-MM-DD, de hoje em diante.",
+            },
+            "months": {
+                "type": "integer",
+                "description": (
+                    f"Em quantos meses quer quitar, de 1 a {MAX_TARGET_MONTHS}, no lugar de "
+                    "target_date."
+                ),
+            },
+            "monthly_saving_cents": {
+                "type": "integer",
+                "description": (
+                    "Quanto consegue guardar por mês, em centavos (150000 é R$ 1.500,00), para "
+                    "saber quando alcança o valor."
+                ),
+            },
+        },
+    },
+)
+
+TOOLS = [SEARCH_SPEC, SUMMARY_SPEC, PROPOSE_SPEC, COMMITMENTS_SPEC, DEBT_PAYOFF_SPEC]
 
 SOURCE_LABELS = {
-    CARD_INSTALLMENT: "Compras parceladas",
+    SCHEDULE_CARD_INSTALLMENT: "Compras parceladas",
     FINANCING: "Financiamentos",
     RECURRING_FIXED: "Contas recorrentes e assinaturas",
 }
@@ -540,6 +607,189 @@ def commitments_by_month(
     }
 
 
+DEBT_KIND_LABELS = {
+    "overdraft": "Cheque especial",
+    "card": "Saldo do cartão de crédito",
+    "vehicle": "Financiamento de veículo",
+    "mortgage": "Financiamento imobiliário",
+    CARD_INSTALLMENT: "Compra parcelada",
+}
+_BALANCE_BASIS = {
+    "overdraft": "saldo negativo da conta, informado pelo banco",
+    "card": "saldo do cartão, informado pelo banco",
+    "mortgage": "saldo devedor cadastrado na tela Configuração",
+}
+BASIS_LABELS = {
+    INFORMED: "saldo de quitação que você informou",
+    NOMINAL: "soma das parcelas que faltam, sem desconto",
+}
+MISSING_SETTLEMENT = (
+    "Saldo de quitação não informado: o valor real para quitar só o banco informa. Registre-o "
+    "na tela Dívidas (Saldo de quitação) para o consultor usar. Até lá, a soma das parcelas que "
+    "faltam é o teto."
+)
+_BALANCE_AHEAD = (
+    "O painel não sabe como esse saldo muda até a data: o valor usado é o de hoje. Confira com "
+    "o banco perto da data."
+)
+
+
+def _basis(debt: Debt, payoff: Payoff) -> str:
+    if payoff.basis == BALANCE:
+        return _BALANCE_BASIS.get(debt.kind, "saldo informado")
+    return BASIS_LABELS[payoff.basis]
+
+
+def _payoff_content(debt: Debt, payoff: Payoff, *, today: date) -> dict[str, Any]:
+    content: dict[str, Any] = {
+        "date": payoff.day.isoformat(),
+        "payoff_cents": payoff.payoff_cents,
+        "payoff": brl(payoff.payoff_cents) if payoff.payoff_cents is not None else None,
+        **_money("target", payoff.target_cents),
+        "basis": _basis(debt, payoff),
+    }
+    if payoff.nominal_cents is not None:
+        content.update(_money("remaining_installments_sum", payoff.nominal_cents))
+    if payoff.installments_left is not None:
+        content["installments_left"] = payoff.installments_left
+    if payoff.end_month is not None:
+        content["last_installment_month"] = payoff.end_month
+    if payoff.missing_settlement:
+        content["missing"] = MISSING_SETTLEMENT
+    if payoff.basis == BALANCE and payoff.day.strftime("%Y-%m") != today.strftime("%Y-%m"):
+        content["note"] = _BALANCE_AHEAD
+    return content
+
+
+def _debt_header(debt: Debt) -> dict[str, Any]:
+    header: dict[str, Any] = {
+        "key": debt.key,
+        "kind": DEBT_KIND_LABELS[debt.kind],
+        "name": debt.name,
+    }
+    if debt.account:
+        header["account"] = debt.account
+    if debt.payment_cents is not None:
+        header.update(_money("installment", abs(debt.payment_cents)))
+    return header
+
+
+def resolve_debt(debts: list[Debt], asked: str) -> Debt:
+    wanted = fold(asked) or ""
+    exact = [debt for debt in debts if debt.key == asked.strip()]
+    if exact:
+        return exact[0]
+    found = [debt for debt in debts if wanted and wanted in (fold(debt.name) or "")]
+    if len(found) == 1:
+        return found[0]
+    listed = "; ".join(f"{debt.key} ({debt.name})" for debt in (found or debts))
+    if not found:
+        raise ToolInputError(f"Dívida '{asked}' não encontrada. Dívidas do painel: {listed}.")
+    raise ToolInputError(f"'{asked}' corresponde a mais de uma dívida: {listed}. Use a chave.")
+
+
+def _saving_input(arguments: dict[str, Any]) -> int | None:
+    value = arguments.get("monthly_saving_cents")
+    if value is None:
+        return None
+    if isinstance(value, float) and value.is_integer():
+        value = int(value)
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ToolInputError("monthly_saving_cents precisa ser um número inteiro de centavos.")
+    return value
+
+
+def _target_input(arguments: dict[str, Any], today: date) -> date | None:
+    target = _day(arguments, "target_date")
+    months = arguments.get("months")
+    if months is None:
+        return target
+    if target is not None:
+        raise ToolInputError("Passe target_date ou months, não os dois.")
+    if isinstance(months, float) and months.is_integer():
+        months = int(months)
+    if (
+        not isinstance(months, int)
+        or isinstance(months, bool)
+        or not 1 <= months <= MAX_TARGET_MONTHS
+    ):
+        raise ToolInputError(f"months precisa ser um número inteiro de 1 a {MAX_TARGET_MONTHS}.")
+    first = shift(today, months)
+    return date(first.year, first.month, min(today.day, monthrange(first.year, first.month)[1]))
+
+
+def _plan_content(plan: SavingPlan, debt: Debt, *, today: date) -> dict[str, Any]:
+    content: dict[str, Any] = {
+        "months": plan.months,
+        **_money("monthly_saving", plan.monthly_cents),
+        "reached_month": plan.reached_month,
+        "payoff_then": _payoff_content(debt, plan.payoff, today=today),
+    }
+    if plan.months is not None:
+        content.update(_money("saved_total", plan.monthly_cents * plan.months))
+    if debt.first_due is not None:
+        content["assumption"] = (
+            "As parcelas continuam sendo pagas até a quitação; o valor guardado é à parte delas."
+        )
+    if plan.months == 0 and plan.payoff.target_cents:
+        content["note"] = "A data cai neste mês: é preciso ter o valor inteiro agora."
+    elif plan.payoff.target_cents == 0:
+        content["note"] = "As parcelas terminam até essa data: não há o que juntar."
+    elif plan.reached_month is None:
+        content["note"] = "Com esse valor por mês, o dinheiro guardado não alcança a dívida."
+    return content
+
+
+def debt_payoff(
+    conn: sqlite3.Connection, arguments: dict[str, Any], context: ToolContext
+) -> dict[str, Any]:
+    today = context.today
+    debts = list_debts(conn, today=today)
+    asked = _text(arguments, "debt")
+    target = _target_input(arguments, today)
+    saving = _saving_input(arguments)
+    if asked is None:
+        if target is not None or saving is not None:
+            raise ToolInputError("Diga qual dívida: passe debt com a chave devolvida pela lista.")
+        return {
+            "today": today.isoformat(),
+            "debts": [
+                {
+                    **_debt_header(debt),
+                    "payoff_today": _payoff_content(
+                        debt, payoff_at(debt, today, today=today), today=today
+                    ),
+                }
+                for debt in debts
+            ],
+            "not_listed": [
+                {"description": item, "reason": "o lançamento não diz qual parcela é"}
+                for item in unnumbered(conn, today=today)
+            ],
+            "notes": (
+                "O saldo do cartão é o que o banco informa hoje e pode já incluir as compras "
+                "parceladas listadas em separado: não some os dois. Compra parcelada se quita "
+                "pelo valor nominal; o desconto de antecipação só o emissor informa."
+            ),
+        }
+    if target is not None and saving is not None:
+        raise ToolInputError("Passe a data (target_date ou months) ou monthly_saving_cents.")
+    debt = resolve_debt(debts, asked)
+    content: dict[str, Any] = {
+        **_debt_header(debt),
+        "today": today.isoformat(),
+        "payoff_today": _payoff_content(debt, payoff_at(debt, today, today=today), today=today),
+    }
+    if target is None and saving is None:
+        return content
+    try:
+        plan = saving_plan(debt, today=today, target_date=target, monthly_saving_cents=saving)
+    except (PastTargetError, InvalidSavingError) as refusal:
+        raise ToolInputError(str(refusal)) from None
+    content["saving_plan"] = _plan_content(plan, debt, today=today)
+    return content
+
+
 Handler = Callable[[sqlite3.Connection, dict[str, Any], ToolContext], dict[str, Any]]
 
 _HANDLERS: dict[str, Handler] = {
@@ -547,6 +797,7 @@ _HANDLERS: dict[str, Handler] = {
     SPENDING_SUMMARY: lambda conn, arguments, _: spending_summary(conn, arguments),
     PROPOSE_RECATEGORIZATION: propose_recategorization,
     COMMITMENTS_BY_MONTH: commitments_by_month,
+    DEBT_PAYOFF: debt_payoff,
 }
 
 

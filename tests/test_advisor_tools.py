@@ -236,3 +236,73 @@ def test_commitments_by_month_defaults_to_six_months_and_refuses_bad_windows(con
     assert len(default.content["months"]) == 6
     assert too_long.is_error and "months" in too_long.content["error"]
     assert text.is_error
+
+
+def _debts(conn):
+    conn.execute(
+        "INSERT INTO debts (id, kind, name, balance_cents, monthly_rate_bp, term_months, "
+        "payment_cents, source, account_id) VALUES "
+        "(7, 'vehicle', 'CDC do veículo', -3857960, 163, 44, -123533, 'financings', NULL), "
+        "(1, 'overdraft', 'Conta corrente', -50000, NULL, NULL, NULL, 'accounts', NULL)"
+    )
+    _commitments(conn)
+
+
+def _payoff(conn, arguments):
+    return run_tool(conn, ToolCall(id="c1", name="debt_payoff", input=arguments), CONTEXT)
+
+
+def test_debt_payoff_lists_every_debt_with_what_is_known(conn):
+    _debts(conn)
+
+    result = _payoff(conn, {})
+
+    assert not result.is_error
+    by_key = {debt["key"]: debt for debt in result.content["debts"]}
+    assert set(by_key) == {"debt-7", "debt-1", "installment-1"}
+    cdc = by_key["debt-7"]["payoff_today"]
+    assert cdc["payoff"] is None
+    assert cdc["remaining_installments_sum"] == "R$ 54.354,52"
+    assert "tela Dívidas" in cdc["missing"]
+    assert by_key["debt-1"]["payoff_today"]["payoff"] == "R$ 500,00"
+    loja = by_key["installment-1"]
+    assert loja["installment"] == "R$ 100,00"
+    assert loja["payoff_today"]["payoff"] == "R$ 200,00"
+    assert loja["payoff_today"]["last_installment_month"] == "2026-11"
+
+
+def test_debt_payoff_plans_the_saving_for_a_date_or_a_monthly_amount(conn):
+    _debts(conn)
+
+    by_months = _payoff(conn, {"debt": "cdc", "months": 12}).content
+    by_saving = _payoff(conn, {"debt": "debt-7", "monthly_saving_cents": 150000}).content
+
+    plan = by_months["saving_plan"]
+    assert plan["months"] == 12
+    assert plan["monthly_saving"] == "R$ 3.294,22"
+    assert plan["payoff_then"]["target"] == "R$ 39.530,56"
+    assert plan["payoff_then"]["date"] == "2027-09-26"
+    assert by_saving["saving_plan"]["reached_month"] == "2028-05"
+    assert by_saving["saving_plan"]["monthly_saving"] == "R$ 1.500,00"
+
+
+@pytest.mark.parametrize(
+    ("arguments", "fragment"),
+    [
+        ({"debt": "cdc", "target_date": "2026-01-01"}, "já passou"),
+        ({"debt": "cdc", "monthly_saving_cents": 0}, "maior que zero"),
+        ({"debt": "cdc", "months": 0}, "months"),
+        ({"debt": "cdc", "months": 3, "target_date": "2027-01-01"}, "não os dois"),
+        ({"debt": "cdc", "months": 3, "monthly_saving_cents": 100}, "monthly_saving_cents"),
+        ({"months": 3}, "qual dívida"),
+        ({"debt": "moto"}, "debt-7"),
+        ({"debt": "c"}, "mais de uma"),
+    ],
+)
+def test_debt_payoff_refuses_bad_input(conn, arguments, fragment):
+    _debts(conn)
+
+    result = _payoff(conn, arguments)
+
+    assert result.is_error
+    assert fragment in result.content["error"]

@@ -142,6 +142,7 @@ def test_question_runs_the_tool_and_answers_with_its_numbers(app, client):
         "spending_summary",
         "propose_recategorization",
         "commitments_by_month",
+        "debt_payoff",
     ]
     roles = [row["role"] for row in _stored_roles(conversation_id)]
     assert roles == ["user", "assistant", "tool", "assistant"]
@@ -510,6 +511,62 @@ def test_a_projection_answer_with_an_invented_total_is_replaced(app, client):
     response = client.post(
         f"/api/advisor/conversations/{conversation_id}/messages",
         json={"text": "quanto sai nos próximos meses?"},
+    )
+
+    assert response.json()["messages"][1]["text"] == UNCHECKED
+
+
+def _vehicle_debt():
+    conn = connect()
+    conn.execute(
+        "INSERT INTO debts (id, kind, name, balance_cents, monthly_rate_bp, term_months, "
+        "payment_cents, source, account_id) VALUES "
+        "(7, 'vehicle', 'CDC do veículo', -3857960, 163, 44, -123533, 'financings', NULL)"
+    )
+    conn.execute(
+        "INSERT INTO financings (kind, monthly_rate_bp, term_months, balance_cents, "
+        "payment_cents, first_due_date) VALUES ('vehicle', 163, 60, NULL, -123533, '2025-06-11')"
+    )
+    conn.commit()
+    conn.close()
+
+
+def test_a_payoff_answer_quoting_the_tool_passes_the_number_guard(app, client):
+    _vehicle_debt()
+    reading = (
+        "O saldo de quitação do CDC do veículo não foi informado. As parcelas que faltam somam "
+        "R$ 39.530,56 em 2027-09; para chegar lá, guarde R$ 3.294,22 por mês."
+    )
+    provider = ScriptedProvider(
+        script=[call("debt_payoff", {"debt": "debt-7", "months": 12}), answer(reading)]
+    )
+    _use(app, provider)
+    conversation_id = _new_conversation(client)
+
+    response = client.post(
+        f"/api/advisor/conversations/{conversation_id}/messages",
+        json={"text": "quanto preciso juntar por mês para quitar o carro em um ano?"},
+    )
+
+    assistant = response.json()["messages"][1]
+    assert assistant["text"] == reading
+    assert assistant["tools"] == ["debt_payoff"]
+
+
+def test_a_payoff_answer_with_an_invented_discount_is_replaced(app, client):
+    _vehicle_debt()
+    provider = ScriptedProvider(
+        script=[
+            call("debt_payoff", {"debt": "debt-7"}),
+            answer("Com o desconto de juros, quitar hoje custa uns R$ 38.000,00."),
+        ]
+    )
+    _use(app, provider)
+    conversation_id = _new_conversation(client)
+
+    response = client.post(
+        f"/api/advisor/conversations/{conversation_id}/messages",
+        json={"text": "quanto custa quitar o carro hoje?"},
     )
 
     assert response.json()["messages"][1]["text"] == UNCHECKED
