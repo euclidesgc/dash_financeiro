@@ -37,19 +37,19 @@ Branch: `feature/068-sync-shows-origin-and-new-transactions`
 
 ## Fase 2 — O painel mostra de onde veio e quantos lançamentos entraram
 
-- [ ] T2.1 — Contrato do front, mock e frase da origem
+- [x] T2.1 — Contrato do front, mock e frase da origem
   - Arquivos: `src/features/sync/types/sync-status.ts` (alterar); `src/testing/mocks/handlers.ts` (alterar); `src/features/sync/utils/describe-origin.ts` (criar)
   - O que fazer: em `sync-status.ts`, `export type SyncOrigin = 'pluggy' | 'file'` e `SyncRun` ganha `origin: SyncOrigin | null` e `new_transactions: number | null`. `fakeSyncStatus` em `handlers.ts` passa a ter `origin: 'pluggy'` e `new_transactions: 25` no `last_run`. Criar `export function describeOrigin(origin: SyncOrigin | null, newTransactions: number | null): string | null`: `null` se `origin` é nulo; prefixo "Buscou na Pluggy" (`pluggy`) ou "Releu o arquivo local" (`file`); com `newTransactions` nulo devolve só o prefixo; senão prefixo + " · " + "nenhum lançamento novo" (0), "1 lançamento novo" (1) ou "N lançamentos novos" (N > 1).
   - Skills: unit-testing, api-mocking
   - Complexidade: baixa
 
-- [ ] T2.2 — Nova linha no `SyncPanel` e rótulo verdadeiro do gatilho `command`
+- [x] T2.2 — Nova linha no `SyncPanel` e rótulo verdadeiro do gatilho `command`
   - Arquivos: `src/features/sync/components/sync-panel.tsx` (alterar)
   - O que fazer: no bloco à esquerda do cartão "Atualização dos registros", entre "Última atualização: <data e hora>" e a linha do gatilho, renderizar `describeOrigin(last_run.origin, last_run.new_transactions)` quando não for nula, com a mesma receita de texto secundário da linha do gatilho (`docs/design.md`). Ordem final: data, origem, gatilho, selo de estado. Em `TRIGGER_LABELS`, `command` passa a "Feita por comando no terminal"; `screen` segue "Você pediu pelo botão “Atualizar agora”". Estados carregando, erro, vazio ("Nenhuma atualização feita por este painel ainda"), em andamento e o alerta de falha ficam inalterados. Nenhuma receita nova.
   - Skills: interface-design, component-robustness
   - Complexidade: baixa
 
-- [ ] T2.3 — Testes da fase 2
+- [x] T2.3 — Testes da fase 2
   - Arquivos: `src/features/sync/utils/__tests__/describe-origin.test.ts` (criar); `src/features/sync/components/__tests__/sync-panel.test.tsx` (alterar)
   - O que fazer: casos
     - `describe-origin.test.ts`: `returns null when origin is null`, `describes pluggy with many new transactions`, `describes pluggy with one new transaction`, `describes file with zero new transactions`, `returns only the origin when count is null`;
@@ -59,12 +59,12 @@ Branch: `feature/068-sync-shows-origin-and-new-transactions`
 
 ### Critérios de aceite da fase 2
 
-- [ ] CA2.1 — (estrutural) `src/features/sync/types/sync-status.ts` exporta `SyncOrigin = 'pluggy' | 'file'` e `SyncRun` tem `origin: SyncOrigin | null` e `new_transactions: number | null`; `fakeSyncStatus` em `src/testing/mocks/handlers.ts` tem os dois campos.
-- [ ] CA2.2 — (estrutural) `src/features/sync/utils/describe-origin.ts` exporta `describeOrigin(origin: SyncOrigin | null, newTransactions: number | null): string | null`.
-- [ ] CA2.3 — (comportamental) `describeOrigin('pluggy', 25)` = "Buscou na Pluggy · 25 lançamentos novos"; `describeOrigin('pluggy', 1)` = "Buscou na Pluggy · 1 lançamento novo"; `describeOrigin('file', 0)` = "Releu o arquivo local · nenhum lançamento novo"; `describeOrigin('pluggy', null)` = "Buscou na Pluggy"; `describeOrigin(null, 3)` = `null`.
-- [ ] CA2.4 — (comportamental) `SyncPanel` mostra a linha de origem entre "Última atualização:" e a linha do gatilho, não a mostra com `origin` nulo, e com gatilho `command` mostra "Feita por comando no terminal" e não contém "Feita pela rotina diária"; provado pelos casos nomeados em `sync-panel.test.tsx`.
-- [ ] CA2.5 — (estrutural) A linha de origem em `sync-panel.tsx` usa as mesmas classes de texto secundário da linha do gatilho (`text-sm text-gray-600`), sem `style={{…}}`.
-- [ ] CA2.6 — (comando) `pnpm lint`, `pnpm typecheck` e `pnpm test` passam com todos os casos nomeados em T2.3; cobertura ≥ 80% em `describe-origin.ts` e `sync-panel.tsx`.
+- [x] CA2.1 — (estrutural) `src/features/sync/types/sync-status.ts` exporta `SyncOrigin = 'pluggy' | 'file'` e `SyncRun` tem `origin: SyncOrigin | null` e `new_transactions: number | null`; `fakeSyncStatus` em `src/testing/mocks/handlers.ts` tem os dois campos.
+- [x] CA2.2 — (estrutural) `src/features/sync/utils/describe-origin.ts` exporta `describeOrigin(origin: SyncOrigin | null, newTransactions: number | null): string | null`.
+- [x] CA2.3 — (comportamental) `describeOrigin('pluggy', 25)` = "Buscou na Pluggy · 25 lançamentos novos"; `describeOrigin('pluggy', 1)` = "Buscou na Pluggy · 1 lançamento novo"; `describeOrigin('file', 0)` = "Releu o arquivo local · nenhum lançamento novo"; `describeOrigin('pluggy', null)` = "Buscou na Pluggy"; `describeOrigin(null, 3)` = `null`.
+- [x] CA2.4 — (comportamental) `SyncPanel` mostra a linha de origem entre "Última atualização:" e a linha do gatilho, não a mostra com `origin` nulo, e com gatilho `command` mostra "Feita por comando no terminal" e não contém "Feita pela rotina diária"; provado pelos casos nomeados em `sync-panel.test.tsx`.
+- [x] CA2.5 — (estrutural) A linha de origem em `sync-panel.tsx` usa as mesmas classes de texto secundário da linha do gatilho (`text-sm text-gray-600`), sem `style={{…}}`.
+- [x] CA2.6 — (comando) `pnpm lint`, `pnpm typecheck` e `pnpm test` passam com todos os casos nomeados em T2.3; cobertura ≥ 80% em `describe-origin.ts` e `sync-panel.tsx`.
 
 ## DoD da entrega
 

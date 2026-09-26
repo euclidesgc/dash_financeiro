@@ -33,10 +33,10 @@ test('shows the date and the "Terminou sem erro" badge', async () => {
   expect(screen.getByText('Terminou sem erro')).toBeInTheDocument()
 })
 
-test('says the last update came from the daily routine', async () => {
+test('says the last update was made by a terminal command', async () => {
   renderWithProviders(<SyncPanel />)
 
-  expect(await screen.findByText('Feita pela rotina diária')).toBeInTheDocument()
+  expect(await screen.findByText('Feita por comando no terminal')).toBeInTheDocument()
   expect(screen.queryByText('Você pediu pelo botão “Atualizar agora”')).not.toBeInTheDocument()
 })
 
@@ -53,7 +53,75 @@ test('says the last update was asked for on the screen', async () => {
   renderWithProviders(<SyncPanel />)
 
   expect(await screen.findByText('Você pediu pelo botão “Atualizar agora”')).toBeInTheDocument()
+  expect(screen.queryByText('Feita por comando no terminal')).not.toBeInTheDocument()
+})
+
+test('shows origin and count after successful run', async () => {
+  renderWithProviders(<SyncPanel />)
+
+  expect(await screen.findByText('Buscou na Pluggy · 25 lançamentos novos')).toBeInTheDocument()
+})
+
+test('shows only origin after failed run', async () => {
+  server.use(
+    http.get('/api/sync/status', () =>
+      HttpResponse.json({
+        running: false,
+        last_run: {
+          finished_at: '2026-09-22T11:15:00+00:00',
+          status: 'failed',
+          reason: 'a Pluggy não respondeu; verifique a conexão com a internet e tente de novo.',
+          triggered_by: 'screen',
+          origin: 'pluggy',
+          new_transactions: null,
+        },
+      }),
+    ),
+  )
+
+  renderWithProviders(<SyncPanel />)
+
+  expect(await screen.findByText('Buscou na Pluggy')).toBeInTheDocument()
+  expect(screen.queryByText(/lançamentos? novos?/)).not.toBeInTheDocument()
+})
+
+test('hides origin line when origin is null', async () => {
+  server.use(
+    http.get('/api/sync/status', () =>
+      HttpResponse.json({
+        running: false,
+        last_run: { ...fakeSyncStatus.last_run, origin: null, new_transactions: null },
+      }),
+    ),
+  )
+
+  renderWithProviders(<SyncPanel />)
+
+  await screen.findByText(/Última atualização: 22\/09\/2026/)
+  expect(screen.queryByText(/Buscou na Pluggy/)).not.toBeInTheDocument()
+  expect(screen.queryByText(/Releu o arquivo local/)).not.toBeInTheDocument()
+})
+
+test('shows command trigger as terminal command', async () => {
+  renderWithProviders(<SyncPanel />)
+
+  expect(await screen.findByText('Feita por comando no terminal')).toBeInTheDocument()
   expect(screen.queryByText('Feita pela rotina diária')).not.toBeInTheDocument()
+})
+
+test('origin line sits between last update and trigger', async () => {
+  renderWithProviders(<SyncPanel />)
+
+  const lastUpdate = await screen.findByText(/Última atualização: 22\/09\/2026/)
+  const origin = screen.getByText('Buscou na Pluggy · 25 lançamentos novos')
+  const trigger = screen.getByText('Feita por comando no terminal')
+
+  expect(
+    lastUpdate.compareDocumentPosition(origin) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy()
+  expect(
+    origin.compareDocumentPosition(trigger) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy()
 })
 
 test('says nothing about the origin of a run recorded without one', async () => {
@@ -70,7 +138,7 @@ test('says nothing about the origin of a run recorded without one', async () => 
 
   await screen.findByText(/Última atualização: 22\/09\/2026/)
   expect(screen.queryByText('Você pediu pelo botão “Atualizar agora”')).not.toBeInTheDocument()
-  expect(screen.queryByText('Feita pela rotina diária')).not.toBeInTheDocument()
+  expect(screen.queryByText('Feita por comando no terminal')).not.toBeInTheDocument()
 })
 
 test('shows "Falhou" with the reason and a retry button', async () => {
@@ -83,6 +151,8 @@ test('shows "Falhou" with the reason and a retry button', async () => {
           status: 'failed',
           reason: 'a Pluggy não respondeu; verifique a conexão com a internet e tente de novo.',
           triggered_by: 'screen',
+          origin: 'pluggy',
+          new_transactions: null,
         },
       }),
     ),
@@ -96,6 +166,33 @@ test('shows "Falhou" with the reason and a retry button', async () => {
     'A última atualização falhou: a Pluggy não respondeu; verifique a conexão com a internet e tente de novo.',
   )
   expect(screen.getByRole('button', { name: 'Tentar de novo' })).toBeInTheDocument()
+})
+
+test('retries the sync when the failed run alert button is clicked', async () => {
+  server.use(
+    http.get('/api/sync/status', () =>
+      HttpResponse.json({
+        running: false,
+        last_run: {
+          finished_at: '2026-09-22T11:15:00+00:00',
+          status: 'failed',
+          reason: 'a Pluggy não respondeu; verifique a conexão com a internet e tente de novo.',
+          triggered_by: 'screen',
+          origin: 'pluggy',
+          new_transactions: null,
+        },
+      }),
+    ),
+    http.post('/api/sync/run', () => HttpResponse.json(fakeSyncStatus)),
+  )
+
+  renderWithProviders(<SyncPanel />)
+
+  await screen.findByText('Falhou')
+  await userEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }))
+
+  await screen.findByText('Terminou sem erro')
+  expect(screen.queryByText('Falhou')).not.toBeInTheDocument()
 })
 
 test('shows the status error and retries', async () => {
