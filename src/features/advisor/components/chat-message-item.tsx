@@ -1,3 +1,4 @@
+import { ProposalCard } from '@/features/advisor/components/proposal-card'
 import type { ChatMessage } from '@/features/advisor/types/advisor'
 
 const PROVIDER_LABELS: Record<string, string> = {
@@ -8,6 +9,7 @@ const PROVIDER_LABELS: Record<string, string> = {
 const TOOL_LABELS: Record<string, string> = {
   search_transactions: 'seus lançamentos',
   spending_summary: 'o resumo de gastos',
+  propose_recategorization: 'a troca de categoria',
 }
 
 function describeTools(tools: string[]): string | null {
@@ -22,7 +24,13 @@ function describeAnswer(message: ChatMessage): string | null {
   return parts.length > 0 ? parts.join(' · ') : null
 }
 
-export function ChatMessageItem({ message }: { message: ChatMessage }): React.JSX.Element {
+export function ChatMessageItem({
+  conversationId,
+  message,
+}: {
+  conversationId: number | null
+  message: ChatMessage
+}): React.JSX.Element {
   if (message.role === 'user') {
     return (
       <li className="flex justify-end">
@@ -41,6 +49,11 @@ export function ChatMessageItem({ message }: { message: ChatMessage }): React.JS
         {message.text}
       </div>
       {note ? <p className="mt-1 text-xs text-gray-600">{note}</p> : null}
+      {conversationId !== null
+        ? message.proposals.map((proposal) => (
+            <ProposalCard key={proposal.id} conversationId={conversationId} proposal={proposal} />
+          ))
+        : null}
     </li>
   )
 }

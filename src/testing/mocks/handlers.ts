@@ -799,6 +799,7 @@ export const handlers = [
         created_at: nextAdvisorStamp(),
         provider: null,
         tools: [],
+        proposals: [],
       },
       {
         id: nextAdvisorId++,
@@ -807,6 +808,7 @@ export const handlers = [
         created_at: nextAdvisorStamp(),
         provider: 'anthropic',
         tools: ['search_transactions'],
+        proposals: [],
       },
     ]
     if (found.messages.length === 0) found.conversation.title = body.text.trim()
