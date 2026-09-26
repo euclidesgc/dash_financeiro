@@ -108,7 +108,7 @@ export function AdvisorChat(): React.JSX.Element {
     return (
       <ol aria-label="Conversa" className="mt-6 flex flex-col gap-4">
         {messages.map((message) => (
-          <ChatMessageItem key={message.id} message={message} />
+          <ChatMessageItem key={message.id} conversationId={conversationId} message={message} />
         ))}
         {send.isPending ? (
           <li className="flex justify-end">

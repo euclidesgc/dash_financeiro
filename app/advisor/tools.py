@@ -1,11 +1,14 @@
 import sqlite3
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
 from typing import Any
 
+from app.advisor.proposals import propose
 from app.advisor.provider import ToolCall, ToolResult, ToolSpec
 from app.db import fold
 from app.formatting import brl
+from app.queries.advisor_proposals import ProposalRow, transaction_snapshots
 from app.queries.balances import list_balances
 from app.queries.categories import list_categories
 from app.queries.expenses import (
@@ -18,8 +21,11 @@ from app.queries.expenses import (
 
 SEARCH_TRANSACTIONS = "search_transactions"
 SPENDING_SUMMARY = "spending_summary"
+PROPOSE_RECATEGORIZATION = "propose_recategorization"
 DEFAULT_LIMIT = 20
 MAX_LIMIT = 50
+MAX_PROPOSAL = 200
+UNCATEGORISED_LABEL = "Sem categoria"
 MIN_TEXT = 2
 KINDS: dict[str, View] = {"expenses": "expenses", "income": "income"}
 
@@ -92,7 +98,53 @@ SUMMARY_SPEC = ToolSpec(
     },
 )
 
-TOOLS = [SEARCH_SPEC, SUMMARY_SPEC]
+_FILTER_TEXT = {
+    "type": "string",
+    "description": "Mesmo trecho de texto usado em search_transactions.",
+}
+
+PROPOSE_SPEC = ToolSpec(
+    name=PROPOSE_RECATEGORIZATION,
+    description=(
+        "Prepara a troca de categoria de lançamentos para o dono conferir. NÃO muda nada: cria "
+        "uma proposta que aparece como cartão abaixo da sua resposta, e só o clique do dono em "
+        "Aplicar grava. Escolha os lançamentos repetindo o MESMO filtro da busca anterior "
+        "(date_from, date_to, text, category, account, kind), que pega todos os que a busca "
+        "contou, ou passe transaction_ids com os ids que a busca devolveu quando o dono escolheu "
+        "só alguns. Lançamento que já está na categoria de destino fica de fora. Devolve quantos "
+        "mudam e a soma."
+    ),
+    parameters={
+        "type": "object",
+        "properties": {
+            "target_category": {
+                "type": "string",
+                "description": "Categoria nova, com o nome exato de uma categoria do painel.",
+            },
+            "transaction_ids": {
+                "type": "array",
+                "items": {"type": "integer"},
+                "description": "Ids de lançamento devolvidos por search_transactions.",
+            },
+            "date_from": _DATE_FROM,
+            "date_to": _DATE_TO,
+            "text": _FILTER_TEXT,
+            "category": {
+                "type": "string",
+                "description": "Categoria atual dos lançamentos, como no filtro da busca.",
+            },
+            "account": _ACCOUNT,
+            "kind": {
+                "type": "string",
+                "enum": list(KINDS),
+                "description": "expenses para gastos (padrão), income para entradas.",
+            },
+        },
+        "required": ["target_category"],
+    },
+)
+
+TOOLS = [SEARCH_SPEC, SUMMARY_SPEC, PROPOSE_SPEC]
 
 
 class ToolInputError(ValueError):
@@ -266,10 +318,130 @@ def spending_summary(conn: sqlite3.Connection, arguments: dict[str, Any]) -> dic
     }
 
 
-_HANDLERS = {SEARCH_TRANSACTIONS: search_transactions, SPENDING_SUMMARY: spending_summary}
+@dataclass(frozen=True)
+class ToolContext:
+    conversation_id: int
+    now: str
 
 
-def run_tool(conn: sqlite3.Connection, call: ToolCall) -> ToolResult:
+def _ids(arguments: dict[str, Any]) -> list[int] | None:
+    value = arguments.get("transaction_ids")
+    if value is None:
+        return None
+    if not isinstance(value, list) or not value:
+        raise ToolInputError("transaction_ids precisa ser uma lista de ids.")
+    ids: list[int] = []
+    for item in value:
+        number = int(item) if isinstance(item, float) and item.is_integer() else item
+        if not isinstance(number, int) or isinstance(number, bool):
+            raise ToolInputError("transaction_ids precisa ter só números inteiros.")
+        if number not in ids:
+            ids.append(number)
+    return ids
+
+
+def _filtered_ids(conn: sqlite3.Connection, arguments: dict[str, Any]) -> list[int]:
+    date_from, date_to = _period(arguments)
+    text = _text(arguments, "text")
+    asked_category = _text(arguments, "category")
+    asked_account = _text(arguments, "account")
+    if not any((date_from, date_to, text, asked_category, asked_account)):
+        raise ToolInputError(
+            "Diga quais lançamentos mudar: transaction_ids ou o mesmo filtro da busca anterior."
+        )
+    if text is not None and len(text) < MIN_TEXT:
+        raise ToolInputError(f"text precisa de pelo menos {MIN_TEXT} letras.")
+    kind = _text(arguments, "kind") or "expenses"
+    if kind not in KINDS:
+        raise ToolInputError("kind precisa ser expenses ou income.")
+    category = resolve_category(conn, asked_category) if asked_category else None
+    account = resolve_account(conn, asked_account) if asked_account else None
+    page = list_expenses(
+        conn,
+        page=1,
+        page_size=MAX_PROPOSAL + 1,
+        view=KINDS[kind],
+        date_from=_iso(date_from),
+        date_to=_iso(date_to),
+        account_id=account.key if account else None,
+        search=text,
+        category=category.key if category else None,
+    )
+    if page.total == 0:
+        raise ToolInputError("Nenhum lançamento corresponde a esse filtro.")
+    return [item["id"] for item in page.items]
+
+
+def _proposal_content(
+    proposal: ProposalRow, already_there: int, labels: dict[str, str]
+) -> dict[str, Any]:
+    total_cents = sum(item.amount_cents for item in proposal.items)
+    items = [
+        {
+            "id": item.transaction_id,
+            "date": item.date,
+            "description": item.description,
+            "from_category": item.previous_label or UNCATEGORISED_LABEL,
+            "amount_cents": item.amount_cents,
+            "amount": brl(item.amount_cents),
+        }
+        for item in proposal.items[:MAX_LIMIT]
+    ]
+    return {
+        "proposal_id": proposal.id,
+        "status": proposal.status,
+        "target_category": labels.get(proposal.target_category, proposal.target_category),
+        "count": len(proposal.items),
+        "already_in_target": already_there,
+        "total_cents": total_cents,
+        "total": brl(total_cents),
+        "shown": len(items),
+        "items": items,
+        "next_step": (
+            "Nada foi alterado. O dono confere o cartão abaixo da resposta e clica em Aplicar "
+            "ou Descartar."
+        ),
+    }
+
+
+def propose_recategorization(
+    conn: sqlite3.Connection, arguments: dict[str, Any], context: ToolContext
+) -> dict[str, Any]:
+    asked_target = _text(arguments, "target_category")
+    if asked_target is None:
+        raise ToolInputError("target_category é obrigatório.")
+    target = resolve_category(conn, asked_target)
+    asked_ids = _ids(arguments)
+    ids = asked_ids if asked_ids is not None else _filtered_ids(conn, arguments)
+    if len(ids) > MAX_PROPOSAL:
+        raise ToolInputError(
+            f"São mais de {MAX_PROPOSAL} lançamentos. Restrinja o período ou o filtro."
+        )
+    snapshots = transaction_snapshots(conn, ids)
+    found = {item.id for item in snapshots}
+    unknown = [item for item in ids if item not in found]
+    if unknown:
+        listed = ", ".join(str(item) for item in unknown)
+        raise ToolInputError(
+            f"Lançamentos que não existem: {listed}. Use os ids devolvidos por search_transactions."
+        )
+    changing = [item for item in snapshots if item.category != target.key]
+    if not changing:
+        raise ToolInputError(f"Todos os {len(snapshots)} lançamentos já estão em {target.label}.")
+    proposal = propose(conn, context.conversation_id, target.key, changing, context.now)
+    return _proposal_content(proposal, len(snapshots) - len(changing), {target.key: target.label})
+
+
+Handler = Callable[[sqlite3.Connection, dict[str, Any], ToolContext], dict[str, Any]]
+
+_HANDLERS: dict[str, Handler] = {
+    SEARCH_TRANSACTIONS: lambda conn, arguments, _: search_transactions(conn, arguments),
+    SPENDING_SUMMARY: lambda conn, arguments, _: spending_summary(conn, arguments),
+    PROPOSE_RECATEGORIZATION: propose_recategorization,
+}
+
+
+def run_tool(conn: sqlite3.Connection, call: ToolCall, context: ToolContext) -> ToolResult:
     handler = _HANDLERS.get(call.name)
     if handler is None:
         return ToolResult(
@@ -279,7 +451,7 @@ def run_tool(conn: sqlite3.Connection, call: ToolCall) -> ToolResult:
             is_error=True,
         )
     try:
-        content = handler(conn, call.input)
+        content = handler(conn, call.input, context)
     except ToolInputError as error:
         failure = {"error": str(error)}
         return ToolResult(call_id=call.id, name=call.name, content=failure, is_error=True)

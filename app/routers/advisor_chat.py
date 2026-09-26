@@ -11,13 +11,23 @@ from app.advisor.chat import (
     UnknownConversationError,
     create_conversation,
     send,
+    stamp,
     view,
+)
+from app.advisor.proposals import (
+    ProposalStateError,
+    StaleProposalError,
+    UnknownProposalError,
+    apply,
+    discard,
+    undo,
 )
 from app.advisor.provider import ChatProvider, ProviderError
 from app.advisor.providers import MISSING_KEY, select_provider
 from app.config import reference_date
 from app.db import connect
 from app.queries.advisor_chat import ConversationRow, list_conversations
+from app.queries.advisor_proposals import ProposalRow
 from app.routers.row_id import RowId
 
 router = APIRouter(prefix="/api/advisor")
@@ -27,6 +37,7 @@ RECENT = 20
 # pt-BR; this bound only keeps an absurd body from reaching it.
 BODY_CEILING = 5000
 UNKNOWN_CONVERSATION = "Conversa não encontrada."
+UNKNOWN_PROPOSAL = "Proposta não encontrada."
 
 
 class Status(BaseModel):
@@ -47,6 +58,28 @@ class ConversationsResponse(BaseModel):
     conversations: list[Conversation]
 
 
+class ProposalItem(BaseModel):
+    transaction_id: int
+    date: str
+    description: str | None
+    amount_cents: int
+    from_category: str | None
+    to_category: str
+
+
+class Proposal(BaseModel):
+    id: int
+    status: Literal["pending", "applied", "discarded", "undone"]
+    target_category: str
+    created_at: str
+    applied_at: str | None
+    discarded_at: str | None
+    undone_at: str | None
+    undo_skipped: int | None
+    total_cents: int
+    items: list[ProposalItem]
+
+
 class Entry(BaseModel):
     id: int
     role: Literal["user", "assistant"]
@@ -54,6 +87,7 @@ class Entry(BaseModel):
     created_at: str
     provider: str | None
     tools: list[str]
+    proposals: list[Proposal]
 
 
 class ConversationDetail(BaseModel):
@@ -91,6 +125,31 @@ def _conversation(row: ConversationRow) -> Conversation:
     )
 
 
+def _proposal(row: ProposalRow) -> Proposal:
+    return Proposal(
+        id=row.id,
+        status=row.status,
+        target_category=row.target_label,
+        created_at=row.created_at,
+        applied_at=row.applied_at,
+        discarded_at=row.discarded_at,
+        undone_at=row.undone_at,
+        undo_skipped=row.undo_skipped,
+        total_cents=sum(item.amount_cents for item in row.items),
+        items=[
+            ProposalItem(
+                transaction_id=item.transaction_id,
+                date=item.date,
+                description=item.description,
+                amount_cents=item.amount_cents,
+                from_category=item.previous_label,
+                to_category=row.target_label,
+            )
+            for item in row.items
+        ],
+    )
+
+
 def _entry(entry: ChatEntry) -> Entry:
     return Entry(
         id=entry.id,
@@ -99,6 +158,7 @@ def _entry(entry: ChatEntry) -> Entry:
         created_at=entry.created_at,
         provider=entry.provider,
         tools=entry.tools,
+        proposals=[_proposal(row) for row in entry.proposals],
     )
 
 
@@ -112,6 +172,10 @@ def _translated() -> Iterator[None]:
         raise HTTPException(status_code=422, detail=str(error)) from error
     except ProviderError as error:
         raise HTTPException(status_code=502, detail=str(error)) from error
+    except UnknownProposalError as error:
+        raise HTTPException(status_code=404, detail=UNKNOWN_PROPOSAL) from error
+    except (ProposalStateError, StaleProposalError) as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
 
 
 @router.get("/status")
@@ -175,3 +239,36 @@ def ask(
     finally:
         conn.close()
     return MessagesResponse(messages=[_entry(entry) for entry in added])
+
+
+@router.post("/proposals/{proposal_id}/apply")
+def apply_proposal(proposal_id: RowId) -> Proposal:
+    conn = connect()
+    try:
+        with _translated():
+            row = apply(conn, proposal_id, stamp())
+    finally:
+        conn.close()
+    return _proposal(row)
+
+
+@router.post("/proposals/{proposal_id}/discard")
+def discard_proposal(proposal_id: RowId) -> Proposal:
+    conn = connect()
+    try:
+        with _translated():
+            row = discard(conn, proposal_id, stamp())
+    finally:
+        conn.close()
+    return _proposal(row)
+
+
+@router.post("/proposals/{proposal_id}/undo")
+def undo_proposal(proposal_id: RowId) -> Proposal:
+    conn = connect()
+    try:
+        with _translated():
+            row = undo(conn, proposal_id, stamp())
+    finally:
+        conn.close()
+    return _proposal(row)

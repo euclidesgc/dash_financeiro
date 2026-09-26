@@ -12,13 +12,14 @@ function answer(tools: string[]): ChatMessage {
     created_at: '2026-09-26T10:00:00+00:00',
     provider: 'gemini',
     tools,
+    proposals: [],
   }
 }
 
 function renderItem(message: ChatMessage): void {
   render(
     <ul>
-      <ChatMessageItem message={message} />
+      <ChatMessageItem conversationId={1} message={message} />
     </ul>,
   )
 }

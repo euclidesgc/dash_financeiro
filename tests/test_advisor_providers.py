@@ -79,7 +79,11 @@ def test_anthropic_translates_a_tool_request_and_keeps_raw_blocks():
     sent = create.kwargs[0]
     assert sent["model"] == "claude-opus-5"
     assert sent["system"] == "sistema"
-    assert [tool["name"] for tool in sent["tools"]] == ["search_transactions", "spending_summary"]
+    assert [tool["name"] for tool in sent["tools"]] == [
+        "search_transactions",
+        "spending_summary",
+        "propose_recategorization",
+    ]
     assert all("input_schema" in tool for tool in sent["tools"])
     assert sent["thinking"] == {"type": "adaptive"}
 
@@ -174,7 +178,11 @@ def test_gemini_translates_a_function_call_and_keeps_the_signature():
     assert "gemini-2.5-flash:generateContent" in str(seen[0].url)
     assert sent["systemInstruction"]["parts"][0]["text"] == "sistema"
     declarations = sent["tools"][0]["functionDeclarations"]
-    assert [item["name"] for item in declarations] == ["search_transactions", "spending_summary"]
+    assert [item["name"] for item in declarations] == [
+        "search_transactions",
+        "spending_summary",
+        "propose_recategorization",
+    ]
     assert all(item["parameters"]["type"] == "object" for item in declarations)
 
 
