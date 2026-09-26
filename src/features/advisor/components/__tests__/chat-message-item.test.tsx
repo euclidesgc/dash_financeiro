@@ -56,6 +56,16 @@ test('names the payoff lookup when the advisor used it', () => {
   ).toBeVisible()
 })
 
+test('names the liquidity ranking when the advisor used it', () => {
+  renderItem(answer(['debts_by_liquidity']))
+
+  expect(
+    screen.getByText(
+      'Respondido por Gemini · consultou as dívidas que mais liberam dinheiro no mês',
+    ),
+  ).toBeVisible()
+})
+
 test('leaves the note to the provider when no tool was used', () => {
   renderItem(answer([]))
 

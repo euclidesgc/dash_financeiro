@@ -14,12 +14,15 @@ from app.debts.payoff import (
     INFORMED,
     NOMINAL,
     Debt,
+    InvalidBudgetError,
     InvalidSavingError,
+    LiquidityRow,
     PastTargetError,
     Payoff,
     SavingPlan,
     list_debts,
     payoff_at,
+    rank_by_liquidity,
     saving_plan,
     unnumbered,
 )
@@ -52,6 +55,7 @@ SPENDING_SUMMARY = "spending_summary"
 PROPOSE_RECATEGORIZATION = "propose_recategorization"
 COMMITMENTS_BY_MONTH = "commitments_by_month"
 DEBT_PAYOFF = "debt_payoff"
+DEBTS_BY_LIQUIDITY = "debts_by_liquidity"
 MAX_TARGET_MONTHS = 360
 DEFAULT_LIMIT = 20
 MAX_LIMIT = 50
@@ -245,7 +249,48 @@ DEBT_PAYOFF_SPEC = ToolSpec(
     },
 )
 
-TOOLS = [SEARCH_SPEC, SUMMARY_SPEC, PROPOSE_SPEC, COMMITMENTS_SPEC, DEBT_PAYOFF_SPEC]
+LIQUIDITY_SPEC = ToolSpec(
+    name=DEBTS_BY_LIQUIDITY,
+    description=(
+        "Quais dívidas e compras parceladas quitar primeiro para liberar dinheiro no mês: a "
+        "lista ordenada pela parcela que deixa de sair por mês a cada real pago na quitação "
+        "(parcela ÷ valor para quitar hoje), com o valor para quitar, a parcela liberada, "
+        "quantos meses ela ainda sairia e o mês da última. Quando o saldo de quitação não foi "
+        "informado, o valor é a soma das parcelas que faltam, marcado como estimativa pelo teto. "
+        "Cheque especial, saldo de cartão e financiamento sem parcela cadastrada vêm à parte: "
+        "quitá-los reduz juros, não libera parcela. Com 'available_cents', escolhe na ordem da "
+        "lista, pulando o que não cabe, o que quitar com esse valor, e devolve o total gasto, a "
+        "sobra e a parcela liberada por mês. Valores em centavos e já escritos em reais, "
+        "positivos."
+    ),
+    parameters={
+        "type": "object",
+        "properties": {
+            "available_cents": {
+                "type": "integer",
+                "description": (
+                    "Quanto tem disponível agora para quitar, em centavos (500000 é R$ 5.000,00)."
+                ),
+            },
+            "limit": {
+                "type": "integer",
+                "description": (
+                    f"Quantas dívidas da lista devolver, de 1 a {MAX_LIMIT}. Padrão "
+                    f"{DEFAULT_LIMIT}. A escolha com available_cents considera todas."
+                ),
+            },
+        },
+    },
+)
+
+TOOLS = [
+    SEARCH_SPEC,
+    SUMMARY_SPEC,
+    PROPOSE_SPEC,
+    COMMITMENTS_SPEC,
+    DEBT_PAYOFF_SPEC,
+    LIQUIDITY_SPEC,
+]
 
 SOURCE_LABELS = {
     SCHEDULE_CARD_INSTALLMENT: "Compras parceladas",
@@ -790,6 +835,104 @@ def debt_payoff(
     return content
 
 
+CEILING_MARK = "estimativa pelo teto — informe o saldo de quitação"
+_NOT_RANKED_REASON = {
+    "overdraft": "não tem parcela: quitar reduz os juros do cheque especial",
+    "card": (
+        "não tem parcela, e o saldo pode já incluir as compras parceladas da lista: não "
+        "some os dois"
+    ),
+    "mortgage": "o contrato não tem valor de parcela cadastrado na tela Configuração",
+}
+
+
+def _percent(bp: int) -> str:
+    return f"{bp // 100},{bp % 100:02d}%"
+
+
+def _available_input(arguments: dict[str, Any]) -> int | None:
+    value = arguments.get("available_cents")
+    if value is None:
+        return None
+    if isinstance(value, float) and value.is_integer():
+        value = int(value)
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ToolInputError("available_cents precisa ser um número inteiro de centavos.")
+    return value
+
+
+def _liquidity_line(position: int, row: LiquidityRow) -> dict[str, Any]:
+    line: dict[str, Any] = {
+        "position": position,
+        **_debt_header(row.debt),
+        **_money("payoff", row.payoff.target_cents),
+        "basis": _basis(row.debt, row.payoff),
+        **_money("monthly_freed", row.monthly_freed_cents),
+        "monthly_freed_per_real_paid": _percent(row.freed_bp),
+        "installments_left": row.payoff.installments_left,
+        "last_installment_month": row.payoff.end_month,
+    }
+    if row.ceiling:
+        line["estimate"] = CEILING_MARK
+    return line
+
+
+def debts_by_liquidity(
+    conn: sqlite3.Connection, arguments: dict[str, Any], context: ToolContext
+) -> dict[str, Any]:
+    today = context.today
+    limit = _limit(arguments)
+    try:
+        ranking = rank_by_liquidity(
+            list_debts(conn, today=today), today=today, budget_cents=_available_input(arguments)
+        )
+    except InvalidBudgetError as refusal:
+        raise ToolInputError(str(refusal)) from None
+    lines = [_liquidity_line(index, row) for index, row in enumerate(ranking.ranked, start=1)]
+    content: dict[str, Any] = {
+        "today": today.isoformat(),
+        "ranked_total": len(lines),
+        "ranked": lines[:limit],
+        "not_ranked": [
+            {
+                **_debt_header(item.debt),
+                **_money("payoff", item.payoff.target_cents),
+                "reason": _NOT_RANKED_REASON.get(item.debt.kind, "não tem parcela a vencer"),
+            }
+            for item in ranking.unranked
+        ],
+        "not_listed": [
+            {"description": item, "reason": "o lançamento não diz qual parcela é"}
+            for item in unnumbered(conn, today=today)
+        ],
+        "notes": (
+            "A parcela liberada deixa de sair a partir do mês seguinte à quitação, até o mês da "
+            "última. Compra parcelada se quita pelo valor nominal; o desconto de antecipação só "
+            "o emissor informa, então a razão dela é 1 ÷ parcelas que faltam e quem está no fim "
+            "sobe na lista, liberando a parcela só pelos meses que faltavam. Nenhum desconto de "
+            "juros é estimado."
+        ),
+    }
+    selection = ranking.selection
+    if selection is not None:
+        chosen = {row.debt.key for row in selection.chosen}
+        content["with_available"] = {
+            **_money("available", selection.budget_cents),
+            "pay_off": [line for line in lines if line["key"] in chosen],
+            **_money("spent", selection.spent_cents),
+            **_money("left", selection.left_cents),
+            **_money("monthly_freed_total", selection.monthly_freed_cents),
+        }
+        if not selection.chosen:
+            content["with_available"]["note"] = "O valor não quita nenhuma dívida da lista inteira."
+        if selection.ceiling:
+            content["with_available"]["estimate"] = (
+                "Algum valor escolhido é a soma das parcelas que faltam: com o saldo de "
+                "quitação do banco, pode sobrar mais."
+            )
+    return content
+
+
 Handler = Callable[[sqlite3.Connection, dict[str, Any], ToolContext], dict[str, Any]]
 
 _HANDLERS: dict[str, Handler] = {
@@ -798,6 +941,7 @@ _HANDLERS: dict[str, Handler] = {
     PROPOSE_RECATEGORIZATION: propose_recategorization,
     COMMITMENTS_BY_MONTH: commitments_by_month,
     DEBT_PAYOFF: debt_payoff,
+    DEBTS_BY_LIQUIDITY: debts_by_liquidity,
 }
 
 

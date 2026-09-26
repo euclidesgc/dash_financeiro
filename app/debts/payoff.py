@@ -2,6 +2,7 @@ import calendar
 import sqlite3
 from dataclasses import dataclass
 from datetime import date
+from fractions import Fraction
 
 from app.commitments import INSTALLMENT
 from app.commitments.live import charged
@@ -59,7 +60,43 @@ class SavingPlan:
     reached_month: str | None
 
 
+@dataclass(frozen=True)
+class LiquidityRow:
+    debt: Debt
+    payoff: Payoff
+    monthly_freed_cents: int
+    freed_bp: int
+    ceiling: bool
+
+
+@dataclass(frozen=True)
+class Unranked:
+    debt: Debt
+    payoff: Payoff
+
+
+@dataclass(frozen=True)
+class Selection:
+    budget_cents: int
+    chosen: list[LiquidityRow]
+    spent_cents: int
+    left_cents: int
+    monthly_freed_cents: int
+    ceiling: bool
+
+
+@dataclass(frozen=True)
+class LiquidityRanking:
+    ranked: list[LiquidityRow]
+    unranked: list[Unranked]
+    selection: Selection | None
+
+
 class PastTargetError(ValueError):
+    pass
+
+
+class InvalidBudgetError(ValueError):
     pass
 
 
@@ -262,3 +299,77 @@ def saving_plan(
             return SavingPlan(payoff, months, saving, _month(day))
     last = _month_end(shift(today, MAX_SAVING_MONTHS))
     return SavingPlan(payoff_at(debt, last, today=today), None, saving, None)
+
+
+BP_SCALE = 10_000
+
+
+def _round_half_up(numerator: int, denominator: int) -> int:
+    return (2 * numerator + denominator) // (2 * denominator)
+
+
+def _liquidity_row(debt: Debt, *, today: date) -> LiquidityRow | Unranked:
+    payoff = payoff_at(debt, today, today=today)
+    # Reason: only a fixed instalment is money that stops leaving every
+    # month. A revolving balance frees interest, not an instalment, and a
+    # card balance may already carry the instalment purchases ranked here —
+    # ranking both would free the same real twice.
+    if not (
+        debt.first_due and debt.payment_cents and payoff.installments_left and payoff.target_cents
+    ):
+        return Unranked(debt, payoff)
+    monthly = abs(debt.payment_cents)
+    return LiquidityRow(
+        debt=debt,
+        payoff=payoff,
+        monthly_freed_cents=monthly,
+        freed_bp=_round_half_up(monthly * BP_SCALE, payoff.target_cents),
+        ceiling=payoff.payoff_cents is None,
+    )
+
+
+def _select(ranked: list[LiquidityRow], budget_cents: int) -> Selection:
+    chosen: list[LiquidityRow] = []
+    left = budget_cents
+    for row in ranked:
+        # Decision: greedy in ranking order, skipping what does not fit and
+        # trying the next — the owner reads the choice down the same list,
+        # and a ceiling payoff always fits the real one it stands for.
+        if row.payoff.target_cents <= left:
+            chosen.append(row)
+            left -= row.payoff.target_cents
+    return Selection(
+        budget_cents=budget_cents,
+        chosen=chosen,
+        spent_cents=budget_cents - left,
+        left_cents=left,
+        monthly_freed_cents=sum(row.monthly_freed_cents for row in chosen),
+        ceiling=any(row.ceiling for row in chosen),
+    )
+
+
+def rank_by_liquidity(
+    debts: list[Debt], *, today: date, budget_cents: int | None = None
+) -> LiquidityRanking:
+    if budget_cents is not None and budget_cents <= 0:
+        raise InvalidBudgetError("O valor disponível precisa ser maior que zero.")
+    ranked: list[LiquidityRow] = []
+    unranked: list[Unranked] = []
+    for debt in debts:
+        row = _liquidity_row(debt, today=today)
+        if isinstance(row, Unranked):
+            unranked.append(row)
+        else:
+            ranked.append(row)
+    # Reason: the ratio is compared as an exact fraction — rounded basis
+    # points would tie debts that are not tied and flip the order between
+    # two runs of the same base.
+    ranked.sort(
+        key=lambda row: (
+            -Fraction(row.monthly_freed_cents, row.payoff.target_cents),
+            row.payoff.target_cents,
+            row.debt.key,
+        )
+    )
+    selection = _select(ranked, budget_cents) if budget_cents is not None else None
+    return LiquidityRanking(ranked=ranked, unranked=unranked, selection=selection)

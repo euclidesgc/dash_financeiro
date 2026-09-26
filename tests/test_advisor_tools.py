@@ -306,3 +306,68 @@ def test_debt_payoff_refuses_bad_input(conn, arguments, fragment):
 
     assert result.is_error
     assert fragment in result.content["error"]
+
+
+def _liquidity(conn, arguments):
+    return run_tool(conn, ToolCall(id="c1", name="debts_by_liquidity", input=arguments), CONTEXT)
+
+
+def test_debts_by_liquidity_ranks_and_marks_the_ceiling(conn):
+    _debts(conn)
+
+    result = _liquidity(conn, {})
+
+    assert not result.is_error
+    content = result.content
+    assert [line["key"] for line in content["ranked"]] == ["installment-1", "debt-7"]
+    loja, cdc = content["ranked"]
+    assert (loja["payoff"], loja["monthly_freed"], loja["monthly_freed_per_real_paid"]) == (
+        "R$ 200,00",
+        "R$ 100,00",
+        "50,00%",
+    )
+    assert "estimate" not in loja
+    assert cdc["payoff"] == "R$ 54.354,52"
+    assert cdc["monthly_freed"] == "R$ 1.235,33"
+    assert cdc["monthly_freed_per_real_paid"] == "2,27%"
+    assert cdc["estimate"] == "estimativa pelo teto — informe o saldo de quitação"
+    assert content["ranked_total"] == 2
+    [overdraft] = content["not_ranked"]
+    assert overdraft["key"] == "debt-1" and overdraft["payoff"] == "R$ 500,00"
+    assert "with_available" not in content
+
+
+def test_debts_by_liquidity_chooses_what_to_pay_off_with_the_available_amount(conn):
+    _debts(conn)
+
+    chosen = _liquidity(conn, {"available_cents": 60000}).content["with_available"]
+    nothing = _liquidity(conn, {"available_cents": 10000}).content["with_available"]
+    short = _liquidity(conn, {"limit": 1}).content
+
+    assert [line["key"] for line in chosen["pay_off"]] == ["installment-1"]
+    assert (chosen["spent"], chosen["left"], chosen["monthly_freed_total"]) == (
+        "R$ 200,00",
+        "R$ 400,00",
+        "R$ 100,00",
+    )
+    assert "estimate" not in chosen
+    assert nothing["pay_off"] == [] and nothing["left"] == "R$ 100,00"
+    assert "nenhuma" in nothing["note"]
+    assert len(short["ranked"]) == 1 and short["ranked_total"] == 2
+
+
+@pytest.mark.parametrize(
+    ("arguments", "fragment"),
+    [
+        ({"available_cents": 0}, "maior que zero"),
+        ({"available_cents": "mil"}, "available_cents"),
+        ({"limit": 0}, "limit"),
+    ],
+)
+def test_debts_by_liquidity_refuses_bad_input(conn, arguments, fragment):
+    _debts(conn)
+
+    result = _liquidity(conn, arguments)
+
+    assert result.is_error
+    assert fragment in result.content["error"]

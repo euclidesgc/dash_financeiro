@@ -143,6 +143,7 @@ def test_question_runs_the_tool_and_answers_with_its_numbers(app, client):
         "propose_recategorization",
         "commitments_by_month",
         "debt_payoff",
+        "debts_by_liquidity",
     ]
     roles = [row["role"] for row in _stored_roles(conversation_id)]
     assert roles == ["user", "assistant", "tool", "assistant"]
@@ -567,6 +568,47 @@ def test_a_payoff_answer_with_an_invented_discount_is_replaced(app, client):
     response = client.post(
         f"/api/advisor/conversations/{conversation_id}/messages",
         json={"text": "quanto custa quitar o carro hoje?"},
+    )
+
+    assert response.json()["messages"][1]["text"] == UNCHECKED
+
+
+def test_a_liquidity_answer_quoting_the_tool_passes_the_number_guard(app, client):
+    _vehicle_debt()
+    reading = (
+        "Quitar o CDC do veículo custa até R$ 54.354,52 (estimativa pelo teto — informe o saldo "
+        "de quitação) e libera R$ 1.235,33 por mês, 2,27% do que você pagar."
+    )
+    provider = ScriptedProvider(
+        script=[call("debts_by_liquidity", {"available_cents": 6000000}), answer(reading)]
+    )
+    _use(app, provider)
+    conversation_id = _new_conversation(client)
+
+    response = client.post(
+        f"/api/advisor/conversations/{conversation_id}/messages",
+        json={"text": "quais contas eu poderia quitar para liberar liquidez?"},
+    )
+
+    assistant = response.json()["messages"][1]
+    assert assistant["text"] == reading
+    assert assistant["tools"] == ["debts_by_liquidity"]
+
+
+def test_a_liquidity_answer_with_an_invented_figure_is_replaced(app, client):
+    _vehicle_debt()
+    provider = ScriptedProvider(
+        script=[
+            call("debts_by_liquidity", {}),
+            answer("Quitando o carro por R$ 40.000,00 você libera R$ 1.235,33 por mês."),
+        ]
+    )
+    _use(app, provider)
+    conversation_id = _new_conversation(client)
+
+    response = client.post(
+        f"/api/advisor/conversations/{conversation_id}/messages",
+        json={"text": "o que quitar primeiro?"},
     )
 
     assert response.json()["messages"][1]["text"] == UNCHECKED
