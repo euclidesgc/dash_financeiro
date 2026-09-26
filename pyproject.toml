@@ -12,6 +12,7 @@ dependencies = [
     "python-multipart",
     "python-dotenv",
     "httpx",
+    "anthropic>=1.8.0",
 ]
 
 [dependency-groups]

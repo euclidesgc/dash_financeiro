@@ -3,6 +3,7 @@ import { cleanup } from '@testing-library/react'
 import { afterAll, afterEach, beforeAll } from 'vitest'
 
 import {
+  resetAdvisor,
   resetCategories,
   resetConnections,
   resetExpenses,
@@ -22,6 +23,7 @@ afterEach(() => {
   resetCategories()
   resetPlan()
   resetConnections()
+  resetAdvisor()
 })
 afterAll(() => {
   server.close()

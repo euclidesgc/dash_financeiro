@@ -44,12 +44,12 @@ test('every screen fits a 375 px phone without horizontal scroll', async ({ page
   await expectNoHorizontalScroll(page)
 
   const navigation = page.getByRole('navigation', { name: 'Principal' })
-  for (const name of ['Saldos', 'Gastos', 'Categorias', 'Conexões']) {
+  for (const name of ['Saldos', 'Gastos', 'Categorias', 'Conexões', 'Consultor']) {
     await expect(navigation.getByRole('link', { name })).toBeInViewport({ ratio: 1 })
   }
 
   await navigation.getByText('Mais telas').click()
-  for (const name of ['Resumo', 'Objetivo', 'Dívidas', 'Simulador', 'Consultor', 'Configuração']) {
+  for (const name of ['Resumo', 'Objetivo', 'Dívidas', 'Simulador', 'Consultor antigo', 'Configuração']) {
     await expect(navigation.getByRole('link', { name })).toBeInViewport({ ratio: 1 })
   }
   await expectNoHorizontalScroll(page)
@@ -59,6 +59,7 @@ test('every screen fits a 375 px phone without horizontal scroll', async ({ page
     { link: 'Gastos', heading: 'Gastos' },
     { link: 'Categorias', heading: 'Categorias' },
     { link: 'Conexões', heading: 'Conexões' },
+    { link: 'Consultor', heading: 'Consultor' },
   ]
   for (const screen of screens) {
     await navigation.getByRole('link', { name: screen.link }).click()

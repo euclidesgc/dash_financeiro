@@ -34,7 +34,10 @@ atualização não roda e a tela diz qual variável falta. O script manual
 
 | Variável | Segredo | Para que serve e onde obter |
 |---|---|---|
-| `GEMINI_API_KEY` | sim | chave do assistente de IA, criada no Google AI Studio (aistudio.google.com → Get API key). A chave cadastrada na tela Configuração vale sobre esta |
+| `ANTHROPIC_API_KEY` | sim | chave da Anthropic para o Consultor (chat em `/app/advisor`), criada em platform.claude.com → API keys. Com ela, o chat usa a Anthropic; sem ela, usa a chave do Gemini |
+| `DASH_ADVISOR_MODEL` | não | modelo da Anthropic usado pelo chat; vazio, `claude-opus-5` |
+| `GEMINI_API_KEY` | sim | chave do Gemini, criada no Google AI Studio (aistudio.google.com → Get API key). Serve à tela antiga do Consultor e ao chat quando não há `ANTHROPIC_API_KEY`. A chave cadastrada na tela Configuração vale sobre esta |
+| `DASH_ADVISOR_GEMINI_MODEL` | não | modelo do Gemini usado pelo chat; vazio, `gemini-3.8-flash` |
 | `DASH_CNPJ_LOOKUP` | não | `1`, `true` ou `sim` liga a consulta de nome fantasia por CNPJ na BrasilAPI; desligada por padrão, porque cada consulta conta a um terceiro com quem você tem relação comercial |
 
 Segredo nunca entra no repositório: `.env` e `data/` estão no

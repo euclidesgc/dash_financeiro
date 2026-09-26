@@ -6,6 +6,11 @@ import {
   CATEGORY_LABEL_TOO_LONG,
 } from '@/features/categories/types/category-label-schema'
 import { EXPENSE_NOUN, formatCount } from '@/utils/format-count'
+import type {
+  AdvisorStatus,
+  ChatMessage,
+  Conversation,
+} from '@/features/advisor/types/advisor'
 import type { PluggyConnection } from '@/features/pluggy-connections/types/pluggy-connection'
 import type {
   CategoryGroup,
@@ -422,6 +427,27 @@ function similarTo(item: Expense): Expense[] {
   )
 }
 
+export const fakeAdvisorStatus: AdvisorStatus = {
+  available: true,
+  provider: 'anthropic',
+  model: 'claude-opus-5',
+  message: null,
+}
+
+export const FAKE_ADVISOR_ANSWER = 'Em agosto foram 2 gastos com posto, somando −R$ 185,50.'
+
+let fakeConversations: { conversation: Conversation; messages: ChatMessage[] }[] = []
+let nextAdvisorId = 1
+
+export function resetAdvisor(): void {
+  fakeConversations = []
+  nextAdvisorId = 1
+}
+
+function nextAdvisorStamp(): string {
+  return '2026-09-26T12:00:00+00:00'
+}
+
 let signedIn = false
 
 export function resetSession(): void {
@@ -734,5 +760,57 @@ export const handlers = [
       updated += 1
     }
     return HttpResponse.json({ updated })
+  }),
+
+  http.get('/api/advisor/status', () => HttpResponse.json(fakeAdvisorStatus)),
+
+  http.get('/api/advisor/conversations', () =>
+    HttpResponse.json({
+      conversations: [...fakeConversations].reverse().map((item) => item.conversation),
+    }),
+  ),
+
+  http.post('/api/advisor/conversations', () => {
+    const conversation: Conversation = {
+      id: nextAdvisorId++,
+      title: 'Nova conversa',
+      created_at: nextAdvisorStamp(),
+      updated_at: nextAdvisorStamp(),
+    }
+    fakeConversations.push({ conversation, messages: [] })
+    return HttpResponse.json(conversation, { status: 201 })
+  }),
+
+  http.get('/api/advisor/conversations/:id', ({ params }) => {
+    const found = fakeConversations.find((item) => item.conversation.id === Number(params.id))
+    if (!found) return HttpResponse.json({ detail: 'Conversa não encontrada.' }, { status: 404 })
+    return HttpResponse.json(found)
+  }),
+
+  http.post('/api/advisor/conversations/:id/messages', async ({ params, request }) => {
+    const found = fakeConversations.find((item) => item.conversation.id === Number(params.id))
+    if (!found) return HttpResponse.json({ detail: 'Conversa não encontrada.' }, { status: 404 })
+    const body = (await request.json()) as { text: string }
+    const added: ChatMessage[] = [
+      {
+        id: nextAdvisorId++,
+        role: 'user',
+        text: body.text.trim(),
+        created_at: nextAdvisorStamp(),
+        provider: null,
+        tools: [],
+      },
+      {
+        id: nextAdvisorId++,
+        role: 'assistant',
+        text: FAKE_ADVISOR_ANSWER,
+        created_at: nextAdvisorStamp(),
+        provider: 'anthropic',
+        tools: ['search_transactions'],
+      },
+    ]
+    if (found.messages.length === 0) found.conversation.title = body.text.trim()
+    found.messages.push(...added)
+    return HttpResponse.json({ messages: added })
   }),
 ]
